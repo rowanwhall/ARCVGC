@@ -3,6 +3,7 @@ package com.example.showdown26.ui.battledetail
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -122,6 +123,7 @@ private fun PlayerTeamHeader(
         Row(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .clickable { onPlayerClick?.invoke(player.id, player.name) }
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
