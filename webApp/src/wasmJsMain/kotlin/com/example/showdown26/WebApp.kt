@@ -338,9 +338,18 @@ private fun MobileLayout(
     var battleOverlay by remember { mutableStateOf<BattleOverlayRequest?>(null) }
     var overlayPokemonNav by remember { mutableStateOf<MobilePokemonNavTarget?>(null) }
     var overlayPlayerNav by remember { mutableStateOf<MobilePlayerNavTarget?>(null) }
+    // Battle opened from within a Pokemon/Player sub-nav page (preserves backstack)
+    var nestedBattleOverlay by remember { mutableStateOf<BattleOverlayRequest?>(null) }
 
     val favoriteBattleIds by DependencyContainer.favoritesRepository.favoriteBattleIds.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
+
+    fun clearAllOverlays() {
+        battleOverlay = null
+        overlayPokemonNav = null
+        overlayPlayerNav = null
+        nestedBattleOverlay = null
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         CompositionLocalProvider(
@@ -348,6 +357,7 @@ private fun MobileLayout(
                 // Clear any leftover sub-navigation when opening a new battle
                 overlayPokemonNav = null
                 overlayPlayerNav = null
+                nestedBattleOverlay = null
                 battleOverlay = request
             }
         ) {
@@ -365,9 +375,7 @@ private fun MobileLayout(
                                 selected = isSelected,
                                 onClick = {
                                     onTabSelected(index)
-                                    battleOverlay = null
-                                    overlayPokemonNav = null
-                                    overlayPlayerNav = null
+                                    clearAllOverlays()
                                 },
                                 icon = { Icon(tab.icon, contentDescription = tab.label, tint = tint) },
                                 label = { Text(tab.label, color = tint) },
@@ -403,6 +411,7 @@ private fun MobileLayout(
                 LocalBattleOverlay provides { request ->
                     overlayPokemonNav = null
                     overlayPlayerNav = null
+                    nestedBattleOverlay = null
                     battleOverlay = request
                 }
             ) {
@@ -410,9 +419,7 @@ private fun MobileLayout(
                     mode = ContentListMode.Search(searchOverlayParams),
                     onBack = {
                         onSearchBack()
-                        battleOverlay = null
-                        overlayPokemonNav = null
-                        overlayPlayerNav = null
+                        clearAllOverlays()
                     },
                     onSearchParamsChanged = onSearch,
                     modifier = Modifier.fillMaxSize()
@@ -427,22 +434,73 @@ private fun MobileLayout(
             // Pokemon/Player sub-navigation from the overlay
             val currentPokemonNav = overlayPokemonNav
             val currentPlayerNav = overlayPlayerNav
-            if (currentPokemonNav != null) {
-                ContentListPage(
-                    mode = ContentListMode.Pokemon(
-                        currentPokemonNav.id, currentPokemonNav.name, currentPokemonNav.imageUrl,
-                        currentPokemonNav.typeImageUrls.getOrNull(0),
-                        currentPokemonNav.typeImageUrls.getOrNull(1)
-                    ),
-                    onBack = { overlayPokemonNav = null },
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else if (currentPlayerNav != null) {
-                ContentListPage(
-                    mode = ContentListMode.Player(currentPlayerNav.id, currentPlayerNav.name),
-                    onBack = { overlayPlayerNav = null },
-                    modifier = Modifier.fillMaxSize()
-                )
+            if (currentPokemonNav != null || currentPlayerNav != null) {
+                // Nested battle detail opened from within Pokemon/Player sub-nav
+                // Renders on top, closing returns to the sub-nav page
+                if (currentPokemonNav != null) {
+                    CompositionLocalProvider(
+                        LocalBattleOverlay provides { newRequest ->
+                            nestedBattleOverlay = newRequest
+                        }
+                    ) {
+                        ContentListPage(
+                            mode = ContentListMode.Pokemon(
+                                currentPokemonNav.id, currentPokemonNav.name, currentPokemonNav.imageUrl,
+                                currentPokemonNav.typeImageUrls.getOrNull(0),
+                                currentPokemonNav.typeImageUrls.getOrNull(1)
+                            ),
+                            onBack = {
+                                overlayPokemonNav = null
+                                nestedBattleOverlay = null
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                } else if (currentPlayerNav != null) {
+                    CompositionLocalProvider(
+                        LocalBattleOverlay provides { newRequest ->
+                            nestedBattleOverlay = newRequest
+                        }
+                    ) {
+                        ContentListPage(
+                            mode = ContentListMode.Player(currentPlayerNav.id, currentPlayerNav.name),
+                            onBack = {
+                                overlayPlayerNav = null
+                                nestedBattleOverlay = null
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+                // Nested battle detail renders ON TOP of the sub-nav page
+                nestedBattleOverlay?.let { nestedRequest ->
+                    val nestedIsFavorited = nestedRequest.battleId in favoriteBattleIds
+                    BattleDetailPanel(
+                        battleId = nestedRequest.battleId,
+                        isFavorited = nestedIsFavorited,
+                        onToggleFavorite = {
+                            DependencyContainer.favoritesRepository.toggleBattleFavorite(nestedRequest.battleId)
+                        },
+                        onClose = { nestedBattleOverlay = null },
+                        player1IsWinner = nestedRequest.player1IsWinner,
+                        player2IsWinner = nestedRequest.player2IsWinner,
+                        showWinnerHighlight = showWinnerHighlight,
+                        onPokemonClick = { id, name, imageUrl, typeImageUrls ->
+                            overlayPokemonNav = MobilePokemonNavTarget(id, name, imageUrl, typeImageUrls)
+                            overlayPlayerNav = null
+                            nestedBattleOverlay = null
+                        },
+                        onPlayerClick = { id, name ->
+                            overlayPlayerNav = MobilePlayerNavTarget(id, name)
+                            overlayPokemonNav = null
+                            nestedBattleOverlay = null
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surface)
+                    )
+                }
             } else {
                 BattleDetailPanel(
                     battleId = request.battleId,
