@@ -1,0 +1,27 @@
+package com.example.showdown26.ui.model
+
+sealed class ContentListHeaderUiModel {
+    data object None : ContentListHeaderUiModel()
+    data object HomeHero : ContentListHeaderUiModel()
+    data object FavoritesHero : ContentListHeaderUiModel()
+    data class PokemonHero(val name: String, val imageUrl: String?, val typeImageUrls: List<String> = emptyList()) : ContentListHeaderUiModel()
+    data class PlayerHero(val name: String) : ContentListHeaderUiModel()
+    data class SearchFilters(
+        val pokemonChips: List<PokemonChip>,
+        val formatName: String?,
+        val minimumRating: Int?,
+        val maximumRating: Int?,
+        val unratedOnly: Boolean,
+        val playerName: String?,
+        val timeRangeStart: Long?,
+        val timeRangeEnd: Long?
+    ) : ContentListHeaderUiModel()
+}
+
+data class PokemonChip(
+    val index: Int,
+    val name: String,
+    val imageUrl: String?,
+    val itemName: String?,
+    val teraTypeImageUrl: String?
+)

@@ -1,0 +1,470 @@
+package com.example.showdown26
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.vector.ImageVector
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.memory.MemoryCache
+import coil3.network.ktor3.KtorNetworkFetcherFactory
+import coil3.request.crossfade
+import com.example.showdown26.data.SettingsRepository as SharedSettingsRepository
+import com.example.showdown26.di.DependencyContainer
+import com.example.showdown26.domain.model.SearchParams
+import com.example.showdown26.ui.BattleOverlayRequest
+import com.example.showdown26.ui.LocalBattleOverlay
+import com.example.showdown26.ui.LocalWindowSizeClass
+import com.example.showdown26.ui.WindowSizeClass
+import com.example.showdown26.ui.battledetail.BattleDetailPanel
+import com.example.showdown26.ui.contentlist.ContentListPage
+import com.example.showdown26.ui.favorites.FavoritesPage
+import com.example.showdown26.ui.model.AppTheme
+import com.example.showdown26.ui.model.ContentListMode
+import com.example.showdown26.ui.model.DarkModeOption
+import com.example.showdown26.ui.search.SearchPage
+import com.example.showdown26.ui.settings.SettingsPage
+
+private val RedColorScheme = lightColorScheme(
+    primary = Color(0xFFDC2F35),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFFFDAD6),
+    onPrimaryContainer = Color(0xFF410003),
+    secondary = Color(0xFF775654),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFDAD6),
+    onSecondaryContainer = Color(0xFF2C1514),
+)
+
+private val BlueColorScheme = lightColorScheme(
+    primary = Color(0xFF1A73E8),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFD3E3FD),
+    onPrimaryContainer = Color(0xFF041E49),
+    secondary = Color(0xFF5A5F71),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFD3E3FD),
+    onSecondaryContainer = Color(0xFF171C28),
+)
+
+private val YellowColorScheme = lightColorScheme(
+    primary = Color(0xFFE6A700),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFFFE08D),
+    onPrimaryContainer = Color(0xFF3D2E00),
+    secondary = Color(0xFF6B5F3F),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFE08D),
+    onSecondaryContainer = Color(0xFF241C04),
+)
+
+private val PurpleColorScheme = lightColorScheme(
+    primary = Color(0xFF7B1FA2),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFF3DAFF),
+    onPrimaryContainer = Color(0xFF2C0042),
+    secondary = Color(0xFF695768),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFF3DAFF),
+    onSecondaryContainer = Color(0xFF231525),
+)
+
+private val RedDarkColorScheme = darkColorScheme(
+    primary = Color(0xFFDC2F35),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF930012),
+    onPrimaryContainer = Color(0xFFFFDAD6),
+    secondary = Color(0xFFE7BDBA),
+    onSecondary = Color(0xFF442928),
+    secondaryContainer = Color(0xFF5D3F3D),
+    onSecondaryContainer = Color(0xFFFFDAD6),
+)
+
+private val BlueDarkColorScheme = darkColorScheme(
+    primary = Color(0xFF1A73E8),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF0842A0),
+    onPrimaryContainer = Color(0xFFD3E3FD),
+    secondary = Color(0xFFBBC6DC),
+    onSecondary = Color(0xFF263141),
+    secondaryContainer = Color(0xFF3C4758),
+    onSecondaryContainer = Color(0xFFD3E3FD),
+)
+
+private val YellowDarkColorScheme = darkColorScheme(
+    primary = Color(0xFFE6A700),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF7B5800),
+    onPrimaryContainer = Color(0xFFFFE08D),
+    secondary = Color(0xFFD3C4A0),
+    onSecondary = Color(0xFF393017),
+    secondaryContainer = Color(0xFF51472B),
+    onSecondaryContainer = Color(0xFFFFE08D),
+)
+
+private val PurpleDarkColorScheme = darkColorScheme(
+    primary = Color(0xFF7B1FA2),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF5B0080),
+    onPrimaryContainer = Color(0xFFF3DAFF),
+    secondary = Color(0xFFD7BDD5),
+    onSecondary = Color(0xFF3B2839),
+    secondaryContainer = Color(0xFF533E50),
+    onSecondaryContainer = Color(0xFFF3DAFF),
+)
+
+private fun colorSchemeForTheme(themeId: Int, isDark: Boolean): ColorScheme = if (isDark) {
+    when (themeId) {
+        AppTheme.Blue.id -> BlueDarkColorScheme
+        AppTheme.Yellow.id -> YellowDarkColorScheme
+        AppTheme.Purple.id -> PurpleDarkColorScheme
+        else -> RedDarkColorScheme
+    }
+} else {
+    when (themeId) {
+        AppTheme.Blue.id -> BlueColorScheme
+        AppTheme.Yellow.id -> YellowColorScheme
+        AppTheme.Purple.id -> PurpleColorScheme
+        else -> RedColorScheme
+    }
+}
+
+private enum class Tab(
+    val label: String,
+    val icon: ImageVector
+) {
+    Top("Top", Icons.Default.Star),
+    Search("Search", Icons.Default.Search),
+    Favorites("Favorites", Icons.Default.Favorite),
+    Settings("Settings", Icons.Default.Settings)
+}
+
+@Composable
+fun WebApp() {
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context)
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizeBytes(64L * 1024 * 1024)
+                    .build()
+            }
+            .components {
+                add(KtorNetworkFetcherFactory())
+            }
+            .crossfade(true)
+            .build()
+    }
+
+    remember {
+        DependencyContainer.pokemonCatalogRepository
+        DependencyContainer.itemCatalogRepository
+        DependencyContainer.teraTypeCatalogRepository
+        DependencyContainer.formatCatalogRepository
+        Unit
+    }
+
+    val themeId by DependencyContainer.settingsRepository.selectedThemeId.collectAsState()
+    val darkModeId by DependencyContainer.settingsRepository.darkModeId.collectAsState()
+    val isDark = when (DarkModeOption.fromId(darkModeId)) {
+        DarkModeOption.System -> isSystemInDarkTheme()
+        DarkModeOption.Light -> false
+        DarkModeOption.Dark -> true
+    }
+
+    MaterialTheme(colorScheme = colorSchemeForTheme(themeId, isDark)) {
+        var selectedTab by remember { mutableIntStateOf(0) }
+        var searchOverlayParams by remember { mutableStateOf<SearchParams?>(null) }
+        val tabs = Tab.entries
+
+        Surface(modifier = Modifier.fillMaxSize()) {
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val windowSizeClass = if (maxWidth < 600.dp) {
+                    WindowSizeClass.Compact
+                } else {
+                    WindowSizeClass.Expanded
+                }
+
+                CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass) {
+                    if (windowSizeClass == WindowSizeClass.Compact) {
+                        MobileLayout(
+                            tabs = tabs,
+                            selectedTab = selectedTab,
+                            onTabSelected = { index ->
+                                selectedTab = index
+                                searchOverlayParams = null
+                            },
+                            searchOverlayParams = searchOverlayParams,
+                            onSearch = { searchOverlayParams = it },
+                            onSearchBack = { searchOverlayParams = null }
+                        )
+                    } else {
+                        DesktopLayout(
+                            tabs = tabs,
+                            selectedTab = selectedTab,
+                            onTabSelected = { index ->
+                                selectedTab = index
+                                searchOverlayParams = null
+                            },
+                            searchOverlayParams = searchOverlayParams,
+                            onSearch = { searchOverlayParams = it },
+                            onSearchBack = { searchOverlayParams = null }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DesktopLayout(
+    tabs: List<Tab>,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    searchOverlayParams: SearchParams?,
+    onSearch: (SearchParams) -> Unit,
+    onSearchBack: () -> Unit
+) {
+    Row(modifier = Modifier.fillMaxSize()) {
+        NavigationRail(
+            modifier = Modifier.fillMaxHeight().shadow(elevation = 8.dp)
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                val isSelected = selectedTab == index
+                val tint = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                NavigationRailItem(
+                    selected = isSelected,
+                    onClick = { onTabSelected(index) },
+                    icon = { Icon(tab.icon, contentDescription = tab.label, tint = tint) },
+                    label = { Text(tab.label, color = tint) },
+                    colors = NavigationRailItemDefaults.colors(
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = SharedSettingsRepository.DISCLAIMER_TEXT,
+                fontSize = 9.sp,
+                fontStyle = FontStyle.Italic,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    .widthIn(max = 80.dp)
+            )
+        }
+
+        val contentModifier = Modifier.weight(1f).fillMaxHeight()
+
+        if (searchOverlayParams != null) {
+            ContentListPage(
+                mode = ContentListMode.Search(searchOverlayParams),
+                onBack = onSearchBack,
+                onSearchParamsChanged = onSearch,
+                modifier = contentModifier
+            )
+        } else {
+            when (tabs[selectedTab]) {
+                Tab.Top -> ContentListPage(modifier = contentModifier)
+                Tab.Search -> SearchPage(modifier = contentModifier, onSearch = onSearch)
+                Tab.Favorites -> FavoritesPage(modifier = contentModifier)
+                Tab.Settings -> SettingsPage(modifier = contentModifier)
+            }
+        }
+    }
+}
+
+private data class MobilePokemonNavTarget(
+    val id: Int,
+    val name: String,
+    val imageUrl: String?,
+    val typeImageUrls: List<String> = emptyList()
+)
+
+private data class MobilePlayerNavTarget(val id: Int, val name: String)
+
+@Composable
+private fun MobileLayout(
+    tabs: List<Tab>,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    searchOverlayParams: SearchParams?,
+    onSearch: (SearchParams) -> Unit,
+    onSearchBack: () -> Unit
+) {
+    var battleOverlay by remember { mutableStateOf<BattleOverlayRequest?>(null) }
+    var overlayPokemonNav by remember { mutableStateOf<MobilePokemonNavTarget?>(null) }
+    var overlayPlayerNav by remember { mutableStateOf<MobilePlayerNavTarget?>(null) }
+
+    val favoriteBattleIds by DependencyContainer.favoritesRepository.favoriteBattleIds.collectAsState()
+    val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        CompositionLocalProvider(
+            LocalBattleOverlay provides { request ->
+                // Clear any leftover sub-navigation when opening a new battle
+                overlayPokemonNav = null
+                overlayPlayerNav = null
+                battleOverlay = request
+            }
+        ) {
+            Scaffold(
+                bottomBar = {
+                    NavigationBar {
+                        tabs.forEachIndexed { index, tab ->
+                            val isSelected = selectedTab == index
+                            val tint = if (isSelected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                            NavigationBarItem(
+                                selected = isSelected,
+                                onClick = {
+                                    onTabSelected(index)
+                                    battleOverlay = null
+                                    overlayPokemonNav = null
+                                    overlayPlayerNav = null
+                                },
+                                icon = { Icon(tab.icon, contentDescription = tab.label, tint = tint) },
+                                label = { Text(tab.label, color = tint) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
+                        }
+                    }
+                }
+            ) { innerPadding ->
+                when (tabs[selectedTab]) {
+                    Tab.Top -> ContentListPage(
+                        modifier = Modifier.fillMaxSize().padding(innerPadding)
+                    )
+                    Tab.Search -> SearchPage(
+                        modifier = Modifier.fillMaxSize().padding(innerPadding),
+                        onSearch = onSearch
+                    )
+                    Tab.Favorites -> FavoritesPage(
+                        modifier = Modifier.fillMaxSize().padding(innerPadding)
+                    )
+                    Tab.Settings -> SettingsPage(
+                        modifier = Modifier.fillMaxSize().padding(innerPadding)
+                    )
+                }
+            }
+        }
+
+        // Search overlay covers entire screen including bottom bar
+        if (searchOverlayParams != null) {
+            CompositionLocalProvider(
+                LocalBattleOverlay provides { request ->
+                    overlayPokemonNav = null
+                    overlayPlayerNav = null
+                    battleOverlay = request
+                }
+            ) {
+                ContentListPage(
+                    mode = ContentListMode.Search(searchOverlayParams),
+                    onBack = {
+                        onSearchBack()
+                        battleOverlay = null
+                        overlayPokemonNav = null
+                        overlayPlayerNav = null
+                    },
+                    onSearchParamsChanged = onSearch,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+
+        // Battle detail overlay — covers entire screen including bottom bar
+        battleOverlay?.let { request ->
+            val isFavorited = request.battleId in favoriteBattleIds
+
+            // Pokemon/Player sub-navigation from the overlay
+            val currentPokemonNav = overlayPokemonNav
+            val currentPlayerNav = overlayPlayerNav
+            if (currentPokemonNav != null) {
+                ContentListPage(
+                    mode = ContentListMode.Pokemon(
+                        currentPokemonNav.id, currentPokemonNav.name, currentPokemonNav.imageUrl,
+                        currentPokemonNav.typeImageUrls.getOrNull(0),
+                        currentPokemonNav.typeImageUrls.getOrNull(1)
+                    ),
+                    onBack = { overlayPokemonNav = null },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (currentPlayerNav != null) {
+                ContentListPage(
+                    mode = ContentListMode.Player(currentPlayerNav.id, currentPlayerNav.name),
+                    onBack = { overlayPlayerNav = null },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                BattleDetailPanel(
+                    battleId = request.battleId,
+                    isFavorited = isFavorited,
+                    onToggleFavorite = {
+                        DependencyContainer.favoritesRepository.toggleBattleFavorite(request.battleId)
+                    },
+                    onClose = { battleOverlay = null },
+                    player1IsWinner = request.player1IsWinner,
+                    player2IsWinner = request.player2IsWinner,
+                    showWinnerHighlight = showWinnerHighlight,
+                    onPokemonClick = { id, name, imageUrl, typeImageUrls ->
+                        overlayPokemonNav = MobilePokemonNavTarget(id, name, imageUrl, typeImageUrls)
+                    },
+                    onPlayerClick = { id, name ->
+                        overlayPlayerNav = MobilePlayerNavTarget(id, name)
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface)
+                )
+            }
+        }
+    }
+}
