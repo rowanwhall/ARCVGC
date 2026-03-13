@@ -31,11 +31,11 @@ abstract class GenerateSentryConfigTask : DefaultTask() {
         val androidDsn = readSecret("SENTRY_DSN_ANDROID")
         val iosDsn = readSecret("SENTRY_DSN_IOS")
         val webDsn = readSecret("SENTRY_DSN_WEB")
-        val dir = outputDir.get().asFile.resolve("com/example/showdown26/data")
+        val dir = outputDir.get().asFile.resolve("com/arcvgc/app/data")
         dir.mkdirs()
         dir.resolve("SentryConfig.kt").writeText(
             """
-            package com.example.showdown26.data
+            package com.arcvgc.app.data
 
             object SentryConfig {
                 const val ANDROID_DSN: String = "$androidDsn"
@@ -104,7 +104,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.example.showdown26.shared"
+    namespace = "com.arcvgc.app.shared"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

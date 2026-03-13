@@ -19,7 +19,7 @@ final class ContentListViewModel: ObservableObject {
     @Published private(set) var state = ContentListState()
     @Published private(set) var sortOrder: String
 
-    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.example.showdown26", category: "ContentListViewModel")
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.arcvgc.app", category: "ContentListViewModel")
 
     private let repository: BattleRepository
     @Published private(set) var mode: ContentListMode

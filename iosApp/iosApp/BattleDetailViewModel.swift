@@ -6,7 +6,7 @@ import Shared
 final class BattleDetailViewModel: ObservableObject {
     @Published private(set) var state = BattleDetailState()
 
-    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.example.showdown26", category: "BattleDetailViewModel")
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.arcvgc.app", category: "BattleDetailViewModel")
 
     private let repository: BattleRepository
     private let battleId: Int32

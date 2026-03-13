@@ -1,0 +1,1034 @@
+package com.arcvgc.app.ui.contentlist
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import com.arcvgc.app.ui.battledetail.BattleDetailSheet
+import com.arcvgc.app.ui.battledetail.BattleDetailViewModel
+import com.arcvgc.app.ui.components.BattleCard
+import com.arcvgc.app.ui.components.EmptyView
+import com.arcvgc.app.ui.components.FillPokemonAvatar
+import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.components.PokemonAvatar
+import com.arcvgc.app.ui.components.TypeIconRow
+import com.arcvgc.app.ui.components.TypeInfo
+import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.ui.model.ContentListHeaderUiModel
+import com.arcvgc.app.ui.model.ContentListItem
+import com.arcvgc.app.ui.model.ContentListMode
+
+private data class PokemonNavTarget(val id: Int, val name: String, val imageUrl: String?, val typeImageUrls: List<String> = emptyList())
+private data class PlayerNavTarget(val id: Int, val name: String)
+
+private const val PAGINATION_THRESHOLD = 5
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ContentListPage(
+    modifier: Modifier = Modifier,
+    mode: ContentListMode = ContentListMode.Home,
+    onBack: (() -> Unit)? = null,
+    onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
+    consumeTopInsets: Boolean = true,
+    viewModel: ContentListViewModel = hiltViewModel(
+        key = when (mode) {
+            is ContentListMode.Home -> "content_list_home"
+            is ContentListMode.Favorites -> "content_list_favorites_${mode.contentType.name}"
+            is ContentListMode.Search -> "content_list_search_${mode.params}"
+            is ContentListMode.Pokemon -> "content_list_pokemon_${mode.pokemonId}"
+            is ContentListMode.Player -> "content_list_player_${mode.playerId}"
+        }
+    )
+) {
+    LaunchedEffect(viewModel) {
+        viewModel.initialize(mode)
+    }
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
+    val favoriteBattleIds by viewModel.favoritesRepository.favoriteBattleIds.collectAsStateWithLifecycle()
+    val favoritePokemonIds by viewModel.favoritesRepository.favoritePokemonIds.collectAsStateWithLifecycle()
+    val favoritePlayerNames by viewModel.favoritesRepository.favoritePlayerNames.collectAsStateWithLifecycle()
+    val showWinnerHighlight by viewModel.settingsRepository.showWinnerHighlight.collectAsStateWithLifecycle()
+    var selectedBattleId by remember { mutableStateOf<Int?>(null) }
+    var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
+    var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
+
+    if (onBack != null && pokemonNavTarget == null && playerNavTarget == null) {
+        BackHandler { onBack() }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+    ) {
+        ContentListContent(
+            uiState = uiState,
+            header = mode.toHeaderUiModel(),
+            hasToolbar = onBack != null,
+            consumeTopInsets = consumeTopInsets,
+            showWinnerHighlight = showWinnerHighlight,
+            onRefresh = {
+                if (mode is ContentListMode.Favorites) viewModel.loadContent() else viewModel.refresh()
+            },
+            onRetry = viewModel::loadContent,
+            onPaginate = viewModel::paginate,
+            onItemClick = { item ->
+                when (item) {
+                    is ContentListItem.Battle -> selectedBattleId = item.uiModel.id
+                    is ContentListItem.Pokemon -> pokemonNavTarget = PokemonNavTarget(
+                        item.id, item.name, item.imageUrl,
+                        item.types.mapNotNull { it.imageUrl }
+                    )
+                    is ContentListItem.Player -> playerNavTarget = PlayerNavTarget(item.id, item.name)
+                    is ContentListItem.Section -> {}
+                    is ContentListItem.HighlightButtons -> {}
+                    is ContentListItem.PokemonGrid -> {}
+                }
+            },
+            onHighlightBattleClick = { battleId -> selectedBattleId = battleId },
+            onPokemonGridClick = { pokemon ->
+                pokemonNavTarget = PokemonNavTarget(pokemon.id, pokemon.name, pokemon.imageUrl)
+            },
+            searchParams = (mode as? ContentListMode.Search)?.params,
+            onSearchParamsChanged = onSearchParamsChanged,
+            sortOrder = when (mode) {
+                is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> sortOrder
+                else -> null
+            },
+            onToggleSortOrder = when (mode) {
+                is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
+                else -> null
+            }
+        )
+
+        if (onBack != null) {
+            Box {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f),
+                                    MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0f)
+                                )
+                            )
+                        )
+                )
+                TopAppBar(
+                    title = {},
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    },
+                    actions = {
+                        if (mode is ContentListMode.Pokemon) {
+                            val pId = mode.pokemonId
+                            val isFav = pId in favoritePokemonIds
+                            IconButton(onClick = { viewModel.favoritesRepository.togglePokemonFavorite(pId) }) {
+                                Icon(
+                                    imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                    tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        if (mode is ContentListMode.Player) {
+                            val pName = mode.playerName
+                            val isFav = pName in favoritePlayerNames
+                            IconButton(onClick = { viewModel.favoritesRepository.togglePlayerFavorite(pName) }) {
+                                Icon(
+                                    imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                    tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    },
+                    windowInsets = if (consumeTopInsets) TopAppBarDefaults.windowInsets else WindowInsets(0),
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
+                )
+            }
+        }
+
+        if (pokemonNavTarget == null && playerNavTarget == null) {
+            selectedBattleId?.let { battleId ->
+                val selectedBattle = uiState.items.findBattle(battleId)
+                BattleDetailSheetWrapper(
+                    battleId = battleId,
+                    player1IsWinner = selectedBattle?.uiModel?.player1?.isWinner,
+                    player2IsWinner = selectedBattle?.uiModel?.player2?.isWinner,
+                    isFavorited = battleId in favoriteBattleIds,
+                    showWinnerHighlight = showWinnerHighlight,
+                    onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
+                    onDismiss = {
+                        selectedBattleId = null
+                    },
+                    onPokemonClick = { id, name, imageUrl, typeImageUrls ->
+                        pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls)
+                    },
+                    onPlayerClick = { id, name ->
+                        playerNavTarget = PlayerNavTarget(id, name)
+                    }
+                )
+            }
+        }
+
+        pokemonNavTarget?.let { target ->
+            BackHandler { pokemonNavTarget = null }
+            ContentListPage(
+                mode = ContentListMode.Pokemon(
+                    target.id, target.name, target.imageUrl,
+                    target.typeImageUrls.getOrNull(0),
+                    target.typeImageUrls.getOrNull(1)
+                ),
+                onBack = { pokemonNavTarget = null },
+                consumeTopInsets = consumeTopInsets,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        playerNavTarget?.let { target ->
+            BackHandler { playerNavTarget = null }
+            ContentListPage(
+                mode = ContentListMode.Player(target.id, target.name),
+                onBack = { playerNavTarget = null },
+                consumeTopInsets = consumeTopInsets,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Composable
+private fun BattleDetailSheetWrapper(
+    battleId: Int,
+    player1IsWinner: Boolean? = null,
+    player2IsWinner: Boolean? = null,
+    isFavorited: Boolean = false,
+    showWinnerHighlight: Boolean = true,
+    onToggleFavorite: () -> Unit = {},
+    onDismiss: () -> Unit,
+    onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
+    onPlayerClick: ((Int, String) -> Unit)? = null
+) {
+    val viewModel: BattleDetailViewModel = hiltViewModel(
+        key = "battle_detail_$battleId"
+    )
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(battleId) {
+        viewModel.loadBattleDetail(battleId)
+    }
+
+    // Patch winner values from the list endpoint (detail endpoint doesn't return them)
+    val patchedState = state.battleDetail?.let { detail ->
+        state.copy(
+            battleDetail = detail.copy(
+                player1 = detail.player1.copy(isWinner = player1IsWinner),
+                player2 = detail.player2.copy(isWinner = player2IsWinner)
+            )
+        )
+    } ?: state
+
+    BattleDetailSheet(
+        state = patchedState,
+        isFavorited = isFavorited,
+        showWinnerHighlight = showWinnerHighlight,
+        onToggleFavorite = onToggleFavorite,
+        onDismiss = onDismiss,
+        onRetry = { viewModel.loadBattleDetail(battleId) },
+        onPokemonClick = onPokemonClick,
+        onPlayerClick = onPlayerClick
+    )
+}
+
+private val FilterChipHeight = 44.dp
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SearchFilterChips(
+    filters: ContentListHeaderUiModel.SearchFilters,
+    searchParams: SearchParams? = null,
+    onSearchParamsChanged: ((SearchParams) -> Unit)? = null
+) {
+    val context = LocalPlatformContext.current
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        filters.pokemonChips.forEach { chip ->
+            val label = buildString {
+                append(chip.name)
+                chip.itemName?.let { append(" @ $it") }
+            }
+            val canRemove = searchParams?.canRemovePokemonAt(chip.index) == true
+            Row(
+                modifier = Modifier
+                    .height(FilterChipHeight)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(start = 4.dp, end = if (canRemove) 0.dp else 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                chip.teraTypeImageUrl?.let { url ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(url)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Tera type",
+                        modifier = Modifier.size(27.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                chip.imageUrl?.let { url ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(url)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = chip.name,
+                        modifier = Modifier.size(40.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Text(
+                    text = label,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+                if (canRemove && onSearchParamsChanged != null) {
+                    FilterChipCloseButton {
+                        onSearchParamsChanged(searchParams.removePokemonAt(chip.index))
+                    }
+                }
+            }
+        }
+        filters.formatName?.let { name ->
+            Box(
+                modifier = Modifier
+                    .height(FilterChipHeight)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = name,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+            }
+        }
+        filters.minimumRating?.let { rating ->
+            val canRemove = searchParams?.canRemoveMinRating() == true
+            Row(
+                modifier = Modifier
+                    .height(FilterChipHeight)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${rating}+",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+                if (canRemove && onSearchParamsChanged != null) {
+                    FilterChipCloseButton {
+                        onSearchParamsChanged(searchParams.removeMinRating())
+                    }
+                }
+            }
+        }
+        filters.maximumRating?.let { rating ->
+            val canRemove = searchParams?.canRemoveMaxRating() == true
+            Row(
+                modifier = Modifier
+                    .height(FilterChipHeight)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${rating}-",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+                if (canRemove && onSearchParamsChanged != null) {
+                    FilterChipCloseButton {
+                        onSearchParamsChanged(searchParams.removeMaxRating())
+                    }
+                }
+            }
+        }
+        if (filters.unratedOnly) {
+            val canRemove = searchParams?.canRemoveUnrated() == true
+            Row(
+                modifier = Modifier
+                    .height(FilterChipHeight)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Unrated",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+                if (canRemove && onSearchParamsChanged != null) {
+                    FilterChipCloseButton {
+                        onSearchParamsChanged(searchParams.removeUnrated())
+                    }
+                }
+            }
+        }
+        filters.playerName?.let { name ->
+            val canRemove = searchParams?.canRemovePlayerName() == true
+            Row(
+                modifier = Modifier
+                    .height(FilterChipHeight)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = name,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+                if (canRemove && onSearchParamsChanged != null) {
+                    FilterChipCloseButton {
+                        onSearchParamsChanged(searchParams.removePlayerName())
+                    }
+                }
+            }
+        }
+        if (filters.timeRangeStart != null || filters.timeRangeEnd != null) {
+            val dateFormat = java.text.SimpleDateFormat("MM/dd/yy", java.util.Locale.getDefault())
+            val startStr = filters.timeRangeStart?.let { dateFormat.format(java.util.Date(it * 1000)) } ?: "..."
+            val endStr = filters.timeRangeEnd?.let { dateFormat.format(java.util.Date(it * 1000)) } ?: "..."
+            val canRemove = searchParams?.canRemoveTimeRange() == true
+            Row(
+                modifier = Modifier
+                    .height(FilterChipHeight)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "$startStr – $endStr",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+                if (canRemove && onSearchParamsChanged != null) {
+                    FilterChipCloseButton {
+                        onSearchParamsChanged(searchParams.removeTimeRange())
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterChipCloseButton(onClick: () -> Unit) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(28.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = "Remove filter",
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+private val ToolbarHeight = 72.dp
+
+@Composable
+private fun ContentListContent(
+    uiState: ContentListUiState,
+    modifier: Modifier = Modifier,
+    header: ContentListHeaderUiModel = ContentListHeaderUiModel.None,
+    hasToolbar: Boolean = false,
+    consumeTopInsets: Boolean = true,
+    showWinnerHighlight: Boolean = true,
+    onRefresh: () -> Unit,
+    onRetry: () -> Unit,
+    onPaginate: () -> Unit,
+    onItemClick: (ContentListItem) -> Unit,
+    onHighlightBattleClick: (Int) -> Unit = {},
+    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit = {},
+    searchParams: SearchParams? = null,
+    onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
+    sortOrder: String? = null,
+    onToggleSortOrder: (() -> Unit)? = null
+) {
+    val listState = rememberLazyListState()
+
+    val shouldPaginate by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            lastVisibleIndex >= totalItems - PAGINATION_THRESHOLD
+        }
+    }
+
+    LaunchedEffect(shouldPaginate) {
+        snapshotFlow { shouldPaginate }
+            .collect { if (it) onPaginate() }
+    }
+
+    val statusBarHeight = if (consumeTopInsets) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
+    val toolbarSpacing = if (hasToolbar) ToolbarHeight + statusBarHeight else 0.dp
+    val topPadding = toolbarSpacing + when (header) {
+        is ContentListHeaderUiModel.PokemonHero -> 4.dp
+        is ContentListHeaderUiModel.PlayerHero -> 4.dp
+        is ContentListHeaderUiModel.SearchFilters -> 8.dp
+        is ContentListHeaderUiModel.FavoritesHero -> 16.dp
+        else -> 16.dp
+    }
+
+    PullToRefreshBox(
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
+    ) {
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = topPadding,
+                bottom = 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            when (val h = header) {
+                is ContentListHeaderUiModel.None -> {}
+                is ContentListHeaderUiModel.HomeHero -> {
+                    item(key = "home_hero") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 24.dp, bottom = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "ARC",
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Today's Top Battles",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+                is ContentListHeaderUiModel.FavoritesHero -> {
+                    item(key = "favorites_hero") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 24.dp, bottom = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = "Favorites",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Text(
+                                text = "Favorites",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+                is ContentListHeaderUiModel.SearchFilters -> {
+                    item(key = "search_filters") {
+                        SearchFilterChips(
+                            filters = h,
+                            searchParams = searchParams,
+                            onSearchParamsChanged = onSearchParamsChanged
+                        )
+                    }
+                }
+                is ContentListHeaderUiModel.PokemonHero -> {
+                    item(key = "pokemon_hero") {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            PokemonAvatar(
+                                imageUrl = h.imageUrl,
+                                contentDescription = h.name,
+                                circleSize = 176.dp,
+                                spriteSize = 252.dp
+                            )
+                            Text(
+                                text = h.name,
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (h.typeImageUrls.isNotEmpty()) {
+                                TypeIconRow(
+                                    types = h.typeImageUrls.map { TypeInfo("Type", it) },
+                                    iconSize = 28.dp,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                is ContentListHeaderUiModel.PlayerHero -> {
+                    item(key = "player_hero") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 24.dp, bottom = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = h.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier
+                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            when {
+                uiState.isLoading -> {
+                    item(key = "loading") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillParentMaxHeight(0.5f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+
+                uiState.error != null && uiState.items.isEmpty() -> {
+                    item(key = "error") {
+                        ErrorView(
+                            onRetry = onRetry,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillParentMaxHeight(0.5f)
+                        )
+                    }
+                }
+
+                uiState.items.isEmpty() -> {
+                    item(key = "empty") {
+                        EmptyView(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillParentMaxHeight(0.5f)
+                        )
+                    }
+                }
+
+                else -> {
+                    uiState.items.forEach { topItem ->
+                        when (topItem) {
+                            is ContentListItem.Section -> {
+                                val isLoadingSection = topItem.header in uiState.loadingSections
+                                item(key = topItem.listKey) {
+                                    SectionHeader(
+                                        title = topItem.header,
+                                        isLoading = isLoadingSection,
+                                        sortOrder = if (topItem.header == "Battles") sortOrder else null,
+                                        onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null
+                                    )
+                                }
+                                items(items = topItem.items, key = { it.listKey }) { child ->
+                                    Box(modifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier) {
+                                        ContentListItemRow(child, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                    }
+                                }
+                            }
+                            else -> item(key = topItem.listKey) {
+                                ContentListItemRow(topItem, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                            }
+                        }
+                    }
+
+                    if (uiState.isPaginating) {
+                        item(key = "paginating") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContentListItemRow(
+    item: ContentListItem,
+    showWinnerHighlight: Boolean,
+    onItemClick: (ContentListItem) -> Unit,
+    onHighlightBattleClick: (Int) -> Unit = {},
+    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit = {}
+) {
+    when (item) {
+        is ContentListItem.Battle -> BattleCard(
+            uiModel = item.uiModel,
+            modifier = Modifier.fillMaxWidth(),
+            showWinnerHighlight = showWinnerHighlight,
+            onClick = { onItemClick(item) }
+        )
+        is ContentListItem.Pokemon -> PokemonListRow(
+            id = item.id,
+            name = item.name,
+            imageUrl = item.imageUrl,
+            types = item.types,
+            onClick = { onItemClick(item) }
+        )
+        is ContentListItem.Player -> PlayerListRow(
+            name = item.name,
+            onClick = { onItemClick(item) }
+        )
+        is ContentListItem.HighlightButtons -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item.buttons.forEach { button ->
+                    Surface(
+                        onClick = { onHighlightBattleClick(button.battleId) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = button.label,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = button.rating.toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Normal,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        is ContentListItem.PokemonGrid -> {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item.pokemon.chunked(3).forEach { row ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            row.forEach { pokemon ->
+                                Surface(
+                                    onClick = { onPokemonGridClick(pokemon) },
+                                    color = MaterialTheme.colorScheme.surface,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        FillPokemonAvatar(
+                                            imageUrl = pokemon.imageUrl,
+                                            contentDescription = pokemon.name,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .aspectRatio(1f)
+                                        )
+                                        Text(
+                                            text = pokemon.name,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                            repeat(3 - row.size) {
+                                Box(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        is ContentListItem.Section -> {}
+    }
+}
+
+@Composable
+private fun SectionHeader(
+    title: String,
+    isLoading: Boolean = false,
+    sortOrder: String? = null,
+    onToggleSortOrder: (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (sortOrder != null && onToggleSortOrder != null) {
+            Spacer(modifier = Modifier.weight(1f))
+            SortToggleButton(sortOrder = sortOrder, isLoading = isLoading, onClick = onToggleSortOrder)
+        }
+    }
+}
+
+@Composable
+private fun SortToggleButton(sortOrder: String, isLoading: Boolean = false, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .height(28.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(4.dp)
+            )
+            .then(if (isLoading) Modifier else Modifier.clickable(onClick = onClick))
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(14.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Sort,
+                contentDescription = "Sort",
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Text(
+            text = if (sortOrder == "rating") "Rating" else "Time",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+private fun List<ContentListItem>.findBattle(battleId: Int): ContentListItem.Battle? {
+    for (item in this) {
+        if (item is ContentListItem.Battle && item.uiModel.id == battleId) return item
+        if (item is ContentListItem.Section) {
+            val found = item.items.findBattle(battleId)
+            if (found != null) return found
+        }
+    }
+    return null
+}
+
+@Composable
+private fun PokemonListRow(
+    id: Int,
+    name: String,
+    imageUrl: String?,
+    types: List<com.arcvgc.app.ui.model.TypeUiModel>,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            PokemonAvatar(
+                imageUrl = imageUrl,
+                contentDescription = name,
+                circleSize = 40.dp,
+                spriteSize = 56.dp
+            )
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            TypeIconRow(
+                types = types.map { TypeInfo(it.name, it.imageUrl) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayerListRow(
+    name: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}

@@ -1,7 +1,0 @@
-package com.example.showdown26
-
-class WasmPlatform : Platform {
-    override val name: String = "Web (Wasm)"
-}
-
-actual fun getPlatform(): Platform = WasmPlatform()

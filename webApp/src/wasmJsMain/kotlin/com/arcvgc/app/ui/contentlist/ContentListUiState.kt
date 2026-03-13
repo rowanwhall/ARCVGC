@@ -1,0 +1,13 @@
+package com.arcvgc.app.ui.contentlist
+
+import com.arcvgc.app.ui.model.ContentListItem
+
+data class ContentListUiState(
+    val isLoading: Boolean = true,
+    val items: List<ContentListItem> = emptyList(),
+    val error: String? = null,
+    val isPaginating: Boolean = false,
+    val currentPage: Int = 1,
+    val canPaginate: Boolean = true,
+    val loadingSections: Set<String> = emptySet()
+)

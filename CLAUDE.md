@@ -189,7 +189,7 @@ The app supports three dark mode options: **System** (default, follows OS), **Li
 - **ContentListMode**: Sealed class — `Home`, `Favorites(contentType: FavoriteContentType)`, `Search(params: SearchParams)`, `Pokemon(pokemonId, name, imageUrl, typeImageUrl1, typeImageUrl2)`, or `Player(playerId, name)`
 
 ### Android
-- **Catalog repos** (4 Hilt-injectable interfaces + `Impl` classes): Thin wrappers that delegate to shared catalog repos, expose `StateFlow<CatalogState<T>>` and `reload()` from shared `CatalogState` (`com.example.showdown26.data.CatalogState`)
+- **Catalog repos** (4 Hilt-injectable interfaces + `Impl` classes): Thin wrappers that delegate to shared catalog repos, expose `StateFlow<CatalogState<T>>` and `reload()` from shared `CatalogState` (`com.arcvgc.app.data.CatalogState`)
 - **Eager init**: `CatalogInitializer` injected into `ShowdownApplication` forces all 4 catalog repos to load at app startup
 - **SearchViewModel**: `@HiltViewModel` injecting all 4 catalog repos; manages `SearchUiState` (filter slots + selectedFormat + selectedMinRating + selectedOrderBy)
 - **Compose UI**: `SearchFilterCard` (auto-sizing text via `AutoSizeText` composable), `PokemonPickerSheet`, `ItemPickerSheet`, `TeraTypePickerSheet`, `FormatPickerSheet`, `MinRatingPickerSheet`, `SortOrderPickerSheet` (all `ModalBottomSheet`). Format picker sizes to content (no `skipPartiallyExpanded`); Pokemon/Item/Tera pickers expand full-screen.
@@ -315,7 +315,7 @@ cd iosApp && xcodebuild build -project iosApp.xcodeproj -scheme iosApp -destinat
 - Display names computed via properties (e.g., `Ability.displayName` converts camelCase to Title Case)
 - Android uses Hilt `@Inject` + `@HiltViewModel`; iOS uses a manual `DependencyContainer` with `@StateObject` ViewModels; Web uses a manual `DependencyContainer` singleton with `remember { ViewModel(deps...) }`
 - Pagination triggers when user is within 5 items of the list end. **`paginate()` must guard against `loadingSections.isNotEmpty()`** — see "Sort Toggle & Section Loading" section
-- Package: `com.example.showdown26`
+- Package: `com.arcvgc.app`
 - Auto-sizing text: Android uses custom `AutoSizeText` composable (Compose Multiplatform 1.10.0 lacks `TextDefaults.AutoSize`); iOS uses native `.minimumScaleFactor()`
 - iOS Xcode project uses `PBXFileSystemSynchronizedRootGroup` — new Swift files are auto-discovered, no pbxproj edits needed
 - Kotlin `Int` becomes `Int32` in Swift via SKIE bridge; use `onEnum(of:)` for sealed class pattern matching
