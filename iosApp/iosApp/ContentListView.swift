@@ -714,8 +714,8 @@ private struct SectionHeaderView: View {
             Text(title)
                 .font(.subheadline)
                 .foregroundColor(Color(.secondaryLabel))
+            Spacer()
             if let sortOrder = sortOrder, let toggle = onToggleSortOrder {
-                Spacer()
                 SortToggleButton(sortOrder: sortOrder, isLoading: isLoading, action: toggle)
             }
         }
