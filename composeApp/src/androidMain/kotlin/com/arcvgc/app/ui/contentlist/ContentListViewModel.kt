@@ -3,6 +3,7 @@ package com.arcvgc.app.ui.contentlist
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.BattleRepository
 import com.arcvgc.app.data.repository.FavoritesRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
@@ -19,6 +20,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,7 +31,8 @@ class ContentListViewModel @Inject constructor(
     private val repository: BattleRepository,
     val favoritesRepository: FavoritesRepository,
     val settingsRepository: SettingsRepository,
-    private val pokemonCatalogRepository: PokemonCatalogRepository
+    private val pokemonCatalogRepository: PokemonCatalogRepository,
+    private val appConfigRepository: AppConfigRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ContentListUiState())
@@ -56,8 +60,25 @@ class ContentListViewModel @Inject constructor(
             observeFavoritePokemon()
         } else if (mode is ContentListMode.Favorites && mode.contentType == FavoriteContentType.Players) {
             observeFavoritePlayers()
+        } else if (mode is ContentListMode.Home) {
+            waitForConfigThenLoad()
         } else {
             loadContent()
+        }
+    }
+
+    private fun waitForConfigThenLoad() {
+        viewModelScope.launch {
+            val currentConfig = appConfigRepository.config.value
+            if (currentConfig != null) {
+                loadContent()
+            } else {
+                _uiState.update { it.copy(isLoading = true) }
+                appConfigRepository.config
+                    .filterNotNull()
+                    .first()
+                loadContent()
+            }
         }
     }
 
@@ -130,8 +151,10 @@ class ContentListViewModel @Inject constructor(
     private suspend fun fetchContent(page: Int = 1): Result<Pair<List<ContentListItem>, Pagination>> = when (val m = mode) {
         is ContentListMode.Home -> {
             val nowSeconds = System.currentTimeMillis() / 1000
+            val formatId = appConfigRepository.config.value?.defaultFormat?.id ?: 1
             repository.searchMatches(
                 filters = emptyList(),
+                formatId = formatId,
                 orderBy = "rating",
                 page = page,
                 timeRangeStart = nowSeconds - 86400,

@@ -8,6 +8,7 @@ final class DependencyContainer: ObservableObject {
     let favoritesStore: FavoritesStore
     let catalogStore: CatalogStore
     let settingsStore: SettingsStore
+    let appConfigStore: AppConfigStore
 
     init() {
         self.apiService = ApiService()
@@ -16,5 +17,6 @@ final class DependencyContainer: ObservableObject {
         let cacheStorage = CatalogCacheStorage()
         self.catalogStore = CatalogStore(apiService: apiService, cacheStorage: cacheStorage)
         self.settingsStore = SettingsStore(favoritesRepository: favoritesStore.repo)
+        self.appConfigStore = AppConfigStore(apiService: apiService, cacheStorage: cacheStorage)
     }
 }

@@ -1,5 +1,7 @@
 package com.arcvgc.app.di
 
+import com.arcvgc.app.data.AppConfigRepository
+import com.arcvgc.app.data.AppConfigStorage
 import com.arcvgc.app.data.BattleRepository
 import com.arcvgc.app.data.CatalogCacheStorage
 import com.arcvgc.app.data.FavoritesRepository
@@ -22,4 +24,5 @@ object DependencyContainer {
     val teraTypeCatalogRepository: TeraTypeCatalogRepository by lazy { TeraTypeCatalogRepository(apiService, cacheStorage) }
     val formatCatalogRepository: FormatCatalogRepository by lazy { FormatCatalogRepository(apiService, cacheStorage) }
     val settingsRepository: SettingsRepository by lazy { SettingsRepository(SettingsStorage(), cacheStorage, favoritesRepository) }
+    val appConfigRepository: AppConfigRepository by lazy { AppConfigRepository(apiService, AppConfigStorage(), cacheStorage) }
 }

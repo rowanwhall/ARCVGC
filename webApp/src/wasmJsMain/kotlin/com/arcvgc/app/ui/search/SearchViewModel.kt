@@ -1,6 +1,8 @@
 package com.arcvgc.app.ui.search
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.arcvgc.app.data.AppConfigRepository
 import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FormatCatalogRepository
 import com.arcvgc.app.data.ItemCatalogRepository
@@ -14,17 +16,40 @@ import com.arcvgc.app.ui.model.TeraTypeUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class SearchViewModel(
     pokemonCatalogRepository: PokemonCatalogRepository,
     itemCatalogRepository: ItemCatalogRepository,
     teraTypeCatalogRepository: TeraTypeCatalogRepository,
-    formatCatalogRepository: FormatCatalogRepository
+    formatCatalogRepository: FormatCatalogRepository,
+    appConfigRepository: AppConfigRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+
+    init {
+        appConfigRepository?.let { repo ->
+            viewModelScope.launch {
+                repo.config.filterNotNull().collect { config ->
+                    if (_uiState.value.selectedFormat == null) {
+                        val format = config.defaultFormat
+                        _uiState.update {
+                            it.copy(
+                                selectedFormat = FormatUiModel(
+                                    id = format.id,
+                                    displayName = format.formattedName ?: format.name
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>> =
         pokemonCatalogRepository.state

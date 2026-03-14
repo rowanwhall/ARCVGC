@@ -12,6 +12,7 @@ object ApiConstants {
     const val SEARCH_ENDPOINT = "/api/v0/matches/search"
     const val FORMATS_ENDPOINT = "/api/v0/formats/"
     const val PLAYERS_ENDPOINT = "/api/v0/players/"
+    const val CONFIG_ENDPOINT = "/api/v0/config/"
 }
 
 expect fun getPlatformBaseUrl(): String

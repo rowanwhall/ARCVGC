@@ -42,6 +42,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.net.Uri
+import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.ItemCatalogRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
@@ -57,6 +58,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     val settingsRepository: SettingsRepository,
+    val appConfigRepository: AppConfigRepository,
     private val pokemonCatalogRepository: PokemonCatalogRepository,
     private val itemCatalogRepository: ItemCatalogRepository,
     private val teraTypeCatalogRepository: TeraTypeCatalogRepository,

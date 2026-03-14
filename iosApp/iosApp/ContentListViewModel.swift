@@ -25,12 +25,14 @@ final class ContentListViewModel: ObservableObject {
     @Published private(set) var mode: ContentListMode
     private let favoritesStore: FavoritesStore?
     private let pokemonCatalogItems: [PokemonPickerUiModel]
+    private let appConfigStore: AppConfigStore?
 
-    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore? = nil, pokemonCatalogItems: [PokemonPickerUiModel] = []) {
+    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore? = nil, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil) {
         self.repository = repository
         self.mode = mode
         self.favoritesStore = favoritesStore
         self.pokemonCatalogItems = pokemonCatalogItems
+        self.appConfigStore = appConfigStore
         if case .search(let params) = mode {
             self.sortOrder = params.orderBy
         } else {
@@ -44,9 +46,10 @@ final class ContentListViewModel: ObservableObject {
         switch mode {
         case .home:
             let nowSeconds = Int64(Date().timeIntervalSince1970)
+            let formatId = appConfigStore?.defaultFormatId ?? 1
             let result = try await repository.searchMatches(
                 filters: [],
-                formatId: 1,
+                formatId: formatId,
                 minimumRating: nil,
                 maximumRating: nil,
                 unratedOnly: false,
@@ -245,6 +248,13 @@ final class ContentListViewModel: ObservableObject {
         state.error = nil
 
         Task {
+            if case .home = mode, let store = appConfigStore, store.config == nil {
+                // Wait for config to load before fetching Home content
+                for await config in store.$config.values {
+                    if config != nil { break }
+                }
+            }
+
             do {
                 let result = try await fetchContent()
                 state.items = result.items

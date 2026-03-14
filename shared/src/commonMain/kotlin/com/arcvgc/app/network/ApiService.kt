@@ -1,5 +1,6 @@
 package com.arcvgc.app.network
 
+import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.DomainItem
 import com.arcvgc.app.domain.model.Format
 import com.arcvgc.app.domain.model.MatchDetail
@@ -11,6 +12,7 @@ import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonListItem
 import com.arcvgc.app.domain.model.TeraType
 import com.arcvgc.app.network.mapper.toDomain
+import com.arcvgc.app.network.model.AppConfigResponseDto
 import com.arcvgc.app.network.model.FormatListResponseDto
 import com.arcvgc.app.network.model.ItemListResponseDto
 import com.arcvgc.app.network.model.MatchDetailResponseDto
@@ -228,6 +230,22 @@ class ApiService {
                 NetworkResult.Success(response.data.toDomain())
             } else {
                 NetworkResult.Error("Player not found")
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message ?: "Unknown error", e)
+        }
+    }
+
+    suspend fun getConfig(): NetworkResult<AppConfig> {
+        return try {
+            val response: AppConfigResponseDto = client
+                .get("${ApiConstants.BASE_URL}${ApiConstants.CONFIG_ENDPOINT}")
+                .body()
+
+            if (response.success) {
+                NetworkResult.Success(response.data.toDomain())
+            } else {
+                NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "Unknown error", e)

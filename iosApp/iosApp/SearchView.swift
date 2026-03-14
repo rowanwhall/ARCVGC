@@ -32,6 +32,7 @@ enum SearchSheet: Identifiable {
 struct SearchView: View {
     @StateObject private var viewModel = SearchViewModel()
     @ObservedObject var catalogStore: CatalogStore
+    @ObservedObject var appConfigStore: AppConfigStore
     @EnvironmentObject var container: DependencyContainer
     @State private var activeSheet: SearchSheet? = nil
     @State private var searchParams: SearchParams? = nil
@@ -212,6 +213,24 @@ struct SearchView: View {
                             searchParams = newParams
                         }
                     )
+                }
+            }
+            .task {
+                if viewModel.state.selectedFormat == nil, let config = appConfigStore.config {
+                    let format = config.defaultFormat
+                    viewModel.setFormat(FormatUiModel(
+                        id: format.id,
+                        displayName: format.formattedName ?? format.name
+                    ))
+                }
+            }
+            .onChange(of: appConfigStore.config) { _, config in
+                if viewModel.state.selectedFormat == nil, let config = config {
+                    let format = config.defaultFormat
+                    viewModel.setFormat(FormatUiModel(
+                        id: format.id,
+                        displayName: format.formattedName ?? format.name
+                    ))
                 }
             }
             .sheet(item: $activeSheet) { sheet in
@@ -412,6 +431,6 @@ struct DatePickerSheet: View {
 
 #Preview {
     let container = DependencyContainer()
-    return SearchView(catalogStore: container.catalogStore)
+    return SearchView(catalogStore: container.catalogStore, appConfigStore: container.appConfigStore)
         .environmentObject(container)
 }

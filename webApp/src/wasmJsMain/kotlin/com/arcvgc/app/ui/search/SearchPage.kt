@@ -62,7 +62,8 @@ fun SearchPage(
             DependencyContainer.pokemonCatalogRepository,
             DependencyContainer.itemCatalogRepository,
             DependencyContainer.teraTypeCatalogRepository,
-            DependencyContainer.formatCatalogRepository
+            DependencyContainer.formatCatalogRepository,
+            DependencyContainer.appConfigRepository
         )
     }
     val uiState by viewModel.uiState.collectAsState()

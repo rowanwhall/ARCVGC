@@ -32,6 +32,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -200,7 +201,18 @@ fun WebApp() {
         DependencyContainer.itemCatalogRepository
         DependencyContainer.teraTypeCatalogRepository
         DependencyContainer.formatCatalogRepository
+        DependencyContainer.appConfigRepository
         Unit
+    }
+
+    val catalogVersionChanged by DependencyContainer.appConfigRepository.catalogVersionChanged.collectAsState()
+    LaunchedEffect(catalogVersionChanged) {
+        if (catalogVersionChanged) {
+            DependencyContainer.pokemonCatalogRepository.reload()
+            DependencyContainer.itemCatalogRepository.reload()
+            DependencyContainer.teraTypeCatalogRepository.reload()
+            DependencyContainer.formatCatalogRepository.reload()
+        }
     }
 
     val themeId by DependencyContainer.settingsRepository.selectedThemeId.collectAsState()

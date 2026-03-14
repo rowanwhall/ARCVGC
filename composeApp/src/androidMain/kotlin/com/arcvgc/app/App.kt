@@ -35,9 +35,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.ui.components.ForceUpgradeOverlay
 import com.arcvgc.app.ui.contentlist.ContentListPage
 import com.arcvgc.app.ui.favorites.FavoritesPage
 import com.arcvgc.app.ui.model.AppTheme
@@ -248,6 +251,22 @@ fun App() {
                     onBack = { searchOverlayParams = null },
                     onSearchParamsChanged = { searchOverlayParams = it }
                 )
+            }
+
+            val config by settingsViewModel.appConfigRepository.config.collectAsStateWithLifecycle()
+            val context = LocalContext.current
+            val currentVersionCode = remember {
+                try {
+                    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                    packageInfo.longVersionCode.toInt()
+                } catch (_: Exception) {
+                    0
+                }
+            }
+            config?.let {
+                if (it.minAndroidVersion > currentVersionCode) {
+                    ForceUpgradeOverlay()
+                }
             }
         }
     }

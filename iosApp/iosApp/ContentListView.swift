@@ -107,13 +107,16 @@ struct ContentListView: View {
         }
     }
 
-    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], onSearchParamsChanged: ((SearchParams) -> Void)? = nil) {
+    private let appConfigStore: AppConfigStore?
+
+    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, onSearchParamsChanged: ((SearchParams) -> Void)? = nil) {
         self.repository = repository
         self.mode = mode
         self.favoritesStore = favoritesStore
         self.settingsStore = settingsStore
+        self.appConfigStore = appConfigStore
         self.onSearchParamsChanged = onSearchParamsChanged
-        _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems))
+        _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems, appConfigStore: appConfigStore))
     }
 
     var body: some View {

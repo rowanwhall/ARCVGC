@@ -1,7 +1,9 @@
 package com.arcvgc.app.ui.search
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.arcvgc.app.data.CatalogState
+import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.ItemCatalogRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
@@ -15,7 +17,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,11 +27,30 @@ class SearchViewModel @Inject constructor(
     pokemonCatalogRepository: PokemonCatalogRepository,
     itemCatalogRepository: ItemCatalogRepository,
     teraTypeCatalogRepository: TeraTypeCatalogRepository,
-    formatCatalogRepository: FormatCatalogRepository
+    formatCatalogRepository: FormatCatalogRepository,
+    appConfigRepository: AppConfigRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            appConfigRepository.config.filterNotNull().collect { config ->
+                if (_uiState.value.selectedFormat == null) {
+                    val format = config.defaultFormat
+                    _uiState.update {
+                        it.copy(
+                            selectedFormat = FormatUiModel(
+                                id = format.id,
+                                displayName = format.formattedName ?: format.name
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>> =
         pokemonCatalogRepository.state
