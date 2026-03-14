@@ -30,6 +30,13 @@ struct BattleCardView: View {
                     .padding(.horizontal, 16)
                 PlayerTeamSection(player: uiModel.player2, showWinnerHighlight: showWinnerHighlight)
             }
+
+            Spacer().frame(height: 8)
+
+            Text(uiModel.formatName)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(8)
         .background(Color(.systemBackground))
