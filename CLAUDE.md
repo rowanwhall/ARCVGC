@@ -111,3 +111,7 @@ Feature-specific architecture docs (read on demand):
 | [`docs/legal.md`](docs/legal.md) | Legal documents, key claims, hosted URLs |
 
 Coding conventions and quality rules are in `.claude/rules/` (automatically loaded).
+
+## Documentation Maintenance
+
+After completing any task that modifies source code, review the docs index above and determine whether any referenced docs or CLAUDE.md itself need updating to reflect the changes. Update them if so. The `Stop` hook in `.claude/hooks/check-docs.sh` will remind you when source files have been modified.
