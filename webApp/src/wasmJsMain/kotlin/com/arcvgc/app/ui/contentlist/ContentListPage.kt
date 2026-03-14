@@ -1,6 +1,7 @@
 package com.arcvgc.app.ui.contentlist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
@@ -29,7 +30,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -77,12 +81,14 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
+import com.arcvgc.app.ui.model.FormatUiModel
 
 private data class PokemonNavTarget(
     val id: Int,
     val name: String,
     val imageUrl: String?,
-    val typeImageUrls: List<String> = emptyList()
+    val typeImageUrls: List<String> = emptyList(),
+    val formatId: Int? = null
 )
 
 private data class PlayerNavTarget(val id: Int, val name: String)
@@ -103,7 +109,8 @@ fun ContentListPage(
             favoritesRepository = DependencyContainer.favoritesRepository,
             mode = mode,
             pokemonCatalogItems = DependencyContainer.pokemonCatalogRepository.state.value.items,
-            appConfigRepository = if (mode is ContentListMode.Home) DependencyContainer.appConfigRepository else null
+            appConfigRepository = if (mode is ContentListMode.Home || mode is ContentListMode.Pokemon) DependencyContainer.appConfigRepository else null,
+            formatCatalogRepository = if (mode is ContentListMode.Pokemon) DependencyContainer.formatCatalogRepository else null
         )
     }
 
@@ -113,6 +120,8 @@ fun ContentListPage(
     val favoritePokemonIds by viewModel.favoritesRepository.favoritePokemonIds.collectAsState()
     val favoritePlayerNames by viewModel.favoritesRepository.favoritePlayerNames.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
+    val formatCatalogState = viewModel.formatCatalogState?.collectAsState()
+    val selectedFormatId by viewModel.selectedFormatId.collectAsState()
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
@@ -123,7 +132,8 @@ fun ContentListPage(
             mode = ContentListMode.Pokemon(
                 currentPokemonNav.id, currentPokemonNav.name, currentPokemonNav.imageUrl,
                 currentPokemonNav.typeImageUrls.getOrNull(0),
-                currentPokemonNav.typeImageUrls.getOrNull(1)
+                currentPokemonNav.typeImageUrls.getOrNull(1),
+                currentPokemonNav.formatId
             ),
             onBack = { pokemonNavTarget = null },
             modifier = modifier
@@ -214,6 +224,9 @@ fun ContentListPage(
                         is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
                         else -> null
                     },
+                    formats = formatCatalogState?.value?.items ?: emptyList(),
+                    selectedFormatId = if (mode is ContentListMode.Pokemon) selectedFormatId else 0,
+                    onFormatSelected = if (mode is ContentListMode.Pokemon) viewModel::selectFormat else null,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -271,6 +284,9 @@ fun ContentListPage(
                             is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
                             else -> null
                         },
+                        formats = formatCatalogState?.value?.items ?: emptyList(),
+                        selectedFormatId = if (mode is ContentListMode.Pokemon) selectedFormatId else 0,
+                        onFormatSelected = if (mode is ContentListMode.Pokemon) viewModel::selectFormat else null,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -286,8 +302,8 @@ fun ContentListPage(
                         player1IsWinner = selectedBattle?.uiModel?.player1?.isWinner,
                         player2IsWinner = selectedBattle?.uiModel?.player2?.isWinner,
                         showWinnerHighlight = showWinnerHighlight,
-                        onPokemonClick = { id, name, imageUrl, typeImageUrls ->
-                            pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls)
+                        onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
+                            pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
                         },
                         onPlayerClick = { id, name ->
                             playerNavTarget = PlayerNavTarget(id, name)
@@ -607,7 +623,10 @@ private fun ContentListContent(
     searchParams: SearchParams? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     sortOrder: String? = null,
-    onToggleSortOrder: (() -> Unit)? = null
+    onToggleSortOrder: (() -> Unit)? = null,
+    formats: List<FormatUiModel> = emptyList(),
+    selectedFormatId: Int = 0,
+    onFormatSelected: ((Int) -> Unit)? = null
 ) {
     val listState = rememberLazyListState()
 
@@ -721,6 +740,14 @@ private fun ContentListContent(
                                 types = h.typeImageUrls.map { TypeInfo("Type", it) },
                                 iconSize = 28.dp,
                                 modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                        if (formats.isNotEmpty() && onFormatSelected != null) {
+                            FormatDropdown(
+                                formats = formats,
+                                selectedFormatId = selectedFormatId,
+                                onFormatSelected = onFormatSelected,
+                                modifier = Modifier.padding(top = 8.dp)
                             )
                         }
                     }
@@ -1098,6 +1125,60 @@ private fun PlayerListRow(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
+        }
+    }
+}
+
+@Composable
+private fun FormatDropdown(
+    formats: List<FormatUiModel>,
+    selectedFormatId: Int,
+    onFormatSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedFormat = formats.find { it.id == selectedFormatId }
+
+    Box(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .clickable { expanded = true }
+                .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = selectedFormat?.displayName ?: "Format",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Select format",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            formats.forEach { format ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = format.displayName,
+                            fontWeight = if (format.id == selectedFormatId) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    onClick = {
+                        onFormatSelected(format.id)
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }

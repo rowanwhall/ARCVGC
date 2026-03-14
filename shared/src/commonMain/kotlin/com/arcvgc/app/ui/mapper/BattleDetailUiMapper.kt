@@ -22,6 +22,7 @@ object BattleDetailUiMapper {
             id = matchDetail.id,
             player1 = players.getOrNull(0)?.toUiModel() ?: emptyPlayer(),
             player2 = players.getOrNull(1)?.toUiModel() ?: emptyPlayer(),
+            formatId = matchDetail.format.id,
             formatName = matchDetail.format.formattedName ?: matchDetail.format.name,
             rating = rating,
             formattedTime = formatUploadTime(matchDetail.uploadTime),

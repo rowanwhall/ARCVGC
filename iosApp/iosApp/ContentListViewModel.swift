@@ -10,7 +10,7 @@ enum ContentListMode {
     case home
     case favorites(contentType: FavoriteContentType)
     case search(params: SearchParams)
-    case pokemon(id: Int32, name: String, imageUrl: String?, typeImageUrl1: String?, typeImageUrl2: String?)
+    case pokemon(id: Int32, name: String, imageUrl: String?, typeImageUrl1: String?, typeImageUrl2: String?, formatId: Int32? = nil)
     case player(id: Int32, name: String)
 }
 
@@ -18,6 +18,7 @@ enum ContentListMode {
 final class ContentListViewModel: ObservableObject {
     @Published private(set) var state = ContentListState()
     @Published private(set) var sortOrder: String
+    @Published private(set) var selectedFormatId: Int32
 
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.arcvgc.app", category: "ContentListViewModel")
 
@@ -26,17 +27,24 @@ final class ContentListViewModel: ObservableObject {
     private let favoritesStore: FavoritesStore?
     private let pokemonCatalogItems: [PokemonPickerUiModel]
     private let appConfigStore: AppConfigStore?
+    let formatItems: [FormatUiModel]
 
-    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore? = nil, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil) {
+    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore? = nil, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = []) {
         self.repository = repository
         self.mode = mode
         self.favoritesStore = favoritesStore
         self.pokemonCatalogItems = pokemonCatalogItems
         self.appConfigStore = appConfigStore
+        self.formatItems = formatItems
         if case .search(let params) = mode {
             self.sortOrder = params.orderBy
         } else {
             self.sortOrder = "time"
+        }
+        if case .pokemon(_, _, _, _, _, let formatId) = mode {
+            self.selectedFormatId = formatId ?? appConfigStore?.defaultFormatId ?? 1
+        } else {
+            self.selectedFormatId = 0
         }
     }
 
@@ -146,10 +154,10 @@ final class ContentListViewModel: ObservableObject {
             }
             return (items: battleItems, pagination: result.pagination)
 
-        case .pokemon(let id, _, _, _, _):
+        case .pokemon(let id, _, _, _, _, _):
             let result = try await repository.searchMatches(
                 filters: [SearchFilterSlot(pokemonId: id, itemId: nil, teraTypeId: nil, pokemonName: "", pokemonImageUrl: nil, itemName: nil, teraTypeImageUrl: nil)],
-                formatId: 1,
+                formatId: selectedFormatId,
                 minimumRating: nil,
                 maximumRating: nil,
                 unratedOnly: false,
@@ -231,6 +239,26 @@ final class ContentListViewModel: ObservableObject {
                 let items = ContentListItemMapper.shared.fromBattles(battles: result.battles)
                 return (items: items as! [ContentListItem], pagination: result.pagination)
             }
+        }
+    }
+
+    func selectFormat(_ formatId: Int32) {
+        guard selectedFormatId != formatId else { return }
+        selectedFormatId = formatId
+        state.loadingSections = Set(["Battles"])
+        state.currentPage = 1
+        state.canPaginate = false
+
+        Task {
+            do {
+                let result = try await fetchContent()
+                state.items = result.items
+                state.currentPage = result.pagination.page
+                state.canPaginate = result.pagination.page < result.pagination.totalPages
+            } catch {
+                Self.logger.error("Failed to select format: \(error.localizedDescription)")
+            }
+            state.loadingSections = []
         }
     }
 

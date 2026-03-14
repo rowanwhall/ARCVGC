@@ -203,6 +203,7 @@ private fun BattleDetailTabsPreview() {
         id = 1,
         player1 = PlayerDetailUiModel(id = 1, name = "Player1", isWinner = true, team = List(6) { samplePokemon }),
         player2 = PlayerDetailUiModel(id = 2, name = "Opponent", isWinner = false, team = List(6) { samplePokemon }),
+        formatId = 1,
         formatName = "VGC 2026 Reg H",
         rating = 1542,
         formattedTime = "Feb 8, 5:03 PM",

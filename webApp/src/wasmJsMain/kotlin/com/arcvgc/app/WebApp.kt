@@ -333,7 +333,8 @@ private data class MobilePokemonNavTarget(
     val id: Int,
     val name: String,
     val imageUrl: String?,
-    val typeImageUrls: List<String> = emptyList()
+    val typeImageUrls: List<String> = emptyList(),
+    val formatId: Int? = null
 )
 
 private data class MobilePlayerNavTarget(val id: Int, val name: String)
@@ -459,7 +460,8 @@ private fun MobileLayout(
                             mode = ContentListMode.Pokemon(
                                 currentPokemonNav.id, currentPokemonNav.name, currentPokemonNav.imageUrl,
                                 currentPokemonNav.typeImageUrls.getOrNull(0),
-                                currentPokemonNav.typeImageUrls.getOrNull(1)
+                                currentPokemonNav.typeImageUrls.getOrNull(1),
+                                currentPokemonNav.formatId
                             ),
                             onBack = {
                                 overlayPokemonNav = null
@@ -498,8 +500,8 @@ private fun MobileLayout(
                         player1IsWinner = nestedRequest.player1IsWinner,
                         player2IsWinner = nestedRequest.player2IsWinner,
                         showWinnerHighlight = showWinnerHighlight,
-                        onPokemonClick = { id, name, imageUrl, typeImageUrls ->
-                            overlayPokemonNav = MobilePokemonNavTarget(id, name, imageUrl, typeImageUrls)
+                        onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
+                            overlayPokemonNav = MobilePokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
                             overlayPlayerNav = null
                             nestedBattleOverlay = null
                         },
@@ -524,8 +526,8 @@ private fun MobileLayout(
                     player1IsWinner = request.player1IsWinner,
                     player2IsWinner = request.player2IsWinner,
                     showWinnerHighlight = showWinnerHighlight,
-                    onPokemonClick = { id, name, imageUrl, typeImageUrls ->
-                        overlayPokemonNav = MobilePokemonNavTarget(id, name, imageUrl, typeImageUrls)
+                    onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
+                        overlayPokemonNav = MobilePokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
                     },
                     onPlayerClick = { id, name ->
                         overlayPlayerNav = MobilePlayerNavTarget(id, name)

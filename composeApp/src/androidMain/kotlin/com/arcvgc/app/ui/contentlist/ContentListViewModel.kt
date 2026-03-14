@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.BattleRepository
 import com.arcvgc.app.data.repository.FavoritesRepository
+import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
 import com.arcvgc.app.data.repository.SettingsRepository
 import com.arcvgc.app.domain.model.Pagination
@@ -14,6 +15,7 @@ import com.arcvgc.app.ui.mapper.ContentListItemMapper
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FavoriteContentType
+import com.arcvgc.app.ui.model.FormatUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -32,7 +34,8 @@ class ContentListViewModel @Inject constructor(
     val favoritesRepository: FavoritesRepository,
     val settingsRepository: SettingsRepository,
     private val pokemonCatalogRepository: PokemonCatalogRepository,
-    private val appConfigRepository: AppConfigRepository
+    private val appConfigRepository: AppConfigRepository,
+    val formatCatalogRepository: FormatCatalogRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ContentListUiState())
@@ -40,6 +43,9 @@ class ContentListViewModel @Inject constructor(
 
     private val _sortOrder = MutableStateFlow("time")
     val sortOrder: StateFlow<String> = _sortOrder.asStateFlow()
+
+    private val _selectedFormatId = MutableStateFlow(0)
+    val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()
 
     companion object {
         private const val TAG = "ContentListViewModel"
@@ -54,6 +60,9 @@ class ContentListViewModel @Inject constructor(
         this.mode = mode
         if (mode is ContentListMode.Search) {
             _sortOrder.value = mode.params.orderBy
+        }
+        if (mode is ContentListMode.Pokemon) {
+            _selectedFormatId.value = mode.formatId ?: appConfigRepository.config.value?.defaultFormat?.id ?: 1
         }
 
         if (mode is ContentListMode.Favorites && mode.contentType == FavoriteContentType.Pokemon) {
@@ -238,8 +247,7 @@ class ContentListViewModel @Inject constructor(
         }
         is ContentListMode.Pokemon -> repository.searchMatches(
             filters = listOf(SearchFilterSlot(pokemonId = m.pokemonId)),
-            formatId = 1,
-            minimumRating = 1000,
+            formatId = _selectedFormatId.value,
             orderBy = _sortOrder.value,
             page = page
         ).map { (battles, pagination) ->
@@ -383,6 +391,30 @@ class ContentListViewModel @Inject constructor(
                 .onFailure { throwable ->
                     Log.e(TAG, "Failed to paginate content (page $nextPage)", throwable)
                     _uiState.update { it.copy(isPaginating = false) }
+                }
+        }
+    }
+
+    fun selectFormat(formatId: Int) {
+        if (_selectedFormatId.value == formatId) return
+        _selectedFormatId.value = formatId
+        viewModelScope.launch {
+            _uiState.update { it.copy(loadingSections = setOf("Battles"), currentPage = 1, canPaginate = false) }
+
+            fetchContent()
+                .onSuccess { (items, pagination) ->
+                    _uiState.update {
+                        it.copy(
+                            items = items,
+                            loadingSections = emptySet(),
+                            currentPage = pagination.page,
+                            canPaginate = pagination.page < pagination.totalPages
+                        )
+                    }
+                }
+                .onFailure { throwable ->
+                    Log.e(TAG, "Failed to select format", throwable)
+                    _uiState.update { it.copy(loadingSections = emptySet()) }
                 }
         }
     }

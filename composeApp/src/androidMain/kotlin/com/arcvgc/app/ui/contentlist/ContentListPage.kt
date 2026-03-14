@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.contentlist
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
@@ -27,10 +28,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -76,8 +80,9 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
+import com.arcvgc.app.ui.model.FormatUiModel
 
-private data class PokemonNavTarget(val id: Int, val name: String, val imageUrl: String?, val typeImageUrls: List<String> = emptyList())
+private data class PokemonNavTarget(val id: Int, val name: String, val imageUrl: String?, val typeImageUrls: List<String> = emptyList(), val formatId: Int? = null)
 private data class PlayerNavTarget(val id: Int, val name: String)
 
 private const val PAGINATION_THRESHOLD = 5
@@ -110,6 +115,8 @@ fun ContentListPage(
     val favoritePokemonIds by viewModel.favoritesRepository.favoritePokemonIds.collectAsStateWithLifecycle()
     val favoritePlayerNames by viewModel.favoritesRepository.favoritePlayerNames.collectAsStateWithLifecycle()
     val showWinnerHighlight by viewModel.settingsRepository.showWinnerHighlight.collectAsStateWithLifecycle()
+    val formatCatalogState by viewModel.formatCatalogRepository.state.collectAsStateWithLifecycle()
+    val selectedFormatId by viewModel.selectedFormatId.collectAsStateWithLifecycle()
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
@@ -160,7 +167,10 @@ fun ContentListPage(
             onToggleSortOrder = when (mode) {
                 is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
                 else -> null
-            }
+            },
+            formats = if (mode is ContentListMode.Pokemon) formatCatalogState.items else emptyList(),
+            selectedFormatId = if (mode is ContentListMode.Pokemon) selectedFormatId else 0,
+            onFormatSelected = if (mode is ContentListMode.Pokemon) viewModel::selectFormat else null
         )
 
         if (onBack != null) {
@@ -232,8 +242,8 @@ fun ContentListPage(
                     onDismiss = {
                         selectedBattleId = null
                     },
-                    onPokemonClick = { id, name, imageUrl, typeImageUrls ->
-                        pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls)
+                    onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
+                        pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
                     },
                     onPlayerClick = { id, name ->
                         playerNavTarget = PlayerNavTarget(id, name)
@@ -248,7 +258,8 @@ fun ContentListPage(
                 mode = ContentListMode.Pokemon(
                     target.id, target.name, target.imageUrl,
                     target.typeImageUrls.getOrNull(0),
-                    target.typeImageUrls.getOrNull(1)
+                    target.typeImageUrls.getOrNull(1),
+                    target.formatId
                 ),
                 onBack = { pokemonNavTarget = null },
                 consumeTopInsets = consumeTopInsets,
@@ -277,7 +288,7 @@ private fun BattleDetailSheetWrapper(
     showWinnerHighlight: Boolean = true,
     onToggleFavorite: () -> Unit = {},
     onDismiss: () -> Unit,
-    onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
+    onPokemonClick: ((Int, String, String?, List<String>, Int?) -> Unit)? = null,
     onPlayerClick: ((Int, String) -> Unit)? = null
 ) {
     val viewModel: BattleDetailViewModel = hiltViewModel(
@@ -299,6 +310,12 @@ private fun BattleDetailSheetWrapper(
         )
     } ?: state
 
+    val wrappedOnPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = onPokemonClick?.let { callback ->
+        { id, name, imageUrl, typeImageUrls ->
+            callback(id, name, imageUrl, typeImageUrls, patchedState.battleDetail?.formatId)
+        }
+    }
+
     BattleDetailSheet(
         state = patchedState,
         isFavorited = isFavorited,
@@ -306,7 +323,7 @@ private fun BattleDetailSheetWrapper(
         onToggleFavorite = onToggleFavorite,
         onDismiss = onDismiss,
         onRetry = { viewModel.loadBattleDetail(battleId) },
-        onPokemonClick = onPokemonClick,
+        onPokemonClick = wrappedOnPokemonClick,
         onPlayerClick = onPlayerClick
     )
 }
@@ -555,7 +572,10 @@ private fun ContentListContent(
     searchParams: SearchParams? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     sortOrder: String? = null,
-    onToggleSortOrder: (() -> Unit)? = null
+    onToggleSortOrder: (() -> Unit)? = null,
+    formats: List<FormatUiModel> = emptyList(),
+    selectedFormatId: Int = 0,
+    onFormatSelected: ((Int) -> Unit)? = null
 ) {
     val listState = rememberLazyListState()
 
@@ -676,6 +696,14 @@ private fun ContentListContent(
                                     types = h.typeImageUrls.map { TypeInfo("Type", it) },
                                     iconSize = 28.dp,
                                     modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                            if (formats.isNotEmpty() && onFormatSelected != null) {
+                                FormatDropdown(
+                                    formats = formats,
+                                    selectedFormatId = selectedFormatId,
+                                    onFormatSelected = onFormatSelected,
+                                    modifier = Modifier.padding(top = 8.dp)
                                 )
                             }
                         }
@@ -1029,6 +1057,60 @@ private fun PlayerListRow(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
+        }
+    }
+}
+
+@Composable
+private fun FormatDropdown(
+    formats: List<FormatUiModel>,
+    selectedFormatId: Int,
+    onFormatSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedFormat = formats.find { it.id == selectedFormatId }
+
+    Box(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .clickable { expanded = true }
+                .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = selectedFormat?.displayName ?: "Format",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Select format",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            formats.forEach { format ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = format.displayName,
+                            fontWeight = if (format.id == selectedFormatId) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    onClick = {
+                        onFormatSelected(format.id)
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }

@@ -4,13 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arcvgc.app.data.AppConfigRepository
 import com.arcvgc.app.data.BattleRepository
+import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
+import com.arcvgc.app.data.FormatCatalogRepository
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.ui.mapper.ContentListItemMapper
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FavoriteContentType
+import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -27,7 +30,8 @@ class ContentListViewModel(
     val favoritesRepository: FavoritesRepository,
     private val mode: ContentListMode = ContentListMode.Home,
     private val pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
-    private val appConfigRepository: AppConfigRepository? = null
+    private val appConfigRepository: AppConfigRepository? = null,
+    private val formatCatalogRepository: FormatCatalogRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ContentListUiState())
@@ -37,6 +41,16 @@ class ContentListViewModel(
         if (mode is ContentListMode.Search) (mode as ContentListMode.Search).params.orderBy else "time"
     )
     val sortOrder: StateFlow<String> = _sortOrder.asStateFlow()
+
+    private val _selectedFormatId = MutableStateFlow(
+        if (mode is ContentListMode.Pokemon) {
+            mode.formatId ?: appConfigRepository?.config?.value?.defaultFormat?.id ?: 1
+        } else 0
+    )
+    val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()
+
+    val formatCatalogState: StateFlow<CatalogState<FormatUiModel>>?
+        get() = formatCatalogRepository?.state
 
     init {
         when {
@@ -211,8 +225,7 @@ class ContentListViewModel(
         is ContentListMode.Pokemon -> {
             val result = repository.searchMatches(
                 filters = listOf(SearchFilterSlot(pokemonId = m.pokemonId)),
-                formatId = 1,
-                minimumRating = 1000,
+                formatId = _selectedFormatId.value,
                 orderBy = _sortOrder.value,
                 page = page
             )
@@ -322,6 +335,27 @@ class ContentListViewModel(
             } catch (e: Exception) {
 
                 _uiState.update { it.copy(isPaginating = false) }
+            }
+        }
+    }
+
+    fun selectFormat(formatId: Int) {
+        if (_selectedFormatId.value == formatId) return
+        _selectedFormatId.value = formatId
+        viewModelScope.launch {
+            _uiState.update { it.copy(loadingSections = setOf("Battles"), currentPage = 1, canPaginate = false) }
+            try {
+                val (items, pagination) = fetchContent()
+                _uiState.update {
+                    it.copy(
+                        items = items,
+                        loadingSections = emptySet(),
+                        currentPage = pagination.page,
+                        canPaginate = pagination.page < pagination.totalPages
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(loadingSections = emptySet()) }
             }
         }
     }

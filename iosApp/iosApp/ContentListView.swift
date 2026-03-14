@@ -7,6 +7,16 @@ struct PokemonNavTarget: Equatable {
     let imageUrl: String?
     let typeImageUrl1: String?
     let typeImageUrl2: String?
+    let formatId: Int32?
+
+    init(id: Int32, name: String, imageUrl: String?, typeImageUrl1: String?, typeImageUrl2: String?, formatId: Int32? = nil) {
+        self.id = id
+        self.name = name
+        self.imageUrl = imageUrl
+        self.typeImageUrl1 = typeImageUrl1
+        self.typeImageUrl2 = typeImageUrl2
+        self.formatId = formatId
+    }
 }
 
 struct PlayerNavTarget: Equatable {
@@ -49,7 +59,7 @@ private enum ContentListHeader {
             self = .homeHero
         case .favorites:
             self = .favoritesHero
-        case .pokemon(_, let name, let imageUrl, let typeImageUrl1, let typeImageUrl2):
+        case .pokemon(_, let name, let imageUrl, let typeImageUrl1, let typeImageUrl2, _):
             let typeUrls = [typeImageUrl1, typeImageUrl2].compactMap { $0 }
             self = .pokemonHero(name: name, imageUrl: imageUrl, typeImageUrls: typeUrls)
         case .player(_, let name):
@@ -93,6 +103,7 @@ struct ContentListView: View {
     @State private var selectedBattleId: Int32? = nil
     @State private var pokemonNavTarget: PokemonNavTarget? = nil
     @State private var playerNavTarget: PlayerNavTarget? = nil
+    @EnvironmentObject private var container: DependencyContainer
 
     private let repository: BattleRepository
     private let mode: ContentListMode
@@ -109,14 +120,19 @@ struct ContentListView: View {
 
     private let appConfigStore: AppConfigStore?
 
-    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, onSearchParamsChanged: ((SearchParams) -> Void)? = nil) {
+    /// Live format items from the catalog store, available for the dropdown and child navigation.
+    private var formatItems: [FormatUiModel] {
+        container.catalogStore.formatItems
+    }
+
+    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], onSearchParamsChanged: ((SearchParams) -> Void)? = nil) {
         self.repository = repository
         self.mode = mode
         self.favoritesStore = favoritesStore
         self.settingsStore = settingsStore
         self.appConfigStore = appConfigStore
         self.onSearchParamsChanged = onSearchParamsChanged
-        _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems, appConfigStore: appConfigStore))
+        _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems, appConfigStore: appConfigStore, formatItems: formatItems))
     }
 
     var body: some View {
@@ -168,6 +184,14 @@ struct ContentListView: View {
                                     iconSize: 28
                                 )
                                 .padding(.top, 4)
+                            }
+                            if !formatItems.isEmpty {
+                                FormatDropdown(
+                                    formats: formatItems,
+                                    selectedFormatId: viewModel.selectedFormatId,
+                                    onFormatSelected: { viewModel.selectFormat($0) }
+                                )
+                                .padding(.top, 8)
                             }
                         }
                         .frame(maxWidth: .infinity)
@@ -260,7 +284,7 @@ struct ContentListView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if case .pokemon(let pId, _, _, _, _) = mode {
+            if case .pokemon(let pId, _, _, _, _, _) = mode {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         favoritesStore.togglePokemonFavorite(id: pId)
@@ -296,8 +320,8 @@ struct ContentListView: View {
                     favoritesStore: favoritesStore,
                     showWinnerHighlight: settingsStore.showWinnerHighlight,
                     onDismiss: { selectedBattleId = nil },
-                    onPokemonClick: { id, name, imageUrl, typeImageUrls in
-                        pokemonNavTarget = PokemonNavTarget(id: id, name: name, imageUrl: imageUrl, typeImageUrl1: typeImageUrls.first, typeImageUrl2: typeImageUrls.count > 1 ? typeImageUrls[1] : nil)
+                    onPokemonClick: { id, name, imageUrl, typeImageUrls, formatId in
+                        pokemonNavTarget = PokemonNavTarget(id: id, name: name, imageUrl: imageUrl, typeImageUrl1: typeImageUrls.first, typeImageUrl2: typeImageUrls.count > 1 ? typeImageUrls[1] : nil, formatId: formatId)
                     },
                     onPlayerClick: { id, name in
                         playerNavTarget = PlayerNavTarget(id: id, name: name)
@@ -312,7 +336,7 @@ struct ContentListView: View {
             if let target = pokemonNavTarget {
                 ContentListView(
                     repository: repository,
-                    mode: .pokemon(id: target.id, name: target.name, imageUrl: target.imageUrl, typeImageUrl1: target.typeImageUrl1, typeImageUrl2: target.typeImageUrl2),
+                    mode: .pokemon(id: target.id, name: target.name, imageUrl: target.imageUrl, typeImageUrl1: target.typeImageUrl1, typeImageUrl2: target.typeImageUrl2, formatId: target.formatId),
                     favoritesStore: favoritesStore,
                     settingsStore: settingsStore
                 )
@@ -753,6 +777,46 @@ private struct SortToggleButton: View {
             .cornerRadius(4)
         }
         .disabled(isLoading)
+    }
+}
+
+private struct FormatDropdown: View {
+    let formats: [FormatUiModel]
+    let selectedFormatId: Int32
+    let onFormatSelected: (Int32) -> Void
+
+    var body: some View {
+        let selectedFormat = formats.first { $0.id == selectedFormatId }
+        Menu {
+            ForEach(Array(formats.enumerated()), id: \.element.id) { _, format in
+                Button {
+                    onFormatSelected(format.id)
+                } label: {
+                    if format.id == selectedFormatId {
+                        Label(format.displayName, systemImage: "checkmark")
+                    } else {
+                        Text(format.displayName)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(selectedFormat?.displayName ?? "Format")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(.secondaryLabel))
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 10))
+                    .foregroundColor(Color(.secondaryLabel))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+            )
+        }
     }
 }
 

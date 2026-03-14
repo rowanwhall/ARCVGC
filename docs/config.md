@@ -1,6 +1,6 @@
 # App Config
 
-Remote config system fetched from the backend on app startup. Provides the default format for the Home tab and Search, minimum app versions per platform (for forced upgrade on Android/iOS), and a minimum catalog version (for automatic cache invalidation).
+Remote config system fetched from the backend on app startup. Provides the default format for the Home tab, Search, and Pokemon content lists (when no format is threaded from battle detail), minimum app versions per platform (for forced upgrade on Android/iOS), and a minimum catalog version (for automatic cache invalidation).
 
 ## API
 

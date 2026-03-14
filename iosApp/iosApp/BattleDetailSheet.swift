@@ -8,7 +8,7 @@ struct BattleDetailSheet: View {
     @Environment(\.themeColor) private var themeColor
     @State private var selectedTab = 0
     var onDismiss: (() -> Void)? = nil
-    var onPokemonClick: ((Int32, String, String?, [String]) -> Void)? = nil
+    var onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil
     var onPlayerClick: ((Int32, String) -> Void)? = nil
 
     private let battleId: Int32
@@ -16,7 +16,7 @@ struct BattleDetailSheet: View {
     private let player2IsWinner: KotlinBoolean?
     private let showWinnerHighlight: Bool
 
-    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, onDismiss: (() -> Void)? = nil, onPokemonClick: ((Int32, String, String?, [String]) -> Void)? = nil, onPlayerClick: ((Int32, String) -> Void)? = nil) {
+    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, onDismiss: (() -> Void)? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String) -> Void)? = nil) {
         self.battleId = battleId
         self.player1IsWinner = player1IsWinner
         self.player2IsWinner = player2IsWinner
@@ -83,7 +83,12 @@ struct BattleDetailSheet: View {
 
                 // Tab content
                 if selectedTab == 0 {
-                    TeamPreviewTab(battleDetail: battleDetail, player1IsWinner: player1IsWinner, player2IsWinner: player2IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: onPokemonClick, onPlayerClick: onPlayerClick)
+                    let wrappedOnPokemonClick: ((Int32, String, String?, [String]) -> Void)? = onPokemonClick.map { callback in
+                        { id, name, imageUrl, typeImageUrls in
+                            callback(id, name, imageUrl, typeImageUrls, battleDetail.formatId)
+                        }
+                    }
+                    TeamPreviewTab(battleDetail: battleDetail, player1IsWinner: player1IsWinner, player2IsWinner: player2IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: onPlayerClick)
                 } else {
                     ReplayTab(replayUrl: battleDetail.replayUrl)
                 }

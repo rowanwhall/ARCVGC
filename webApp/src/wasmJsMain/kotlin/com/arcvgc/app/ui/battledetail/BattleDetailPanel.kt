@@ -33,7 +33,7 @@ fun BattleDetailPanel(
     player1IsWinner: Boolean? = null,
     player2IsWinner: Boolean? = null,
     showWinnerHighlight: Boolean = true,
-    onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
+    onPokemonClick: ((Int, String, String?, List<String>, Int?) -> Unit)? = null,
     onPlayerClick: ((Int, String) -> Unit)? = null
 ) {
     val viewModel = remember(battleId) {
@@ -50,6 +50,12 @@ fun BattleDetailPanel(
             player1 = detail.player1.copy(isWinner = player1IsWinner),
             player2 = detail.player2.copy(isWinner = player2IsWinner)
         )
+    }
+
+    val wrappedOnPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = onPokemonClick?.let { callback ->
+        { id: Int, name: String, imageUrl: String?, typeImageUrls: List<String> ->
+            callback(id, name, imageUrl, typeImageUrls, displayDetail?.formatId)
+        }
     }
 
     Column(modifier = modifier) {
@@ -95,7 +101,7 @@ fun BattleDetailPanel(
                 TeamPreviewTab(
                     battleDetail = displayDetail,
                     showWinnerHighlight = showWinnerHighlight,
-                    onPokemonClick = onPokemonClick,
+                    onPokemonClick = wrappedOnPokemonClick,
                     onPlayerClick = onPlayerClick
                 )
             }
