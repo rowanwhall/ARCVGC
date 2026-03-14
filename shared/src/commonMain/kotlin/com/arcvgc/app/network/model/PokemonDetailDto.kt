@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 data class PokemonDetailDto(
     val id: Int,
     val name: String,
-    @SerialName("pokedex_number") val pokedexNumber: Int,
+    @SerialName("pokedex_number") val pokedexNumber: Int?,
     val tier: String?,
     val ability: AbilityDto,
     val item: NetworkItemDto?,
