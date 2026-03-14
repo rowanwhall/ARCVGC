@@ -2,8 +2,13 @@
   "hooks": {
     "Stop": [
       {
-        "type": "command",
-        "command": ".claude/hooks/check-docs.sh"
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-docs.sh"
+          }
+        ]
       }
     ]
   }

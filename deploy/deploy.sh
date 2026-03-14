@@ -32,7 +32,7 @@ BUILD_DIR="webApp/build/dist/wasmJs/productionExecutable"
 cd "$PROJECT_DIR"
 
 echo "=== Step 1: Building webapp ==="
-./gradlew :webApp:wasmJsBrowserDistribution
+./gradlew :webApp:clean :webApp:wasmJsBrowserDistribution
 echo ""
 
 echo "=== Step 2: Creating remote directory ==="
@@ -48,8 +48,10 @@ scp legal/privacy-policy.html "$SERVER:$REMOTE_DIR/privacy-policy.html"
 scp legal/terms-of-service.html "$SERVER:$REMOTE_DIR/terms-of-service.html"
 echo ""
 
+echo "=== Step 5: Updating nginx config ==="
+scp deploy/arcvgc.conf "$SERVER:/etc/nginx/sites-available/arcvgc.conf"
+ssh "$SERVER" "nginx -t && systemctl reload nginx"
+echo ""
+
 echo "=== Done! ==="
 echo "Files uploaded to $SERVER:$REMOTE_DIR"
-echo ""
-echo "If this is the first deploy, you still need to set up nginx on the server."
-echo "See deploy/SETUP.md for instructions."
