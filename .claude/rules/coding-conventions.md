@@ -34,7 +34,7 @@ globs:
 
 - **Android**: Hilt `@Inject` + `@HiltViewModel`. Thin Hilt-injectable wrappers in `composeApp/.../data/repository/` delegate to shared repos.
 - **iOS**: Manual `DependencyContainer` with `@StateObject` ViewModels. Swift stores (`FavoritesStore`, `SettingsStore`, `AppConfigStore`) wrap shared repos as `@MainActor ObservableObject`.
-- **Web**: Manual `DependencyContainer` singleton with `remember { ViewModel(deps...) }`. Uses shared repos directly with try/catch (no Result<T> wrapper).
+- **Web**: Manual `DependencyContainer` singleton with `rememberViewModel(key) { ViewModel(deps...) }`. ViewModels are cached in a `ViewModelStore` (provided via `ProvideViewModelStore` at the app root) so they survive tab switches and back navigation. Uses shared repos directly with try/catch (no Result<T> wrapper).
 
 ## Pagination
 
