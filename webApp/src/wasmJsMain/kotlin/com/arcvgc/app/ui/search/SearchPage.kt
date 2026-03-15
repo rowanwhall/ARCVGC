@@ -50,6 +50,7 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
+import com.arcvgc.app.ui.rememberViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +58,7 @@ fun SearchPage(
     modifier: Modifier = Modifier,
     onSearch: (SearchParams) -> Unit = {}
 ) {
-    val viewModel = remember {
+    val viewModel = rememberViewModel("search") {
         SearchViewModel(
             DependencyContainer.pokemonCatalogRepository,
             DependencyContainer.itemCatalogRepository,

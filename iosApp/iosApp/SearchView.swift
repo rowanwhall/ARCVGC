@@ -93,13 +93,13 @@ struct SearchView: View {
                     // Min/Max Rating buttons
                     HStack(spacing: 8) {
                         SearchOptionButton(
-                            text: viewModel.state.selectedMinRating.map { "Min Rating: \($0)" }
+                            text: viewModel.state.selectedMinRating.map { "Min Rating: \(String($0))" }
                                 ?? "Min Rating: None"
                         ) {
                             activeSheet = .minRating
                         }
                         SearchOptionButton(
-                            text: viewModel.state.selectedMaxRating.map { "Max Rating: \($0)" }
+                            text: viewModel.state.selectedMaxRating.map { "Max Rating: \(String($0))" }
                                 ?? "Max Rating: None"
                         ) {
                             activeSheet = .maxRating

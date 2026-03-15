@@ -462,7 +462,7 @@ struct ContentListView: View {
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundColor(Color(.label))
-                            Text("\(button.rating)")
+                            Text(String(button.rating))
                                 .font(.subheadline)
                                 .fontWeight(.regular)
                                 .foregroundColor(Color(.label))
@@ -601,7 +601,7 @@ private struct SearchFilterChipsView: View {
             if let rating = filters.minimumRating {
                 let canRemove = searchParams?.canRemoveMinRating() ?? false
                 HStack(spacing: 0) {
-                    Text("\(rating)+")
+                    Text("\(String(rating))+")
                         .font(.system(size: 14))
                         .foregroundColor(Color(.label))
                     if canRemove, let params = searchParams, let callback = onSearchParamsChanged {
@@ -620,7 +620,7 @@ private struct SearchFilterChipsView: View {
             if let rating = filters.maximumRating {
                 let canRemove = searchParams?.canRemoveMaxRating() ?? false
                 HStack(spacing: 0) {
-                    Text("\(rating)-")
+                    Text("\(String(rating))-")
                         .font(.system(size: 14))
                         .foregroundColor(Color(.label))
                     if canRemove, let params = searchParams, let callback = onSearchParamsChanged {

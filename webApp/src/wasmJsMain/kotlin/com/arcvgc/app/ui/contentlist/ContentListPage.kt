@@ -77,6 +77,7 @@ import com.arcvgc.app.ui.BattleOverlayRequest
 import com.arcvgc.app.ui.LocalBattleOverlay
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
+import com.arcvgc.app.ui.rememberViewModel
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
@@ -103,7 +104,14 @@ fun ContentListPage(
     onBack: (() -> Unit)? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null
 ) {
-    val viewModel = remember(mode.toString()) {
+    val viewModelKey = when (mode) {
+        is ContentListMode.Home -> "content_list_home"
+        is ContentListMode.Favorites -> "content_list_favorites_${mode.contentType.name}"
+        is ContentListMode.Search -> "content_list_search_${mode.params}"
+        is ContentListMode.Pokemon -> "content_list_pokemon_${mode.pokemonId}"
+        is ContentListMode.Player -> "content_list_player_${mode.playerId}_${mode.formatId}"
+    }
+    val viewModel = rememberViewModel(viewModelKey) {
         ContentListViewModel(
             repository = DependencyContainer.battleRepository,
             favoritesRepository = DependencyContainer.favoritesRepository,

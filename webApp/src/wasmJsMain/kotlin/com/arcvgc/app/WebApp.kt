@@ -56,6 +56,7 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.BattleOverlayRequest
 import com.arcvgc.app.ui.LocalBattleOverlay
 import com.arcvgc.app.ui.LocalWindowSizeClass
+import com.arcvgc.app.ui.ProvideViewModelStore
 import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.contentlist.ContentListPage
@@ -229,38 +230,40 @@ fun WebApp() {
         val tabs = Tab.entries
 
         Surface(modifier = Modifier.fillMaxSize()) {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val windowSizeClass = if (maxWidth < 600.dp) {
-                    WindowSizeClass.Compact
-                } else {
-                    WindowSizeClass.Expanded
-                }
-
-                CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass) {
-                    if (windowSizeClass == WindowSizeClass.Compact) {
-                        MobileLayout(
-                            tabs = tabs,
-                            selectedTab = selectedTab,
-                            onTabSelected = { index ->
-                                selectedTab = index
-                                searchOverlayParams = null
-                            },
-                            searchOverlayParams = searchOverlayParams,
-                            onSearch = { searchOverlayParams = it },
-                            onSearchBack = { searchOverlayParams = null }
-                        )
+            ProvideViewModelStore {
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val windowSizeClass = if (maxWidth < 600.dp) {
+                        WindowSizeClass.Compact
                     } else {
-                        DesktopLayout(
-                            tabs = tabs,
-                            selectedTab = selectedTab,
-                            onTabSelected = { index ->
-                                selectedTab = index
-                                searchOverlayParams = null
-                            },
-                            searchOverlayParams = searchOverlayParams,
-                            onSearch = { searchOverlayParams = it },
-                            onSearchBack = { searchOverlayParams = null }
-                        )
+                        WindowSizeClass.Expanded
+                    }
+
+                    CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass) {
+                        if (windowSizeClass == WindowSizeClass.Compact) {
+                            MobileLayout(
+                                tabs = tabs,
+                                selectedTab = selectedTab,
+                                onTabSelected = { index ->
+                                    selectedTab = index
+                                    searchOverlayParams = null
+                                },
+                                searchOverlayParams = searchOverlayParams,
+                                onSearch = { searchOverlayParams = it },
+                                onSearchBack = { searchOverlayParams = null }
+                            )
+                        } else {
+                            DesktopLayout(
+                                tabs = tabs,
+                                selectedTab = selectedTab,
+                                onTabSelected = { index ->
+                                    selectedTab = index
+                                    searchOverlayParams = null
+                                },
+                                searchOverlayParams = searchOverlayParams,
+                                onSearch = { searchOverlayParams = it },
+                                onSearchBack = { searchOverlayParams = null }
+                            )
+                        }
                     }
                 }
             }
@@ -329,15 +332,17 @@ private fun DesktopLayout(
     }
 }
 
-private data class MobilePokemonNavTarget(
-    val id: Int,
-    val name: String,
-    val imageUrl: String?,
-    val typeImageUrls: List<String> = emptyList(),
-    val formatId: Int? = null
-)
-
-private data class MobilePlayerNavTarget(val id: Int, val name: String, val formatId: Int? = null)
+private sealed class MobileNavEntry {
+    data class BattleDetail(val request: BattleOverlayRequest) : MobileNavEntry()
+    data class Pokemon(
+        val id: Int,
+        val name: String,
+        val imageUrl: String?,
+        val typeImageUrls: List<String> = emptyList(),
+        val formatId: Int? = null
+    ) : MobileNavEntry()
+    data class Player(val id: Int, val name: String, val formatId: Int? = null) : MobileNavEntry()
+}
 
 @Composable
 private fun MobileLayout(
@@ -348,30 +353,23 @@ private fun MobileLayout(
     onSearch: (SearchParams) -> Unit,
     onSearchBack: () -> Unit
 ) {
-    var battleOverlay by remember { mutableStateOf<BattleOverlayRequest?>(null) }
-    var overlayPokemonNav by remember { mutableStateOf<MobilePokemonNavTarget?>(null) }
-    var overlayPlayerNav by remember { mutableStateOf<MobilePlayerNavTarget?>(null) }
-    // Battle opened from within a Pokemon/Player sub-nav page (preserves backstack)
-    var nestedBattleOverlay by remember { mutableStateOf<BattleOverlayRequest?>(null) }
+    var navStack by remember { mutableStateOf(listOf<MobileNavEntry>()) }
 
     val favoriteBattleIds by DependencyContainer.favoritesRepository.favoriteBattleIds.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
 
-    fun clearAllOverlays() {
-        battleOverlay = null
-        overlayPokemonNav = null
-        overlayPlayerNav = null
-        nestedBattleOverlay = null
+    fun pushEntry(entry: MobileNavEntry) {
+        navStack = navStack + entry
+    }
+
+    fun popEntry() {
+        navStack = navStack.dropLast(1)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         CompositionLocalProvider(
             LocalBattleOverlay provides { request ->
-                // Clear any leftover sub-navigation when opening a new battle
-                overlayPokemonNav = null
-                overlayPlayerNav = null
-                nestedBattleOverlay = null
-                battleOverlay = request
+                if (request != null) navStack = listOf(MobileNavEntry.BattleDetail(request))
             }
         ) {
             Scaffold(
@@ -388,7 +386,7 @@ private fun MobileLayout(
                                 selected = isSelected,
                                 onClick = {
                                     onTabSelected(index)
-                                    clearAllOverlays()
+                                    navStack = emptyList()
                                 },
                                 icon = { Icon(tab.icon, contentDescription = tab.label, tint = tint) },
                                 label = { Text(tab.label, color = tint) },
@@ -422,17 +420,14 @@ private fun MobileLayout(
         if (searchOverlayParams != null) {
             CompositionLocalProvider(
                 LocalBattleOverlay provides { request ->
-                    overlayPokemonNav = null
-                    overlayPlayerNav = null
-                    nestedBattleOverlay = null
-                    battleOverlay = request
+                    if (request != null) navStack = listOf(MobileNavEntry.BattleDetail(request))
                 }
             ) {
                 ContentListPage(
                     mode = ContentListMode.Search(searchOverlayParams),
                     onBack = {
                         onSearchBack()
-                        clearAllOverlays()
+                        navStack = emptyList()
                     },
                     onSearchParamsChanged = onSearch,
                     modifier = Modifier.fillMaxSize()
@@ -440,102 +435,64 @@ private fun MobileLayout(
             }
         }
 
-        // Battle detail overlay — covers entire screen including bottom bar
-        battleOverlay?.let { request ->
-            val isFavorited = request.battleId in favoriteBattleIds
-
-            // Pokemon/Player sub-navigation from the overlay
-            val currentPokemonNav = overlayPokemonNav
-            val currentPlayerNav = overlayPlayerNav
-            if (currentPokemonNav != null || currentPlayerNav != null) {
-                // Nested battle detail opened from within Pokemon/Player sub-nav
-                // Renders on top, closing returns to the sub-nav page
-                if (currentPokemonNav != null) {
-                    CompositionLocalProvider(
-                        LocalBattleOverlay provides { newRequest ->
-                            nestedBattleOverlay = newRequest
-                        }
-                    ) {
-                        ContentListPage(
-                            mode = ContentListMode.Pokemon(
-                                currentPokemonNav.id, currentPokemonNav.name, currentPokemonNav.imageUrl,
-                                currentPokemonNav.typeImageUrls.getOrNull(0),
-                                currentPokemonNav.typeImageUrls.getOrNull(1),
-                                currentPokemonNav.formatId
-                            ),
-                            onBack = {
-                                overlayPokemonNav = null
-                                nestedBattleOverlay = null
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                } else if (currentPlayerNav != null) {
-                    CompositionLocalProvider(
-                        LocalBattleOverlay provides { newRequest ->
-                            nestedBattleOverlay = newRequest
-                        }
-                    ) {
-                        ContentListPage(
-                            mode = ContentListMode.Player(currentPlayerNav.id, currentPlayerNav.name, currentPlayerNav.formatId),
-                            onBack = {
-                                overlayPlayerNav = null
-                                nestedBattleOverlay = null
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
-
-                // Nested battle detail renders ON TOP of the sub-nav page
-                nestedBattleOverlay?.let { nestedRequest ->
-                    val nestedIsFavorited = nestedRequest.battleId in favoriteBattleIds
+        // Render navigation stack — each entry is a full-screen overlay
+        navStack.forEachIndexed { index, entry ->
+            when (entry) {
+                is MobileNavEntry.BattleDetail -> {
+                    val request = entry.request
+                    val isFavorited = request.battleId in favoriteBattleIds
                     BattleDetailPanel(
-                        battleId = nestedRequest.battleId,
-                        isFavorited = nestedIsFavorited,
+                        battleId = request.battleId,
+                        isFavorited = isFavorited,
                         onToggleFavorite = {
-                            DependencyContainer.favoritesRepository.toggleBattleFavorite(nestedRequest.battleId)
+                            DependencyContainer.favoritesRepository.toggleBattleFavorite(request.battleId)
                         },
-                        onClose = { nestedBattleOverlay = null },
-                        player1IsWinner = nestedRequest.player1IsWinner,
-                        player2IsWinner = nestedRequest.player2IsWinner,
+                        onClose = { popEntry() },
+                        player1IsWinner = request.player1IsWinner,
+                        player2IsWinner = request.player2IsWinner,
                         showWinnerHighlight = showWinnerHighlight,
                         onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                            overlayPokemonNav = MobilePokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
-                            overlayPlayerNav = null
-                            nestedBattleOverlay = null
+                            pushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
                         },
                         onPlayerClick = { id, name, formatId ->
-                            overlayPlayerNav = MobilePlayerNavTarget(id, name, formatId)
-                            overlayPokemonNav = null
-                            nestedBattleOverlay = null
+                            pushEntry(MobileNavEntry.Player(id, name, formatId))
                         },
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.surface)
                     )
                 }
-            } else {
-                BattleDetailPanel(
-                    battleId = request.battleId,
-                    isFavorited = isFavorited,
-                    onToggleFavorite = {
-                        DependencyContainer.favoritesRepository.toggleBattleFavorite(request.battleId)
-                    },
-                    onClose = { battleOverlay = null },
-                    player1IsWinner = request.player1IsWinner,
-                    player2IsWinner = request.player2IsWinner,
-                    showWinnerHighlight = showWinnerHighlight,
-                    onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                        overlayPokemonNav = MobilePokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
-                    },
-                    onPlayerClick = { id, name, formatId ->
-                        overlayPlayerNav = MobilePlayerNavTarget(id, name, formatId)
-                    },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surface)
-                )
+                is MobileNavEntry.Pokemon -> {
+                    CompositionLocalProvider(
+                        LocalBattleOverlay provides { request ->
+                            if (request != null) pushEntry(MobileNavEntry.BattleDetail(request))
+                        }
+                    ) {
+                        ContentListPage(
+                            mode = ContentListMode.Pokemon(
+                                entry.id, entry.name, entry.imageUrl,
+                                entry.typeImageUrls.getOrNull(0),
+                                entry.typeImageUrls.getOrNull(1),
+                                entry.formatId
+                            ),
+                            onBack = { popEntry() },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+                is MobileNavEntry.Player -> {
+                    CompositionLocalProvider(
+                        LocalBattleOverlay provides { request ->
+                            if (request != null) pushEntry(MobileNavEntry.BattleDetail(request))
+                        }
+                    ) {
+                        ContentListPage(
+                            mode = ContentListMode.Player(entry.id, entry.name, entry.formatId),
+                            onBack = { popEntry() },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
         }
     }

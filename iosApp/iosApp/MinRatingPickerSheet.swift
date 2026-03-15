@@ -33,7 +33,7 @@ struct MinRatingPickerSheet: View {
                         dismiss()
                     } label: {
                         HStack {
-                            Text("\(rating)")
+                            Text(String(rating))
                                 .foregroundColor(isDisabled ? .secondary : .primary)
                             Spacer()
                             if selectedRating == rating {

@@ -17,11 +17,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.rememberViewModel
 
 @Composable
 fun BattleDetailPanel(
@@ -36,7 +36,7 @@ fun BattleDetailPanel(
     onPokemonClick: ((Int, String, String?, List<String>, Int?) -> Unit)? = null,
     onPlayerClick: ((Int, String, Int?) -> Unit)? = null
 ) {
-    val viewModel = remember(battleId) {
+    val viewModel = rememberViewModel("battle_detail_$battleId") {
         BattleDetailViewModel(
             repository = DependencyContainer.battleRepository,
             battleId = battleId
