@@ -11,7 +11,7 @@ enum ContentListMode {
     case favorites(contentType: FavoriteContentType)
     case search(params: SearchParams)
     case pokemon(id: Int32, name: String, imageUrl: String?, typeImageUrl1: String?, typeImageUrl2: String?, formatId: Int32? = nil)
-    case player(id: Int32, name: String)
+    case player(id: Int32, name: String, formatId: Int32? = nil)
 }
 
 @MainActor
@@ -41,9 +41,12 @@ final class ContentListViewModel: ObservableObject {
         } else {
             self.sortOrder = "time"
         }
-        if case .pokemon(_, _, _, _, _, let formatId) = mode {
+        switch mode {
+        case .pokemon(_, _, _, _, _, let formatId):
             self.selectedFormatId = formatId ?? appConfigStore?.defaultFormatId ?? 1
-        } else {
+        case .player(_, _, let formatId):
+            self.selectedFormatId = formatId ?? appConfigStore?.defaultFormatId ?? 1
+        default:
             self.selectedFormatId = 0
         }
     }
@@ -170,17 +173,18 @@ final class ContentListViewModel: ObservableObject {
             )
             let battleItems = ContentListItemMapper.shared.fromBattles(battles: result.battles) as! [ContentListItem]
             if page == 1 {
-                let sections: [ContentListItem] = battleItems.isEmpty ? [] : [ContentListItem.Section(header: "Battles", items: battleItems)]
+                var sections: [ContentListItem] = [ContentListItem.FormatSelector.shared]
+                sections.append(ContentListItem.Section(header: "Battles", items: battleItems))
                 return (items: sections, pagination: result.pagination)
             }
             return (items: battleItems, pagination: result.pagination)
 
-        case .player(let id, let name):
+        case .player(let id, let name, _):
             if page == 1 {
                 async let profileResult = { try? await repository.getPlayerProfile(id: id) }()
                 async let battlesResult = repository.searchMatches(
                     filters: [],
-                    formatId: 1,
+                    formatId: selectedFormatId,
                     minimumRating: nil,
                     maximumRating: nil,
                     unratedOnly: false,
@@ -218,15 +222,14 @@ final class ContentListViewModel: ObservableObject {
                     }
                 }
 
-                if !battleItems.isEmpty {
-                    sections.append(ContentListItem.Section(header: "Battles", items: battleItems))
-                }
+                sections.append(ContentListItem.FormatSelector.shared)
+                sections.append(ContentListItem.Section(header: "Battles", items: battleItems))
 
                 return (items: sections, pagination: result.pagination)
             } else {
                 let result = try await repository.searchMatches(
                     filters: [],
-                    formatId: 1,
+                    formatId: selectedFormatId,
                     minimumRating: nil,
                     maximumRating: nil,
                     unratedOnly: false,

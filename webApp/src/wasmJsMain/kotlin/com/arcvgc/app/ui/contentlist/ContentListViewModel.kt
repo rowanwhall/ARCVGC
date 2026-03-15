@@ -43,9 +43,11 @@ class ContentListViewModel(
     val sortOrder: StateFlow<String> = _sortOrder.asStateFlow()
 
     private val _selectedFormatId = MutableStateFlow(
-        if (mode is ContentListMode.Pokemon) {
-            mode.formatId ?: appConfigRepository?.config?.value?.defaultFormat?.id ?: 1
-        } else 0
+        when (mode) {
+            is ContentListMode.Pokemon -> mode.formatId ?: appConfigRepository?.config?.value?.defaultFormat?.id ?: 1
+            is ContentListMode.Player -> mode.formatId ?: appConfigRepository?.config?.value?.defaultFormat?.id ?: 1
+            else -> 0
+        }
     )
     val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()
 
@@ -231,7 +233,10 @@ class ContentListViewModel(
             )
             val battleItems = ContentListItemMapper.fromBattles(result.battles)
             if (page == 1) {
-                val sections = if (battleItems.isEmpty()) emptyList() else listOf(ContentListItem.Section("Battles", battleItems))
+                val sections = buildList {
+                    add(ContentListItem.FormatSelector)
+                    add(ContentListItem.Section("Battles", battleItems))
+                }
                 sections to result.pagination
             } else {
                 battleItems to result.pagination
@@ -242,6 +247,7 @@ class ContentListViewModel(
             val battlesDeferred = async {
                 repository.searchMatches(
                     filters = emptyList(),
+                    formatId = _selectedFormatId.value,
                     orderBy = _sortOrder.value,
                     page = page,
                     playerName = m.playerName
@@ -274,14 +280,14 @@ class ContentListViewModel(
                     }
                 }
 
-                if (battleItems.isNotEmpty()) {
-                    add(ContentListItem.Section("Battles", battleItems))
-                }
+                add(ContentListItem.FormatSelector)
+                add(ContentListItem.Section("Battles", battleItems))
             }
             sections to result.pagination
         } else {
             val result = repository.searchMatches(
                 filters = emptyList(),
+                formatId = _selectedFormatId.value,
                 orderBy = _sortOrder.value,
                 page = page,
                 playerName = m.playerName

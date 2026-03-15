@@ -35,4 +35,8 @@ sealed class ContentListItem {
     data class PokemonGrid(val pokemon: List<PokemonGridItem>) : ContentListItem() {
         override val listKey get() = "pokemon_grid"
     }
+
+    data object FormatSelector : ContentListItem() {
+        override val listKey get() = "format_selector"
+    }
 }

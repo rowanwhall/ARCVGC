@@ -22,6 +22,13 @@ struct PokemonNavTarget: Equatable {
 struct PlayerNavTarget: Equatable {
     let id: Int32
     let name: String
+    let formatId: Int32?
+
+    init(id: Int32, name: String, formatId: Int32? = nil) {
+        self.id = id
+        self.name = name
+        self.formatId = formatId
+    }
 }
 
 private let paginationThreshold = 5
@@ -62,7 +69,7 @@ private enum ContentListHeader {
         case .pokemon(_, let name, let imageUrl, let typeImageUrl1, let typeImageUrl2, _):
             let typeUrls = [typeImageUrl1, typeImageUrl2].compactMap { $0 }
             self = .pokemonHero(name: name, imageUrl: imageUrl, typeImageUrls: typeUrls)
-        case .player(_, let name):
+        case .player(_, let name, _):
             self = .playerHero(name: name)
         case .search(let params):
             let chips = params.filters.enumerated().map { index, slot in
@@ -185,14 +192,6 @@ struct ContentListView: View {
                                 )
                                 .padding(.top, 4)
                             }
-                            if !formatItems.isEmpty {
-                                FormatDropdown(
-                                    formats: formatItems,
-                                    selectedFormatId: viewModel.selectedFormatId,
-                                    onFormatSelected: { viewModel.selectFormat($0) }
-                                )
-                                .padding(.top, 8)
-                            }
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -253,9 +252,26 @@ struct ContentListView: View {
                                     sortOrder: showSort ? viewModel.sortOrder : nil,
                                     onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil
                                 )
+                                if section.items.isEmpty && !isLoadingSection {
+                                    BattleEmptyView()
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 32)
+                                }
                                 ForEach(Array((section.items as! [ContentListItem]).enumerated()), id: \.element.listKey) { _, child in
                                     contentItemView(child)
                                         .opacity(isLoadingSection ? 0.5 : 1.0)
+                                }
+                            case .formatSelector:
+                                if !formatItems.isEmpty {
+                                    HStack {
+                                        Spacer()
+                                        FormatDropdown(
+                                            formats: formatItems,
+                                            selectedFormatId: viewModel.selectedFormatId,
+                                            onFormatSelected: { viewModel.selectFormat($0) }
+                                        )
+                                        Spacer()
+                                    }
                                 }
                             default:
                                 contentItemView(item)
@@ -294,7 +310,7 @@ struct ContentListView: View {
                     }
                 }
             }
-            if case .player(_, let pName) = mode {
+            if case .player(_, let pName, _) = mode {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         favoritesStore.togglePlayerFavorite(name: pName)
@@ -323,8 +339,8 @@ struct ContentListView: View {
                     onPokemonClick: { id, name, imageUrl, typeImageUrls, formatId in
                         pokemonNavTarget = PokemonNavTarget(id: id, name: name, imageUrl: imageUrl, typeImageUrl1: typeImageUrls.first, typeImageUrl2: typeImageUrls.count > 1 ? typeImageUrls[1] : nil, formatId: formatId)
                     },
-                    onPlayerClick: { id, name in
-                        playerNavTarget = PlayerNavTarget(id: id, name: name)
+                    onPlayerClick: { id, name, formatId in
+                        playerNavTarget = PlayerNavTarget(id: id, name: name, formatId: formatId)
                     }
                 )
             }
@@ -338,7 +354,8 @@ struct ContentListView: View {
                     repository: repository,
                     mode: .pokemon(id: target.id, name: target.name, imageUrl: target.imageUrl, typeImageUrl1: target.typeImageUrl1, typeImageUrl2: target.typeImageUrl2, formatId: target.formatId),
                     favoritesStore: favoritesStore,
-                    settingsStore: settingsStore
+                    settingsStore: settingsStore,
+                    appConfigStore: appConfigStore
                 )
             }
         }
@@ -349,9 +366,10 @@ struct ContentListView: View {
             if let target = playerNavTarget {
                 ContentListView(
                     repository: repository,
-                    mode: .player(id: target.id, name: target.name),
+                    mode: .player(id: target.id, name: target.name, formatId: target.formatId),
                     favoritesStore: favoritesStore,
-                    settingsStore: settingsStore
+                    settingsStore: settingsStore,
+                    appConfigStore: appConfigStore
                 )
             }
         }
@@ -413,7 +431,15 @@ struct ContentListView: View {
             .background(Color(.systemBackground))
             .cornerRadius(12)
             .onTapGesture {
-                playerNavTarget = PlayerNavTarget(id: playerItem.id, name: playerItem.name)
+                let derivedFormatId: Int32? = {
+                    switch mode {
+                    case .search(let params): return params.formatId
+                    case .pokemon: return viewModel.selectedFormatId
+                    case .player: return viewModel.selectedFormatId
+                    default: return nil
+                    }
+                }()
+                playerNavTarget = PlayerNavTarget(id: playerItem.id, name: playerItem.name, formatId: derivedFormatId)
             }
         case .highlightButtons(let buttonsItem):
             let buttons = buttonsItem.buttons as! [ContentListItem.HighlightButton]
@@ -478,6 +504,8 @@ struct ContentListView: View {
             .background(Color(.systemBackground))
             .cornerRadius(12)
         case .section:
+            EmptyView()
+        case .formatSelector:
             EmptyView()
         }
     }

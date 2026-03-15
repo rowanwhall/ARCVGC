@@ -34,7 +34,7 @@ fun BattleDetailPanel(
     player2IsWinner: Boolean? = null,
     showWinnerHighlight: Boolean = true,
     onPokemonClick: ((Int, String, String?, List<String>, Int?) -> Unit)? = null,
-    onPlayerClick: ((Int, String) -> Unit)? = null
+    onPlayerClick: ((Int, String, Int?) -> Unit)? = null
 ) {
     val viewModel = remember(battleId) {
         BattleDetailViewModel(
@@ -55,6 +55,12 @@ fun BattleDetailPanel(
     val wrappedOnPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = onPokemonClick?.let { callback ->
         { id: Int, name: String, imageUrl: String?, typeImageUrls: List<String> ->
             callback(id, name, imageUrl, typeImageUrls, displayDetail?.formatId)
+        }
+    }
+
+    val wrappedOnPlayerClick: ((Int, String) -> Unit)? = onPlayerClick?.let { callback ->
+        { id: Int, name: String ->
+            callback(id, name, displayDetail?.formatId)
         }
     }
 
@@ -102,7 +108,7 @@ fun BattleDetailPanel(
                     battleDetail = displayDetail,
                     showWinnerHighlight = showWinnerHighlight,
                     onPokemonClick = wrappedOnPokemonClick,
-                    onPlayerClick = onPlayerClick
+                    onPlayerClick = wrappedOnPlayerClick
                 )
             }
         }

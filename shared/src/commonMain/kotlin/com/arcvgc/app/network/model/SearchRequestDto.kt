@@ -20,7 +20,7 @@ data class TimeRangeDto(
 data class SearchRequestDto(
     val limit: Int = 50,
     val page: Int = 1,
-    @SerialName("format_id") val formatId: Int = 1,
+    @SerialName("format_id") val formatId: Int,
     val rating: RatingDto? = null,
     val pokemon: List<SearchPokemonDto>,
     @SerialName("order_by") val orderBy: String = "time",

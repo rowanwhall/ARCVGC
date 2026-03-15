@@ -337,7 +337,7 @@ private data class MobilePokemonNavTarget(
     val formatId: Int? = null
 )
 
-private data class MobilePlayerNavTarget(val id: Int, val name: String)
+private data class MobilePlayerNavTarget(val id: Int, val name: String, val formatId: Int? = null)
 
 @Composable
 private fun MobileLayout(
@@ -477,7 +477,7 @@ private fun MobileLayout(
                         }
                     ) {
                         ContentListPage(
-                            mode = ContentListMode.Player(currentPlayerNav.id, currentPlayerNav.name),
+                            mode = ContentListMode.Player(currentPlayerNav.id, currentPlayerNav.name, currentPlayerNav.formatId),
                             onBack = {
                                 overlayPlayerNav = null
                                 nestedBattleOverlay = null
@@ -505,8 +505,8 @@ private fun MobileLayout(
                             overlayPlayerNav = null
                             nestedBattleOverlay = null
                         },
-                        onPlayerClick = { id, name ->
-                            overlayPlayerNav = MobilePlayerNavTarget(id, name)
+                        onPlayerClick = { id, name, formatId ->
+                            overlayPlayerNav = MobilePlayerNavTarget(id, name, formatId)
                             overlayPokemonNav = null
                             nestedBattleOverlay = null
                         },
@@ -529,8 +529,8 @@ private fun MobileLayout(
                     onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
                         overlayPokemonNav = MobilePokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
                     },
-                    onPlayerClick = { id, name ->
-                        overlayPlayerNav = MobilePlayerNavTarget(id, name)
+                    onPlayerClick = { id, name, formatId ->
+                        overlayPlayerNav = MobilePlayerNavTarget(id, name, formatId)
                     },
                     modifier = Modifier
                         .fillMaxSize()

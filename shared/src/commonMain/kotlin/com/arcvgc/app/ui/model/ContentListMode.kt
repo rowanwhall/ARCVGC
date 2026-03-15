@@ -7,7 +7,7 @@ sealed class ContentListMode {
     data class Favorites(val contentType: FavoriteContentType = FavoriteContentType.Battles) : ContentListMode()
     data class Search(val params: SearchParams) : ContentListMode()
     data class Pokemon(val pokemonId: Int, val name: String, val imageUrl: String?, val typeImageUrl1: String?, val typeImageUrl2: String?, val formatId: Int? = null) : ContentListMode()
-    data class Player(val playerId: Int, val playerName: String) : ContentListMode()
+    data class Player(val playerId: Int, val playerName: String, val formatId: Int? = null) : ContentListMode()
 
     fun toHeaderUiModel(): ContentListHeaderUiModel = when (this) {
         is Home -> ContentListHeaderUiModel.HomeHero

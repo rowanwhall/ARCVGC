@@ -16,7 +16,7 @@ Sealed class defining the five modes. Each mode maps to a header via `toHeaderUi
 | `Favorites(contentType)` | `FavoriteContentType` enum | `FavoritesHero` | No | No (loads all at once) |
 | `Search(params)` | `SearchParams` | `SearchFilters` | Yes | Yes |
 | `Pokemon(pokemonId, name, imageUrl, typeImageUrl1, typeImageUrl2, formatId?)` | Optional `formatId` threaded from battle detail | `PokemonHero` | Yes | Yes |
-| `Player(playerId, playerName)` | — | `PlayerHero` | Yes | Yes |
+| `Player(playerId, playerName, formatId?)` | Optional `formatId` threaded from battle detail | `PlayerHero` | Yes | Yes |
 
 ### ContentListHeaderUiModel
 
@@ -26,7 +26,7 @@ Sealed class with six variants controlling what renders above the list:
 - **`HomeHero`** — "ARC" title + "Today's Top Battles" subtitle
 - **`FavoritesHero`** — heart icon + "Favorites" subtitle
 - **`SearchFilters`** — flow row of removable filter chips (Pokemon with items/tera, format, rating range, unrated, player name, date range). Each chip type has `canRemove*()` / `remove*()` methods on `SearchParams` controlling removability.
-- **`PokemonHero`** — large Pokemon avatar (176dp circle / 252dp sprite) + name + type icons + format dropdown
+- **`PokemonHero`** — large Pokemon avatar (176dp circle / 252dp sprite) + name + type icons
 - **`PlayerHero`** — player name in rounded pill background
 
 ### ContentListItem
@@ -41,6 +41,7 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 | `Section(header, items)` | Grouping container with title | `"section_{header}"` |
 | `HighlightButtons(buttons)` | Player profile highlight cards (Top Rated / Latest Rated) | `"highlight_buttons"` |
 | `PokemonGrid(pokemon)` | 3-column grid of Pokemon (player profile "Favorite Pokemon") | `"pokemon_grid"` |
+| `FormatSelector` | Format dropdown rendered as a list item (Pokemon, Player modes) | `"format_selector"` |
 
 `ContentListItemMapper` (in `shared/.../ui/mapper/`) provides factory methods: `fromBattles()`, `fromPokemon()`, `fromPlayers()`, `fromPokemonCatalog()`.
 
@@ -62,14 +63,17 @@ This is a key behavioral detail: several modes compose a richer page 1 with sect
 - **Pages 2+**: bare `Battle` items (appended to flat list, no wrapping section)
 
 ### Pokemon mode
-- **Page 1**: `Section("Battles", [...])` wrapping battle results
+- **Page 1**: Up to 2 items —
+  1. `FormatSelector` — format dropdown (rendered as a centered list item)
+  2. `Section("Battles", [...])` — battle results
 - **Pages 2+**: bare `Battle` items
 
 ### Player mode
-- **Page 1**: Up to 3 items —
+- **Page 1**: Up to 4 items —
   1. `HighlightButtons([...])` — "Top Rated Battle" + "Latest Rated Battle" cards (from player profile API, if available)
   2. `Section("Favorite Pokemon", [PokemonGrid([...])])` — 3-column grid of most-used Pokemon (from player profile API, if available)
-  3. `Section("Battles", [...])` — battle results
+  3. `FormatSelector` — format dropdown (rendered as a centered list item)
+  4. `Section("Battles", [...])` — battle results
 - **Pages 2+**: bare `Battle` items
 
 ## Section Loading & Sort Toggle
@@ -81,12 +85,13 @@ Documented in detail in [`docs/search.md`](search.md) under "Sort Toggle & Secti
 - Section children render at 50% opacity (Android/Web) or with a spinner overlay (iOS) while loading
 - **Pagination guard**: `paginate()` refuses to run when `loadingSections.isNotEmpty()` — prevents race conditions between sort/format fetches and pagination
 
-## Format Selection (Pokemon Mode)
+## Format Selection (Pokemon & Player Modes)
 
-The Pokemon hero header includes a format dropdown when format catalog data is available:
+A `FormatSelector` list item renders a format dropdown in both Pokemon and Player modes. It appears as a centered dropdown between the header/profile content and the Battles section.
 
-- **Default format**: inherited from `formatId` parameter (threaded from battle detail) or falls back to app config's default format
+- **Default format**: inherited from `formatId` parameter (threaded from battle detail or parent page's selected format) or falls back to app config's default format
 - **On change**: sets `loadingSections = setOf("Battles")`, re-fetches page 1 with new format
+- **Format threading**: When navigating to a Player from battle detail, the battle's `formatId` is injected via `wrappedOnPlayerClick` (same pattern as Pokemon). When navigating from search results or another Player/Pokemon page, the current page's `selectedFormatId` is passed.
 - **Platform differences**:
   - Android: `DropdownMenu` composable
   - iOS: `Menu` with `.presentationDetents([.medium])`
@@ -117,7 +122,7 @@ When a Pokemon or Player is tapped from within a battle detail sheet:
 
 This is recursive — each child instance has its own independent state, creating a natural navigation stack.
 
-**Format threading**: When navigating to a Pokemon from battle detail, the battle's `formatId` is injected at the boundary (`BattleDetailSheetWrapper` on Android, similar on iOS/Web) by wrapping the 4-param `onPokemonClick` into a 5-param version that appends the format.
+**Format threading**: When navigating to a Pokemon or Player from battle detail, the battle's `formatId` is injected at the boundary (`BattleDetailSheetWrapper` on Android, `BattleDetailSheet` on iOS, `BattleDetailPanel` on Web) by wrapping the click callbacks to append the format. When navigating from search results, the search's format is passed. When navigating from another Pokemon/Player page, the current page's `selectedFormatId` is passed.
 
 ## Toolbar & Favorite Buttons
 
@@ -130,7 +135,7 @@ Pokemon and Player modes show a toolbar with back button + favorite heart:
 
 Each platform creates distinct ViewModel instances per mode to avoid state leakage:
 
-- **Android**: `hiltViewModel(key = ...)` — `"content_list_home"`, `"content_list_favorites_{contentType}"`, `"content_list_search_{params}"`, `"content_list_pokemon_{pokemonId}"`, `"content_list_player_{playerId}"`
+- **Android**: `hiltViewModel(key = ...)` — `"content_list_home"`, `"content_list_favorites_{contentType}"`, `"content_list_search_{params}"`, `"content_list_pokemon_{pokemonId}"`, `"content_list_player_{playerId}_{formatId}"`
 - **iOS**: new `ContentListViewModel()` instance per `ContentListView` appearance
 - **Web**: `remember(mode.toString()) { ContentListViewModel(deps...) }` via `DependencyContainer`
 
@@ -153,7 +158,8 @@ data class ContentListUiState(
 
 - **Loading**: centered spinner (fills 50% of parent height)
 - **Error** (with no items): `ErrorView` / `ErrorBanner` with retry button
-- **Empty** (loaded, no items): `EmptyView` ("No battles found" or similar)
+- **Empty** (loaded, no items): `EmptyView` ("There's nothing here")
+- **Empty section** (section with 0 items, not loading): inline `EmptyView` / `BattleEmptyView` below the section header. Used in Pokemon and Player modes when the Battles section is always present (even with no results) so the section header + sort toggle remain visible.
 
 ## Pagination
 

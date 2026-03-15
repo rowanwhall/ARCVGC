@@ -61,8 +61,14 @@ class ContentListViewModel @Inject constructor(
         if (mode is ContentListMode.Search) {
             _sortOrder.value = mode.params.orderBy
         }
-        if (mode is ContentListMode.Pokemon) {
-            _selectedFormatId.value = mode.formatId ?: appConfigRepository.config.value?.defaultFormat?.id ?: 1
+        when (mode) {
+            is ContentListMode.Pokemon -> {
+                _selectedFormatId.value = mode.formatId ?: appConfigRepository.config.value?.defaultFormat?.id ?: 1
+            }
+            is ContentListMode.Player -> {
+                _selectedFormatId.value = mode.formatId ?: appConfigRepository.config.value?.defaultFormat?.id ?: 1
+            }
+            else -> {}
         }
 
         if (mode is ContentListMode.Favorites && mode.contentType == FavoriteContentType.Pokemon) {
@@ -253,7 +259,10 @@ class ContentListViewModel @Inject constructor(
         ).map { (battles, pagination) ->
             val battleItems = ContentListItemMapper.fromBattles(battles)
             if (page == 1) {
-                val sections = if (battleItems.isEmpty()) emptyList() else listOf(ContentListItem.Section("Battles", battleItems))
+                val sections = buildList {
+                    add(ContentListItem.FormatSelector)
+                    add(ContentListItem.Section("Battles", battleItems))
+                }
                 sections to pagination
             } else {
                 battleItems to pagination
@@ -264,6 +273,7 @@ class ContentListViewModel @Inject constructor(
             val battlesDeferred = async {
                 repository.searchMatches(
                     filters = emptyList(),
+                    formatId = _selectedFormatId.value,
                     orderBy = _sortOrder.value,
                     page = page,
                     playerName = m.playerName
@@ -296,15 +306,15 @@ class ContentListViewModel @Inject constructor(
                         }
                     }
 
-                    if (battleItems.isNotEmpty()) {
-                        add(ContentListItem.Section("Battles", battleItems))
-                    }
+                    add(ContentListItem.FormatSelector)
+                    add(ContentListItem.Section("Battles", battleItems))
                 }
                 sections to pagination
             }
         } else {
             repository.searchMatches(
                 filters = emptyList(),
+                formatId = _selectedFormatId.value,
                 orderBy = _sortOrder.value,
                 page = page,
                 playerName = m.playerName

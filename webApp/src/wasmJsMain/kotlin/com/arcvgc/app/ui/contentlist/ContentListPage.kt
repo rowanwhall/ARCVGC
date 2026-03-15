@@ -91,7 +91,7 @@ private data class PokemonNavTarget(
     val formatId: Int? = null
 )
 
-private data class PlayerNavTarget(val id: Int, val name: String)
+private data class PlayerNavTarget(val id: Int, val name: String, val formatId: Int? = null)
 
 private const val PAGINATION_THRESHOLD = 5
 
@@ -109,8 +109,8 @@ fun ContentListPage(
             favoritesRepository = DependencyContainer.favoritesRepository,
             mode = mode,
             pokemonCatalogItems = DependencyContainer.pokemonCatalogRepository.state.value.items,
-            appConfigRepository = if (mode is ContentListMode.Home || mode is ContentListMode.Pokemon) DependencyContainer.appConfigRepository else null,
-            formatCatalogRepository = if (mode is ContentListMode.Pokemon) DependencyContainer.formatCatalogRepository else null
+            appConfigRepository = if (mode is ContentListMode.Home || mode is ContentListMode.Pokemon || mode is ContentListMode.Player) DependencyContainer.appConfigRepository else null,
+            formatCatalogRepository = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) DependencyContainer.formatCatalogRepository else null
         )
     }
 
@@ -144,7 +144,7 @@ fun ContentListPage(
     val currentPlayerNav = playerNavTarget
     if (currentPlayerNav != null) {
         ContentListPage(
-            mode = ContentListMode.Player(currentPlayerNav.id, currentPlayerNav.name),
+            mode = ContentListMode.Player(currentPlayerNav.id, currentPlayerNav.name, currentPlayerNav.formatId),
             onBack = { playerNavTarget = null },
             modifier = modifier
         )
@@ -198,10 +198,19 @@ fun ContentListPage(
                                 item.id, item.name, item.imageUrl,
                                 item.types.mapNotNull { it.imageUrl }
                             )
-                            is ContentListItem.Player -> playerNavTarget = PlayerNavTarget(item.id, item.name)
+                            is ContentListItem.Player -> {
+                                val derivedFormatId = when (mode) {
+                                    is ContentListMode.Search -> mode.params.formatId
+                                    is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                    is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                    else -> null
+                                }
+                                playerNavTarget = PlayerNavTarget(item.id, item.name, derivedFormatId)
+                            }
                             is ContentListItem.Section -> {}
                             is ContentListItem.HighlightButtons -> {}
                             is ContentListItem.PokemonGrid -> {}
+                            is ContentListItem.FormatSelector -> {}
                         }
                     },
                     onHighlightBattleClick = { battleId ->
@@ -224,9 +233,9 @@ fun ContentListPage(
                         is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
                         else -> null
                     },
-                    formats = formatCatalogState?.value?.items ?: emptyList(),
-                    selectedFormatId = if (mode is ContentListMode.Pokemon) selectedFormatId else 0,
-                    onFormatSelected = if (mode is ContentListMode.Pokemon) viewModel::selectFormat else null,
+                    formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) formatCatalogState?.value?.items ?: emptyList() else emptyList(),
+                    selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) selectedFormatId else 0,
+                    onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) viewModel::selectFormat else null,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -264,10 +273,19 @@ fun ContentListPage(
                                     item.id, item.name, item.imageUrl,
                                     item.types.mapNotNull { it.imageUrl }
                                 )
-                                is ContentListItem.Player -> playerNavTarget = PlayerNavTarget(item.id, item.name)
+                                is ContentListItem.Player -> {
+                                    val derivedFormatId = when (mode) {
+                                        is ContentListMode.Search -> mode.params.formatId
+                                        is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                        is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                        else -> null
+                                    }
+                                    playerNavTarget = PlayerNavTarget(item.id, item.name, derivedFormatId)
+                                }
                                 is ContentListItem.Section -> {}
                                 is ContentListItem.HighlightButtons -> {}
                                 is ContentListItem.PokemonGrid -> {}
+                                is ContentListItem.FormatSelector -> {}
                             }
                         },
                         onHighlightBattleClick = { battleId -> selectedBattleId = battleId },
@@ -305,8 +323,8 @@ fun ContentListPage(
                         onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
                             pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
                         },
-                        onPlayerClick = { id, name ->
-                            playerNavTarget = PlayerNavTarget(id, name)
+                        onPlayerClick = { id, name, formatId ->
+                            playerNavTarget = PlayerNavTarget(id, name, formatId)
                         },
                         modifier = Modifier.weight(0.6f).fillMaxHeight()
                     )
@@ -742,14 +760,6 @@ private fun ContentListContent(
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
-                        if (formats.isNotEmpty() && onFormatSelected != null) {
-                            FormatDropdown(
-                                formats = formats,
-                                selectedFormatId = selectedFormatId,
-                                onFormatSelected = onFormatSelected,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
                     }
                 }
             }
@@ -823,9 +833,30 @@ private fun ContentListContent(
                                     onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null
                                 )
                             }
+                            if (topItem.items.isEmpty() && !isLoadingSection) {
+                                item(key = "${topItem.listKey}_empty") {
+                                    EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
+                                }
+                            }
                             items(items = topItem.items, key = { it.listKey }) { child ->
                                 Box(modifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier) {
                                     ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                }
+                            }
+                        }
+                        is ContentListItem.FormatSelector -> {
+                            if (formats.isNotEmpty() && onFormatSelected != null) {
+                                item(key = topItem.listKey) {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        FormatDropdown(
+                                            formats = formats,
+                                            selectedFormatId = selectedFormatId,
+                                            onFormatSelected = onFormatSelected
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -987,6 +1018,7 @@ private fun ContentListItemRow(
             }
         }
         is ContentListItem.Section -> {}
+        is ContentListItem.FormatSelector -> {}
     }
 }
 
