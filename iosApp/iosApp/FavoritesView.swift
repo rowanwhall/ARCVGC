@@ -30,14 +30,16 @@ struct FavoritesView: View {
                         repository: container.battleRepository,
                         mode: .favorites(contentType: .pokemon),
                         favoritesStore: container.favoritesStore,
-                        settingsStore: container.settingsStore
+                        settingsStore: container.settingsStore,
+                        appConfigStore: container.appConfigStore
                     )
                 default:
                     ContentListView(
                         repository: container.battleRepository,
                         mode: .favorites(contentType: .players),
                         favoritesStore: container.favoritesStore,
-                        settingsStore: container.settingsStore
+                        settingsStore: container.settingsStore,
+                        appConfigStore: container.appConfigStore
                     )
                 }
             }

@@ -412,12 +412,21 @@ struct ContentListView: View {
             .cornerRadius(12)
             .onTapGesture {
                 let typeUrls = pokemonItem.types.compactMap { $0.imageUrl }
+                let derivedFormatId: Int32? = {
+                    switch mode {
+                    case .search(let params): return params.formatId
+                    case .pokemon: return viewModel.selectedFormatId
+                    case .player: return viewModel.selectedFormatId
+                    default: return nil
+                    }
+                }()
                 pokemonNavTarget = PokemonNavTarget(
                     id: pokemonItem.id,
                     name: pokemonItem.name,
                     imageUrl: pokemonItem.imageUrl,
                     typeImageUrl1: typeUrls.first,
-                    typeImageUrl2: typeUrls.count > 1 ? typeUrls[1] : nil
+                    typeImageUrl2: typeUrls.count > 1 ? typeUrls[1] : nil,
+                    formatId: derivedFormatId
                 )
             }
         case .player(let playerItem):
@@ -479,7 +488,8 @@ struct ContentListView: View {
                                     name: pokemon.name,
                                     imageUrl: pokemon.imageUrl,
                                     typeImageUrl1: nil,
-                                    typeImageUrl2: nil
+                                    typeImageUrl2: nil,
+                                    formatId: viewModel.selectedFormatId
                                 )
                             } label: {
                                 VStack(spacing: 0) {

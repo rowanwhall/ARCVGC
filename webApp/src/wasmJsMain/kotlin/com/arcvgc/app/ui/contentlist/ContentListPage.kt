@@ -194,10 +194,19 @@ fun ContentListPage(
                                     selectedBattleId = item.uiModel.id
                                 }
                             }
-                            is ContentListItem.Pokemon -> pokemonNavTarget = PokemonNavTarget(
-                                item.id, item.name, item.imageUrl,
-                                item.types.mapNotNull { it.imageUrl }
-                            )
+                            is ContentListItem.Pokemon -> {
+                                val derivedFormatId = when (mode) {
+                                    is ContentListMode.Search -> mode.params.formatId
+                                    is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                    is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                    else -> null
+                                }
+                                pokemonNavTarget = PokemonNavTarget(
+                                    item.id, item.name, item.imageUrl,
+                                    item.types.mapNotNull { it.imageUrl },
+                                    derivedFormatId
+                                )
+                            }
                             is ContentListItem.Player -> {
                                 val derivedFormatId = when (mode) {
                                     is ContentListMode.Search -> mode.params.formatId
@@ -221,7 +230,13 @@ fun ContentListPage(
                         }
                     },
                     onPokemonGridClick = { pokemon ->
-                        pokemonNavTarget = PokemonNavTarget(pokemon.id, pokemon.name, pokemon.imageUrl)
+                        val derivedFormatId = when (mode) {
+                            is ContentListMode.Search -> mode.params.formatId
+                            is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                            is ContentListMode.Player -> viewModel.selectedFormatId.value
+                            else -> null
+                        }
+                        pokemonNavTarget = PokemonNavTarget(pokemon.id, pokemon.name, pokemon.imageUrl, formatId = derivedFormatId)
                     },
                     searchParams = (mode as? ContentListMode.Search)?.params,
                     onSearchParamsChanged = onSearchParamsChanged,
@@ -269,10 +284,19 @@ fun ContentListPage(
                         onItemClick = { item ->
                             when (item) {
                                 is ContentListItem.Battle -> selectedBattleId = item.uiModel.id
-                                is ContentListItem.Pokemon -> pokemonNavTarget = PokemonNavTarget(
-                                    item.id, item.name, item.imageUrl,
-                                    item.types.mapNotNull { it.imageUrl }
-                                )
+                                is ContentListItem.Pokemon -> {
+                                    val derivedFormatId = when (mode) {
+                                        is ContentListMode.Search -> mode.params.formatId
+                                        is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                        is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                        else -> null
+                                    }
+                                    pokemonNavTarget = PokemonNavTarget(
+                                        item.id, item.name, item.imageUrl,
+                                        item.types.mapNotNull { it.imageUrl },
+                                        derivedFormatId
+                                    )
+                                }
                                 is ContentListItem.Player -> {
                                     val derivedFormatId = when (mode) {
                                         is ContentListMode.Search -> mode.params.formatId
@@ -290,7 +314,13 @@ fun ContentListPage(
                         },
                         onHighlightBattleClick = { battleId -> selectedBattleId = battleId },
                         onPokemonGridClick = { pokemon ->
-                            pokemonNavTarget = PokemonNavTarget(pokemon.id, pokemon.name, pokemon.imageUrl)
+                            val derivedFormatId = when (mode) {
+                                is ContentListMode.Search -> mode.params.formatId
+                                is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                else -> null
+                            }
+                            pokemonNavTarget = PokemonNavTarget(pokemon.id, pokemon.name, pokemon.imageUrl, formatId = derivedFormatId)
                         },
                         searchParams = (mode as? ContentListMode.Search)?.params,
                         onSearchParamsChanged = onSearchParamsChanged,
