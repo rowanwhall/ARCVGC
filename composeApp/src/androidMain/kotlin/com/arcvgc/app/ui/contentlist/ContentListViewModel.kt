@@ -253,7 +253,8 @@ class ContentListViewModel @Inject constructor(
         ).map { (battles, pagination) ->
             val battleItems = ContentListItemMapper.fromBattles(battles)
             if (page == 1) {
-                listOf(ContentListItem.Section("Battles", battleItems)) to pagination
+                val sections = if (battleItems.isEmpty()) emptyList() else listOf(ContentListItem.Section("Battles", battleItems))
+                sections to pagination
             } else {
                 battleItems to pagination
             }

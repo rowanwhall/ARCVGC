@@ -231,7 +231,8 @@ class ContentListViewModel(
             )
             val battleItems = ContentListItemMapper.fromBattles(result.battles)
             if (page == 1) {
-                listOf(ContentListItem.Section("Battles", battleItems)) to result.pagination
+                val sections = if (battleItems.isEmpty()) emptyList() else listOf(ContentListItem.Section("Battles", battleItems))
+                sections to result.pagination
             } else {
                 battleItems to result.pagination
             }

@@ -170,7 +170,8 @@ final class ContentListViewModel: ObservableObject {
             )
             let battleItems = ContentListItemMapper.shared.fromBattles(battles: result.battles) as! [ContentListItem]
             if page == 1 {
-                return (items: [ContentListItem.Section(header: "Battles", items: battleItems)], pagination: result.pagination)
+                let sections: [ContentListItem] = battleItems.isEmpty ? [] : [ContentListItem.Section(header: "Battles", items: battleItems)]
+                return (items: sections, pagination: result.pagination)
             }
             return (items: battleItems, pagination: result.pagination)
 

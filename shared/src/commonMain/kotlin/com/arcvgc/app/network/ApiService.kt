@@ -210,7 +210,7 @@ class ApiService {
                 .get("${ApiConstants.BASE_URL}${ApiConstants.MATCHES_ENDPOINT}$id")
                 .body()
 
-            if (response.success && response.data.isNotEmpty()) {
+            if (response.success && !response.data.isNullOrEmpty()) {
                 NetworkResult.Success(response.data.first().toDomain())
             } else {
                 NetworkResult.Error("Match not found")
