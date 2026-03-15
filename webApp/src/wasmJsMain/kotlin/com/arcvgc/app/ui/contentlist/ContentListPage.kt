@@ -302,9 +302,9 @@ fun ContentListPage(
                             is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
                             else -> null
                         },
-                        formats = formatCatalogState?.value?.items ?: emptyList(),
-                        selectedFormatId = if (mode is ContentListMode.Pokemon) selectedFormatId else 0,
-                        onFormatSelected = if (mode is ContentListMode.Pokemon) viewModel::selectFormat else null,
+                        formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) formatCatalogState?.value?.items ?: emptyList() else emptyList(),
+                        selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) selectedFormatId else 0,
+                        onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) viewModel::selectFormat else null,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
