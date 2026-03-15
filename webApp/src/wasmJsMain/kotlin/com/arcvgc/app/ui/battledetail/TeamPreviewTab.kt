@@ -33,6 +33,9 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
@@ -40,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +58,7 @@ import com.arcvgc.app.ui.model.BattleDetailUiModel
 import com.arcvgc.app.ui.model.PlayerDetailUiModel
 import kotlinx.browser.window
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val CARD_WIDTH = 280.dp
 
@@ -67,6 +72,11 @@ fun TeamPreviewTab(
 ) {
     val scrollState = rememberScrollState()
     val windowSizeClass = LocalWindowSizeClass.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val onTeamCopied: () -> Unit = {
+        scope.launch { snackbarHostState.showSnackbar("Team copied to clipboard") }
+    }
     Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         Column(
             modifier = Modifier
@@ -82,12 +92,16 @@ fun TeamPreviewTab(
                 Text("View Replay")
             }
 
-            PlayerTeamSection(player = battleDetail.player1, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
+            PlayerTeamSection(player = battleDetail.player1, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick, onTeamCopied = onTeamCopied)
 
             VsDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            PlayerTeamSection(player = battleDetail.player2, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
+            PlayerTeamSection(player = battleDetail.player2, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick, onTeamCopied = onTeamCopied)
         }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
         if (windowSizeClass == WindowSizeClass.Expanded) {
             ThemedVerticalScrollbar(
                 scrollState = scrollState,
@@ -105,7 +119,8 @@ private external fun copyToClipboard(text: String)
 private fun PlayerTeamHeader(
     player: PlayerDetailUiModel,
     modifier: Modifier = Modifier,
-    onPlayerClick: ((Int, String) -> Unit)? = null
+    onPlayerClick: ((Int, String) -> Unit)? = null,
+    onTeamCopied: (() -> Unit)? = null
 ) {
     var showCopied by remember { mutableStateOf(false) }
 
@@ -148,6 +163,7 @@ private fun PlayerTeamHeader(
                 val text = ShowdownPasteFormatter.format(player.team)
                 copyToClipboard(text)
                 showCopied = true
+                onTeamCopied?.invoke()
             },
             modifier = Modifier.size(36.dp)
         ) {
@@ -169,7 +185,8 @@ private fun PlayerTeamSection(
     modifier: Modifier = Modifier,
     showWinnerHighlight: Boolean = true,
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
-    onPlayerClick: ((Int, String) -> Unit)? = null
+    onPlayerClick: ((Int, String) -> Unit)? = null,
+    onTeamCopied: (() -> Unit)? = null
 ) {
     val windowSizeClass = LocalWindowSizeClass.current
     val isCompact = windowSizeClass == WindowSizeClass.Compact
@@ -194,7 +211,8 @@ private fun PlayerTeamSection(
             PlayerTeamHeader(
                 player = player,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                onPlayerClick = onPlayerClick
+                onPlayerClick = onPlayerClick,
+                onTeamCopied = onTeamCopied
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -231,7 +249,8 @@ private fun PlayerTeamSection(
             PlayerTeamHeader(
                 player = player,
                 modifier = Modifier.padding(bottom = 8.dp),
-                onPlayerClick = onPlayerClick
+                onPlayerClick = onPlayerClick,
+                onTeamCopied = onTeamCopied
             )
 
             FlowRow(

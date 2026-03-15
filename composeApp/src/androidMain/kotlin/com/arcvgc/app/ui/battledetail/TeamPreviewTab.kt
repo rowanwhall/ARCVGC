@@ -37,6 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -95,6 +97,7 @@ private fun PlayerTeamSection(
     }
 
     val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
     var showCopied by remember { mutableStateOf(false) }
 
     LaunchedEffect(showCopied) {
@@ -144,6 +147,7 @@ private fun PlayerTeamSection(
                     val text = ShowdownPasteFormatter.format(player.team)
                     clipboardManager.setText(AnnotatedString(text))
                     showCopied = true
+                    Toast.makeText(context, "Team copied to clipboard", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.size(36.dp)
             ) {

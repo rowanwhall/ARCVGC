@@ -163,9 +163,13 @@ struct PlayerTeamDetailSection: View {
                 Button {
                     let text = ShowdownPasteFormatter.shared.format(team: player.team)
                     UIPasteboard.general.string = text
-                    showCopied = true
+                    withAnimation {
+                        showCopied = true
+                    }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        showCopied = false
+                        withAnimation {
+                            showCopied = false
+                        }
                     }
                 } label: {
                     Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
@@ -195,6 +199,19 @@ struct PlayerTeamDetailSection: View {
                 ? RoundedRectangle(cornerRadius: 0).stroke(themeColor, lineWidth: 2)
                 : nil
         )
+        .overlay(alignment: .bottom) {
+            if showCopied {
+                Text("Team copied to clipboard")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color(.label).opacity(0.8))
+                    .cornerRadius(20)
+                    .padding(.bottom, 8)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
     }
 }
 

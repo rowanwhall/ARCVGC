@@ -32,8 +32,10 @@ fun TypeDto.toDomain(): PokemonType {
     return PokemonType(id = id, name = name, imageUrl = normalizeImageUrl(imageUrl))
 }
 
-fun TeraTypeDto.toDomain(): TeraType {
-    return TeraType(id = id, name = name, imageUrl = normalizeImageUrl(imageUrl))
+fun TeraTypeDto.toDomain(): TeraType? {
+    val teraId = id ?: return null
+    val teraName = name ?: return null
+    return TeraType(id = teraId, name = teraName, imageUrl = normalizeImageUrl(imageUrl))
 }
 
 fun BaseSpeciesDto.toDomain(): BaseSpecies {

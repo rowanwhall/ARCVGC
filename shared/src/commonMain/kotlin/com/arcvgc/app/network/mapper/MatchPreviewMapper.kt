@@ -21,8 +21,10 @@ fun NetworkItemDto.toDomain(): DomainItem? {
     return DomainItem(id = id, name = name, imageUrl = normalizeImageUrl(imageUrl))
 }
 
-fun TeraTypeDto.toTeraType(): TeraType {
-    return TeraType(id = id, name = name, imageUrl = normalizeImageUrl(imageUrl))
+fun TeraTypeDto.toTeraType(): TeraType? {
+    val teraId = id ?: return null
+    val teraName = name ?: return null
+    return TeraType(id = teraId, name = teraName, imageUrl = normalizeImageUrl(imageUrl))
 }
 
 fun PokemonPreviewDto.toDomain(): PokemonPreview {

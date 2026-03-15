@@ -133,7 +133,7 @@ class ApiService {
 
             if (response.success) {
                 NetworkResult.Success(
-                    response.data.map { it.toDomain() } to response.pagination.toDomain()
+                    response.data.mapNotNull { it.toDomain() } to response.pagination.toDomain()
                 )
             } else {
                 NetworkResult.Error("API returned success=false")
