@@ -178,8 +178,8 @@ struct ContentListView: View {
                             if imageUrl != nil {
                                 PokemonAvatar(
                                     imageUrl: imageUrl,
-                                    circleSize: 176,
-                                    spriteSize: 252
+                                    circleSize: 158,
+                                    spriteSize: 227
                                 )
                             }
                             Text(name)
@@ -188,7 +188,7 @@ struct ContentListView: View {
                             if !typeImageUrls.isEmpty {
                                 TypeIconRow(
                                     types: typeImageUrls.map { (name: "Type", imageUrl: $0 as String?) },
-                                    iconSize: 28
+                                    iconSize: 24
                                 )
                                 .padding(.top, 4)
                             }

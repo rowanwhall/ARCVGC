@@ -712,19 +712,19 @@ private fun ContentListContent(
                             PokemonAvatar(
                                 imageUrl = h.imageUrl,
                                 contentDescription = h.name,
-                                circleSize = 176.dp,
-                                spriteSize = 252.dp
+                                circleSize = 158.dp,
+                                spriteSize = 227.dp
                             )
                             Text(
                                 text = h.name,
-                                style = MaterialTheme.typography.headlineLarge,
+                                style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             if (h.typeImageUrls.isNotEmpty()) {
                                 TypeIconRow(
                                     types = h.typeImageUrls.map { TypeInfo("Type", it) },
-                                    iconSize = 28.dp,
+                                    iconSize = 24.dp,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }

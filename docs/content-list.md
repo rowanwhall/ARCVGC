@@ -26,7 +26,7 @@ Sealed class with six variants controlling what renders above the list:
 - **`HomeHero`** — "ARC" title + "Today's Top Battles" subtitle
 - **`FavoritesHero`** — heart icon + "Favorites" subtitle
 - **`SearchFilters`** — flow row of removable filter chips (Pokemon with items/tera, format, rating range, unrated, player name, date range). Each chip type has `canRemove*()` / `remove*()` methods on `SearchParams` controlling removability.
-- **`PokemonHero`** — large Pokemon avatar (176dp circle / 252dp sprite) + name + type icons
+- **`PokemonHero`** — large Pokemon avatar (158dp circle / 227dp sprite) + name (headlineMedium/20pt) + type icons (24dp)
 - **`PlayerHero`** — player name in rounded pill background
 
 ### ContentListItem
