@@ -29,13 +29,23 @@
 - Key files: `ViewModelStore.kt` (store + composable helpers), all web ViewModels use `rememberViewModel()` instead of bare `remember()`
 
 ### Web mobile navigation stack (`MobileLayout`)
-- Uses a `List<MobileNavEntry>` stack instead of flat overlay variables
+- `navStack: List<MobileNavEntry>` is owned by `WebApp()` and passed to `MobileLayout` as a parameter
 - `MobileNavEntry` sealed class: `BattleDetail(request)`, `Pokemon(id, name, ...)`, `Player(id, name, ...)`
 - Supports arbitrary-depth drill-down: `battle → pokemon → battle → player → battle → ...`
 - Each stack entry renders full-screen; "back" pops the top entry
 - Each `Pokemon`/`Player` entry provides its own `LocalBattleOverlay` that pushes a new `BattleDetail` entry
 - Tab switching clears the entire stack
 - Combined with `ViewModelStore`, navigating back preserves loaded data (no re-fetch)
+
+### Web browser History API integration (`BrowserHistory.kt`)
+- `@JsFun` wrappers for `history.pushState()` and `history.go()` in `BrowserHistory.kt`
+- Browser back button pops one navigation level: `navStack` entries first (mobile), then `searchOverlayParams`
+- `WebApp()` tracks `historyDepth` (entries pushed) and `popStatesToIgnore` (skips popstate events from programmatic `historyGo` calls)
+- History entries are pushed imperatively at each navigation site (not reactively via `LaunchedEffect`)
+- Navigation callbacks (`handleSearch`, `handlePushEntry`, etc.) manage both app state and browser history together
+- State variables use explicit `MutableState` objects so the `DisposableEffect` popstate listener reads current values
+- Tab switching calls `historyGo(-historyDepth)` to clear all stale history entries
+- **Not integrated (v1):** tab switching, desktop Pokemon/Player drill-down (recursive composition state inside `ContentListPage`), desktop battle detail selection (inline pane)
 
 ## Per-instance Pokemon/Player navigation (all platforms)
 Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` and `playerNavTarget` state locally. When a Pokemon or Player is tapped in a detail sheet or list:

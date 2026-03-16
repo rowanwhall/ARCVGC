@@ -32,6 +32,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,8 +59,12 @@ import com.arcvgc.app.ui.LocalBattleOverlay
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.ProvideViewModelStore
 import com.arcvgc.app.ui.WindowSizeClass
+import com.arcvgc.app.ui.historyGo
+import com.arcvgc.app.ui.pushHistoryState
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.contentlist.ContentListPage
+import kotlinx.browser.window
+import org.w3c.dom.events.Event
 import com.arcvgc.app.ui.favorites.FavoritesPage
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.ContentListMode
@@ -226,8 +231,79 @@ fun WebApp() {
 
     MaterialTheme(colorScheme = colorSchemeForTheme(themeId, isDark)) {
         var selectedTab by remember { mutableIntStateOf(0) }
-        var searchOverlayParams by remember { mutableStateOf<SearchParams?>(null) }
+        val searchOverlayState = remember { mutableStateOf<SearchParams?>(null) }
+        var searchOverlayParams by searchOverlayState
+        val navStackState = remember { mutableStateOf(listOf<MobileNavEntry>()) }
+        var navStack by navStackState
+        val historyDepthState = remember { mutableIntStateOf(0) }
+        var historyDepth by historyDepthState
+        val popStatesToIgnoreState = remember { mutableIntStateOf(0) }
+        var popStatesToIgnore by popStatesToIgnoreState
         val tabs = Tab.entries
+
+        // Browser back button handler
+        DisposableEffect(Unit) {
+            val listener: (Event) -> Unit = {
+                if (popStatesToIgnoreState.intValue > 0) {
+                    popStatesToIgnoreState.intValue--
+                } else {
+                    if (navStackState.value.isNotEmpty()) {
+                        navStackState.value = navStackState.value.dropLast(1)
+                    } else if (searchOverlayState.value != null) {
+                        searchOverlayState.value = null
+                    }
+                    historyDepthState.intValue = maxOf(0, historyDepthState.intValue - 1)
+                }
+            }
+            window.addEventListener("popstate", listener)
+            onDispose { window.removeEventListener("popstate", listener) }
+        }
+
+        val handleSearch: (SearchParams) -> Unit = { params ->
+            val isNewSearch = searchOverlayParams == null
+            searchOverlayParams = params
+            if (isNewSearch) {
+                pushHistoryState()
+                historyDepth++
+            }
+        }
+
+        val handleSearchBack: () -> Unit = {
+            val entriesToRemove = navStack.size + 1
+            searchOverlayParams = null
+            navStack = emptyList()
+            if (historyDepth > 0) {
+                popStatesToIgnore++
+                historyGo(-entriesToRemove)
+                historyDepth = maxOf(0, historyDepth - entriesToRemove)
+            }
+        }
+
+        val handlePushEntry: (MobileNavEntry) -> Unit = { entry ->
+            navStack = navStack + entry
+            pushHistoryState()
+            historyDepth++
+        }
+
+        val handlePopEntry: () -> Unit = {
+            navStack = navStack.dropLast(1)
+            if (historyDepth > 0) {
+                popStatesToIgnore++
+                historyGo(-1)
+                historyDepth--
+            }
+        }
+
+        val handleTabSelected: (Int) -> Unit = { index ->
+            if (historyDepth > 0) {
+                popStatesToIgnore++
+                historyGo(-historyDepth)
+                historyDepth = 0
+            }
+            selectedTab = index
+            searchOverlayParams = null
+            navStack = emptyList()
+        }
 
         Surface(modifier = Modifier.fillMaxSize()) {
             ProvideViewModelStore {
@@ -243,25 +319,33 @@ fun WebApp() {
                             MobileLayout(
                                 tabs = tabs,
                                 selectedTab = selectedTab,
-                                onTabSelected = { index ->
-                                    selectedTab = index
-                                    searchOverlayParams = null
-                                },
+                                onTabSelected = handleTabSelected,
                                 searchOverlayParams = searchOverlayParams,
-                                onSearch = { searchOverlayParams = it },
-                                onSearchBack = { searchOverlayParams = null }
+                                onSearch = handleSearch,
+                                onSearchBack = handleSearchBack,
+                                navStack = navStack,
+                                onPushEntry = handlePushEntry,
+                                onPopEntry = handlePopEntry,
+                                onClearNavStack = {
+                                    if (navStack.isNotEmpty()) {
+                                        val entriesToRemove = navStack.size
+                                        navStack = emptyList()
+                                        if (entriesToRemove > 0) {
+                                            popStatesToIgnore++
+                                            historyGo(-entriesToRemove)
+                                            historyDepth = maxOf(0, historyDepth - entriesToRemove)
+                                        }
+                                    }
+                                }
                             )
                         } else {
                             DesktopLayout(
                                 tabs = tabs,
                                 selectedTab = selectedTab,
-                                onTabSelected = { index ->
-                                    selectedTab = index
-                                    searchOverlayParams = null
-                                },
+                                onTabSelected = handleTabSelected,
                                 searchOverlayParams = searchOverlayParams,
-                                onSearch = { searchOverlayParams = it },
-                                onSearchBack = { searchOverlayParams = null }
+                                onSearch = handleSearch,
+                                onSearchBack = handleSearchBack
                             )
                         }
                     }
@@ -351,25 +435,22 @@ private fun MobileLayout(
     onTabSelected: (Int) -> Unit,
     searchOverlayParams: SearchParams?,
     onSearch: (SearchParams) -> Unit,
-    onSearchBack: () -> Unit
+    onSearchBack: () -> Unit,
+    navStack: List<MobileNavEntry>,
+    onPushEntry: (MobileNavEntry) -> Unit,
+    onPopEntry: () -> Unit,
+    onClearNavStack: () -> Unit
 ) {
-    var navStack by remember { mutableStateOf(listOf<MobileNavEntry>()) }
-
     val favoriteBattleIds by DependencyContainer.favoritesRepository.favoriteBattleIds.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
-
-    fun pushEntry(entry: MobileNavEntry) {
-        navStack = navStack + entry
-    }
-
-    fun popEntry() {
-        navStack = navStack.dropLast(1)
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         CompositionLocalProvider(
             LocalBattleOverlay provides { request ->
-                if (request != null) navStack = listOf(MobileNavEntry.BattleDetail(request))
+                if (request != null) {
+                    onClearNavStack()
+                    onPushEntry(MobileNavEntry.BattleDetail(request))
+                }
             }
         ) {
             Scaffold(
@@ -384,10 +465,7 @@ private fun MobileLayout(
                             }
                             NavigationBarItem(
                                 selected = isSelected,
-                                onClick = {
-                                    onTabSelected(index)
-                                    navStack = emptyList()
-                                },
+                                onClick = { onTabSelected(index) },
                                 icon = { Icon(tab.icon, contentDescription = tab.label, tint = tint) },
                                 label = { Text(tab.label, color = tint) },
                                 colors = NavigationBarItemDefaults.colors(
@@ -420,15 +498,15 @@ private fun MobileLayout(
         if (searchOverlayParams != null) {
             CompositionLocalProvider(
                 LocalBattleOverlay provides { request ->
-                    if (request != null) navStack = listOf(MobileNavEntry.BattleDetail(request))
+                    if (request != null) {
+                        onClearNavStack()
+                        onPushEntry(MobileNavEntry.BattleDetail(request))
+                    }
                 }
             ) {
                 ContentListPage(
                     mode = ContentListMode.Search(searchOverlayParams),
-                    onBack = {
-                        onSearchBack()
-                        navStack = emptyList()
-                    },
+                    onBack = { onSearchBack() },
                     onSearchParamsChanged = onSearch,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -447,15 +525,15 @@ private fun MobileLayout(
                         onToggleFavorite = {
                             DependencyContainer.favoritesRepository.toggleBattleFavorite(request.battleId)
                         },
-                        onClose = { popEntry() },
+                        onClose = { onPopEntry() },
                         player1IsWinner = request.player1IsWinner,
                         player2IsWinner = request.player2IsWinner,
                         showWinnerHighlight = showWinnerHighlight,
                         onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                            pushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
+                            onPushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
                         },
                         onPlayerClick = { id, name, formatId ->
-                            pushEntry(MobileNavEntry.Player(id, name, formatId))
+                            onPushEntry(MobileNavEntry.Player(id, name, formatId))
                         },
                         modifier = Modifier
                             .fillMaxSize()
@@ -465,7 +543,7 @@ private fun MobileLayout(
                 is MobileNavEntry.Pokemon -> {
                     CompositionLocalProvider(
                         LocalBattleOverlay provides { request ->
-                            if (request != null) pushEntry(MobileNavEntry.BattleDetail(request))
+                            if (request != null) onPushEntry(MobileNavEntry.BattleDetail(request))
                         }
                     ) {
                         ContentListPage(
@@ -475,7 +553,7 @@ private fun MobileLayout(
                                 entry.typeImageUrls.getOrNull(1),
                                 entry.formatId
                             ),
-                            onBack = { popEntry() },
+                            onBack = { onPopEntry() },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -483,12 +561,12 @@ private fun MobileLayout(
                 is MobileNavEntry.Player -> {
                     CompositionLocalProvider(
                         LocalBattleOverlay provides { request ->
-                            if (request != null) pushEntry(MobileNavEntry.BattleDetail(request))
+                            if (request != null) onPushEntry(MobileNavEntry.BattleDetail(request))
                         }
                     ) {
                         ContentListPage(
                             mode = ContentListMode.Player(entry.id, entry.name, entry.formatId),
-                            onBack = { popEntry() },
+                            onBack = { onPopEntry() },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
