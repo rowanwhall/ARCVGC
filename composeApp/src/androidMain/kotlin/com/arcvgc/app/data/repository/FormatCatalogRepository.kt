@@ -18,10 +18,13 @@ interface FormatCatalogRepository {
 @Singleton
 class FormatCatalogRepositoryImpl @Inject constructor(
     apiService: ApiService,
+    appConfigRepository: AppConfigRepository,
     @ApplicationContext context: Context
 ) : FormatCatalogRepository {
     private val shared = com.arcvgc.app.data.FormatCatalogRepository(
-        apiService, CatalogCacheStorage(context)
+        apiService = apiService,
+        cacheStorage = CatalogCacheStorage(context),
+        defaultFormatIdProvider = { appConfigRepository.config.value?.defaultFormat?.id }
     )
     override val state: StateFlow<CatalogState<FormatUiModel>> = shared.state
     override fun reload() = shared.reload()

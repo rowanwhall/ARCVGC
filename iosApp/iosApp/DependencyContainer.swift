@@ -15,8 +15,13 @@ final class DependencyContainer: ObservableObject {
         self.battleRepository = BattleRepository(apiService: apiService)
         self.favoritesStore = FavoritesStore()
         let cacheStorage = CatalogCacheStorage()
-        self.catalogStore = CatalogStore(apiService: apiService, cacheStorage: cacheStorage)
-        self.settingsStore = SettingsStore(favoritesRepository: favoritesStore.repo)
         self.appConfigStore = AppConfigStore(apiService: apiService, cacheStorage: cacheStorage)
+        let configStore = self.appConfigStore
+        self.catalogStore = CatalogStore(
+            apiService: apiService,
+            cacheStorage: cacheStorage,
+            defaultFormatIdProvider: { configStore.defaultFormatId }
+        )
+        self.settingsStore = SettingsStore(favoritesRepository: favoritesStore.repo)
     }
 }

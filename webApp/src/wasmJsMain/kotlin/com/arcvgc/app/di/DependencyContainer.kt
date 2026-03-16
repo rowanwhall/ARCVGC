@@ -22,7 +22,9 @@ object DependencyContainer {
     val pokemonCatalogRepository: PokemonCatalogRepository by lazy { PokemonCatalogRepository(apiService, cacheStorage) }
     val itemCatalogRepository: ItemCatalogRepository by lazy { ItemCatalogRepository(apiService, cacheStorage) }
     val teraTypeCatalogRepository: TeraTypeCatalogRepository by lazy { TeraTypeCatalogRepository(apiService, cacheStorage) }
-    val formatCatalogRepository: FormatCatalogRepository by lazy { FormatCatalogRepository(apiService, cacheStorage) }
-    val settingsRepository: SettingsRepository by lazy { SettingsRepository(SettingsStorage(), cacheStorage, favoritesRepository) }
     val appConfigRepository: AppConfigRepository by lazy { AppConfigRepository(apiService, AppConfigStorage(), cacheStorage) }
+    val formatCatalogRepository: FormatCatalogRepository by lazy {
+        FormatCatalogRepository(apiService, cacheStorage) { appConfigRepository.getDefaultFormatId() }
+    }
+    val settingsRepository: SettingsRepository by lazy { SettingsRepository(SettingsStorage(), cacheStorage, favoritesRepository) }
 }
