@@ -536,6 +536,16 @@ private struct SearchFilterChipsView: View {
 
     var body: some View {
         WrappingHStack(horizontalSpacing: 4, verticalSpacing: 4) {
+            if let formatName = filters.formatName {
+                Text(formatName)
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(.label))
+                    .padding(.horizontal, 6)
+                    .frame(height: filterChipHeight)
+                    .background(Color(.systemGray5))
+                    .cornerRadius(4)
+            }
+
             ForEach(Array(filters.pokemonChips.enumerated()), id: \.offset) { _, chip in
                 let label = {
                     var text = chip.name
@@ -584,16 +594,6 @@ private struct SearchFilterChipsView: View {
                 .frame(height: filterChipHeight)
                 .background(Color(.systemGray5))
                 .cornerRadius(4)
-            }
-
-            if let formatName = filters.formatName {
-                Text(formatName)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(.label))
-                    .padding(.horizontal, 6)
-                    .frame(height: filterChipHeight)
-                    .background(Color(.systemGray5))
-                    .cornerRadius(4)
             }
 
             if let rating = filters.minimumRating {

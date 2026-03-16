@@ -90,28 +90,7 @@ fun SearchPage(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        itemsIndexed(
-            items = uiState.filterSlots,
-            key = { index, slot -> "${slot.pokemonId}_$index" }
-        ) { index, slot ->
-            SearchFilterCard(
-                slot = slot,
-                onRemove = { viewModel.removePokemon(index) },
-                onItemClick = { itemPickerSlotIndex = index },
-                onTeraClick = { teraPickerSlotIndex = index }
-            )
-        }
-
-        if (uiState.canAddMore) {
-            item {
-                SearchOptionButton(
-                    text = "Add Pokémon Filter",
-                    onClick = { showPokemonPicker = true }
-                )
-            }
-        }
-
-        // Format button
+        // Format button (first — sets context for all other filters)
         item {
             when {
                 formatCatalog.isLoading -> {
@@ -138,6 +117,27 @@ fun SearchPage(
                         onClick = { showFormatPicker = true }
                     )
                 }
+            }
+        }
+
+        itemsIndexed(
+            items = uiState.filterSlots,
+            key = { index, slot -> "${slot.pokemonId}_$index" }
+        ) { index, slot ->
+            SearchFilterCard(
+                slot = slot,
+                onRemove = { viewModel.removePokemon(index) },
+                onItemClick = { itemPickerSlotIndex = index },
+                onTeraClick = { teraPickerSlotIndex = index }
+            )
+        }
+
+        if (uiState.canAddMore) {
+            item {
+                SearchOptionButton(
+                    text = "Add Pokémon Filter",
+                    onClick = { showPokemonPicker = true }
+                )
             }
         }
 

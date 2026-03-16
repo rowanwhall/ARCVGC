@@ -50,6 +50,19 @@ struct SearchView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 12) {
+                    // Format button (first — sets context for all other filters)
+                    if catalogStore.formatLoading {
+                        SearchOptionButton(text: "") {}
+                            .overlay { ProgressView() }
+                            .disabled(true)
+                    } else if catalogStore.formatError == nil {
+                        let displayName = viewModel.state.selectedFormat?.displayName
+                            ?? catalogStore.formatItems.first?.displayName
+                        SearchOptionButton(text: "Format: \(displayName ?? "Select")") {
+                            activeSheet = .format
+                        }
+                    }
+
                     ForEach(Array(viewModel.state.filterSlots.enumerated()), id: \.offset) { index, slot in
                         SearchFilterCard(
                             slot: slot,
@@ -62,19 +75,6 @@ struct SearchView: View {
                     if viewModel.state.canAddMore {
                         SearchOptionButton(text: "Add Pokémon Filter") {
                             activeSheet = .pokemon
-                        }
-                    }
-
-                    // Format button
-                    if catalogStore.formatLoading {
-                        SearchOptionButton(text: "") {}
-                            .overlay { ProgressView() }
-                            .disabled(true)
-                    } else if catalogStore.formatError == nil {
-                        let displayName = viewModel.state.selectedFormat?.displayName
-                            ?? catalogStore.formatItems.first?.displayName
-                        SearchOptionButton(text: "Format: \(displayName ?? "Select")") {
-                            activeSheet = .format
                         }
                     }
 

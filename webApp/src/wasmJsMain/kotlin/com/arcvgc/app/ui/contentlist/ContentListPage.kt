@@ -439,6 +439,24 @@ private fun SearchFilterChips(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
+        filters.formatName?.let { name ->
+            Box(
+                modifier = Modifier
+                    .height(FilterChipHeight)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = name,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+            }
+        }
         filters.pokemonChips.forEach { chip ->
             val label = buildString {
                 append(chip.name)
@@ -488,24 +506,6 @@ private fun SearchFilterChips(
                         onSearchParamsChanged(searchParams.removePokemonAt(chip.index))
                     }
                 }
-            }
-        }
-        filters.formatName?.let { name ->
-            Box(
-                modifier = Modifier
-                    .height(FilterChipHeight)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = name,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp
-                )
             }
         }
         filters.minimumRating?.let { rating ->
