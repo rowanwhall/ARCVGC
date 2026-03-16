@@ -2,23 +2,23 @@ package com.arcvgc.app.data
 
 import platform.Foundation.NSUserDefaults
 
-actual class SettingsStorage {
+actual class SettingsStorage : SettingsStorageApi {
 
     private val defaults = NSUserDefaults.standardUserDefaults
 
-    actual fun getBoolean(key: String, defaultValue: Boolean): Boolean {
+    actual override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
         return if (defaults.objectForKey(key) != null) defaults.boolForKey(key) else defaultValue
     }
 
-    actual fun putBoolean(key: String, value: Boolean) {
+    actual override fun putBoolean(key: String, value: Boolean) {
         defaults.setBool(value, forKey = key)
     }
 
-    actual fun getInt(key: String, defaultValue: Int): Int {
+    actual override fun getInt(key: String, defaultValue: Int): Int {
         return if (defaults.objectForKey(key) != null) defaults.integerForKey(key).toInt() else defaultValue
     }
 
-    actual fun putInt(key: String, value: Int) {
+    actual override fun putInt(key: String, value: Int) {
         defaults.setInteger(value.toLong(), forKey = key)
     }
 }

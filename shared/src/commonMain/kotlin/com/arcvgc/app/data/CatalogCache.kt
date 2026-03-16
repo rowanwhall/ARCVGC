@@ -12,7 +12,7 @@ object CatalogCache {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun <T> load(
-        storage: CatalogCacheStorage,
+        storage: CatalogCacheStorageApi,
         key: String,
         ttlMillis: Long,
         serializer: KSerializer<T>
@@ -34,7 +34,7 @@ object CatalogCache {
     }
 
     fun <T> save(
-        storage: CatalogCacheStorage,
+        storage: CatalogCacheStorageApi,
         key: String,
         items: List<T>,
         serializer: KSerializer<T>
@@ -48,7 +48,7 @@ object CatalogCache {
         }
     }
 
-    fun clearAll(storage: CatalogCacheStorage) {
+    fun clearAll(storage: CatalogCacheStorageApi) {
         listOf("pokemon_catalog", "item_catalog", "tera_type_catalog", "format_catalog").forEach { key ->
             storage.putString(key, "")
             storage.putLong("${key}_timestamp", 0L)

@@ -8,26 +8,26 @@ private external fun configGetItem(key: String): String
 @JsFun("(key, value) => { window.localStorage.setItem(key, value); }")
 private external fun configSetItem(key: String, value: String)
 
-actual class AppConfigStorage {
+actual class AppConfigStorage : AppConfigStorageApi {
 
     private val prefix = "app_config_"
 
-    actual fun getString(key: String, defaultValue: String): String {
+    actual override fun getString(key: String, defaultValue: String): String {
         val raw = configGetItem(prefix + key)
         return if (raw.isBlank()) defaultValue else raw
     }
 
-    actual fun putString(key: String, value: String) {
+    actual override fun putString(key: String, value: String) {
         configSetItem(prefix + key, value)
     }
 
-    actual fun getInt(key: String, defaultValue: Int): Int {
+    actual override fun getInt(key: String, defaultValue: Int): Int {
         val raw = configGetItem(prefix + key)
         if (raw.isBlank()) return defaultValue
         return raw.toIntOrNull() ?: defaultValue
     }
 
-    actual fun putInt(key: String, value: Int) {
+    actual override fun putInt(key: String, value: Int) {
         configSetItem(prefix + key, value.toString())
     }
 }

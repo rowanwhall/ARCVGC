@@ -2,23 +2,23 @@ package com.arcvgc.app.data
 
 import android.content.Context
 
-actual class AppConfigStorage(context: Context) {
+actual class AppConfigStorage(context: Context) : AppConfigStorageApi {
 
     private val prefs = context.getSharedPreferences("app_config", Context.MODE_PRIVATE)
 
-    actual fun getString(key: String, defaultValue: String): String {
+    actual override fun getString(key: String, defaultValue: String): String {
         return prefs.getString(key, defaultValue) ?: defaultValue
     }
 
-    actual fun putString(key: String, value: String) {
+    actual override fun putString(key: String, value: String) {
         prefs.edit().putString(key, value).apply()
     }
 
-    actual fun getInt(key: String, defaultValue: Int): Int {
+    actual override fun getInt(key: String, defaultValue: Int): Int {
         return if (prefs.contains(key)) prefs.getInt(key, defaultValue) else defaultValue
     }
 
-    actual fun putInt(key: String, value: Int) {
+    actual override fun putInt(key: String, value: Int) {
         prefs.edit().putInt(key, value).apply()
     }
 }

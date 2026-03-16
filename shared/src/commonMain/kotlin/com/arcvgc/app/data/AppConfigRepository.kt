@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
 
 class AppConfigRepository(
     private val apiService: ApiService,
-    private val storage: AppConfigStorage,
-    private val catalogCacheStorage: CatalogCacheStorage
+    private val storage: AppConfigStorageApi,
+    private val catalogCacheStorage: CatalogCacheStorageApi
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

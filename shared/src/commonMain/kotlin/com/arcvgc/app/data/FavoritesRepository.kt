@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class FavoritesRepository(private val storage: FavoritesStorage) {
+class FavoritesRepository(private val storage: FavoritesStorageApi) {
 
     private val _favoritePokemonIds = MutableStateFlow(storage.loadIds(KEY_POKEMON))
     val favoritePokemonIds: StateFlow<Set<Int>> = _favoritePokemonIds.asStateFlow()

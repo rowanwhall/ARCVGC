@@ -2,20 +2,20 @@ package com.arcvgc.app.data
 
 import platform.Foundation.NSUserDefaults
 
-actual class AppConfigStorage {
+actual class AppConfigStorage : AppConfigStorageApi {
 
     private val defaults = NSUserDefaults.standardUserDefaults
     private val prefix = "app_config_"
 
-    actual fun getString(key: String, defaultValue: String): String {
+    actual override fun getString(key: String, defaultValue: String): String {
         return (defaults.objectForKey(prefix + key) as? String) ?: defaultValue
     }
 
-    actual fun putString(key: String, value: String) {
+    actual override fun putString(key: String, value: String) {
         defaults.setObject(value, forKey = prefix + key)
     }
 
-    actual fun getInt(key: String, defaultValue: Int): Int {
+    actual override fun getInt(key: String, defaultValue: Int): Int {
         return if (defaults.objectForKey(prefix + key) != null) {
             defaults.integerForKey(prefix + key).toInt()
         } else {
@@ -23,7 +23,7 @@ actual class AppConfigStorage {
         }
     }
 
-    actual fun putInt(key: String, value: Int) {
+    actual override fun putInt(key: String, value: Int) {
         defaults.setInteger(value.toLong(), forKey = prefix + key)
     }
 }

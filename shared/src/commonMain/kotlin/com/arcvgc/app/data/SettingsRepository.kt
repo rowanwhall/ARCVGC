@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class SettingsRepository(
-    private val storage: SettingsStorage,
-    private val cacheStorage: CatalogCacheStorage? = null,
+    private val storage: SettingsStorageApi,
+    private val cacheStorage: CatalogCacheStorageApi? = null,
     private val favoritesRepository: FavoritesRepository? = null
 ) {
 

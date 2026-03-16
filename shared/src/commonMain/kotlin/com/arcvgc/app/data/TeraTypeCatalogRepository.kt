@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 class TeraTypeCatalogRepository(
     private val apiService: ApiService,
-    private val cacheStorage: CatalogCacheStorage
+    private val cacheStorage: CatalogCacheStorageApi
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val _state = MutableStateFlow(CatalogState<TeraTypeUiModel>(isLoading = true))
