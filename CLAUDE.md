@@ -36,7 +36,7 @@ Network DTOs  →  Domain Models  →  UI Models  →  Screen
 
 - **Network layer** (`shared/.../network/`): `ApiService` with Ktor, DTO models, `ApiConstants` for base URL/endpoints, `CatalogLoader` (generic pagination), `SearchRequestMapper` (search request building)
 - **Domain layer** (`shared/.../domain/model/`): Pure Kotlin data classes — `MatchPreview`, `MatchDetail`, `PlayerDetail`, `PokemonListItem`, `SearchFilterSlot`, `AppConfig`, `Format`, etc.
-- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models and mappers (including `TimeFormatter` for shared time formatting); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
+- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), and `SearchStateReducer` (pure state reducer for search filter mutations used by all platforms); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
 - **Data layer** (`shared/.../data/`): Shared business logic used by all platforms
   - `BattleRepository` — Match data (getMatches, searchMatches, getMatchDetail, getMatchesByIds, getPokemonByIds, getPlayersByNames). Throws exceptions on error. Android wraps in `Result<T>` via a thin adapter; iOS uses directly via SKIE `async throws` bridge.
   - `FavoritesRepository` — Favorites toggle/check with `StateFlow` state, delegates to `FavoritesStorage` (expect/actual)

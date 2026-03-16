@@ -11,7 +11,7 @@ import com.arcvgc.app.data.TeraTypeCatalogRepository
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
-import com.arcvgc.app.ui.model.SearchFilterSlotUiModel
+import com.arcvgc.app.ui.model.SearchUiState
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,23 +28,22 @@ class SearchViewModel(
     appConfigRepository: AppConfigRepository? = null
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SearchUiState())
+    private val _uiState = MutableStateFlow(SearchStateReducer.initialState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     init {
         appConfigRepository?.let { repo ->
             viewModelScope.launch {
                 repo.config.filterNotNull().collect { config ->
-                    if (_uiState.value.selectedFormat == null) {
-                        val format = config.defaultFormat
-                        _uiState.update {
-                            it.copy(
-                                selectedFormat = FormatUiModel(
-                                    id = format.id,
-                                    displayName = format.formattedName ?: format.name
-                                )
+                    val format = config.defaultFormat
+                    _uiState.update {
+                        SearchStateReducer.setDefaultFormat(
+                            it,
+                            FormatUiModel(
+                                id = format.id,
+                                displayName = format.formattedName ?: format.name
                             )
-                        }
+                        )
                     }
                 }
             }
@@ -64,84 +63,46 @@ class SearchViewModel(
         formatCatalogRepository.state
 
     fun addPokemon(pokemon: PokemonPickerUiModel) {
-        _uiState.update { state ->
-            if (!state.canAddMore) return@update state
-            state.copy(
-                filterSlots = state.filterSlots + SearchFilterSlotUiModel(
-                    pokemonId = pokemon.id,
-                    pokemonName = pokemon.name,
-                    pokemonImageUrl = pokemon.imageUrl,
-                    item = null,
-                    teraType = null
-                )
-            )
-        }
+        _uiState.update { SearchStateReducer.addPokemon(it, pokemon) }
     }
 
     fun removePokemon(index: Int) {
-        _uiState.update { state ->
-            state.copy(
-                filterSlots = state.filterSlots.toMutableList().apply { removeAt(index) }
-            )
-        }
+        _uiState.update { SearchStateReducer.removePokemon(it, index) }
     }
 
     fun setItem(slotIndex: Int, item: ItemUiModel) {
-        _uiState.update { state ->
-            state.copy(
-                filterSlots = state.filterSlots.toMutableList().apply {
-                    this[slotIndex] = this[slotIndex].copy(item = item)
-                }
-            )
-        }
+        _uiState.update { SearchStateReducer.setItem(it, slotIndex, item) }
     }
 
     fun setTeraType(slotIndex: Int, teraType: TeraTypeUiModel) {
-        _uiState.update { state ->
-            state.copy(
-                filterSlots = state.filterSlots.toMutableList().apply {
-                    this[slotIndex] = this[slotIndex].copy(teraType = teraType)
-                }
-            )
-        }
+        _uiState.update { SearchStateReducer.setTeraType(it, slotIndex, teraType) }
     }
 
     fun setFormat(format: FormatUiModel) {
-        _uiState.update { it.copy(selectedFormat = format) }
+        _uiState.update { SearchStateReducer.setFormat(it, format) }
     }
 
     fun setMinRating(rating: Int?) {
-        _uiState.update { it.copy(selectedMinRating = rating) }
+        _uiState.update { SearchStateReducer.setMinRating(it, rating) }
     }
 
     fun setMaxRating(rating: Int?) {
-        _uiState.update { it.copy(selectedMaxRating = rating) }
+        _uiState.update { SearchStateReducer.setMaxRating(it, rating) }
     }
 
     fun setUnratedOnly(value: Boolean) {
-        _uiState.update {
-            if (value) {
-                it.copy(
-                    unratedOnly = true,
-                    selectedMinRating = null,
-                    selectedMaxRating = null,
-                    selectedOrderBy = if (it.selectedOrderBy == "rating") "time" else it.selectedOrderBy
-                )
-            } else {
-                it.copy(unratedOnly = false)
-            }
-        }
+        _uiState.update { SearchStateReducer.setUnratedOnly(it, value) }
     }
 
     fun setTimeRange(start: Long?, end: Long?) {
-        _uiState.update { it.copy(timeRangeStart = start, timeRangeEnd = end) }
+        _uiState.update { SearchStateReducer.setTimeRange(it, start, end) }
     }
 
     fun setPlayerName(name: String) {
-        _uiState.update { it.copy(playerName = name) }
+        _uiState.update { SearchStateReducer.setPlayerName(it, name) }
     }
 
     fun setOrderBy(orderBy: String) {
-        _uiState.update { it.copy(selectedOrderBy = orderBy) }
+        _uiState.update { SearchStateReducer.setOrderBy(it, orderBy) }
     }
 }

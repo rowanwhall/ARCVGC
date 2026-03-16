@@ -39,11 +39,11 @@ struct SearchView: View {
 
     private var searchEnabled: Bool {
         !viewModel.state.filterSlots.isEmpty
-            || viewModel.state.selectedMinRating != nil
-            || viewModel.state.selectedMaxRating != nil
+            || viewModel.minRating != nil
+            || viewModel.maxRating != nil
             || viewModel.state.unratedOnly
             || !viewModel.state.playerName.isEmpty
-            || (viewModel.state.timeRangeStart != nil && viewModel.state.timeRangeEnd != nil)
+            || (viewModel.timeStart != nil && viewModel.timeEnd != nil)
     }
 
     var body: some View {
@@ -93,13 +93,13 @@ struct SearchView: View {
                     // Min/Max Rating buttons
                     HStack(spacing: 8) {
                         SearchOptionButton(
-                            text: viewModel.state.selectedMinRating.map { "Min Rating: \(String($0))" }
+                            text: viewModel.minRating.map { "Min Rating: \(String($0))" }
                                 ?? "Min Rating: None"
                         ) {
                             activeSheet = .minRating
                         }
                         SearchOptionButton(
-                            text: viewModel.state.selectedMaxRating.map { "Max Rating: \(String($0))" }
+                            text: viewModel.maxRating.map { "Max Rating: \(String($0))" }
                                 ?? "Max Rating: None"
                         ) {
                             activeSheet = .maxRating
@@ -124,21 +124,21 @@ struct SearchView: View {
                     // Date range buttons
                     HStack(spacing: 8) {
                         DateOptionButton(
-                            text: viewModel.state.timeRangeStart.map {
+                            text: viewModel.timeStart.map {
                                 "Start: \(formatDate($0))"
                             } ?? "Start Date",
-                            onClear: viewModel.state.timeRangeStart != nil ? {
-                                viewModel.setTimeRange(start: nil, end: viewModel.state.timeRangeEnd)
+                            onClear: viewModel.timeStart != nil ? {
+                                viewModel.setTimeRange(start: nil, end: viewModel.timeEnd)
                             } : nil
                         ) {
                             activeSheet = .startDate
                         }
                         DateOptionButton(
-                            text: viewModel.state.timeRangeEnd.map {
+                            text: viewModel.timeEnd.map {
                                 "End: \(formatDate($0))"
                             } ?? "End Date",
-                            onClear: viewModel.state.timeRangeEnd != nil ? {
-                                viewModel.setTimeRange(start: viewModel.state.timeRangeStart, end: nil)
+                            onClear: viewModel.timeEnd != nil ? {
+                                viewModel.setTimeRange(start: viewModel.timeStart, end: nil)
                             } : nil
                         ) {
                             activeSheet = .endDate
@@ -176,12 +176,12 @@ struct SearchView: View {
                         searchParams = SearchParams(
                             filters: filters,
                             formatId: resolvedFormatId,
-                            minimumRating: viewModel.state.unratedOnly ? nil : viewModel.state.selectedMinRating.map { KotlinInt(int: $0) },
-                            maximumRating: viewModel.state.unratedOnly ? nil : viewModel.state.selectedMaxRating.map { KotlinInt(int: $0) },
+                            minimumRating: viewModel.state.unratedOnly ? nil : viewModel.minRating.map { KotlinInt(int: $0) },
+                            maximumRating: viewModel.state.unratedOnly ? nil : viewModel.maxRating.map { KotlinInt(int: $0) },
                             unratedOnly: viewModel.state.unratedOnly,
                             orderBy: resolvedOrderBy,
-                            timeRangeStart: viewModel.state.timeRangeStart.map { KotlinLong(value: Int64($0.timeIntervalSince1970)) },
-                            timeRangeEnd: viewModel.state.timeRangeEnd.map { KotlinLong(value: Int64($0.timeIntervalSince1970)) },
+                            timeRangeStart: viewModel.timeStart.map { KotlinLong(value: Int64($0.timeIntervalSince1970)) },
+                            timeRangeEnd: viewModel.timeEnd.map { KotlinLong(value: Int64($0.timeIntervalSince1970)) },
                             playerName: viewModel.state.playerName.isEmpty ? nil : viewModel.state.playerName,
                             formatName: resolvedFormatName
                         )
@@ -216,18 +216,18 @@ struct SearchView: View {
                 }
             }
             .task {
-                if viewModel.state.selectedFormat == nil, let config = appConfigStore.config {
+                if let config = appConfigStore.config {
                     let format = config.defaultFormat
-                    viewModel.setFormat(FormatUiModel(
+                    viewModel.setDefaultFormat(FormatUiModel(
                         id: format.id,
                         displayName: format.formattedName ?? format.name
                     ))
                 }
             }
             .onChange(of: appConfigStore.config) { _, config in
-                if viewModel.state.selectedFormat == nil, let config = config {
+                if let config = config {
                     let format = config.defaultFormat
-                    viewModel.setFormat(FormatUiModel(
+                    viewModel.setDefaultFormat(FormatUiModel(
                         id: format.id,
                         displayName: format.formattedName ?? format.name
                     ))
@@ -281,16 +281,16 @@ struct SearchView: View {
 
                 case .minRating:
                     MinRatingPickerSheet(
-                        selectedRating: viewModel.state.selectedMinRating,
-                        disabledAbove: viewModel.state.selectedMaxRating
+                        selectedRating: viewModel.minRating,
+                        disabledAbove: viewModel.maxRating
                     ) { rating in
                         viewModel.setMinRating(rating)
                     }
 
                 case .maxRating:
                     MaxRatingPickerSheet(
-                        selectedRating: viewModel.state.selectedMaxRating,
-                        disabledBelow: viewModel.state.selectedMinRating
+                        selectedRating: viewModel.maxRating,
+                        disabledBelow: viewModel.minRating
                     ) { rating in
                         viewModel.setMaxRating(rating)
                     }
@@ -305,21 +305,21 @@ struct SearchView: View {
                 case .startDate:
                     DatePickerSheet(
                         title: "Select Start Date",
-                        selectedDate: viewModel.state.timeRangeStart ?? Date(),
+                        selectedDate: viewModel.timeStart ?? Date(),
                         minDate: nil,
-                        maxDate: viewModel.state.timeRangeEnd ?? Date()
+                        maxDate: viewModel.timeEnd ?? Date()
                     ) { date in
-                        viewModel.setTimeRange(start: date, end: viewModel.state.timeRangeEnd)
+                        viewModel.setTimeRange(start: date, end: viewModel.timeEnd)
                     }
 
                 case .endDate:
                     DatePickerSheet(
                         title: "Select End Date",
-                        selectedDate: viewModel.state.timeRangeEnd ?? Date(),
-                        minDate: viewModel.state.timeRangeStart,
+                        selectedDate: viewModel.timeEnd ?? Date(),
+                        minDate: viewModel.timeStart,
                         maxDate: Date()
                     ) { date in
-                        viewModel.setTimeRange(start: viewModel.state.timeRangeStart, end: date)
+                        viewModel.setTimeRange(start: viewModel.timeStart, end: date)
                     }
                 }
             }

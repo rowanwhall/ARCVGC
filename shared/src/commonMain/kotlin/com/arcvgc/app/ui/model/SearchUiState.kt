@@ -1,7 +1,4 @@
-package com.arcvgc.app.ui.search
-
-import com.arcvgc.app.ui.model.FormatUiModel
-import com.arcvgc.app.ui.model.SearchFilterSlotUiModel
+package com.arcvgc.app.ui.model
 
 data class SearchUiState(
     val filterSlots: List<SearchFilterSlotUiModel> = emptyList(),

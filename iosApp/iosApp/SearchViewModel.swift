@@ -3,81 +3,66 @@ import Shared
 
 @MainActor
 final class SearchViewModel: ObservableObject {
-    @Published private(set) var state = SearchState()
+    @Published private(set) var state = SearchStateReducer.shared.initialState()
+
+    // MARK: - Bridging Convenience Properties
+
+    var minRating: Int32? { state.selectedMinRating?.int32Value }
+    var maxRating: Int32? { state.selectedMaxRating?.int32Value }
+    var timeStart: Date? { state.timeRangeStart.map { Date(timeIntervalSince1970: Double($0.int64Value)) } }
+    var timeEnd: Date? { state.timeRangeEnd.map { Date(timeIntervalSince1970: Double($0.int64Value)) } }
 
     // MARK: - Filter Slot Management
 
     func addPokemon(_ pokemon: PokemonPickerUiModel) {
-        guard state.canAddMore else { return }
-        let slot = SearchFilterSlotUiModel(
-            pokemonId: pokemon.id,
-            pokemonName: pokemon.name,
-            pokemonImageUrl: pokemon.imageUrl,
-            item: nil,
-            teraType: nil
-        )
-        state.filterSlots.append(slot)
+        state = SearchStateReducer.shared.addPokemon(state: state, pokemon: pokemon)
     }
 
     func removePokemon(at index: Int) {
-        state.filterSlots.remove(at: index)
+        state = SearchStateReducer.shared.removePokemon(state: state, index: Int32(index))
     }
 
     func setItem(at slotIndex: Int, item: ItemUiModel) {
-        let slot = state.filterSlots[slotIndex]
-        state.filterSlots[slotIndex] = SearchFilterSlotUiModel(
-            pokemonId: slot.pokemonId,
-            pokemonName: slot.pokemonName,
-            pokemonImageUrl: slot.pokemonImageUrl,
-            item: item,
-            teraType: slot.teraType
-        )
+        state = SearchStateReducer.shared.setItem(state: state, slotIndex: Int32(slotIndex), item: item)
     }
 
     func setTeraType(at slotIndex: Int, teraType: TeraTypeUiModel) {
-        let slot = state.filterSlots[slotIndex]
-        state.filterSlots[slotIndex] = SearchFilterSlotUiModel(
-            pokemonId: slot.pokemonId,
-            pokemonName: slot.pokemonName,
-            pokemonImageUrl: slot.pokemonImageUrl,
-            item: slot.item,
-            teraType: teraType
-        )
+        state = SearchStateReducer.shared.setTeraType(state: state, slotIndex: Int32(slotIndex), teraType: teraType)
     }
 
     func setFormat(_ format: FormatUiModel) {
-        state.selectedFormat = format
+        state = SearchStateReducer.shared.setFormat(state: state, format: format)
+    }
+
+    func setDefaultFormat(_ format: FormatUiModel) {
+        state = SearchStateReducer.shared.setDefaultFormat(state: state, format: format)
     }
 
     func setMinRating(_ rating: Int32?) {
-        state.selectedMinRating = rating
+        state = SearchStateReducer.shared.setMinRating(state: state, rating: rating.map { KotlinInt(int: $0) })
     }
 
     func setMaxRating(_ rating: Int32?) {
-        state.selectedMaxRating = rating
+        state = SearchStateReducer.shared.setMaxRating(state: state, rating: rating.map { KotlinInt(int: $0) })
     }
 
     func setUnratedOnly(_ value: Bool) {
-        state.unratedOnly = value
-        if value {
-            state.selectedMinRating = nil
-            state.selectedMaxRating = nil
-            if state.selectedOrderBy == "rating" {
-                state.selectedOrderBy = "time"
-            }
-        }
+        state = SearchStateReducer.shared.setUnratedOnly(state: state, value: value)
     }
 
     func setTimeRange(start: Date?, end: Date?) {
-        state.timeRangeStart = start
-        state.timeRangeEnd = end
+        state = SearchStateReducer.shared.setTimeRange(
+            state: state,
+            start: start.map { KotlinLong(value: Int64($0.timeIntervalSince1970)) },
+            end: end.map { KotlinLong(value: Int64($0.timeIntervalSince1970)) }
+        )
     }
 
     func setPlayerName(_ name: String) {
-        state.playerName = name
+        state = SearchStateReducer.shared.setPlayerName(state: state, name: name)
     }
 
     func setOrderBy(_ orderBy: String) {
-        state.selectedOrderBy = orderBy
+        state = SearchStateReducer.shared.setOrderBy(state: state, orderBy: orderBy)
     }
 }
