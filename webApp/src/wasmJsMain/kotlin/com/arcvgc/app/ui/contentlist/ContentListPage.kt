@@ -702,6 +702,13 @@ private fun ContentListContent(
 
     val windowSizeClass = LocalWindowSizeClass.current
 
+    val topPadding = when (header) {
+        is ContentListHeaderUiModel.PokemonHero -> 4.dp
+        is ContentListHeaderUiModel.PlayerHero -> 4.dp
+        is ContentListHeaderUiModel.SearchFilters -> 8.dp
+        else -> 16.dp
+    }
+
     Box(modifier = modifier) {
     Box(
         modifier = Modifier
@@ -714,7 +721,7 @@ private fun ContentListContent(
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
-            top = 16.dp,
+            top = topPadding,
             bottom = 16.dp
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -804,9 +811,7 @@ private fun ContentListContent(
             is ContentListHeaderUiModel.PlayerHero -> {
                 item(key = "player_hero") {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 24.dp, bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
@@ -1068,9 +1073,7 @@ private fun SectionHeader(
     onToggleSortOrder: (() -> Unit)? = null
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(

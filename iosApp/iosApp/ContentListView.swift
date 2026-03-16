@@ -207,8 +207,6 @@ struct ContentListView: View {
                                 .cornerRadius(16)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.top, 24)
-                        .padding(.bottom, 8)
                     }
 
                     if case .searchFilters(let data) = header {
@@ -784,8 +782,6 @@ private struct SectionHeaderView: View {
                 SortToggleButton(sortOrder: sortOrder, isLoading: isLoading, action: toggle)
             }
         }
-        .padding(.top, 8)
-        .padding(.bottom, 4)
     }
 }
 

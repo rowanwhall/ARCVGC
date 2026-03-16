@@ -734,9 +734,7 @@ private fun ContentListContent(
                 is ContentListHeaderUiModel.PlayerHero -> {
                     item(key = "player_hero") {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 24.dp, bottom = 8.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -973,9 +971,7 @@ private fun SectionHeader(
     onToggleSortOrder: (() -> Unit)? = null
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
