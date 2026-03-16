@@ -8,8 +8,10 @@ import com.arcvgc.app.network.model.PlayerProfileDto
 import com.arcvgc.app.network.model.RatedMatchDto
 import com.arcvgc.app.network.normalizeImageUrl
 
-fun RatedMatchDto.toDomain(): RatedMatch {
-    return RatedMatch(id = id, rating = rating)
+fun RatedMatchDto.toDomain(): RatedMatch? {
+    val matchId = id ?: return null
+    val matchRating = rating ?: return null
+    return RatedMatch(id = matchId, rating = matchRating)
 }
 
 fun MostUsedPokemonDto.toDomain(): MostUsedPokemon {

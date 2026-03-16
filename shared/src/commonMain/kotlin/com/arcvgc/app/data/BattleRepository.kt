@@ -51,7 +51,11 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
                 val (matches, pagination) = result.data
                 MatchesResult(BattleCardUiMapper.mapList(matches), pagination)
             }
-            is NetworkResult.Error -> throw Exception(result.message)
+            is NetworkResult.Error -> {
+                val error = Exception(result.message)
+                captureException(error)
+                throw error
+            }
         }
     }
 
@@ -86,14 +90,34 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
                 val (matches, pagination) = result.data
                 MatchesResult(BattleCardUiMapper.mapList(matches), pagination)
             }
-            is NetworkResult.Error -> throw Exception(result.message)
+            is NetworkResult.Error -> {
+                val error = Exception(result.message)
+                captureException(error)
+                throw error
+            }
         }
     }
 
     suspend fun getMatchDetail(id: Int): BattleDetailUiModel {
         return when (val result = apiService.getMatchDetail(id)) {
             is NetworkResult.Success -> BattleDetailUiMapper.map(result.data)
-            is NetworkResult.Error -> throw Exception(result.message)
+            is NetworkResult.Error -> {
+                val error = Exception(result.message)
+                captureException(error)
+                throw error
+            }
+        }
+    }
+
+    /**
+     * Non-throwing variant for iOS — returns null on error instead of throwing.
+     * Errors are reported to Sentry automatically.
+     */
+    suspend fun getMatchDetailOrNull(id: Int): BattleDetailUiModel? {
+        return try {
+            getMatchDetail(id)
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -126,7 +150,11 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
     override suspend fun getPlayerProfile(id: Int): PlayerProfile {
         return when (val result = apiService.getPlayerById(id)) {
             is NetworkResult.Success -> result.data
-            is NetworkResult.Error -> throw Exception(result.message)
+            is NetworkResult.Error -> {
+                val error = Exception(result.message)
+                captureException(error)
+                throw error
+            }
         }
     }
 

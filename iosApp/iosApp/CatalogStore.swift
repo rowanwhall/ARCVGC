@@ -51,57 +51,41 @@ final class CatalogStore: ObservableObject {
     }
 
     private func loadPokemonCatalog() async {
-        do {
-            let result = try await CatalogLoaderKt.loadPokemonCatalog(apiService: apiService, cacheStorage: cacheStorage)
-            if let items = result.items as? [PokemonPickerUiModel] {
-                pokemonItems = items
-            } else {
-                pokemonError = result.error ?? "Failed to load Pokémon"
-            }
-        } catch {
-            pokemonError = error.localizedDescription
+        if let result = try? await CatalogLoaderKt.loadPokemonCatalog(apiService: apiService, cacheStorage: cacheStorage),
+           let items = result.items as? [PokemonPickerUiModel] {
+            pokemonItems = items
+        } else {
+            pokemonError = "Failed to load Pokémon"
         }
         pokemonLoading = false
     }
 
     private func loadItemCatalog() async {
-        do {
-            let result = try await CatalogLoaderKt.loadItemCatalog(apiService: apiService, cacheStorage: cacheStorage)
-            if let items = result.items as? [ItemUiModel] {
-                itemItems = items
-            } else {
-                itemError = result.error ?? "Failed to load items"
-            }
-        } catch {
-            itemError = error.localizedDescription
+        if let result = try? await CatalogLoaderKt.loadItemCatalog(apiService: apiService, cacheStorage: cacheStorage),
+           let items = result.items as? [ItemUiModel] {
+            itemItems = items
+        } else {
+            itemError = "Failed to load items"
         }
         itemLoading = false
     }
 
     private func loadTeraTypeCatalog() async {
-        do {
-            let result = try await CatalogLoaderKt.loadTeraTypeCatalog(apiService: apiService, cacheStorage: cacheStorage)
-            if let items = result.items as? [TeraTypeUiModel] {
-                teraTypeItems = items
-            } else {
-                teraTypeError = result.error ?? "Failed to load tera types"
-            }
-        } catch {
-            teraTypeError = error.localizedDescription
+        if let result = try? await CatalogLoaderKt.loadTeraTypeCatalog(apiService: apiService, cacheStorage: cacheStorage),
+           let items = result.items as? [TeraTypeUiModel] {
+            teraTypeItems = items
+        } else {
+            teraTypeError = "Failed to load tera types"
         }
         teraTypeLoading = false
     }
 
     private func loadFormatCatalog() async {
-        do {
-            let result = try await CatalogLoaderKt.loadFormatCatalog(apiService: apiService, cacheStorage: cacheStorage)
-            if let items = result.items as? [FormatUiModel] {
-                formatItems = items
-            } else {
-                formatError = result.error ?? "Failed to load formats"
-            }
-        } catch {
-            formatError = error.localizedDescription
+        if let result = try? await CatalogLoaderKt.loadFormatCatalog(apiService: apiService, cacheStorage: cacheStorage),
+           let items = result.items as? [FormatUiModel] {
+            formatItems = items
+        } else {
+            formatError = "Failed to load formats"
         }
         formatLoading = false
     }

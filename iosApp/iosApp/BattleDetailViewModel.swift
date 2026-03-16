@@ -23,15 +23,14 @@ final class BattleDetailViewModel: ObservableObject {
         state.error = nil
 
         Task {
-            do {
-                let detail = try await repository.getMatchDetail(id: battleId)
+            let detail = try? await repository.getMatchDetailOrNull(id: battleId)
+            if let detail {
                 state.battleDetail = detail
-                state.isLoading = false
-            } catch {
-                Self.logger.error("Failed to load battle detail (id=\(self.battleId)): \(error.localizedDescription)")
-                state.error = error.localizedDescription
-                state.isLoading = false
+            } else {
+                Self.logger.error("Failed to load battle detail (id=\(self.battleId))")
+                state.error = "Failed to load battle"
             }
+            state.isLoading = false
         }
     }
 }

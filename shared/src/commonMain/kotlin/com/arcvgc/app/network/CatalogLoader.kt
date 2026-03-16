@@ -2,6 +2,7 @@ package com.arcvgc.app.network
 
 import com.arcvgc.app.data.CatalogCache
 import com.arcvgc.app.data.CatalogCacheStorage
+import com.arcvgc.app.data.captureException
 import com.arcvgc.app.domain.model.NetworkResult
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.ui.mapper.FormatUiMapper
@@ -48,11 +49,11 @@ suspend fun <TDomain, TUi> loadFullCatalog(
 suspend fun loadPokemonCatalog(
     apiService: ApiService,
     cacheStorage: CatalogCacheStorage
-): CatalogResult<PokemonPickerUiModel> {
+): CatalogResult<PokemonPickerUiModel> = safeCatalogLoad {
     val cached = CatalogCache.load(
         cacheStorage, "pokemon_catalog", CatalogCache.TTL_30_DAYS, PokemonPickerUiModel.serializer()
     )
-    if (cached != null) return CatalogResult(items = cached)
+    if (cached != null) return@safeCatalogLoad CatalogResult(items = cached)
 
     val result = loadFullCatalog(
         fetch = { limit, page -> apiService.getPokemonList(limit, page) },
@@ -61,17 +62,17 @@ suspend fun loadPokemonCatalog(
     if (result.error == null && !result.items.isNullOrEmpty()) {
         CatalogCache.save(cacheStorage, "pokemon_catalog", result.items, PokemonPickerUiModel.serializer())
     }
-    return result
+    result
 }
 
 suspend fun loadItemCatalog(
     apiService: ApiService,
     cacheStorage: CatalogCacheStorage
-): CatalogResult<ItemUiModel> {
+): CatalogResult<ItemUiModel> = safeCatalogLoad {
     val cached = CatalogCache.load(
         cacheStorage, "item_catalog", CatalogCache.TTL_30_DAYS, ItemUiModel.serializer()
     )
-    if (cached != null) return CatalogResult(items = cached)
+    if (cached != null) return@safeCatalogLoad CatalogResult(items = cached)
 
     val result = loadFullCatalog(
         fetch = { limit, page -> apiService.getItems(limit, page) },
@@ -80,17 +81,17 @@ suspend fun loadItemCatalog(
     if (result.error == null && !result.items.isNullOrEmpty()) {
         CatalogCache.save(cacheStorage, "item_catalog", result.items, ItemUiModel.serializer())
     }
-    return result
+    result
 }
 
 suspend fun loadTeraTypeCatalog(
     apiService: ApiService,
     cacheStorage: CatalogCacheStorage
-): CatalogResult<TeraTypeUiModel> {
+): CatalogResult<TeraTypeUiModel> = safeCatalogLoad {
     val cached = CatalogCache.load(
         cacheStorage, "tera_type_catalog", CatalogCache.TTL_7_DAYS, TeraTypeUiModel.serializer()
     )
-    if (cached != null) return CatalogResult(items = cached)
+    if (cached != null) return@safeCatalogLoad CatalogResult(items = cached)
 
     val result = loadFullCatalog(
         fetch = { limit, page -> apiService.getTeraTypes(limit, page) },
@@ -99,17 +100,17 @@ suspend fun loadTeraTypeCatalog(
     if (result.error == null && !result.items.isNullOrEmpty()) {
         CatalogCache.save(cacheStorage, "tera_type_catalog", result.items, TeraTypeUiModel.serializer())
     }
-    return result
+    result
 }
 
 suspend fun loadFormatCatalog(
     apiService: ApiService,
     cacheStorage: CatalogCacheStorage
-): CatalogResult<FormatUiModel> {
+): CatalogResult<FormatUiModel> = safeCatalogLoad {
     val cached = CatalogCache.load(
         cacheStorage, "format_catalog", CatalogCache.TTL_7_DAYS, FormatUiModel.serializer()
     )
-    if (cached != null) return CatalogResult(items = cached)
+    if (cached != null) return@safeCatalogLoad CatalogResult(items = cached)
 
     val result = loadFullCatalog(
         fetch = { limit, page -> apiService.getFormats(limit, page) },
@@ -118,5 +119,16 @@ suspend fun loadFormatCatalog(
     if (result.error == null && !result.items.isNullOrEmpty()) {
         CatalogCache.save(cacheStorage, "format_catalog", result.items, FormatUiModel.serializer())
     }
-    return result
+    result
+}
+
+private suspend inline fun <T> safeCatalogLoad(
+    block: () -> CatalogResult<T>
+): CatalogResult<T> {
+    return try {
+        block()
+    } catch (e: Exception) {
+        captureException(e)
+        CatalogResult(error = e.message ?: "Unknown error")
+    }
 }

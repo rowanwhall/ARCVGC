@@ -21,7 +21,7 @@ data class PlayerProfileDto(
 )
 
 @Serializable
-data class RatedMatchDto(val id: Int, val rating: Int)
+data class RatedMatchDto(val id: Int?, val rating: Int?)
 
 @Serializable
 data class MostUsedPokemonDto(

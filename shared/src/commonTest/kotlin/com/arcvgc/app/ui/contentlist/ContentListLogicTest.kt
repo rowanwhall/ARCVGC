@@ -304,6 +304,40 @@ class ContentListLogicTest {
         assertEquals("Battles", (items[3] as ContentListItem.Section).header)
     }
 
+    @Test
+    fun playerMode_page1_noHighlightsWhenMatchesNull() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 1, 1)
+        )
+        fakeRepo.playerProfileResult = PlayerProfile(
+            id = 1,
+            name = "TestPlayer",
+            matchCount = 10,
+            winCount = 5,
+            topRatedMatch = null,
+            mostRecentRatedMatch = null,
+            mostUsedPokemon = listOf(
+                MostUsedPokemon(id = 25, name = "Pikachu", usageCount = 5, imageUrl = null)
+            )
+        )
+
+        val logic = createLogic(ContentListMode.Player(
+            playerId = 1, playerName = "TestPlayer", formatId = 1
+        ))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        // No HighlightButtons: Favorite Pokemon section, FormatSelector, Battles section
+        assertEquals(3, items.size)
+        assertTrue(items[0] is ContentListItem.Section)
+        assertEquals("Favorite Pokémon", (items[0] as ContentListItem.Section).header)
+        assertTrue(items[1] is ContentListItem.FormatSelector)
+        assertTrue(items[2] is ContentListItem.Section)
+        assertEquals("Battles", (items[2] as ContentListItem.Section).header)
+    }
+
     // --- State transitions ---
 
     @Test

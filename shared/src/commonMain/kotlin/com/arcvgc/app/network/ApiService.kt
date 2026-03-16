@@ -1,5 +1,6 @@
 package com.arcvgc.app.network
 
+import com.arcvgc.app.data.captureException
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.DomainItem
 import com.arcvgc.app.domain.model.Format
@@ -66,6 +67,7 @@ class ApiService {
                 NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -91,6 +93,7 @@ class ApiService {
                 NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -115,6 +118,7 @@ class ApiService {
                 NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -139,6 +143,7 @@ class ApiService {
                 NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -163,6 +168,7 @@ class ApiService {
                 NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -184,6 +190,7 @@ class ApiService {
                 NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -200,6 +207,7 @@ class ApiService {
                 NetworkResult.Error("Pokémon not found")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -216,6 +224,7 @@ class ApiService {
                 NetworkResult.Error("Match not found")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -232,6 +241,7 @@ class ApiService {
                 NetworkResult.Error("Player not found")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -248,6 +258,7 @@ class ApiService {
                 NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }
@@ -270,6 +281,7 @@ class ApiService {
                 NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
+            captureException(e)
             NetworkResult.Error(e.message ?: "Unknown error", e)
         }
     }

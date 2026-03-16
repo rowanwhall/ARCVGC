@@ -4,9 +4,7 @@ import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.Format
 import com.arcvgc.app.domain.model.NetworkResult
 import com.arcvgc.app.network.ApiService
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import com.arcvgc.app.util.createSafeScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +15,7 @@ class AppConfigRepository(
     private val storage: AppConfigStorageApi,
     private val catalogCacheStorage: CatalogCacheStorageApi
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = createSafeScope()
 
     private val _config = MutableStateFlow<AppConfig?>(null)
     val config: StateFlow<AppConfig?> = _config.asStateFlow()

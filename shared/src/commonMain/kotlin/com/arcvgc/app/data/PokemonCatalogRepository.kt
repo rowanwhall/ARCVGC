@@ -4,9 +4,7 @@ import com.arcvgc.app.network.ApiService
 import com.arcvgc.app.network.loadFullCatalog
 import com.arcvgc.app.ui.mapper.PokemonPickerUiMapper
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import com.arcvgc.app.util.createSafeScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +14,7 @@ class PokemonCatalogRepository(
     private val apiService: ApiService,
     private val cacheStorage: CatalogCacheStorageApi
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = createSafeScope()
     private val _state = MutableStateFlow(CatalogState<PokemonPickerUiModel>(isLoading = true))
     val state: StateFlow<CatalogState<PokemonPickerUiModel>> = _state.asStateFlow()
 

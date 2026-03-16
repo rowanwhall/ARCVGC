@@ -9,3 +9,7 @@ actual fun initializeSentry() {
         }
     }
 }
+
+actual fun captureException(throwable: Throwable) {
+    Sentry.captureException(throwable)
+}

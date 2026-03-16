@@ -47,6 +47,12 @@ globs:
 - `List<Int>` bridges to `[KotlinInt]` (not `[Int32]`), requiring `.map { KotlinInt(int:) }` / `.map { $0.int32Value }` conversions
 - Generic Kotlin classes lose type parameters in Swift (e.g., `CatalogResult<T>.items` becomes `[Any]?`, requiring casts)
 - Kotlin default parameter values do NOT bridge to Swift — all params must be passed explicitly
+- **Exception bridging is unreliable**: Kotlin exceptions thrown from suspend functions may NOT be caught by Swift `do/catch`. **Never rely on Swift catching Kotlin exceptions.** Instead:
+  - Handle errors on the Kotlin side before they cross the K/N boundary
+  - Return nullable types or result types (e.g., `CatalogResult`) instead of throwing
+  - For throwing methods that Android needs, add a non-throwing `OrNull` variant for iOS (e.g., `getMatchDetailOrNull`)
+  - On the Swift side, always use `try?` (not `try` with `do/catch`) when calling Kotlin suspend functions
+  - Report errors to Sentry via `captureException()` on the Kotlin side before returning
 
 ## Kotlin/Wasm Caveats (Web)
 
