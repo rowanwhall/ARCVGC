@@ -20,7 +20,11 @@ import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FavoriteContentType
 
 @Composable
-fun FavoritesPage(modifier: Modifier = Modifier) {
+fun FavoritesPage(
+    modifier: Modifier = Modifier,
+    onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?) -> Unit)? = null,
+    onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null
+) {
     var selectedSubTab by remember { mutableIntStateOf(0) }
     val subTabs = listOf("Battles", "Pokémon", "Players")
 
@@ -50,11 +54,13 @@ fun FavoritesPage(modifier: Modifier = Modifier) {
             )
             1 -> ContentListPage(
                 mode = ContentListMode.Favorites(FavoriteContentType.Pokemon),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                onPokemonClick = onPokemonClick
             )
             2 -> ContentListPage(
                 mode = ContentListMode.Favorites(FavoriteContentType.Players),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                onPlayerClick = onPlayerClick
             )
         }
     }

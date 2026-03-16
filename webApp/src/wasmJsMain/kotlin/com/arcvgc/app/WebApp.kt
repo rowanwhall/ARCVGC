@@ -269,13 +269,13 @@ fun WebApp() {
         }
 
         val handleSearchBack: () -> Unit = {
-            val entriesToRemove = navStack.size + 1
+            val entriesToRemove = minOf(navStack.size + 1, historyDepth)
             searchOverlayParams = null
             navStack = emptyList()
-            if (historyDepth > 0) {
+            if (entriesToRemove > 0) {
                 popStatesToIgnore++
                 historyGo(-entriesToRemove)
-                historyDepth = maxOf(0, historyDepth - entriesToRemove)
+                historyDepth -= entriesToRemove
             }
         }
 
@@ -326,16 +326,10 @@ fun WebApp() {
                                 navStack = navStack,
                                 onPushEntry = handlePushEntry,
                                 onPopEntry = handlePopEntry,
-                                onClearNavStack = {
-                                    if (navStack.isNotEmpty()) {
-                                        val entriesToRemove = navStack.size
-                                        navStack = emptyList()
-                                        if (entriesToRemove > 0) {
-                                            popStatesToIgnore++
-                                            historyGo(-entriesToRemove)
-                                            historyDepth = maxOf(0, historyDepth - entriesToRemove)
-                                        }
-                                    }
+                                onReplaceNavStack = { entry ->
+                                    navStack = listOf(entry)
+                                    pushHistoryState()
+                                    historyDepth++
                                 }
                             )
                         } else {
@@ -439,7 +433,7 @@ private fun MobileLayout(
     navStack: List<MobileNavEntry>,
     onPushEntry: (MobileNavEntry) -> Unit,
     onPopEntry: () -> Unit,
-    onClearNavStack: () -> Unit
+    onReplaceNavStack: (MobileNavEntry) -> Unit
 ) {
     val favoriteBattleIds by DependencyContainer.favoritesRepository.favoriteBattleIds.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
@@ -448,8 +442,7 @@ private fun MobileLayout(
         CompositionLocalProvider(
             LocalBattleOverlay provides { request ->
                 if (request != null) {
-                    onClearNavStack()
-                    onPushEntry(MobileNavEntry.BattleDetail(request))
+                    onReplaceNavStack(MobileNavEntry.BattleDetail(request))
                 }
             }
         ) {
@@ -485,7 +478,13 @@ private fun MobileLayout(
                         onSearch = onSearch
                     )
                     Tab.Favorites -> FavoritesPage(
-                        modifier = Modifier.fillMaxSize().padding(innerPadding)
+                        modifier = Modifier.fillMaxSize().padding(innerPadding),
+                        onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
+                            onPushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
+                        },
+                        onPlayerClick = { id, name, formatId ->
+                            onPushEntry(MobileNavEntry.Player(id, name, formatId))
+                        }
                     )
                     Tab.Settings -> SettingsPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding)
@@ -499,8 +498,7 @@ private fun MobileLayout(
             CompositionLocalProvider(
                 LocalBattleOverlay provides { request ->
                     if (request != null) {
-                        onClearNavStack()
-                        onPushEntry(MobileNavEntry.BattleDetail(request))
+                        onReplaceNavStack(MobileNavEntry.BattleDetail(request))
                     }
                 }
             ) {
@@ -508,7 +506,13 @@ private fun MobileLayout(
                     mode = ContentListMode.Search(searchOverlayParams),
                     onBack = { onSearchBack() },
                     onSearchParamsChanged = onSearch,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
+                        onPushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
+                    },
+                    onPlayerClick = { id, name, formatId ->
+                        onPushEntry(MobileNavEntry.Player(id, name, formatId))
+                    }
                 )
             }
         }
@@ -554,7 +558,10 @@ private fun MobileLayout(
                                 entry.formatId
                             ),
                             onBack = { onPopEntry() },
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            onPlayerClick = { id, name, formatId ->
+                                onPushEntry(MobileNavEntry.Player(id, name, formatId))
+                            }
                         )
                     }
                 }
@@ -567,7 +574,10 @@ private fun MobileLayout(
                         ContentListPage(
                             mode = ContentListMode.Player(entry.id, entry.name, entry.formatId),
                             onBack = { onPopEntry() },
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
+                                onPushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
+                            }
                         )
                     }
                 }

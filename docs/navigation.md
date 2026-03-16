@@ -34,6 +34,7 @@
 - Supports arbitrary-depth drill-down: `battle → pokemon → battle → player → battle → ...`
 - Each stack entry renders full-screen; "back" pops the top entry
 - Each `Pokemon`/`Player` entry provides its own `LocalBattleOverlay` that pushes a new `BattleDetail` entry
+- `LocalBattleOverlay` from the tab pages and search overlay uses `onReplaceNavStack` to atomically replace the navStack with a single `BattleDetail` entry (avoids async `historyGo` + sync `pushState` race conditions)
 - Tab switching clears the entire stack
 - Combined with `ViewModelStore`, navigating back preserves loaded data (no re-fetch)
 
@@ -45,6 +46,7 @@
 - Navigation callbacks (`handleSearch`, `handlePushEntry`, etc.) manage both app state and browser history together
 - State variables use explicit `MutableState` objects so the `DisposableEffect` popstate listener reads current values
 - Tab switching calls `historyGo(-historyDepth)` to clear all stale history entries
+- `ContentListPage` accepts optional `onPokemonClick`/`onPlayerClick` callbacks — when provided, clicks route to those instead of internal `pokemonNavTarget`/`playerNavTarget` state. Used by `FavoritesPage` in mobile layout to push Pokemon/Player entries onto the `navStack`.
 - **Not integrated (v1):** tab switching, desktop Pokemon/Player drill-down (recursive composition state inside `ContentListPage`), desktop battle detail selection (inline pane)
 
 ## Per-instance Pokemon/Player navigation (all platforms)

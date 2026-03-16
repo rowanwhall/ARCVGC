@@ -102,7 +102,9 @@ fun ContentListPage(
     modifier: Modifier = Modifier,
     mode: ContentListMode = ContentListMode.Home,
     onBack: (() -> Unit)? = null,
-    onSearchParamsChanged: ((SearchParams) -> Unit)? = null
+    onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
+    onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?) -> Unit)? = null,
+    onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null
 ) {
     val viewModelKey = when (mode) {
         is ContentListMode.Home -> "content_list_home"
@@ -133,6 +135,22 @@ fun ContentListPage(
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
+
+    val navigateToPokemon: (Int, String, String?, List<String>, Int?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId ->
+        if (onPokemonClick != null) {
+            onPokemonClick(id, name, imageUrl, typeImageUrls, formatId)
+        } else {
+            pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
+        }
+    }
+
+    val navigateToPlayer: (Int, String, Int?) -> Unit = { id, name, formatId ->
+        if (onPlayerClick != null) {
+            onPlayerClick(id, name, formatId)
+        } else {
+            playerNavTarget = PlayerNavTarget(id, name, formatId)
+        }
+    }
 
     val currentPokemonNav = pokemonNavTarget
     if (currentPokemonNav != null) {
@@ -209,7 +227,7 @@ fun ContentListPage(
                                     is ContentListMode.Player -> viewModel.selectedFormatId.value
                                     else -> null
                                 }
-                                pokemonNavTarget = PokemonNavTarget(
+                                navigateToPokemon(
                                     item.id, item.name, item.imageUrl,
                                     item.types.mapNotNull { it.imageUrl },
                                     derivedFormatId
@@ -222,7 +240,7 @@ fun ContentListPage(
                                     is ContentListMode.Player -> viewModel.selectedFormatId.value
                                     else -> null
                                 }
-                                playerNavTarget = PlayerNavTarget(item.id, item.name, derivedFormatId)
+                                navigateToPlayer(item.id, item.name, derivedFormatId)
                             }
                             is ContentListItem.Section -> {}
                             is ContentListItem.HighlightButtons -> {}
@@ -244,7 +262,7 @@ fun ContentListPage(
                             is ContentListMode.Player -> viewModel.selectedFormatId.value
                             else -> null
                         }
-                        pokemonNavTarget = PokemonNavTarget(pokemon.id, pokemon.name, pokemon.imageUrl, formatId = derivedFormatId)
+                        navigateToPokemon(pokemon.id, pokemon.name, pokemon.imageUrl, emptyList(), derivedFormatId)
                     },
                     searchParams = (mode as? ContentListMode.Search)?.params,
                     onSearchParamsChanged = onSearchParamsChanged,
@@ -299,7 +317,7 @@ fun ContentListPage(
                                         is ContentListMode.Player -> viewModel.selectedFormatId.value
                                         else -> null
                                     }
-                                    pokemonNavTarget = PokemonNavTarget(
+                                    navigateToPokemon(
                                         item.id, item.name, item.imageUrl,
                                         item.types.mapNotNull { it.imageUrl },
                                         derivedFormatId
@@ -312,7 +330,7 @@ fun ContentListPage(
                                         is ContentListMode.Player -> viewModel.selectedFormatId.value
                                         else -> null
                                     }
-                                    playerNavTarget = PlayerNavTarget(item.id, item.name, derivedFormatId)
+                                    navigateToPlayer(item.id, item.name, derivedFormatId)
                                 }
                                 is ContentListItem.Section -> {}
                                 is ContentListItem.HighlightButtons -> {}
@@ -328,7 +346,7 @@ fun ContentListPage(
                                 is ContentListMode.Player -> viewModel.selectedFormatId.value
                                 else -> null
                             }
-                            pokemonNavTarget = PokemonNavTarget(pokemon.id, pokemon.name, pokemon.imageUrl, formatId = derivedFormatId)
+                            navigateToPokemon(pokemon.id, pokemon.name, pokemon.imageUrl, emptyList(), derivedFormatId)
                         },
                         searchParams = (mode as? ContentListMode.Search)?.params,
                         onSearchParamsChanged = onSearchParamsChanged,
@@ -359,10 +377,10 @@ fun ContentListPage(
                         player2IsWinner = selectedBattle?.uiModel?.player2?.isWinner,
                         showWinnerHighlight = showWinnerHighlight,
                         onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                            pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
+                            navigateToPokemon(id, name, imageUrl, typeImageUrls, formatId)
                         },
                         onPlayerClick = { id, name, formatId ->
-                            playerNavTarget = PlayerNavTarget(id, name, formatId)
+                            navigateToPlayer(id, name, formatId)
                         },
                         modifier = Modifier.weight(0.6f).fillMaxHeight()
                     )

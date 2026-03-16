@@ -22,7 +22,7 @@ shared/src/iosMain/       — iOS HTTP engine (Darwin), platform storage (NSUser
 shared/src/wasmJsMain/    — Web HTTP engine (Js), platform storage (localStorage via @JsFun)
 composeApp/src/androidMain/ — Android app (Compose UI, Hilt DI, ViewModels)
 iosApp/                   — iOS app (SwiftUI views, ViewModels)
-webApp/src/wasmJsMain/    — Web app (Compose for wasmJs, manual DI, desktop-optimized layouts)
+webApp/src/wasmJsMain/    — Web app (Compose for wasmJs, manual DI, desktop-optimized layouts, browser History API)
 ```
 
 ## Architecture

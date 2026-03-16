@@ -59,6 +59,7 @@ globs:
 - `kotlinx.browser.localStorage` is NOT available in the shared module's wasmJsMain — use `@JsFun` external functions for JS interop instead
 - `Dispatchers.IO` is not available on wasmJs — use `Dispatchers.Default` or inherit caller's dispatcher
 - Web ViewModels use `collectAsState()` instead of `collectAsStateWithLifecycle()`
+- Browser History API (`BrowserHistory.kt`): `@JsFun` wrappers for `pushState`/`history.go`. Navigation state (`navStack`, `searchOverlayParams`) is managed in `WebApp()` with `historyDepth` tracking and a `DisposableEffect` popstate listener. State variables use explicit `MutableState` objects so the listener closure reads current values.
 
 ## Web UI Differences from Android
 
