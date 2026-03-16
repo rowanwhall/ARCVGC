@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -132,9 +133,27 @@ fun ContentListPage(
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
     val formatCatalogState = viewModel.formatCatalogState?.collectAsState()
     val selectedFormatId by viewModel.selectedFormatId.collectAsState()
-    var selectedBattleId by remember { mutableStateOf<Int?>(null) }
-    var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
-    var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
+    var selectedBattleId by remember(viewModel) { mutableStateOf(viewModel.savedBattleId) }
+    var pokemonNavTarget by remember(viewModel) { mutableStateOf<PokemonNavTarget?>(null) }
+    var playerNavTarget by remember(viewModel) { mutableStateOf<PlayerNavTarget?>(null) }
+    val listState = remember(viewModel) {
+        LazyListState(
+            firstVisibleItemIndex = viewModel.savedScrollIndex,
+            firstVisibleItemScrollOffset = viewModel.savedScrollOffset
+        )
+    }
+
+    // Persist selectedBattleId and scroll position in ViewModel for restoration on back navigation
+    LaunchedEffect(selectedBattleId) {
+        viewModel.savedBattleId = selectedBattleId
+    }
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                viewModel.savedScrollIndex = index
+                viewModel.savedScrollOffset = offset
+            }
+    }
 
     val navigateToPokemon: (Int, String, String?, List<String>, Int?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId ->
         if (onPokemonClick != null) {
@@ -206,6 +225,7 @@ fun ContentListPage(
                     showWinnerHighlight = showWinnerHighlight,
                     onRetry = viewModel::loadContent,
                     onPaginate = viewModel::paginate,
+                    listState = listState,
                     onItemClick = { item ->
                         when (item) {
                             is ContentListItem.Battle -> {
@@ -305,6 +325,7 @@ fun ContentListPage(
                         header = mode.toHeaderUiModel(),
                         selectedBattleId = selectedBattleId,
                         showWinnerHighlight = showWinnerHighlight,
+                        listState = listState,
                         onRetry = viewModel::loadContent,
                         onPaginate = viewModel::paginate,
                         onItemClick = { item ->
@@ -700,9 +721,9 @@ private fun ContentListContent(
     onToggleSortOrder: (() -> Unit)? = null,
     formats: List<FormatUiModel> = emptyList(),
     selectedFormatId: Int = 0,
-    onFormatSelected: ((Int) -> Unit)? = null
+    onFormatSelected: ((Int) -> Unit)? = null,
+    listState: LazyListState = rememberLazyListState()
 ) {
-    val listState = rememberLazyListState()
 
     val shouldPaginate by remember {
         derivedStateOf {

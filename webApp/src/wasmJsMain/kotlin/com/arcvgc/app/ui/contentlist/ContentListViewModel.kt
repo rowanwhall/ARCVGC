@@ -37,6 +37,11 @@ class ContentListViewModel(
     val formatCatalogState: StateFlow<CatalogState<FormatUiModel>>?
         get() = formatCatalogRepository?.state
 
+    // Persisted UI state for restoration on back navigation
+    var savedBattleId: Int? = null
+    var savedScrollIndex: Int = 0
+    var savedScrollOffset: Int = 0
+
     init { logic.initialize() }
 
     fun loadContent() = logic.loadContent()

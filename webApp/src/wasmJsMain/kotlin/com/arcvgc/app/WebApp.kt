@@ -233,8 +233,10 @@ fun WebApp() {
         var selectedTab by remember { mutableIntStateOf(0) }
         val searchOverlayState = remember { mutableStateOf<SearchParams?>(null) }
         var searchOverlayParams by searchOverlayState
-        val navStackState = remember { mutableStateOf(listOf<MobileNavEntry>()) }
+        val navStackState = remember { mutableStateOf(listOf<NavEntry>()) }
         var navStack by navStackState
+        val desktopNavStackState = remember { mutableStateOf(listOf<NavEntry>()) }
+        var desktopNavStack by desktopNavStackState
         val historyDepthState = remember { mutableIntStateOf(0) }
         var historyDepth by historyDepthState
         val popStatesToIgnoreState = remember { mutableIntStateOf(0) }
@@ -249,6 +251,8 @@ fun WebApp() {
                 } else {
                     if (navStackState.value.isNotEmpty()) {
                         navStackState.value = navStackState.value.dropLast(1)
+                    } else if (desktopNavStackState.value.isNotEmpty()) {
+                        desktopNavStackState.value = desktopNavStackState.value.dropLast(1)
                     } else if (searchOverlayState.value != null) {
                         searchOverlayState.value = null
                     }
@@ -262,6 +266,7 @@ fun WebApp() {
         val handleSearch: (SearchParams) -> Unit = { params ->
             val isNewSearch = searchOverlayParams == null
             searchOverlayParams = params
+            desktopNavStack = emptyList()
             if (isNewSearch) {
                 pushHistoryState()
                 historyDepth++
@@ -269,9 +274,10 @@ fun WebApp() {
         }
 
         val handleSearchBack: () -> Unit = {
-            val entriesToRemove = minOf(navStack.size + 1, historyDepth)
+            val entriesToRemove = minOf(navStack.size + desktopNavStack.size + 1, historyDepth)
             searchOverlayParams = null
             navStack = emptyList()
+            desktopNavStack = emptyList()
             if (entriesToRemove > 0) {
                 popStatesToIgnore++
                 historyGo(-entriesToRemove)
@@ -279,7 +285,7 @@ fun WebApp() {
             }
         }
 
-        val handlePushEntry: (MobileNavEntry) -> Unit = { entry ->
+        val handlePushEntry: (NavEntry) -> Unit = { entry ->
             navStack = navStack + entry
             pushHistoryState()
             historyDepth++
@@ -287,6 +293,21 @@ fun WebApp() {
 
         val handlePopEntry: () -> Unit = {
             navStack = navStack.dropLast(1)
+            if (historyDepth > 0) {
+                popStatesToIgnore++
+                historyGo(-1)
+                historyDepth--
+            }
+        }
+
+        val handlePushDesktopEntry: (NavEntry) -> Unit = { entry ->
+            desktopNavStack = desktopNavStack + entry
+            pushHistoryState()
+            historyDepth++
+        }
+
+        val handlePopDesktopEntry: () -> Unit = {
+            desktopNavStack = desktopNavStack.dropLast(1)
             if (historyDepth > 0) {
                 popStatesToIgnore++
                 historyGo(-1)
@@ -303,6 +324,7 @@ fun WebApp() {
             selectedTab = index
             searchOverlayParams = null
             navStack = emptyList()
+            desktopNavStack = emptyList()
         }
 
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -339,7 +361,10 @@ fun WebApp() {
                                 onTabSelected = handleTabSelected,
                                 searchOverlayParams = searchOverlayParams,
                                 onSearch = handleSearch,
-                                onSearchBack = handleSearchBack
+                                onSearchBack = handleSearchBack,
+                                desktopNavStack = desktopNavStack,
+                                onPushDesktopEntry = handlePushDesktopEntry,
+                                onPopDesktopEntry = handlePopDesktopEntry
                             )
                         }
                     }
@@ -356,8 +381,18 @@ private fun DesktopLayout(
     onTabSelected: (Int) -> Unit,
     searchOverlayParams: SearchParams?,
     onSearch: (SearchParams) -> Unit,
-    onSearchBack: () -> Unit
+    onSearchBack: () -> Unit,
+    desktopNavStack: List<NavEntry>,
+    onPushDesktopEntry: (NavEntry) -> Unit,
+    onPopDesktopEntry: () -> Unit
 ) {
+    val desktopPokemonClick: (Int, String, String?, List<String>, Int?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId ->
+        onPushDesktopEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
+    }
+    val desktopPlayerClick: (Int, String, Int?) -> Unit = { id, name, formatId ->
+        onPushDesktopEntry(NavEntry.Player(id, name, formatId))
+    }
+
     Row(modifier = Modifier.fillMaxSize()) {
         NavigationRail(
             modifier = Modifier.fillMaxHeight().shadow(elevation = 8.dp)
@@ -392,34 +427,68 @@ private fun DesktopLayout(
 
         val contentModifier = Modifier.weight(1f).fillMaxHeight()
 
-        if (searchOverlayParams != null) {
+        if (desktopNavStack.isNotEmpty()) {
+            val entry = desktopNavStack.last()
+            when (entry) {
+                is NavEntry.Pokemon -> ContentListPage(
+                    mode = ContentListMode.Pokemon(
+                        entry.id, entry.name, entry.imageUrl,
+                        entry.typeImageUrls.getOrNull(0),
+                        entry.typeImageUrls.getOrNull(1),
+                        entry.formatId
+                    ),
+                    onBack = onPopDesktopEntry,
+                    modifier = contentModifier,
+                    onPokemonClick = desktopPokemonClick,
+                    onPlayerClick = desktopPlayerClick
+                )
+                is NavEntry.Player -> ContentListPage(
+                    mode = ContentListMode.Player(entry.id, entry.name, entry.formatId),
+                    onBack = onPopDesktopEntry,
+                    modifier = contentModifier,
+                    onPokemonClick = desktopPokemonClick,
+                    onPlayerClick = desktopPlayerClick
+                )
+                is NavEntry.BattleDetail -> {} // Desktop doesn't use BattleDetail entries
+            }
+        } else if (searchOverlayParams != null) {
             ContentListPage(
                 mode = ContentListMode.Search(searchOverlayParams),
                 onBack = onSearchBack,
                 onSearchParamsChanged = onSearch,
-                modifier = contentModifier
+                modifier = contentModifier,
+                onPokemonClick = desktopPokemonClick,
+                onPlayerClick = desktopPlayerClick
             )
         } else {
             when (tabs[selectedTab]) {
-                Tab.Top -> ContentListPage(modifier = contentModifier)
+                Tab.Top -> ContentListPage(
+                    modifier = contentModifier,
+                    onPokemonClick = desktopPokemonClick,
+                    onPlayerClick = desktopPlayerClick
+                )
                 Tab.Search -> SearchPage(modifier = contentModifier, onSearch = onSearch)
-                Tab.Favorites -> FavoritesPage(modifier = contentModifier)
+                Tab.Favorites -> FavoritesPage(
+                    modifier = contentModifier,
+                    onPokemonClick = desktopPokemonClick,
+                    onPlayerClick = desktopPlayerClick
+                )
                 Tab.Settings -> SettingsPage(modifier = contentModifier)
             }
         }
     }
 }
 
-private sealed class MobileNavEntry {
-    data class BattleDetail(val request: BattleOverlayRequest) : MobileNavEntry()
+private sealed class NavEntry {
+    data class BattleDetail(val request: BattleOverlayRequest) : NavEntry()
     data class Pokemon(
         val id: Int,
         val name: String,
         val imageUrl: String?,
         val typeImageUrls: List<String> = emptyList(),
         val formatId: Int? = null
-    ) : MobileNavEntry()
-    data class Player(val id: Int, val name: String, val formatId: Int? = null) : MobileNavEntry()
+    ) : NavEntry()
+    data class Player(val id: Int, val name: String, val formatId: Int? = null) : NavEntry()
 }
 
 @Composable
@@ -430,19 +499,26 @@ private fun MobileLayout(
     searchOverlayParams: SearchParams?,
     onSearch: (SearchParams) -> Unit,
     onSearchBack: () -> Unit,
-    navStack: List<MobileNavEntry>,
-    onPushEntry: (MobileNavEntry) -> Unit,
+    navStack: List<NavEntry>,
+    onPushEntry: (NavEntry) -> Unit,
     onPopEntry: () -> Unit,
-    onReplaceNavStack: (MobileNavEntry) -> Unit
+    onReplaceNavStack: (NavEntry) -> Unit
 ) {
     val favoriteBattleIds by DependencyContainer.favoritesRepository.favoriteBattleIds.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
+
+    val pokemonClick: (Int, String, String?, List<String>, Int?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId ->
+        onPushEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
+    }
+    val playerClick: (Int, String, Int?) -> Unit = { id, name, formatId ->
+        onPushEntry(NavEntry.Player(id, name, formatId))
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         CompositionLocalProvider(
             LocalBattleOverlay provides { request ->
                 if (request != null) {
-                    onReplaceNavStack(MobileNavEntry.BattleDetail(request))
+                    onReplaceNavStack(NavEntry.BattleDetail(request))
                 }
             }
         ) {
@@ -471,7 +547,9 @@ private fun MobileLayout(
             ) { innerPadding ->
                 when (tabs[selectedTab]) {
                     Tab.Top -> ContentListPage(
-                        modifier = Modifier.fillMaxSize().padding(innerPadding)
+                        modifier = Modifier.fillMaxSize().padding(innerPadding),
+                        onPokemonClick = pokemonClick,
+                        onPlayerClick = playerClick
                     )
                     Tab.Search -> SearchPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -479,12 +557,8 @@ private fun MobileLayout(
                     )
                     Tab.Favorites -> FavoritesPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding),
-                        onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                            onPushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
-                        },
-                        onPlayerClick = { id, name, formatId ->
-                            onPushEntry(MobileNavEntry.Player(id, name, formatId))
-                        }
+                        onPokemonClick = pokemonClick,
+                        onPlayerClick = playerClick
                     )
                     Tab.Settings -> SettingsPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding)
@@ -498,7 +572,7 @@ private fun MobileLayout(
             CompositionLocalProvider(
                 LocalBattleOverlay provides { request ->
                     if (request != null) {
-                        onReplaceNavStack(MobileNavEntry.BattleDetail(request))
+                        onReplaceNavStack(NavEntry.BattleDetail(request))
                     }
                 }
             ) {
@@ -507,12 +581,8 @@ private fun MobileLayout(
                     onBack = { onSearchBack() },
                     onSearchParamsChanged = onSearch,
                     modifier = Modifier.fillMaxSize(),
-                    onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                        onPushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
-                    },
-                    onPlayerClick = { id, name, formatId ->
-                        onPushEntry(MobileNavEntry.Player(id, name, formatId))
-                    }
+                    onPokemonClick = pokemonClick,
+                    onPlayerClick = playerClick
                 )
             }
         }
@@ -520,7 +590,7 @@ private fun MobileLayout(
         // Render navigation stack — each entry is a full-screen overlay
         navStack.forEachIndexed { index, entry ->
             when (entry) {
-                is MobileNavEntry.BattleDetail -> {
+                is NavEntry.BattleDetail -> {
                     val request = entry.request
                     val isFavorited = request.battleId in favoriteBattleIds
                     BattleDetailPanel(
@@ -533,21 +603,17 @@ private fun MobileLayout(
                         player1IsWinner = request.player1IsWinner,
                         player2IsWinner = request.player2IsWinner,
                         showWinnerHighlight = showWinnerHighlight,
-                        onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                            onPushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
-                        },
-                        onPlayerClick = { id, name, formatId ->
-                            onPushEntry(MobileNavEntry.Player(id, name, formatId))
-                        },
+                        onPokemonClick = pokemonClick,
+                        onPlayerClick = playerClick,
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.surface)
                     )
                 }
-                is MobileNavEntry.Pokemon -> {
+                is NavEntry.Pokemon -> {
                     CompositionLocalProvider(
                         LocalBattleOverlay provides { request ->
-                            if (request != null) onPushEntry(MobileNavEntry.BattleDetail(request))
+                            if (request != null) onPushEntry(NavEntry.BattleDetail(request))
                         }
                     ) {
                         ContentListPage(
@@ -559,25 +625,23 @@ private fun MobileLayout(
                             ),
                             onBack = { onPopEntry() },
                             modifier = Modifier.fillMaxSize(),
-                            onPlayerClick = { id, name, formatId ->
-                                onPushEntry(MobileNavEntry.Player(id, name, formatId))
-                            }
+                            onPokemonClick = pokemonClick,
+                            onPlayerClick = playerClick
                         )
                     }
                 }
-                is MobileNavEntry.Player -> {
+                is NavEntry.Player -> {
                     CompositionLocalProvider(
                         LocalBattleOverlay provides { request ->
-                            if (request != null) onPushEntry(MobileNavEntry.BattleDetail(request))
+                            if (request != null) onPushEntry(NavEntry.BattleDetail(request))
                         }
                     ) {
                         ContentListPage(
                             mode = ContentListMode.Player(entry.id, entry.name, entry.formatId),
                             onBack = { onPopEntry() },
                             modifier = Modifier.fillMaxSize(),
-                            onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                                onPushEntry(MobileNavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
-                            }
+                            onPokemonClick = pokemonClick,
+                            onPlayerClick = playerClick
                         )
                     }
                 }
