@@ -131,15 +131,48 @@ Pokemon and Player modes show a toolbar with back button + favorite heart:
 - **Player mode**: heart toggles `togglePlayerFavorite(playerName)`
 - Toolbar floats over content with a gradient fade background (`surfaceContainer` at 70% → 0% alpha)
 
+## Shared Logic (`ContentListLogic`)
+
+All business logic lives in `shared/.../ui/contentlist/ContentListLogic.kt`. This class manages state, data fetching, pagination, sort/format toggling, and favorites observation. Platform ViewModels are thin wrappers (~20-50 LOC) that provide a `CoroutineScope` and delegate all operations.
+
+**Constructor:**
+```kotlin
+class ContentListLogic(
+    scope: CoroutineScope,           // viewModelScope on Android/Web, MainScope on iOS
+    repository: BattleRepositoryApi, // shared BattleRepository implements this
+    favoritesRepository: FavoritesRepository,
+    appConfigRepository: AppConfigRepository,
+    mode: ContentListMode,
+    pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList()
+)
+```
+
+**Public API** (all non-suspend — they launch internally via the injected scope):
+- `initialize()` — one-shot init, routes to correct startup path based on mode
+- `loadContent()` / `refresh()` — fetch page 1 (loading vs refreshing indicator)
+- `paginate()` — next page with guards (isPaginating, canPaginate, loadingSections)
+- `selectFormat(formatId)` — format change + section reload
+- `toggleSortOrder()` — sort toggle + section reload
+- `updateSearchParams(params)` — reset state and reload with new search params
+
+**Scope injection pattern:**
+- **Android/Web**: pass `viewModelScope` (auto-cancelled on ViewModel clear)
+- **iOS**: create via `CoroutineScopeFactory.shared.createMainScope()`, cancel in `deinit`
+
+**iOS StateFlow bridging:**
+iOS ViewModel bridges `ContentListLogic`'s `StateFlow` properties to `@Published` properties using `for await` loops on SKIE-generated async sequences.
+
 ## ViewModel Keying (Per-Platform)
 
-Each platform creates distinct ViewModel instances per mode to avoid state leakage:
+Each platform creates distinct ViewModel instances per mode to avoid state leakage. Each ViewModel creates its own `ContentListLogic` instance:
 
 - **Android**: `hiltViewModel(key = ...)` — `"content_list_home"`, `"content_list_favorites_{contentType}"`, `"content_list_search_{params}"`, `"content_list_pokemon_{pokemonId}"`, `"content_list_player_{playerId}_{formatId}"`
 - **iOS**: new `ContentListViewModel()` instance per `ContentListView` appearance
 - **Web**: `remember(mode.toString()) { ContentListViewModel(deps...) }` via `DependencyContainer`
 
 ## ContentListUiState
+
+Lives in `shared/.../ui/contentlist/ContentListUiState.kt` (shared across all platforms):
 
 ```kotlin
 data class ContentListUiState(
@@ -179,8 +212,11 @@ Home mode waits for app config before loading (needs default format ID):
 
 | Platform | Files |
 |---|---|
+| Shared logic | `shared/.../ui/contentlist/ContentListLogic.kt`, `ContentListUiState.kt` |
 | Shared models | `shared/.../ui/model/ContentListMode.kt`, `ContentListItem.kt`, `ContentListHeaderUiModel.kt` |
 | Shared mapper | `shared/.../ui/mapper/ContentListItemMapper.kt` |
-| Android | `composeApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt`, `ContentListUiState.kt` |
-| iOS | `iosApp/iosApp/ContentListView.swift`, `ContentListViewModel.swift`, `ContentListState.swift` |
-| Web | `webApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt`, `ContentListUiState.kt` |
+| Shared util | `shared/.../util/CoroutineScopeFactory.kt` |
+| Shared tests | `shared/src/commonTest/.../ui/contentlist/ContentListLogicTest.kt` |
+| Android | `composeApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt` |
+| iOS | `iosApp/iosApp/ContentListView.swift`, `ContentListViewModel.swift` |
+| Web | `webApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt` |

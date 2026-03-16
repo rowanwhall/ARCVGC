@@ -117,7 +117,7 @@ fun ContentListPage(
             favoritesRepository = DependencyContainer.favoritesRepository,
             mode = mode,
             pokemonCatalogItems = DependencyContainer.pokemonCatalogRepository.state.value.items,
-            appConfigRepository = if (mode is ContentListMode.Home || mode is ContentListMode.Pokemon || mode is ContentListMode.Player) DependencyContainer.appConfigRepository else null,
+            appConfigRepository = DependencyContainer.appConfigRepository,
             formatCatalogRepository = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) DependencyContainer.formatCatalogRepository else null
         )
     }

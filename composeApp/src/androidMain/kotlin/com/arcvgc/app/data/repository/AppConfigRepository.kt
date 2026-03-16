@@ -22,7 +22,7 @@ class AppConfigRepositoryImpl @Inject constructor(
     @ApplicationContext context: Context
 ) : AppConfigRepository {
 
-    private val shared = SharedAppConfigRepository(
+    internal val shared = SharedAppConfigRepository(
         apiService = apiService,
         storage = AppConfigStorage(context),
         catalogCacheStorage = CatalogCacheStorage(context)

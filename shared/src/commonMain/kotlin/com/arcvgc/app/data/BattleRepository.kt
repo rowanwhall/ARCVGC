@@ -23,7 +23,27 @@ data class MatchesResult(
 
 private const val DEFAULT_PAGE_SIZE = 10
 
-class BattleRepository(private val apiService: ApiService) {
+interface BattleRepositoryApi {
+    suspend fun searchMatches(
+        filters: List<SearchFilterSlot>,
+        formatId: Int = 1,
+        minimumRating: Int? = null,
+        maximumRating: Int? = null,
+        unratedOnly: Boolean = false,
+        orderBy: String = "rating",
+        limit: Int = 10,
+        page: Int = 1,
+        timeRangeStart: Long? = null,
+        timeRangeEnd: Long? = null,
+        playerName: String? = null
+    ): MatchesResult
+    suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel>
+    suspend fun getPokemonByIds(ids: List<Int>): List<PokemonListItem>
+    suspend fun getPlayerProfile(id: Int): PlayerProfile
+    suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem>
+}
+
+class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi {
 
     suspend fun getMatches(limit: Int = DEFAULT_PAGE_SIZE, page: Int = 1): MatchesResult {
         return when (val result = apiService.getMatches(limit, page)) {
@@ -35,18 +55,18 @@ class BattleRepository(private val apiService: ApiService) {
         }
     }
 
-    suspend fun searchMatches(
+    override suspend fun searchMatches(
         filters: List<SearchFilterSlot>,
-        formatId: Int = 1,
-        minimumRating: Int? = null,
-        maximumRating: Int? = null,
-        unratedOnly: Boolean = false,
-        orderBy: String = "rating",
-        limit: Int = DEFAULT_PAGE_SIZE,
-        page: Int = 1,
-        timeRangeStart: Long? = null,
-        timeRangeEnd: Long? = null,
-        playerName: String? = null
+        formatId: Int,
+        minimumRating: Int?,
+        maximumRating: Int?,
+        unratedOnly: Boolean,
+        orderBy: String,
+        limit: Int,
+        page: Int,
+        timeRangeStart: Long?,
+        timeRangeEnd: Long?,
+        playerName: String?
     ): MatchesResult {
         val request = buildSearchRequest(
             filters = filters,
@@ -77,7 +97,7 @@ class BattleRepository(private val apiService: ApiService) {
         }
     }
 
-    suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel> {
+    override suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel> {
         return coroutineScope {
             ids.map { id ->
                 async {
@@ -90,7 +110,7 @@ class BattleRepository(private val apiService: ApiService) {
         }
     }
 
-    suspend fun getPokemonByIds(ids: List<Int>): List<PokemonListItem> {
+    override suspend fun getPokemonByIds(ids: List<Int>): List<PokemonListItem> {
         return coroutineScope {
             ids.map { id ->
                 async {
@@ -103,14 +123,14 @@ class BattleRepository(private val apiService: ApiService) {
         }
     }
 
-    suspend fun getPlayerProfile(id: Int): PlayerProfile {
+    override suspend fun getPlayerProfile(id: Int): PlayerProfile {
         return when (val result = apiService.getPlayerById(id)) {
             is NetworkResult.Success -> result.data
             is NetworkResult.Error -> throw Exception(result.message)
         }
     }
 
-    suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem> {
+    override suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem> {
         return coroutineScope {
             names.map { name ->
                 async {

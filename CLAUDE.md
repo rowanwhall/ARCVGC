@@ -16,7 +16,7 @@ Kotlin Multiplatform (KMP) app for browsing Pokemon Showdown battle replays. Tar
 ## Project Structure
 
 ```
-shared/src/commonMain/    — Shared Kotlin code (network, domain, data, UI models, mappers)
+shared/src/commonMain/    — Shared Kotlin code (network, domain, data, UI models, mappers, ViewModel logic)
 shared/src/androidMain/   — Android HTTP engine (OkHttp), platform storage (SharedPreferences)
 shared/src/iosMain/       — iOS HTTP engine (Darwin), platform storage (NSUserDefaults)
 shared/src/wasmJsMain/    — Web HTTP engine (Js), platform storage (localStorage via @JsFun)
@@ -36,9 +36,9 @@ Network DTOs  →  Domain Models  →  UI Models  →  Screen
 
 - **Network layer** (`shared/.../network/`): `ApiService` with Ktor, DTO models, `ApiConstants` for base URL/endpoints, `CatalogLoader` (generic pagination), `SearchRequestMapper` (search request building)
 - **Domain layer** (`shared/.../domain/model/`): Pure Kotlin data classes — `MatchPreview`, `MatchDetail`, `PlayerDetail`, `PokemonListItem`, `SearchFilterSlot`, `AppConfig`, `Format`, etc.
-- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), and `SearchStateReducer` (pure state reducer for search filter mutations used by all platforms); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
+- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), and `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
 - **Data layer** (`shared/.../data/`): Shared business logic used by all platforms
-  - `BattleRepository` — Match data (getMatches, searchMatches, getMatchDetail, getMatchesByIds, getPokemonByIds, getPlayersByNames). Throws exceptions on error. Android wraps in `Result<T>` via a thin adapter; iOS uses directly via SKIE `async throws` bridge.
+  - `BattleRepository` (implements `BattleRepositoryApi`) — Match data (getMatches, searchMatches, getMatchDetail, getMatchesByIds, getPokemonByIds, getPlayersByNames). Throws exceptions on error. Android wraps in `Result<T>` via a thin adapter; iOS uses directly via SKIE `async throws` bridge. `ContentListLogic` depends on the `BattleRepositoryApi` interface for testability.
   - `FavoritesRepository` — Favorites toggle/check with `StateFlow` state, delegates to `FavoritesStorage` (expect/actual)
   - `SettingsRepository` — App settings with `StateFlow` per setting + combined `settingItems` flow. Delegates to `SettingsStorage` (expect/actual)
   - `AppConfigRepository` — Remote config (default format, min app versions, catalog version). Caches to `AppConfigStorage` (expect/actual). Signals `catalogVersionChanged` when catalog cache needs clearing.

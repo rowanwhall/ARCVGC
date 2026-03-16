@@ -41,7 +41,7 @@ class BattleRepositoryImpl @Inject constructor(
     apiService: ApiService
 ) : BattleRepository {
 
-    private val shared = SharedBattleRepository(apiService)
+    internal val shared = SharedBattleRepository(apiService)
 
     override suspend fun getMatches(limit: Int, page: Int): Result<Pair<List<BattleCardUiModel>, Pagination>> {
         return try {
