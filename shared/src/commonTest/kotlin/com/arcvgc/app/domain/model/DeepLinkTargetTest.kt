@@ -55,7 +55,7 @@ class DeepLinkTargetTest {
 
     @Test
     fun parseUnknownPathReturnsNull() {
-        assertNull(parseDeepLink("/settings"))
+        assertNull(parseDeepLink("/unknown"))
     }
 
     @Test
@@ -151,8 +151,8 @@ class DeepLinkTargetTest {
     }
 
     @Test
-    fun parseSearchNoQueryReturnsNull() {
-        assertNull(parseDeepLink("/search"))
+    fun parseSearchNoQueryReturnsSearchTab() {
+        assertIs<DeepLinkTarget.SearchTab>(parseDeepLink("/search"))
     }
 
     @Test
@@ -167,6 +167,20 @@ class DeepLinkTargetTest {
         val result = parseDeepLink("/search?p=150&f=1&order=rating&player=Wolfe%20Glick")
         assertIs<DeepLinkTarget.Search>(result)
         assertEquals("Wolfe Glick", result.params.playerName)
+    }
+
+    // Tab deep links
+
+    @Test
+    fun parseSearchTab() {
+        val result = parseDeepLink("/search")
+        assertIs<DeepLinkTarget.SearchTab>(result)
+    }
+
+    @Test
+    fun parseSettingsTab() {
+        val result = parseDeepLink("/settings")
+        assertIs<DeepLinkTarget.SettingsTab>(result)
     }
 
     // Round-trip test

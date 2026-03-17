@@ -244,6 +244,12 @@ fun App(deepLinkTarget: DeepLinkTarget? = null) {
                         is DeepLinkResolver.ResolvedLink.Search -> {
                             searchOverlayParams = resolved.params
                         }
+                        is DeepLinkResolver.ResolvedLink.SearchTab -> {
+                            selectedTab = 1
+                        }
+                        is DeepLinkResolver.ResolvedLink.SettingsTab -> {
+                            selectedTab = 3
+                        }
                         null -> {}
                     }
                 } catch (_: Exception) {}

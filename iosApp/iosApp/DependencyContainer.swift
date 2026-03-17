@@ -6,6 +6,8 @@ enum ResolvedDeepLink: Equatable {
     case pokemon(target: PokemonNavTarget)
     case player(target: PlayerNavTarget)
     case favorites(subTab: Int)
+    case searchTab
+    case settingsTab
 }
 
 @MainActor
@@ -69,8 +71,12 @@ final class DependencyContainer: ObservableObject {
                 }
                 pendingDeepLink = .favorites(subTab: subTab)
             case .search:
-                // Search deep links not yet supported on iOS (no catalog data for resolution)
+                // Search deep links with params not yet supported on iOS
                 break
+            case .searchTab:
+                pendingDeepLink = .searchTab
+            case .settingsTab:
+                pendingDeepLink = .settingsTab
             }
         }
     }

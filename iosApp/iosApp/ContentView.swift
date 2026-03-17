@@ -113,6 +113,10 @@ private struct ThemedContentView: View {
             case .favorites(let subTab):
                 selectedTab = 2
                 deepLinkFavoritesSubTab = subTab
+            case .searchTab:
+                selectedTab = 1
+            case .settingsTab:
+                selectedTab = 3
             }
             container.pendingDeepLink = nil
         }

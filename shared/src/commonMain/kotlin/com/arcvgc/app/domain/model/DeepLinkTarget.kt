@@ -6,6 +6,8 @@ sealed class DeepLinkTarget {
     data class Player(val name: String) : DeepLinkTarget()
     data class Favorites(val contentType: String) : DeepLinkTarget()
     data class Search(val params: SearchQueryParams) : DeepLinkTarget()
+    data object SearchTab : DeepLinkTarget()
+    data object SettingsTab : DeepLinkTarget()
 }
 
 data class SearchQueryParams(
@@ -44,6 +46,10 @@ fun parseDeepLink(path: String): DeepLinkTarget? {
             DeepLinkTarget.Favorites(segments[1])
         segments.size == 1 && segments[0] == "search" && queryString != null ->
             parseSearchQuery(queryString)
+        segments.size == 1 && segments[0] == "search" ->
+            DeepLinkTarget.SearchTab
+        segments.size == 1 && segments[0] == "settings" ->
+            DeepLinkTarget.SettingsTab
         else -> null
     }
 }

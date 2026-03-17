@@ -303,6 +303,12 @@ fun WebApp() {
                         is DeepLinkResolver.ResolvedLink.Search -> {
                             searchOverlayParams = resolved.params
                         }
+                        is DeepLinkResolver.ResolvedLink.SearchTab -> {
+                            selectedTab = 1
+                        }
+                        is DeepLinkResolver.ResolvedLink.SettingsTab -> {
+                            selectedTab = 3
+                        }
                     }
                     replaceHistoryStateWithPath(path)
                 } else {
@@ -398,6 +404,15 @@ fun WebApp() {
             searchOverlayParams = null
             navStack = emptyList()
             desktopNavStack = emptyList()
+            // Mirror tab URL — Top and Favorites are handled by their ContentListPage modePath
+            val tabPath = when (tabs[index]) {
+                Tab.Search -> "/search"
+                Tab.Settings -> "/settings"
+                else -> null
+            }
+            if (tabPath != null) {
+                replaceHistoryStateWithPath(tabPath)
+            }
         }
 
         Surface(modifier = Modifier.fillMaxSize()) {

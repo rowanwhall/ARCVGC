@@ -29,6 +29,8 @@ class DeepLinkResolver(
         data class Player(val item: PlayerListItem) : ResolvedLink()
         data class Favorites(val contentType: FavoriteContentType) : ResolvedLink()
         data class Search(val params: SearchParams) : ResolvedLink()
+        data object SearchTab : ResolvedLink()
+        data object SettingsTab : ResolvedLink()
     }
 
     suspend fun resolve(target: DeepLinkTarget): ResolvedLink? = when (target) {
@@ -55,6 +57,8 @@ class DeepLinkResolver(
             ResolvedLink.Favorites(contentType)
         }
         is DeepLinkTarget.Search -> resolveSearch(target.params)
+        is DeepLinkTarget.SearchTab -> ResolvedLink.SearchTab
+        is DeepLinkTarget.SettingsTab -> ResolvedLink.SettingsTab
     }
 
     private suspend fun resolveSearch(query: SearchQueryParams): ResolvedLink.Search? {

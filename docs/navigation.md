@@ -87,17 +87,20 @@ Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` an
 
 ## Deep Linking
 
-All three platforms support deep links to battle detail, Pokemon content list, and Player content list.
+All three platforms support deep links. Every page in the app is addressable via URL.
 
 ### URL Scheme
 
 | Target | URL Pattern | Example |
 |---|---|---|
+| Home / Top | `/` | `arcvgc.com` |
 | Battle detail | `/battle/{id}` | `arcvgc.com/battle/42` |
 | Pokemon battles | `/pokemon/{id}` | `arcvgc.com/pokemon/150` |
 | Player battles | `/player/{name}` | `arcvgc.com/player/Wolfe%20Glick` |
 | Favorites sub-tab | `/favorites/{type}` | `arcvgc.com/favorites/pokemon` |
+| Search tab | `/search` | `arcvgc.com/search` |
 | Search results | `/search?p=...&f=...&order=...` | see search params below |
+| Settings | `/settings` | `arcvgc.com/settings` |
 
 **Search query parameters:** `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `f` (format ID), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping.
 
