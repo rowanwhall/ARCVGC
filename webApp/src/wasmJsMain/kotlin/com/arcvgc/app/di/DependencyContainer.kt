@@ -3,6 +3,7 @@ package com.arcvgc.app.di
 import com.arcvgc.app.data.AppConfigRepository
 import com.arcvgc.app.data.AppConfigStorage
 import com.arcvgc.app.data.BattleRepository
+import com.arcvgc.app.data.DeepLinkResolver
 import com.arcvgc.app.data.CatalogCacheStorage
 import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.FavoritesStorage
@@ -17,6 +18,7 @@ import com.arcvgc.app.network.ApiService
 object DependencyContainer {
     val apiService: ApiService by lazy { ApiService() }
     val battleRepository: BattleRepository by lazy { BattleRepository(apiService) }
+    val deepLinkResolver: DeepLinkResolver by lazy { DeepLinkResolver(apiService) }
     val favoritesRepository: FavoritesRepository by lazy { FavoritesRepository(FavoritesStorage()) }
     private val cacheStorage: CatalogCacheStorage by lazy { CatalogCacheStorage() }
     val pokemonCatalogRepository: PokemonCatalogRepository by lazy { PokemonCatalogRepository(apiService, cacheStorage) }

@@ -19,6 +19,20 @@ struct iOSApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(container)
+                .onOpenURL { url in
+                    let path: String
+                    if url.scheme == "arcvgc" {
+                        // Custom URL scheme: arcvgc://battle/42
+                        path = "/\(url.host ?? "")/\(url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))"
+                            .replacingOccurrences(of: "//", with: "/")
+                    } else {
+                        // Universal link: https://arcvgc.com/battle/42
+                        path = url.path
+                    }
+                    if let target = DeepLinkTargetKt.parseDeepLink(path: path) {
+                        container.handleDeepLink(target: target)
+                    }
+                }
         }
     }
 }

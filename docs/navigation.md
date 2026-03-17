@@ -84,3 +84,47 @@ Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` an
 - iOS: `BattleDetailSheet.swift` (sheet + tabs + TeamPreviewTab + PlayerTeamDetailSection), `PokemonDetailCard.swift` (in `iosApp/iosApp/`)
 - Web: `BattleDetailPanel.kt` (inline panel + tabs), `TeamPreviewTab.kt`, `PokemonDetailCard.kt`, `ReplayTab.kt` (all in `webApp/.../ui/battledetail/`)
 - Shared `BattleRepository`: `shared/.../data/BattleRepository.kt` (used by all platforms)
+
+## Deep Linking
+
+All three platforms support deep links to battle detail, Pokemon content list, and Player content list.
+
+### URL Scheme
+
+| Target | URL Pattern | Example |
+|---|---|---|
+| Battle detail | `/battle/{id}` | `arcvgc.com/battle/42` |
+| Pokemon battles | `/pokemon/{id}` | `arcvgc.com/pokemon/150` |
+| Player battles | `/player/{name}` | `arcvgc.com/player/Wolfe%20Glick` |
+
+### Shared module
+
+- `DeepLinkTarget` sealed class + `parseDeepLink(path)` parser in `shared/.../domain/model/DeepLinkTarget.kt`
+- `DeepLinkResolver` resolves targets to navigation data (fetches Pokemon/Player display info from API) in `shared/.../data/DeepLinkResolver.kt`
+
+### Web
+
+- `BrowserHistory.kt` includes `pushHistoryStateWithPath()`, `replaceHistoryStateWithPath()`, `getLocationPathname()` for URL-based navigation
+- On page load, `WebApp()` reads `window.location.pathname`, parses it via `parseDeepLink()`, resolves via `DeepLinkResolver`, and sets initial navigation state
+- Navigation handlers (`handlePushEntry`, `handlePushDesktopEntry`, `onReplaceNavStack`) push URL paths matching the current `NavEntry`
+- Back navigation via `historyGo(-1)` automatically restores the previous URL
+- nginx SPA fallback (`try_files $uri $uri/ /index.html`) serves the app for all deep link paths
+
+### Android
+
+- Intent filters in `AndroidManifest.xml` for `https://arcvgc.com/battle/*`, `/pokemon/*`, `/player/*`
+- `MainActivity` parses `intent.data?.path` via `parseDeepLink()` and passes to `App(deepLinkTarget:)`
+- Battle deep links use `initialBattleId` on the Home `ContentListPage` to auto-open the detail sheet
+- Pokemon/Player deep links render as overlays via `deepLinkOverlay` state in `App.kt`
+- `DeepLinkResolver` provided via Hilt in `NetworkModule`
+- App Links verification (`.well-known/assetlinks.json`) is **not yet configured** — deep links show a disambiguation dialog until verified
+
+### iOS
+
+- Custom URL scheme `arcvgc://` registered in `Info.plist` (`CFBundleURLTypes`)
+- `iOSApp.swift` handles `.onOpenURL` — parses path and calls `DependencyContainer.handleDeepLink(target:)`
+- `DependencyContainer` resolves the target asynchronously and publishes via `@Published pendingDeepLink`
+- `ContentView` observes `pendingDeepLink` and switches to the Top tab, then navigates to the appropriate content
+- Battle deep links use `initialBattleId` on `ContentListView` to auto-open the detail sheet
+- Pokemon/Player deep links push via `navigationDestination(isPresented:)` at the `ThemedContentView` level
+- Universal Links (`apple-app-site-association`) are **not yet configured** — currently only the custom `arcvgc://` scheme works

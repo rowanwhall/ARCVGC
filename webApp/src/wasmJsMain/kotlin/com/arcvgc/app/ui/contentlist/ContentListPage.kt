@@ -65,6 +65,9 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.arcvgc.app.di.DependencyContainer
+import com.arcvgc.app.ui.LocalWindowSizeClass
+import com.arcvgc.app.ui.WindowSizeClass
+import com.arcvgc.app.ui.replaceHistoryStateWithPath
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.components.BattleCard
 import com.arcvgc.app.ui.components.EmptyView
@@ -76,8 +79,6 @@ import com.arcvgc.app.ui.components.TypeIconRow
 import com.arcvgc.app.ui.components.TypeInfo
 import com.arcvgc.app.ui.BattleOverlayRequest
 import com.arcvgc.app.ui.LocalBattleOverlay
-import com.arcvgc.app.ui.LocalWindowSizeClass
-import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.rememberViewModel
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
@@ -105,7 +106,8 @@ fun ContentListPage(
     onBack: (() -> Unit)? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?) -> Unit)? = null,
-    onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null
+    onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null,
+    initialBattleId: Int? = null
 ) {
     val viewModelKey = when (mode) {
         is ContentListMode.Home -> "content_list_home"
@@ -133,7 +135,7 @@ fun ContentListPage(
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
     val formatCatalogState = viewModel.formatCatalogState?.collectAsState()
     val selectedFormatId by viewModel.selectedFormatId.collectAsState()
-    var selectedBattleId by remember(viewModel) { mutableStateOf(viewModel.savedBattleId) }
+    var selectedBattleId by remember(viewModel) { mutableStateOf(initialBattleId ?: viewModel.savedBattleId) }
     var pokemonNavTarget by remember(viewModel) { mutableStateOf<PokemonNavTarget?>(null) }
     var playerNavTarget by remember(viewModel) { mutableStateOf<PlayerNavTarget?>(null) }
     val listState = remember(viewModel) {
@@ -146,6 +148,20 @@ fun ContentListPage(
     // Persist selectedBattleId and scroll position in ViewModel for restoration on back navigation
     LaunchedEffect(selectedBattleId) {
         viewModel.savedBattleId = selectedBattleId
+    }
+
+    // Mirror desktop battle detail selection in the URL bar
+    val isDesktop = LocalWindowSizeClass.current == WindowSizeClass.Expanded
+    if (isDesktop) {
+        val modePath = when (mode) {
+            is ContentListMode.Pokemon -> "/pokemon/${mode.pokemonId}"
+            is ContentListMode.Player -> "/player/${mode.playerName}"
+            else -> "/"
+        }
+        LaunchedEffect(selectedBattleId) {
+            val path = selectedBattleId?.let { "/battle/$it" } ?: modePath
+            replaceHistoryStateWithPath(path)
+        }
     }
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }

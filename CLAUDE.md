@@ -103,7 +103,7 @@ Feature-specific architecture docs. **You MUST read the relevant doc(s) before s
 | [`docs/content-list.md`](docs/content-list.md) | ContentListPage modes, headers, page 1 vs 2+ content structure, section loading, format selection, favorites auto-refresh, navigation suppression |
 | [`docs/config.md`](docs/config.md) | App Config — remote config, default format, forced upgrade, catalog versioning |
 | [`docs/search.md`](docs/search.md) | Search/Filter architecture, catalog repos, sort toggle, section loading, pagination guard |
-| [`docs/navigation.md`](docs/navigation.md) | Tab navigation, Pokemon/Player drill-down, battle detail presentation |
+| [`docs/navigation.md`](docs/navigation.md) | Tab navigation, Pokemon/Player drill-down, battle detail presentation, deep linking |
 | [`docs/favorites.md`](docs/favorites.md) | Favorites architecture — shared + per-platform |
 | [`docs/settings.md`](docs/settings.md) | Settings architecture — adding new settings |
 | [`docs/dark-mode.md`](docs/dark-mode.md) | Theme implementation per platform |

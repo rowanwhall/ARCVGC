@@ -95,6 +95,7 @@ fun ContentListPage(
     onBack: (() -> Unit)? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     consumeTopInsets: Boolean = true,
+    initialBattleId: Int? = null,
     viewModel: ContentListViewModel = hiltViewModel(
         key = when (mode) {
             is ContentListMode.Home -> "content_list_home"
@@ -117,7 +118,7 @@ fun ContentListPage(
     val showWinnerHighlight by viewModel.settingsRepository.showWinnerHighlight.collectAsStateWithLifecycle()
     val formatCatalogState by viewModel.formatCatalogRepository.state.collectAsStateWithLifecycle()
     val selectedFormatId by viewModel.selectedFormatId.collectAsStateWithLifecycle()
-    var selectedBattleId by remember { mutableStateOf<Int?>(null) }
+    var selectedBattleId by remember { mutableStateOf(initialBattleId) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
 

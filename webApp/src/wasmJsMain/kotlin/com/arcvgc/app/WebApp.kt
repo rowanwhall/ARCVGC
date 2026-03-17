@@ -59,10 +59,16 @@ import com.arcvgc.app.ui.LocalBattleOverlay
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.ProvideViewModelStore
 import com.arcvgc.app.ui.WindowSizeClass
+import com.arcvgc.app.ui.getLocationPathname
 import com.arcvgc.app.ui.historyGo
 import com.arcvgc.app.ui.pushHistoryState
+import com.arcvgc.app.ui.pushHistoryStateWithPath
+import com.arcvgc.app.ui.replaceHistoryStateWithPath
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.contentlist.ContentListPage
+import com.arcvgc.app.data.DeepLinkResolver
+import com.arcvgc.app.domain.model.parseDeepLink
+import com.arcvgc.app.network.normalizeImageUrl
 import kotlinx.browser.window
 import org.w3c.dom.events.Event
 import com.arcvgc.app.ui.favorites.FavoritesPage
@@ -71,6 +77,8 @@ import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.DarkModeOption
 import com.arcvgc.app.ui.search.SearchPage
 import com.arcvgc.app.ui.settings.SettingsPage
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
 
 private val RedColorScheme = lightColorScheme(
     primary = Color(0xFFDC2F35),
@@ -242,6 +250,55 @@ fun WebApp() {
         val popStatesToIgnoreState = remember { mutableIntStateOf(0) }
         var popStatesToIgnore by popStatesToIgnoreState
         val tabs = Tab.entries
+        var deepLinkLoading by remember { mutableStateOf(false) }
+        var deepLinkBattleId by remember { mutableStateOf<Int?>(null) }
+
+        // Resolve deep link from URL on initial load
+        LaunchedEffect(Unit) {
+            val path = getLocationPathname()
+            val target = parseDeepLink(path) ?: return@LaunchedEffect
+            deepLinkLoading = true
+            try {
+                val resolved = DependencyContainer.deepLinkResolver.resolve(target)
+                if (resolved != null) {
+                    when (resolved) {
+                        is DeepLinkResolver.ResolvedLink.Battle -> {
+                            // Battle deep link: mobile uses navStack overlay,
+                            // desktop uses initialBattleId on the Home ContentListPage
+                            deepLinkBattleId = resolved.id
+                            navStack = listOf(NavEntry.BattleDetail(
+                                BattleOverlayRequest(resolved.id, null, null)
+                            ))
+                        }
+                        is DeepLinkResolver.ResolvedLink.Pokemon -> {
+                            val item = resolved.item
+                            val entry = NavEntry.Pokemon(
+                                id = item.id,
+                                name = item.name,
+                                imageUrl = normalizeImageUrl(item.imageUrl),
+                                typeImageUrls = item.types.mapNotNull { normalizeImageUrl(it.imageUrl) }
+                            )
+                            navStack = listOf(entry)
+                            desktopNavStack = listOf(entry)
+                        }
+                        is DeepLinkResolver.ResolvedLink.Player -> {
+                            val entry = NavEntry.Player(
+                                id = resolved.item.id,
+                                name = resolved.item.name
+                            )
+                            navStack = listOf(entry)
+                            desktopNavStack = listOf(entry)
+                        }
+                    }
+                    replaceHistoryStateWithPath(path)
+                } else {
+                    replaceHistoryStateWithPath("/")
+                }
+            } catch (_: Exception) {
+                replaceHistoryStateWithPath("/")
+            }
+            deepLinkLoading = false
+        }
 
         // Browser back button handler
         DisposableEffect(Unit) {
@@ -287,7 +344,7 @@ fun WebApp() {
 
         val handlePushEntry: (NavEntry) -> Unit = { entry ->
             navStack = navStack + entry
-            pushHistoryState()
+            pushHistoryStateWithPath(navEntryToPath(entry))
             historyDepth++
         }
 
@@ -302,7 +359,7 @@ fun WebApp() {
 
         val handlePushDesktopEntry: (NavEntry) -> Unit = { entry ->
             desktopNavStack = desktopNavStack + entry
-            pushHistoryState()
+            pushHistoryStateWithPath(navEntryToPath(entry))
             historyDepth++
         }
 
@@ -329,43 +386,53 @@ fun WebApp() {
 
         Surface(modifier = Modifier.fillMaxSize()) {
             ProvideViewModelStore {
-                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                    val windowSizeClass = if (maxWidth < 600.dp) {
-                        WindowSizeClass.Compact
-                    } else {
-                        WindowSizeClass.Expanded
+                if (deepLinkLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
-
-                    CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass) {
-                        if (windowSizeClass == WindowSizeClass.Compact) {
-                            MobileLayout(
-                                tabs = tabs,
-                                selectedTab = selectedTab,
-                                onTabSelected = handleTabSelected,
-                                searchOverlayParams = searchOverlayParams,
-                                onSearch = handleSearch,
-                                onSearchBack = handleSearchBack,
-                                navStack = navStack,
-                                onPushEntry = handlePushEntry,
-                                onPopEntry = handlePopEntry,
-                                onReplaceNavStack = { entry ->
-                                    navStack = listOf(entry)
-                                    pushHistoryState()
-                                    historyDepth++
-                                }
-                            )
+                } else {
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val windowSizeClass = if (maxWidth < 600.dp) {
+                            WindowSizeClass.Compact
                         } else {
-                            DesktopLayout(
-                                tabs = tabs,
-                                selectedTab = selectedTab,
-                                onTabSelected = handleTabSelected,
-                                searchOverlayParams = searchOverlayParams,
-                                onSearch = handleSearch,
-                                onSearchBack = handleSearchBack,
-                                desktopNavStack = desktopNavStack,
-                                onPushDesktopEntry = handlePushDesktopEntry,
-                                onPopDesktopEntry = handlePopDesktopEntry
-                            )
+                            WindowSizeClass.Expanded
+                        }
+
+                        CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass) {
+                            if (windowSizeClass == WindowSizeClass.Compact) {
+                                MobileLayout(
+                                    tabs = tabs,
+                                    selectedTab = selectedTab,
+                                    onTabSelected = handleTabSelected,
+                                    searchOverlayParams = searchOverlayParams,
+                                    onSearch = handleSearch,
+                                    onSearchBack = handleSearchBack,
+                                    navStack = navStack,
+                                    onPushEntry = handlePushEntry,
+                                    onPopEntry = handlePopEntry,
+                                    onReplaceNavStack = { entry ->
+                                        navStack = listOf(entry)
+                                        pushHistoryStateWithPath(navEntryToPath(entry))
+                                        historyDepth++
+                                    }
+                                )
+                            } else {
+                                DesktopLayout(
+                                    tabs = tabs,
+                                    selectedTab = selectedTab,
+                                    onTabSelected = handleTabSelected,
+                                    searchOverlayParams = searchOverlayParams,
+                                    onSearch = handleSearch,
+                                    onSearchBack = handleSearchBack,
+                                    desktopNavStack = desktopNavStack,
+                                    onPushDesktopEntry = handlePushDesktopEntry,
+                                    onPopDesktopEntry = handlePopDesktopEntry,
+                                    initialBattleId = deepLinkBattleId
+                                )
+                            }
                         }
                     }
                 }
@@ -384,7 +451,8 @@ private fun DesktopLayout(
     onSearchBack: () -> Unit,
     desktopNavStack: List<NavEntry>,
     onPushDesktopEntry: (NavEntry) -> Unit,
-    onPopDesktopEntry: () -> Unit
+    onPopDesktopEntry: () -> Unit,
+    initialBattleId: Int? = null
 ) {
     val desktopPokemonClick: (Int, String, String?, List<String>, Int?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId ->
         onPushDesktopEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
@@ -465,7 +533,8 @@ private fun DesktopLayout(
                 Tab.Top -> ContentListPage(
                     modifier = contentModifier,
                     onPokemonClick = desktopPokemonClick,
-                    onPlayerClick = desktopPlayerClick
+                    onPlayerClick = desktopPlayerClick,
+                    initialBattleId = initialBattleId
                 )
                 Tab.Search -> SearchPage(modifier = contentModifier, onSearch = onSearch)
                 Tab.Favorites -> FavoritesPage(
@@ -489,6 +558,12 @@ private sealed class NavEntry {
         val formatId: Int? = null
     ) : NavEntry()
     data class Player(val id: Int, val name: String, val formatId: Int? = null) : NavEntry()
+}
+
+private fun navEntryToPath(entry: NavEntry): String = when (entry) {
+    is NavEntry.BattleDetail -> "/battle/${entry.request.battleId}"
+    is NavEntry.Pokemon -> "/pokemon/${entry.id}"
+    is NavEntry.Player -> "/player/${entry.name}"
 }
 
 @Composable

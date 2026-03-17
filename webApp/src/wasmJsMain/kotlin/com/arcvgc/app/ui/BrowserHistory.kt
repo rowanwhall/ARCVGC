@@ -7,3 +7,15 @@ internal external fun pushHistoryState()
 @OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 @JsFun("(delta) => { window.history.go(delta); }")
 internal external fun historyGo(delta: Int)
+
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+@JsFun("(path) => { window.history.pushState({}, '', path); }")
+internal external fun pushHistoryStateWithPath(path: String)
+
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+@JsFun("(path) => { window.history.replaceState({}, '', path); }")
+internal external fun replaceHistoryStateWithPath(path: String)
+
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+@JsFun("() => { return window.location.pathname; }")
+internal external fun getLocationPathname(): String

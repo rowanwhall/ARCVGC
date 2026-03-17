@@ -132,7 +132,7 @@ struct ContentListView: View {
         container.catalogStore.formatItems
     }
 
-    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], onSearchParamsChanged: ((SearchParams) -> Void)? = nil) {
+    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], onSearchParamsChanged: ((SearchParams) -> Void)? = nil, initialBattleId: Int32? = nil) {
         self.repository = repository
         self.mode = mode
         self.favoritesStore = favoritesStore
@@ -140,6 +140,7 @@ struct ContentListView: View {
         self.appConfigStore = appConfigStore
         self.onSearchParamsChanged = onSearchParamsChanged
         _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems, appConfigStore: appConfigStore, formatItems: formatItems))
+        _selectedBattleId = State(initialValue: initialBattleId)
     }
 
     var body: some View {

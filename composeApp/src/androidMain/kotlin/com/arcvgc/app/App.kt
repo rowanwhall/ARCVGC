@@ -25,6 +25,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,8 +38,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.arcvgc.app.data.DeepLinkResolver
 import com.arcvgc.app.data.repository.AppConfigRepository
+import com.arcvgc.app.domain.model.DeepLinkTarget
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.components.ForceUpgradeOverlay
 import com.arcvgc.app.ui.contentlist.ContentListPage
@@ -49,6 +53,8 @@ import com.arcvgc.app.ui.model.DarkModeOption
 import com.arcvgc.app.ui.search.SearchPage
 import com.arcvgc.app.ui.settings.SettingsPage
 import com.arcvgc.app.ui.settings.SettingsViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
 private val RedColorScheme = lightColorScheme(
     primary = Color(0xFFDC2F35),
@@ -164,8 +170,13 @@ private enum class Tab(
     Settings("Settings", Icons.Default.Settings)
 }
 
+@HiltViewModel
+class DeepLinkViewModel @Inject constructor(
+    val deepLinkResolver: DeepLinkResolver
+) : ViewModel()
+
 @Composable
-fun App() {
+fun App(deepLinkTarget: DeepLinkTarget? = null) {
     val settingsViewModel: SettingsViewModel = hiltViewModel()
     val themeId by settingsViewModel.settingsRepository.selectedThemeId.collectAsStateWithLifecycle()
     val darkModeId by settingsViewModel.settingsRepository.darkModeId.collectAsStateWithLifecycle()
@@ -195,7 +206,40 @@ fun App() {
     MaterialTheme(colorScheme = colorSchemeForTheme(themeId, isDark)) {
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
         var searchOverlayParams by remember { mutableStateOf<SearchParams?>(null) }
+        var deepLinkOverlay by remember { mutableStateOf<ContentListMode?>(null) }
+        var deepLinkBattleId by remember { mutableStateOf<Int?>(null) }
         val tabs = Tab.entries
+
+        if (deepLinkTarget != null) {
+            val deepLinkViewModel: DeepLinkViewModel = hiltViewModel()
+            LaunchedEffect(deepLinkTarget) {
+                try {
+                    val resolved = deepLinkViewModel.deepLinkResolver.resolve(deepLinkTarget)
+                    when (resolved) {
+                        is DeepLinkResolver.ResolvedLink.Battle -> {
+                            deepLinkBattleId = resolved.id
+                        }
+                        is DeepLinkResolver.ResolvedLink.Pokemon -> {
+                            val item = resolved.item
+                            deepLinkOverlay = ContentListMode.Pokemon(
+                                pokemonId = item.id,
+                                name = item.name,
+                                imageUrl = item.imageUrl,
+                                typeImageUrl1 = item.types.getOrNull(0)?.imageUrl,
+                                typeImageUrl2 = item.types.getOrNull(1)?.imageUrl
+                            )
+                        }
+                        is DeepLinkResolver.ResolvedLink.Player -> {
+                            deepLinkOverlay = ContentListMode.Player(
+                                playerId = resolved.item.id,
+                                playerName = resolved.item.name
+                            )
+                        }
+                        null -> {}
+                    }
+                } catch (_: Exception) {}
+            }
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
@@ -229,7 +273,8 @@ fun App() {
                 when (tabs[selectedTab]) {
                     Tab.Top -> ContentListPage(
                         modifier = Modifier.padding(innerPadding),
-                        consumeTopInsets = false
+                        consumeTopInsets = false,
+                        initialBattleId = deepLinkBattleId
                     )
                     Tab.Search -> SearchPage(
                         modifier = Modifier.padding(innerPadding),
@@ -250,6 +295,13 @@ fun App() {
                     mode = ContentListMode.Search(params),
                     onBack = { searchOverlayParams = null },
                     onSearchParamsChanged = { searchOverlayParams = it }
+                )
+            }
+
+            deepLinkOverlay?.let { mode ->
+                ContentListPage(
+                    mode = mode,
+                    onBack = { deepLinkOverlay = null }
                 )
             }
 
