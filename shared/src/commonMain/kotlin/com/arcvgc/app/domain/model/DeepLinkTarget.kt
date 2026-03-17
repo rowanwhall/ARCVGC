@@ -1,7 +1,12 @@
 package com.arcvgc.app.domain.model
 
+data class DeepLink(
+    val target: DeepLinkTarget,
+    val battleId: Int? = null
+)
+
 sealed class DeepLinkTarget {
-    data class Battle(val id: Int) : DeepLinkTarget()
+    data object Home : DeepLinkTarget()
     data class Pokemon(val id: Int) : DeepLinkTarget()
     data class Player(val name: String) : DeepLinkTarget()
     data class Favorites(val contentType: String) : DeepLinkTarget()
@@ -26,16 +31,23 @@ data class SearchQueryParams(
 
 private val VALID_FAVORITES_TYPES = setOf("battles", "pokemon", "players")
 
-fun parseDeepLink(path: String): DeepLinkTarget? {
+fun parseDeepLink(path: String): DeepLink? {
     // Split path and query string
     val questionIndex = path.indexOf('?')
     val pathPart = if (questionIndex >= 0) path.substring(0, questionIndex) else path
     val queryString = if (questionIndex >= 0) path.substring(questionIndex + 1) else null
 
+    // Extract battle param from query string
+    val queryParams = queryString?.let { parseQueryParams(it) } ?: emptyMap()
+    val battleId = queryParams["battle"]?.toIntOrNull()
+
     val segments = pathPart.trimStart('/').split('/')
-    return when {
-        segments.size == 2 && segments[0] == "battle" ->
-            segments[1].toIntOrNull()?.let { DeepLinkTarget.Battle(it) }
+    val target = when {
+        // /battle/{id} → backwards compat: Home root with battle ID
+        segments.size == 2 && segments[0] == "battle" -> {
+            val id = segments[1].toIntOrNull() ?: return null
+            return DeepLink(target = DeepLinkTarget.Home, battleId = id)
+        }
         segments.size == 2 && segments[0] == "pokemon" ->
             segments[1].toIntOrNull()?.let { DeepLinkTarget.Pokemon(it) }
         segments.size >= 2 && segments[0] == "player" -> {
@@ -44,19 +56,22 @@ fun parseDeepLink(path: String): DeepLinkTarget? {
         }
         segments.size == 2 && segments[0] == "favorites" && segments[1] in VALID_FAVORITES_TYPES ->
             DeepLinkTarget.Favorites(segments[1])
-        segments.size == 1 && segments[0] == "search" && queryString != null ->
-            parseSearchQuery(queryString)
+        segments.size == 1 && segments[0] == "search" && queryParams.containsKey("p") ->
+            parseSearchQuery(queryParams)
         segments.size == 1 && segments[0] == "search" ->
             DeepLinkTarget.SearchTab
         segments.size == 1 && segments[0] == "settings" ->
             DeepLinkTarget.SettingsTab
+        // Root path or /?battle=X
+        segments.size == 1 && segments[0].isEmpty() ->
+            if (battleId != null) DeepLinkTarget.Home else return null
         else -> null
-    }
+    } ?: return null
+
+    return DeepLink(target = target, battleId = battleId)
 }
 
-private fun parseSearchQuery(queryString: String): DeepLinkTarget.Search? {
-    val params = parseQueryParams(queryString)
-
+private fun parseSearchQuery(params: Map<String, String>): DeepLinkTarget.Search? {
     val pokemonIds = params["p"]?.split(",")?.mapNotNull { it.toIntOrNull() }
     if (pokemonIds.isNullOrEmpty()) return null
 
@@ -149,6 +164,12 @@ fun encodeSearchPath(params: SearchParams): String {
     params.playerName?.takeIf { it.isNotBlank() }?.let { parts.add("player=${encodePercent(it)}") }
 
     return "/search?${parts.joinToString("&")}"
+}
+
+fun appendBattleParam(basePath: String, battleId: Int?): String {
+    if (battleId == null) return basePath
+    val separator = if ('?' in basePath) "&" else "?"
+    return "${basePath}${separator}battle=$battleId"
 }
 
 private fun encodePercent(value: String): String {

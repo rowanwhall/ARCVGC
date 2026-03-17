@@ -1,5 +1,6 @@
 package com.arcvgc.app.data
 
+import com.arcvgc.app.domain.model.DeepLink
 import com.arcvgc.app.domain.model.DeepLinkTarget
 import com.arcvgc.app.domain.model.NetworkResult
 import com.arcvgc.app.domain.model.PlayerListItem
@@ -24,7 +25,7 @@ class DeepLinkResolver(
 ) {
 
     sealed class ResolvedLink {
-        data class Battle(val id: Int) : ResolvedLink()
+        data object Home : ResolvedLink()
         data class Pokemon(val item: PokemonListItem) : ResolvedLink()
         data class Player(val item: PlayerListItem) : ResolvedLink()
         data class Favorites(val contentType: FavoriteContentType) : ResolvedLink()
@@ -33,8 +34,10 @@ class DeepLinkResolver(
         data object SettingsTab : ResolvedLink()
     }
 
+    suspend fun resolve(deepLink: DeepLink): ResolvedLink? = resolve(deepLink.target)
+
     suspend fun resolve(target: DeepLinkTarget): ResolvedLink? = when (target) {
-        is DeepLinkTarget.Battle -> ResolvedLink.Battle(target.id)
+        is DeepLinkTarget.Home -> ResolvedLink.Home
         is DeepLinkTarget.Pokemon -> {
             when (val result = apiService.getPokemonById(target.id)) {
                 is NetworkResult.Success -> ResolvedLink.Pokemon(result.data)

@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.arcvgc.app.domain.model.DeepLink
 import com.arcvgc.app.domain.model.parseDeepLink
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -15,10 +16,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        val deepLinkTarget = intent.data?.path?.let { parseDeepLink(it) }
+        val deepLink = intent.data?.let { uri ->
+            val pathAndQuery = buildString {
+                append(uri.path ?: "")
+                uri.query?.let { append("?$it") }
+            }
+            parseDeepLink(pathAndQuery)
+        }
 
         setContent {
-            App(deepLinkTarget = deepLinkTarget)
+            App(deepLink = deepLink)
         }
     }
 }

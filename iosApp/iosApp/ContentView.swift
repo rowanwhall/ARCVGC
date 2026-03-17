@@ -100,6 +100,7 @@ private struct ThemedContentView: View {
         }
         .onChange(of: container.pendingDeepLink) { _, deepLink in
             guard let deepLink else { return }
+            deepLinkBattleId = container.pendingBattleId
             switch deepLink {
             case .battle(let id):
                 selectedTab = 0
@@ -119,6 +120,7 @@ private struct ThemedContentView: View {
                 selectedTab = 3
             }
             container.pendingDeepLink = nil
+            container.pendingBattleId = nil
         }
         .fullScreenCover(isPresented: Binding(
             get: { requiresUpgrade },

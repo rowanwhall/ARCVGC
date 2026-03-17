@@ -94,7 +94,7 @@ All three platforms support deep links. Every page in the app is addressable via
 | Target | URL Pattern | Example |
 |---|---|---|
 | Home / Top | `/` | `arcvgc.com` |
-| Battle detail | `/battle/{id}` | `arcvgc.com/battle/42` |
+| Battle detail (legacy) | `/battle/{id}` | `arcvgc.com/battle/42` |
 | Pokemon battles | `/pokemon/{id}` | `arcvgc.com/pokemon/150` |
 | Player battles | `/player/{name}` | `arcvgc.com/player/Wolfe%20Glick` |
 | Favorites sub-tab | `/favorites/{type}` | `arcvgc.com/favorites/pokemon` |
@@ -102,11 +102,20 @@ All three platforms support deep links. Every page in the app is addressable via
 | Search results | `/search?p=...&f=...&order=...` | see search params below |
 | Settings | `/settings` | `arcvgc.com/settings` |
 
+**Battle detail as query param:** Any root URL can have `?battle={id}` appended to open a battle detail pane/sheet alongside the root page. On desktop web, the root page renders in the left pane and the battle detail in the right pane. On mobile apps, the root page renders behind the battle detail sheet. On mobile web, the root is ignored (full-screen battle overlay). Examples:
+- `/pokemon/150?battle=42` — Pokemon page with battle 42 open
+- `/favorites/battles?battle=42` — Favorites with battle 42 open
+- `/search?p=150&f=1&order=rating&battle=42` — Search results with battle 42 open
+- `/?battle=42` — Home with battle 42 open
+- `/battle/42` — Legacy format, equivalent to `/?battle=42`
+
 **Search query parameters:** `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `f` (format ID), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping.
 
 ### Shared module
 
-- `DeepLinkTarget` sealed class + `parseDeepLink(path)` parser + `SearchQueryParams` + `encodeSearchPath()` in `shared/.../domain/model/DeepLinkTarget.kt`
+- `DeepLink` data class (wraps `DeepLinkTarget` + optional `battleId`) returned by `parseDeepLink(path)` in `shared/.../domain/model/DeepLinkTarget.kt`
+- `DeepLinkTarget` sealed class: `Home`, `Pokemon`, `Player`, `Favorites`, `Search`, `SearchTab`, `SettingsTab`
+- `appendBattleParam(basePath, battleId)` appends `?battle=X` or `&battle=X` to any path
 - `DeepLinkResolver` resolves targets to navigation data (fetches Pokemon/Player display info from API, looks up items/tera types/formats from catalog providers) in `shared/.../data/DeepLinkResolver.kt`
 
 ### Web
@@ -120,7 +129,7 @@ All three platforms support deep links. Every page in the app is addressable via
 ### Android
 
 - Intent filters in `AndroidManifest.xml` for `https://arcvgc.com/battle/*`, `/pokemon/*`, `/player/*`
-- `MainActivity` parses `intent.data?.path` via `parseDeepLink()` and passes to `App(deepLinkTarget:)`
+- `MainActivity` parses `intent.data` (path + query) via `parseDeepLink()` and passes the `DeepLink` to `App(deepLink:)`
 - Battle deep links use `initialBattleId` on the Home `ContentListPage` to auto-open the detail sheet
 - Pokemon/Player deep links render as overlays via `deepLinkOverlay` state in `App.kt`
 - `DeepLinkResolver` provided via Hilt in `NetworkModule`
@@ -129,7 +138,7 @@ All three platforms support deep links. Every page in the app is addressable via
 ### iOS
 
 - Custom URL scheme `arcvgc://` registered in `Info.plist` (`CFBundleURLTypes`)
-- `iOSApp.swift` handles `.onOpenURL` — parses path and calls `DependencyContainer.handleDeepLink(target:)`
+- `iOSApp.swift` handles `.onOpenURL` — parses path + query and calls `DependencyContainer.handleDeepLink(deepLink:)`
 - `DependencyContainer` resolves the target asynchronously and publishes via `@Published pendingDeepLink`
 - `ContentView` observes `pendingDeepLink` and switches to the Top tab, then navigates to the appropriate content
 - Battle deep links use `initialBattleId` on `ContentListView` to auto-open the detail sheet

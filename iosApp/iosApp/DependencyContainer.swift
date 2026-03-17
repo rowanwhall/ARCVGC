@@ -21,6 +21,7 @@ final class DependencyContainer: ObservableObject {
     let appConfigStore: AppConfigStore
 
     @Published var pendingDeepLink: ResolvedDeepLink?
+    @Published var pendingBattleId: Int32?
 
     init() {
         self.apiService = ApiService()
@@ -38,13 +39,17 @@ final class DependencyContainer: ObservableObject {
         self.settingsStore = SettingsStore(favoritesRepository: favoritesStore.repo)
     }
 
-    func handleDeepLink(target: DeepLinkTarget) {
+    func handleDeepLink(deepLink: DeepLink) {
         Task {
-            let resolved = try? await deepLinkResolver.resolve(target: target)
+            let battleId = deepLink.battleId?.int32Value
+            let resolved = try? await deepLinkResolver.resolve(deepLink: deepLink)
             guard let resolved else { return }
+            pendingBattleId = battleId
             switch onEnum(of: resolved) {
-            case .battle(let battle):
-                pendingDeepLink = .battle(id: battle.id)
+            case .home:
+                if battleId != nil {
+                    pendingDeepLink = .battle(id: battleId!)
+                }
             case .pokemon(let pokemon):
                 let item = pokemon.item
                 pendingDeepLink = .pokemon(target: PokemonNavTarget(
@@ -71,7 +76,6 @@ final class DependencyContainer: ObservableObject {
                 }
                 pendingDeepLink = .favorites(subTab: subTab)
             case .search:
-                // Search deep links with params not yet supported on iOS
                 break
             case .searchTab:
                 pendingDeepLink = .searchTab

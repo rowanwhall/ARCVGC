@@ -67,6 +67,7 @@ import com.arcvgc.app.ui.replaceHistoryStateWithPath
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.contentlist.ContentListPage
 import com.arcvgc.app.data.DeepLinkResolver
+import com.arcvgc.app.domain.model.appendBattleParam
 import com.arcvgc.app.domain.model.encodeSearchPath
 import com.arcvgc.app.domain.model.parseDeepLink
 import com.arcvgc.app.network.normalizeImageUrl
@@ -259,20 +260,22 @@ fun WebApp() {
         // Resolve deep link from URL on initial load
         LaunchedEffect(Unit) {
             val path = getLocationPathAndSearch()
-            val target = parseDeepLink(path) ?: return@LaunchedEffect
+            val deepLink = parseDeepLink(path) ?: return@LaunchedEffect
             deepLinkLoading = true
             try {
-                val resolved = DependencyContainer.deepLinkResolver.resolve(target)
+                val resolved = DependencyContainer.deepLinkResolver.resolve(deepLink)
                 if (resolved != null) {
+                    // Set battle ID generically for all root targets
+                    val linkBattleId = deepLink.battleId
+                    deepLinkBattleId = linkBattleId
+                    if (linkBattleId != null) {
+                        navStack = listOf(NavEntry.BattleDetail(
+                            BattleOverlayRequest(linkBattleId, null, null)
+                        ))
+                    }
+
                     when (resolved) {
-                        is DeepLinkResolver.ResolvedLink.Battle -> {
-                            // Battle deep link: mobile uses navStack overlay,
-                            // desktop uses initialBattleId on the Home ContentListPage
-                            deepLinkBattleId = resolved.id
-                            navStack = listOf(NavEntry.BattleDetail(
-                                BattleOverlayRequest(resolved.id, null, null)
-                            ))
-                        }
+                        is DeepLinkResolver.ResolvedLink.Home -> { /* default tab */ }
                         is DeepLinkResolver.ResolvedLink.Pokemon -> {
                             val item = resolved.item
                             val entry = NavEntry.Pokemon(
@@ -281,7 +284,7 @@ fun WebApp() {
                                 imageUrl = normalizeImageUrl(item.imageUrl),
                                 typeImageUrls = item.types.mapNotNull { normalizeImageUrl(it.imageUrl) }
                             )
-                            navStack = listOf(entry)
+                            navStack = navStack + entry
                             desktopNavStack = listOf(entry)
                         }
                         is DeepLinkResolver.ResolvedLink.Player -> {
@@ -289,11 +292,11 @@ fun WebApp() {
                                 id = resolved.item.id,
                                 name = resolved.item.name
                             )
-                            navStack = listOf(entry)
+                            navStack = navStack + entry
                             desktopNavStack = listOf(entry)
                         }
                         is DeepLinkResolver.ResolvedLink.Favorites -> {
-                            selectedTab = 2 // Favorites tab
+                            selectedTab = 2
                             deepLinkFavoritesSubTab = when (resolved.contentType) {
                                 FavoriteContentType.Battles -> 0
                                 FavoriteContentType.Pokemon -> 1
@@ -381,6 +384,7 @@ fun WebApp() {
 
         val handlePushDesktopEntry: (NavEntry) -> Unit = { entry ->
             desktopNavStack = desktopNavStack + entry
+            deepLinkBattleId = null
             pushHistoryStateWithPath(navEntryToPath(entry))
             historyDepth++
         }
@@ -404,6 +408,7 @@ fun WebApp() {
             searchOverlayParams = null
             navStack = emptyList()
             desktopNavStack = emptyList()
+            deepLinkBattleId = null
             // Mirror tab URL — Top and Favorites are handled by their ContentListPage modePath
             val tabPath = when (tabs[index]) {
                 Tab.Search -> "/search"
@@ -430,6 +435,15 @@ fun WebApp() {
                             WindowSizeClass.Compact
                         } else {
                             WindowSizeClass.Expanded
+                        }
+
+                        // Clear stale deep link navStack entries on desktop — they're only
+                        // needed by MobileLayout but interfere with the popstate listener
+                        // which checks navStack before desktopNavStack
+                        if (windowSizeClass == WindowSizeClass.Expanded && navStack.isNotEmpty() && historyDepth == 0) {
+                            LaunchedEffect(Unit) {
+                                navStack = emptyList()
+                            }
                         }
 
                         CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass) {
@@ -542,14 +556,16 @@ private fun DesktopLayout(
                     onBack = onPopDesktopEntry,
                     modifier = contentModifier,
                     onPokemonClick = desktopPokemonClick,
-                    onPlayerClick = desktopPlayerClick
+                    onPlayerClick = desktopPlayerClick,
+                    initialBattleId = initialBattleId
                 )
                 is NavEntry.Player -> ContentListPage(
                     mode = ContentListMode.Player(entry.id, entry.name, entry.formatId),
                     onBack = onPopDesktopEntry,
                     modifier = contentModifier,
                     onPokemonClick = desktopPokemonClick,
-                    onPlayerClick = desktopPlayerClick
+                    onPlayerClick = desktopPlayerClick,
+                    initialBattleId = initialBattleId
                 )
                 is NavEntry.BattleDetail -> {} // Desktop doesn't use BattleDetail entries
             }
@@ -560,7 +576,8 @@ private fun DesktopLayout(
                 onSearchParamsChanged = onSearch,
                 modifier = contentModifier,
                 onPokemonClick = desktopPokemonClick,
-                onPlayerClick = desktopPlayerClick
+                onPlayerClick = desktopPlayerClick,
+                initialBattleId = initialBattleId
             )
         } else {
             when (tabs[selectedTab]) {
@@ -574,6 +591,7 @@ private fun DesktopLayout(
                 Tab.Favorites -> FavoritesPage(
                     modifier = contentModifier,
                     initialSubTab = initialFavoritesSubTab,
+                    initialBattleId = initialBattleId,
                     onPokemonClick = desktopPokemonClick,
                     onPlayerClick = desktopPlayerClick
                 )
@@ -596,7 +614,7 @@ private sealed class NavEntry {
 }
 
 private fun navEntryToPath(entry: NavEntry): String = when (entry) {
-    is NavEntry.BattleDetail -> "/battle/${entry.request.battleId}"
+    is NavEntry.BattleDetail -> "/?battle=${entry.request.battleId}"
     is NavEntry.Pokemon -> "/pokemon/${entry.id}"
     is NavEntry.Player -> "/player/${entry.name}"
 }

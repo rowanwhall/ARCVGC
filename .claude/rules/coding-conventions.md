@@ -74,18 +74,18 @@ globs:
 
 ## Deep Linking
 
-Every page must have a deep link URL. When adding a new page or a new parameter to an existing deep-linked page:
+Every page must have a deep link URL. `parseDeepLink()` returns `DeepLink(target, battleId?)` — the target identifies the root page, and `battleId` is an optional `?battle=ID` query param that opens a battle detail pane/sheet alongside the root. When adding a new page or a new parameter to an existing deep-linked page:
 
-1. **Shared parser**: Add a `DeepLinkTarget` case in `shared/.../domain/model/DeepLinkTarget.kt` and update `parseDeepLink()`. If the page has parameters, add an encoder function (like `encodeSearchPath()`).
+1. **Shared parser**: Add a `DeepLinkTarget` case in `shared/.../domain/model/DeepLinkTarget.kt` and update `parseDeepLink()`. If the page has parameters, add an encoder function (like `encodeSearchPath()`). The `battle` query param is extracted automatically for all URLs.
 2. **Shared resolver**: Add a `ResolvedLink` case in `shared/.../data/DeepLinkResolver.kt` and handle it in `resolve()`. If the page needs display data resolved from IDs, add the resolution logic.
-3. **Web URL mirroring**: Ensure navigating to the page updates the browser URL bar. For `ContentListPage` modes, add the path to `modePath` in `webApp/.../ui/contentlist/ContentListPage.kt`. For tab-level pages, update `handleTabSelected` in `WebApp.kt`. For overlay pages, update the handler that opens the overlay.
-4. **Web deep link loading**: Handle the new target in the `LaunchedEffect(Unit)` deep link handler in `WebApp.kt`.
-5. **Android**: Handle the new resolved link in `App.kt`'s `LaunchedEffect(deepLinkTarget)`. Add path prefix to `AndroidManifest.xml` intent filters if needed.
+3. **Web URL mirroring**: Ensure navigating to the page updates the browser URL bar. For `ContentListPage` modes, add the path to `modePath` in `webApp/.../ui/contentlist/ContentListPage.kt`. For tab-level pages, update `handleTabSelected` in `WebApp.kt`. For overlay pages, update the handler that opens the overlay. Battle detail selection is mirrored via `appendBattleParam(modePath, selectedBattleId)`.
+4. **Web deep link loading**: Handle the new target in the `LaunchedEffect(Unit)` deep link handler in `WebApp.kt`. Pass `initialBattleId` to any new `ContentListPage` or `FavoritesPage` in DesktopLayout.
+5. **Android**: Handle the new resolved link in `App.kt`'s `LaunchedEffect(deepLink)`. Add path prefix to `AndroidManifest.xml` intent filters if needed.
 6. **iOS**: Handle the new case in `DependencyContainer.handleDeepLink()` and `ContentView.swift`'s `onChange(of: pendingDeepLink)`.
 7. **Tests**: Add parser tests in `DeepLinkTargetTest.kt`.
 8. **Docs**: Update the URL scheme table in `docs/navigation.md`.
 
-Key files: `DeepLinkTarget.kt` (parser), `DeepLinkResolver.kt` (resolver), `WebApp.kt` (web handling + URL mirroring), `ContentListPage.kt` web (`modePath`), `App.kt` (Android), `DependencyContainer.swift` + `ContentView.swift` (iOS).
+Key files: `DeepLinkTarget.kt` (parser + `DeepLink` wrapper + `appendBattleParam()`), `DeepLinkResolver.kt` (resolver), `WebApp.kt` (web handling + URL mirroring), `ContentListPage.kt` web (`modePath`), `App.kt` (Android), `DependencyContainer.swift` + `ContentView.swift` (iOS).
 
 ## Pokemon Image Styling
 

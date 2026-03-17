@@ -20,17 +20,25 @@ struct iOSApp: App {
             ContentView()
                 .environmentObject(container)
                 .onOpenURL { url in
-                    let path: String
+                    let pathAndQuery: String
                     if url.scheme == "arcvgc" {
-                        // Custom URL scheme: arcvgc://battle/42
-                        path = "/\(url.host ?? "")/\(url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))"
+                        // Custom URL scheme: arcvgc://battle/42 or arcvgc://pokemon/150?battle=42
+                        var path = "/\(url.host ?? "")/\(url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))"
                             .replacingOccurrences(of: "//", with: "/")
+                        if let query = url.query {
+                            path += "?\(query)"
+                        }
+                        pathAndQuery = path
                     } else {
-                        // Universal link: https://arcvgc.com/battle/42
-                        path = url.path
+                        // Universal link: https://arcvgc.com/pokemon/150?battle=42
+                        var path = url.path
+                        if let query = url.query {
+                            path += "?\(query)"
+                        }
+                        pathAndQuery = path
                     }
-                    if let target = DeepLinkTargetKt.parseDeepLink(path: path) {
-                        container.handleDeepLink(target: target)
+                    if let deepLink = DeepLinkTargetKt.parseDeepLink(path: pathAndQuery) {
+                        container.handleDeepLink(deepLink: deepLink)
                     }
                 }
         }

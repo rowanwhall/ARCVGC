@@ -65,6 +65,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.arcvgc.app.di.DependencyContainer
+import com.arcvgc.app.domain.model.appendBattleParam
 import com.arcvgc.app.domain.model.encodeSearchPath
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
@@ -167,7 +168,7 @@ fun ContentListPage(
             is ContentListMode.Home -> "/"
         }
         LaunchedEffect(selectedBattleId) {
-            val path = selectedBattleId?.let { "/battle/$it" } ?: modePath
+            val path = appendBattleParam(modePath, selectedBattleId)
             replaceHistoryStateWithPath(path)
         }
     }

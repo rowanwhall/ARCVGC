@@ -30,6 +30,7 @@ private class FavoritesViewModel : ViewModel() {
 fun FavoritesPage(
     modifier: Modifier = Modifier,
     initialSubTab: Int? = null,
+    initialBattleId: Int? = null,
     onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?) -> Unit)? = null,
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null
 ) {
@@ -60,24 +61,30 @@ fun FavoritesPage(
             }
         }
 
+        // Only pass initialBattleId to the sub-tab that was deep-linked to
+        val battleIdForTab = initialBattleId.takeIf { selectedSubTab == (initialSubTab ?: 0) }
+
         when (selectedSubTab) {
             0 -> ContentListPage(
                 mode = ContentListMode.Favorites(FavoriteContentType.Battles),
                 modifier = Modifier.fillMaxSize(),
                 onPokemonClick = onPokemonClick,
-                onPlayerClick = onPlayerClick
+                onPlayerClick = onPlayerClick,
+                initialBattleId = battleIdForTab
             )
             1 -> ContentListPage(
                 mode = ContentListMode.Favorites(FavoriteContentType.Pokemon),
                 modifier = Modifier.fillMaxSize(),
                 onPokemonClick = onPokemonClick,
-                onPlayerClick = onPlayerClick
+                onPlayerClick = onPlayerClick,
+                initialBattleId = battleIdForTab
             )
             2 -> ContentListPage(
                 mode = ContentListMode.Favorites(FavoriteContentType.Players),
                 modifier = Modifier.fillMaxSize(),
                 onPokemonClick = onPokemonClick,
-                onPlayerClick = onPlayerClick
+                onPlayerClick = onPlayerClick,
+                initialBattleId = battleIdForTab
             )
         }
     }

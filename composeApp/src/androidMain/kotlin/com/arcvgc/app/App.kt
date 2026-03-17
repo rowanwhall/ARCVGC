@@ -42,7 +42,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arcvgc.app.data.DeepLinkResolver
 import com.arcvgc.app.data.repository.AppConfigRepository
-import com.arcvgc.app.domain.model.DeepLinkTarget
+import com.arcvgc.app.domain.model.DeepLink
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.components.ForceUpgradeOverlay
 import com.arcvgc.app.ui.contentlist.ContentListPage
@@ -177,7 +177,7 @@ class DeepLinkViewModel @Inject constructor(
 ) : ViewModel()
 
 @Composable
-fun App(deepLinkTarget: DeepLinkTarget? = null) {
+fun App(deepLink: DeepLink? = null) {
     val settingsViewModel: SettingsViewModel = hiltViewModel()
     val themeId by settingsViewModel.settingsRepository.selectedThemeId.collectAsStateWithLifecycle()
     val darkModeId by settingsViewModel.settingsRepository.darkModeId.collectAsStateWithLifecycle()
@@ -212,15 +212,14 @@ fun App(deepLinkTarget: DeepLinkTarget? = null) {
         var deepLinkFavoritesType by remember { mutableStateOf<FavoriteContentType?>(null) }
         val tabs = Tab.entries
 
-        if (deepLinkTarget != null) {
+        if (deepLink != null) {
             val deepLinkViewModel: DeepLinkViewModel = hiltViewModel()
-            LaunchedEffect(deepLinkTarget) {
+            LaunchedEffect(deepLink) {
                 try {
-                    val resolved = deepLinkViewModel.deepLinkResolver.resolve(deepLinkTarget)
+                    deepLinkBattleId = deepLink.battleId
+                    val resolved = deepLinkViewModel.deepLinkResolver.resolve(deepLink)
                     when (resolved) {
-                        is DeepLinkResolver.ResolvedLink.Battle -> {
-                            deepLinkBattleId = resolved.id
-                        }
+                        is DeepLinkResolver.ResolvedLink.Home -> { /* default tab */ }
                         is DeepLinkResolver.ResolvedLink.Pokemon -> {
                             val item = resolved.item
                             deepLinkOverlay = ContentListMode.Pokemon(
@@ -238,7 +237,7 @@ fun App(deepLinkTarget: DeepLinkTarget? = null) {
                             )
                         }
                         is DeepLinkResolver.ResolvedLink.Favorites -> {
-                            selectedTab = 2 // Favorites tab
+                            selectedTab = 2
                             deepLinkFavoritesType = resolved.contentType
                         }
                         is DeepLinkResolver.ResolvedLink.Search -> {
