@@ -48,6 +48,11 @@ scp legal/privacy-policy.html "$SERVER:$REMOTE_DIR/privacy-policy.html"
 scp legal/terms-of-service.html "$SERVER:$REMOTE_DIR/terms-of-service.html"
 echo ""
 
+echo "=== Step 4b: Uploading .well-known ==="
+ssh "$SERVER" "mkdir -p $REMOTE_DIR/.well-known"
+rsync -avz deploy/.well-known/ "$SERVER:$REMOTE_DIR/.well-known/"
+echo ""
+
 echo "=== Step 5: Updating nginx config ==="
 scp deploy/arcvgc.conf "$SERVER:/etc/nginx/sites-available/arcvgc.conf"
 ssh "$SERVER" "nginx -t && systemctl reload nginx"
