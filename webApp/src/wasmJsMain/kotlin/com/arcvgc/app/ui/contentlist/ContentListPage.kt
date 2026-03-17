@@ -305,7 +305,7 @@ fun ContentListPage(
             Row(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = if (selectedBattleId != null) {
-                        Modifier.weight(0.4f).fillMaxHeight()
+                        Modifier.weight(1f).fillMaxHeight()
                     } else {
                         Modifier.fillMaxSize()
                     }
@@ -403,7 +403,7 @@ fun ContentListPage(
                         onPlayerClick = { id, name, formatId ->
                             navigateToPlayer(id, name, formatId)
                         },
-                        modifier = Modifier.weight(0.6f).fillMaxHeight()
+                        modifier = Modifier.widthIn(max = DETAIL_PANEL_MAX_WIDTH).fillMaxHeight()
                     )
                 }
             }
@@ -463,6 +463,7 @@ private fun ContentListToolbar(
     )
 }
 
+private val DETAIL_PANEL_MAX_WIDTH = 960.dp
 private val FilterChipHeight = 44.dp
 
 @OptIn(ExperimentalLayoutApi::class)

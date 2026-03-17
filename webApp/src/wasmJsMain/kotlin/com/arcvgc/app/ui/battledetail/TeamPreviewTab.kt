@@ -237,33 +237,46 @@ private fun PlayerTeamSection(
             Spacer(modifier = Modifier.height(8.dp))
         }
     } else {
-        // Expanded: FlowRow grid with fixed card width
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .then(winnerBorder)
-                .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(12.dp))
-                .padding(16.dp)
+        // Expanded: FlowRow grid with fixed card width, container adapts to content
+        val cardSpacing = 12.dp
+        val innerPadding = 16.dp
+        BoxWithConstraints(
+            contentAlignment = Alignment.TopCenter,
+            modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)
         ) {
-            PlayerTeamHeader(
-                player = player,
-                modifier = Modifier.padding(bottom = 8.dp),
-                onPlayerClick = onPlayerClick,
-                onTeamCopied = onTeamCopied
-            )
+            val availableForCards = maxWidth - innerPadding * 2
+            val columns = ((availableForCards + cardSpacing) / (CARD_WIDTH + cardSpacing))
+                .toInt()
+                .coerceIn(1, player.team.size.coerceAtLeast(1))
+            val flowRowWidth = CARD_WIDTH * columns + cardSpacing * (columns - 1)
+            val containerWidth = flowRowWidth + innerPadding * 2
 
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .width(containerWidth)
+                    .then(winnerBorder)
+                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(12.dp))
+                    .padding(innerPadding)
             ) {
-                player.team.forEach { pokemon ->
-                    PokemonDetailCard(
-                        pokemon = pokemon,
-                        modifier = Modifier.width(CARD_WIDTH),
-                        onPokemonClick = onPokemonClick
-                    )
+                PlayerTeamHeader(
+                    player = player,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    onPlayerClick = onPlayerClick,
+                    onTeamCopied = onTeamCopied
+                )
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(cardSpacing),
+                    verticalArrangement = Arrangement.spacedBy(cardSpacing),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    player.team.forEach { pokemon ->
+                        PokemonDetailCard(
+                            pokemon = pokemon,
+                            modifier = Modifier.width(CARD_WIDTH),
+                            onPokemonClick = onPokemonClick
+                        )
+                    }
                 }
             }
         }
