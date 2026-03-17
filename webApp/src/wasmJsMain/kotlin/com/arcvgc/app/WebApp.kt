@@ -59,7 +59,7 @@ import com.arcvgc.app.ui.LocalBattleOverlay
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.ProvideViewModelStore
 import com.arcvgc.app.ui.WindowSizeClass
-import com.arcvgc.app.ui.getLocationPathname
+import com.arcvgc.app.ui.getLocationPathAndSearch
 import com.arcvgc.app.ui.historyGo
 import com.arcvgc.app.ui.pushHistoryState
 import com.arcvgc.app.ui.pushHistoryStateWithPath
@@ -67,8 +67,10 @@ import com.arcvgc.app.ui.replaceHistoryStateWithPath
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.contentlist.ContentListPage
 import com.arcvgc.app.data.DeepLinkResolver
+import com.arcvgc.app.domain.model.encodeSearchPath
 import com.arcvgc.app.domain.model.parseDeepLink
 import com.arcvgc.app.network.normalizeImageUrl
+import com.arcvgc.app.ui.model.FavoriteContentType
 import kotlinx.browser.window
 import org.w3c.dom.events.Event
 import com.arcvgc.app.ui.favorites.FavoritesPage
@@ -252,10 +254,11 @@ fun WebApp() {
         val tabs = Tab.entries
         var deepLinkLoading by remember { mutableStateOf(false) }
         var deepLinkBattleId by remember { mutableStateOf<Int?>(null) }
+        var deepLinkFavoritesSubTab by remember { mutableStateOf<Int?>(null) }
 
         // Resolve deep link from URL on initial load
         LaunchedEffect(Unit) {
-            val path = getLocationPathname()
+            val path = getLocationPathAndSearch()
             val target = parseDeepLink(path) ?: return@LaunchedEffect
             deepLinkLoading = true
             try {
@@ -288,6 +291,17 @@ fun WebApp() {
                             )
                             navStack = listOf(entry)
                             desktopNavStack = listOf(entry)
+                        }
+                        is DeepLinkResolver.ResolvedLink.Favorites -> {
+                            selectedTab = 2 // Favorites tab
+                            deepLinkFavoritesSubTab = when (resolved.contentType) {
+                                FavoriteContentType.Battles -> 0
+                                FavoriteContentType.Pokemon -> 1
+                                FavoriteContentType.Players -> 2
+                            }
+                        }
+                        is DeepLinkResolver.ResolvedLink.Search -> {
+                            searchOverlayParams = resolved.params
                         }
                     }
                     replaceHistoryStateWithPath(path)
@@ -325,8 +339,10 @@ fun WebApp() {
             searchOverlayParams = params
             desktopNavStack = emptyList()
             if (isNewSearch) {
-                pushHistoryState()
+                pushHistoryStateWithPath(encodeSearchPath(params))
                 historyDepth++
+            } else {
+                replaceHistoryStateWithPath(encodeSearchPath(params))
             }
         }
 
@@ -417,7 +433,8 @@ fun WebApp() {
                                         navStack = listOf(entry)
                                         pushHistoryStateWithPath(navEntryToPath(entry))
                                         historyDepth++
-                                    }
+                                    },
+                                    initialFavoritesSubTab = deepLinkFavoritesSubTab
                                 )
                             } else {
                                 DesktopLayout(
@@ -430,7 +447,8 @@ fun WebApp() {
                                     desktopNavStack = desktopNavStack,
                                     onPushDesktopEntry = handlePushDesktopEntry,
                                     onPopDesktopEntry = handlePopDesktopEntry,
-                                    initialBattleId = deepLinkBattleId
+                                    initialBattleId = deepLinkBattleId,
+                                    initialFavoritesSubTab = deepLinkFavoritesSubTab
                                 )
                             }
                         }
@@ -452,7 +470,8 @@ private fun DesktopLayout(
     desktopNavStack: List<NavEntry>,
     onPushDesktopEntry: (NavEntry) -> Unit,
     onPopDesktopEntry: () -> Unit,
-    initialBattleId: Int? = null
+    initialBattleId: Int? = null,
+    initialFavoritesSubTab: Int? = null
 ) {
     val desktopPokemonClick: (Int, String, String?, List<String>, Int?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId ->
         onPushDesktopEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
@@ -539,6 +558,7 @@ private fun DesktopLayout(
                 Tab.Search -> SearchPage(modifier = contentModifier, onSearch = onSearch)
                 Tab.Favorites -> FavoritesPage(
                     modifier = contentModifier,
+                    initialSubTab = initialFavoritesSubTab,
                     onPokemonClick = desktopPokemonClick,
                     onPlayerClick = desktopPlayerClick
                 )
@@ -577,7 +597,8 @@ private fun MobileLayout(
     navStack: List<NavEntry>,
     onPushEntry: (NavEntry) -> Unit,
     onPopEntry: () -> Unit,
-    onReplaceNavStack: (NavEntry) -> Unit
+    onReplaceNavStack: (NavEntry) -> Unit,
+    initialFavoritesSubTab: Int? = null
 ) {
     val favoriteBattleIds by DependencyContainer.favoritesRepository.favoriteBattleIds.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
@@ -632,6 +653,7 @@ private fun MobileLayout(
                     )
                     Tab.Favorites -> FavoritesPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding),
+                        initialSubTab = initialFavoritesSubTab,
                         onPokemonClick = pokemonClick,
                         onPlayerClick = playerClick
                     )

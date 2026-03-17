@@ -25,9 +25,10 @@ import com.arcvgc.app.ui.model.FavoriteContentType
 @Composable
 fun FavoritesPage(
     modifier: Modifier = Modifier,
-    consumeTopInsets: Boolean = true
+    consumeTopInsets: Boolean = true,
+    initialSubTab: Int? = null
 ) {
-    var selectedSubTab by rememberSaveable { mutableIntStateOf(0) }
+    var selectedSubTab by rememberSaveable { mutableIntStateOf(initialSubTab ?: 0) }
     val subTabs = listOf("Battles", "Pokémon", "Players")
 
     Column(

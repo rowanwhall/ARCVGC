@@ -96,11 +96,15 @@ All three platforms support deep links to battle detail, Pokemon content list, a
 | Battle detail | `/battle/{id}` | `arcvgc.com/battle/42` |
 | Pokemon battles | `/pokemon/{id}` | `arcvgc.com/pokemon/150` |
 | Player battles | `/player/{name}` | `arcvgc.com/player/Wolfe%20Glick` |
+| Favorites sub-tab | `/favorites/{type}` | `arcvgc.com/favorites/pokemon` |
+| Search results | `/search?p=...&f=...&order=...` | see search params below |
+
+**Search query parameters:** `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `f` (format ID), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping.
 
 ### Shared module
 
-- `DeepLinkTarget` sealed class + `parseDeepLink(path)` parser in `shared/.../domain/model/DeepLinkTarget.kt`
-- `DeepLinkResolver` resolves targets to navigation data (fetches Pokemon/Player display info from API) in `shared/.../data/DeepLinkResolver.kt`
+- `DeepLinkTarget` sealed class + `parseDeepLink(path)` parser + `SearchQueryParams` + `encodeSearchPath()` in `shared/.../domain/model/DeepLinkTarget.kt`
+- `DeepLinkResolver` resolves targets to navigation data (fetches Pokemon/Player display info from API, looks up items/tera types/formats from catalog providers) in `shared/.../data/DeepLinkResolver.kt`
 
 ### Web
 

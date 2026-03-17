@@ -18,7 +18,14 @@ import com.arcvgc.app.network.ApiService
 object DependencyContainer {
     val apiService: ApiService by lazy { ApiService() }
     val battleRepository: BattleRepository by lazy { BattleRepository(apiService) }
-    val deepLinkResolver: DeepLinkResolver by lazy { DeepLinkResolver(apiService) }
+    val deepLinkResolver: DeepLinkResolver by lazy {
+        DeepLinkResolver(
+            apiService = apiService,
+            itemCatalogProvider = { itemCatalogRepository.state.value.items },
+            teraTypeCatalogProvider = { teraTypeCatalogRepository.state.value.items },
+            formatCatalogProvider = { formatCatalogRepository.state.value.items }
+        )
+    }
     val favoritesRepository: FavoritesRepository by lazy { FavoritesRepository(FavoritesStorage()) }
     private val cacheStorage: CatalogCacheStorage by lazy { CatalogCacheStorage() }
     val pokemonCatalogRepository: PokemonCatalogRepository by lazy { PokemonCatalogRepository(apiService, cacheStorage) }

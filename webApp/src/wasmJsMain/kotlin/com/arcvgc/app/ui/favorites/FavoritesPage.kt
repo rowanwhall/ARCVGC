@@ -29,11 +29,12 @@ private class FavoritesViewModel : ViewModel() {
 @Composable
 fun FavoritesPage(
     modifier: Modifier = Modifier,
+    initialSubTab: Int? = null,
     onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?) -> Unit)? = null,
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null
 ) {
     val viewModel = rememberViewModel("favorites") { FavoritesViewModel() }
-    var selectedSubTab by remember(viewModel) { mutableIntStateOf(viewModel.savedSubTab) }
+    var selectedSubTab by remember(viewModel) { mutableIntStateOf(initialSubTab ?: viewModel.savedSubTab) }
     val subTabs = listOf("Battles", "Pokémon", "Players")
 
     LaunchedEffect(selectedSubTab) {

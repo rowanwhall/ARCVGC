@@ -18,6 +18,7 @@ private struct ThemedContentView: View {
     @State private var deepLinkPokemonTarget: PokemonNavTarget?
     @State private var deepLinkPlayerTarget: PlayerNavTarget?
     @State private var deepLinkBattleId: Int32?
+    @State private var deepLinkFavoritesSubTab: Int?
 
     private var requiresUpgrade: Bool {
         guard let config = appConfigStore.config else { return false }
@@ -75,7 +76,7 @@ private struct ThemedContentView: View {
                 }
                 .tag(1)
 
-            FavoritesView()
+            FavoritesView(initialSubTab: deepLinkFavoritesSubTab)
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")
                 }
@@ -99,14 +100,19 @@ private struct ThemedContentView: View {
         }
         .onChange(of: container.pendingDeepLink) { _, deepLink in
             guard let deepLink else { return }
-            selectedTab = 0
             switch deepLink {
             case .battle(let id):
+                selectedTab = 0
                 deepLinkBattleId = id
             case .pokemon(let target):
+                selectedTab = 0
                 deepLinkPokemonTarget = target
             case .player(let target):
+                selectedTab = 0
                 deepLinkPlayerTarget = target
+            case .favorites(let subTab):
+                selectedTab = 2
+                deepLinkFavoritesSubTab = subTab
             }
             container.pendingDeepLink = nil
         }

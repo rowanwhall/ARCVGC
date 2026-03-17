@@ -3,7 +3,11 @@ import Shared
 
 struct FavoritesView: View {
     @EnvironmentObject var container: DependencyContainer
-    @State private var selectedSubTab = 0
+    @State private var selectedSubTab: Int
+
+    init(initialSubTab: Int? = nil) {
+        _selectedSubTab = State(initialValue: initialSubTab ?? 0)
+    }
 
     var body: some View {
         NavigationStack {

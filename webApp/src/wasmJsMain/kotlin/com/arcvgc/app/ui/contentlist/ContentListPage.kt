@@ -65,10 +65,12 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.arcvgc.app.di.DependencyContainer
+import com.arcvgc.app.domain.model.encodeSearchPath
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.replaceHistoryStateWithPath
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
+import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.components.BattleCard
 import com.arcvgc.app.ui.components.EmptyView
 import com.arcvgc.app.ui.components.FillPokemonAvatar
@@ -156,7 +158,13 @@ fun ContentListPage(
         val modePath = when (mode) {
             is ContentListMode.Pokemon -> "/pokemon/${mode.pokemonId}"
             is ContentListMode.Player -> "/player/${mode.playerName}"
-            else -> "/"
+            is ContentListMode.Favorites -> when (mode.contentType) {
+                FavoriteContentType.Battles -> "/favorites/battles"
+                FavoriteContentType.Pokemon -> "/favorites/pokemon"
+                FavoriteContentType.Players -> "/favorites/players"
+            }
+            is ContentListMode.Search -> encodeSearchPath(mode.params)
+            is ContentListMode.Home -> "/"
         }
         LaunchedEffect(selectedBattleId) {
             val path = selectedBattleId?.let { "/battle/$it" } ?: modePath

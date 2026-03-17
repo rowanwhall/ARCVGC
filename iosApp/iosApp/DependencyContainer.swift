@@ -5,6 +5,7 @@ enum ResolvedDeepLink: Equatable {
     case battle(id: Int32)
     case pokemon(target: PokemonNavTarget)
     case player(target: PlayerNavTarget)
+    case favorites(subTab: Int)
 }
 
 @MainActor
@@ -22,7 +23,7 @@ final class DependencyContainer: ObservableObject {
     init() {
         self.apiService = ApiService()
         self.battleRepository = BattleRepository(apiService: apiService)
-        self.deepLinkResolver = DeepLinkResolver(apiService: apiService)
+        self.deepLinkResolver = DeepLinkResolver(apiService: apiService, itemCatalogProvider: nil, teraTypeCatalogProvider: nil, formatCatalogProvider: nil)
         self.favoritesStore = FavoritesStore()
         let cacheStorage = CatalogCacheStorage()
         self.appConfigStore = AppConfigStore(apiService: apiService, cacheStorage: cacheStorage)
@@ -56,6 +57,20 @@ final class DependencyContainer: ObservableObject {
                     id: player.item.id,
                     name: player.item.name
                 ))
+            case .favorites(let favorites):
+                let contentType = favorites.contentType
+                let subTab: Int
+                if contentType == .battles {
+                    subTab = 0
+                } else if contentType == .pokemon {
+                    subTab = 1
+                } else {
+                    subTab = 2
+                }
+                pendingDeepLink = .favorites(subTab: subTab)
+            case .search:
+                // Search deep links not yet supported on iOS (no catalog data for resolution)
+                break
             }
         }
     }

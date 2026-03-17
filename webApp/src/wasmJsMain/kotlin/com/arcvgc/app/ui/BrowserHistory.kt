@@ -19,3 +19,7 @@ internal external fun replaceHistoryStateWithPath(path: String)
 @OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 @JsFun("() => { return window.location.pathname; }")
 internal external fun getLocationPathname(): String
+
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+@JsFun("() => { return window.location.pathname + window.location.search; }")
+internal external fun getLocationPathAndSearch(): String

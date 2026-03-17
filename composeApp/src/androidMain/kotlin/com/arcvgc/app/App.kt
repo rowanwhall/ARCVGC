@@ -50,6 +50,7 @@ import com.arcvgc.app.ui.favorites.FavoritesPage
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.DarkModeOption
+import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.search.SearchPage
 import com.arcvgc.app.ui.settings.SettingsPage
 import com.arcvgc.app.ui.settings.SettingsViewModel
@@ -208,6 +209,7 @@ fun App(deepLinkTarget: DeepLinkTarget? = null) {
         var searchOverlayParams by remember { mutableStateOf<SearchParams?>(null) }
         var deepLinkOverlay by remember { mutableStateOf<ContentListMode?>(null) }
         var deepLinkBattleId by remember { mutableStateOf<Int?>(null) }
+        var deepLinkFavoritesType by remember { mutableStateOf<FavoriteContentType?>(null) }
         val tabs = Tab.entries
 
         if (deepLinkTarget != null) {
@@ -234,6 +236,13 @@ fun App(deepLinkTarget: DeepLinkTarget? = null) {
                                 playerId = resolved.item.id,
                                 playerName = resolved.item.name
                             )
+                        }
+                        is DeepLinkResolver.ResolvedLink.Favorites -> {
+                            selectedTab = 2 // Favorites tab
+                            deepLinkFavoritesType = resolved.contentType
+                        }
+                        is DeepLinkResolver.ResolvedLink.Search -> {
+                            searchOverlayParams = resolved.params
                         }
                         null -> {}
                     }
@@ -282,7 +291,14 @@ fun App(deepLinkTarget: DeepLinkTarget? = null) {
                     )
                     Tab.Favorites -> FavoritesPage(
                         modifier = Modifier.padding(innerPadding),
-                        consumeTopInsets = false
+                        consumeTopInsets = false,
+                        initialSubTab = deepLinkFavoritesType?.let { type ->
+                            when (type) {
+                                FavoriteContentType.Battles -> 0
+                                FavoriteContentType.Pokemon -> 1
+                                FavoriteContentType.Players -> 2
+                            }
+                        }
                     )
                     Tab.Settings -> SettingsPage(
                         modifier = Modifier.padding(innerPadding)
