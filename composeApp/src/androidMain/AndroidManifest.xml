@@ -44,6 +44,10 @@
                     android:scheme="https"
                     android:host="arcvgc.com"
                     android:pathPrefix="/search" />
+                <data
+                    android:scheme="https"
+                    android:host="arcvgc.com"
+                    android:pathPrefix="/settings" />
             </intent-filter>
         </activity>
     </application>
