@@ -1,5 +1,11 @@
 package com.arcvgc.app
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.SizeTransform
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -197,6 +203,10 @@ private enum class Tab(
     Settings("Settings", Icons.Default.Settings)
 }
 
+private enum class NavDirection { Forward, Back }
+
+private data class NavStackSnapshot(val size: Int, val topEntry: NavEntry?)
+
 @Composable
 fun WebApp() {
     setSingletonImageLoaderFactory { context ->
@@ -252,6 +262,8 @@ fun WebApp() {
         var historyDepth by historyDepthState
         val popStatesToIgnoreState = remember { mutableIntStateOf(0) }
         var popStatesToIgnore by popStatesToIgnoreState
+        val navDirectionState = remember { mutableStateOf(NavDirection.Forward) }
+        var navDirection by navDirectionState
         val tabs = Tab.entries
         var deepLinkLoading by remember { mutableStateOf(false) }
         var deepLinkBattleId by remember { mutableStateOf<Int?>(null) }
@@ -329,6 +341,7 @@ fun WebApp() {
                 if (popStatesToIgnoreState.intValue > 0) {
                     popStatesToIgnoreState.intValue--
                 } else {
+                    navDirectionState.value = NavDirection.Back
                     if (navStackState.value.isNotEmpty()) {
                         navStackState.value = navStackState.value.dropLast(1)
                     } else if (desktopNavStackState.value.isNotEmpty()) {
@@ -368,12 +381,14 @@ fun WebApp() {
         }
 
         val handlePushEntry: (NavEntry) -> Unit = { entry ->
+            navDirection = NavDirection.Forward
             navStack = navStack + entry
             pushHistoryStateWithPath(navEntryToPath(entry))
             historyDepth++
         }
 
         val handlePopEntry: () -> Unit = {
+            navDirection = NavDirection.Back
             navStack = navStack.dropLast(1)
             if (historyDepth > 0) {
                 popStatesToIgnore++
@@ -456,9 +471,11 @@ fun WebApp() {
                                     onSearch = handleSearch,
                                     onSearchBack = handleSearchBack,
                                     navStack = navStack,
+                                    navDirection = navDirection,
                                     onPushEntry = handlePushEntry,
                                     onPopEntry = handlePopEntry,
                                     onReplaceNavStack = { entry ->
+                                        navDirection = NavDirection.Forward
                                         navStack = listOf(entry)
                                         pushHistoryStateWithPath(navEntryToPath(entry))
                                         historyDepth++
@@ -628,6 +645,7 @@ private fun MobileLayout(
     onSearch: (SearchParams) -> Unit,
     onSearchBack: () -> Unit,
     navStack: List<NavEntry>,
+    navDirection: NavDirection,
     onPushEntry: (NavEntry) -> Unit,
     onPopEntry: () -> Unit,
     onReplaceNavStack: (NavEntry) -> Unit,
@@ -717,64 +735,117 @@ private fun MobileLayout(
             }
         }
 
-        // Render navigation stack — each entry is a full-screen overlay
-        navStack.forEachIndexed { index, entry ->
-            when (entry) {
-                is NavEntry.BattleDetail -> {
-                    val request = entry.request
-                    val isFavorited = request.battleId in favoriteBattleIds
-                    BattleDetailPanel(
-                        battleId = request.battleId,
-                        isFavorited = isFavorited,
-                        onToggleFavorite = {
-                            DependencyContainer.favoritesRepository.toggleBattleFavorite(request.battleId)
-                        },
-                        onClose = { onPopEntry() },
-                        player1IsWinner = request.player1IsWinner,
-                        player2IsWinner = request.player2IsWinner,
+        // Render navigation stack entries below the top (static, no animation)
+        navStack.dropLast(1).forEach { entry ->
+            NavEntryContent(
+                entry = entry,
+                favoriteBattleIds = favoriteBattleIds,
+                showWinnerHighlight = showWinnerHighlight,
+                onPushEntry = onPushEntry,
+                onPopEntry = onPopEntry,
+                onPokemonClick = pokemonClick,
+                onPlayerClick = playerClick
+            )
+        }
+
+        // Animate the top entry sliding in/out
+        val animDuration = 300
+        AnimatedContent(
+            targetState = NavStackSnapshot(navStack.size, navStack.lastOrNull()),
+            modifier = Modifier.fillMaxSize(),
+            transitionSpec = {
+                val isBack = navDirection == NavDirection.Back
+                if (!isBack) {
+                    slideInHorizontally(tween(animDuration)) { it } togetherWith
+                            slideOutHorizontally(tween(animDuration)) { -it }
+                } else {
+                    slideInHorizontally(tween(animDuration)) { -it } togetherWith
+                            slideOutHorizontally(tween(animDuration)) { it }
+                } using SizeTransform(clip = false)
+            },
+            label = "navStackAnimation"
+        ) { snapshot ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (snapshot.topEntry != null) {
+                    NavEntryContent(
+                        entry = snapshot.topEntry,
+                        favoriteBattleIds = favoriteBattleIds,
                         showWinnerHighlight = showWinnerHighlight,
+                        onPushEntry = onPushEntry,
+                        onPopEntry = onPopEntry,
                         onPokemonClick = pokemonClick,
-                        onPlayerClick = playerClick,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface)
+                        onPlayerClick = playerClick
                     )
                 }
-                is NavEntry.Pokemon -> {
-                    CompositionLocalProvider(
-                        LocalBattleOverlay provides { request ->
-                            if (request != null) onPushEntry(NavEntry.BattleDetail(request))
-                        }
-                    ) {
-                        ContentListPage(
-                            mode = ContentListMode.Pokemon(
-                                entry.id, entry.name, entry.imageUrl,
-                                entry.typeImageUrls.getOrNull(0),
-                                entry.typeImageUrls.getOrNull(1),
-                                entry.formatId
-                            ),
-                            onBack = { onPopEntry() },
-                            modifier = Modifier.fillMaxSize(),
-                            onPokemonClick = pokemonClick,
-                            onPlayerClick = playerClick
-                        )
-                    }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NavEntryContent(
+    entry: NavEntry,
+    favoriteBattleIds: Set<Int>,
+    showWinnerHighlight: Boolean,
+    onPushEntry: (NavEntry) -> Unit,
+    onPopEntry: () -> Unit,
+    onPokemonClick: (Int, String, String?, List<String>, Int?) -> Unit,
+    onPlayerClick: (Int, String, Int?) -> Unit
+) {
+    when (entry) {
+        is NavEntry.BattleDetail -> {
+            val request = entry.request
+            val isFavorited = request.battleId in favoriteBattleIds
+            BattleDetailPanel(
+                battleId = request.battleId,
+                isFavorited = isFavorited,
+                onToggleFavorite = {
+                    DependencyContainer.favoritesRepository.toggleBattleFavorite(request.battleId)
+                },
+                onClose = { onPopEntry() },
+                player1IsWinner = request.player1IsWinner,
+                player2IsWinner = request.player2IsWinner,
+                showWinnerHighlight = showWinnerHighlight,
+                onPokemonClick = onPokemonClick,
+                onPlayerClick = onPlayerClick,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+            )
+        }
+        is NavEntry.Pokemon -> {
+            CompositionLocalProvider(
+                LocalBattleOverlay provides { request ->
+                    if (request != null) onPushEntry(NavEntry.BattleDetail(request))
                 }
-                is NavEntry.Player -> {
-                    CompositionLocalProvider(
-                        LocalBattleOverlay provides { request ->
-                            if (request != null) onPushEntry(NavEntry.BattleDetail(request))
-                        }
-                    ) {
-                        ContentListPage(
-                            mode = ContentListMode.Player(entry.id, entry.name, entry.formatId),
-                            onBack = { onPopEntry() },
-                            modifier = Modifier.fillMaxSize(),
-                            onPokemonClick = pokemonClick,
-                            onPlayerClick = playerClick
-                        )
-                    }
+            ) {
+                ContentListPage(
+                    mode = ContentListMode.Pokemon(
+                        entry.id, entry.name, entry.imageUrl,
+                        entry.typeImageUrls.getOrNull(0),
+                        entry.typeImageUrls.getOrNull(1),
+                        entry.formatId
+                    ),
+                    onBack = { onPopEntry() },
+                    modifier = Modifier.fillMaxSize(),
+                    onPokemonClick = onPokemonClick,
+                    onPlayerClick = onPlayerClick
+                )
+            }
+        }
+        is NavEntry.Player -> {
+            CompositionLocalProvider(
+                LocalBattleOverlay provides { request ->
+                    if (request != null) onPushEntry(NavEntry.BattleDetail(request))
                 }
+            ) {
+                ContentListPage(
+                    mode = ContentListMode.Player(entry.id, entry.name, entry.formatId),
+                    onBack = { onPopEntry() },
+                    modifier = Modifier.fillMaxSize(),
+                    onPokemonClick = onPokemonClick,
+                    onPlayerClick = onPlayerClick
+                )
             }
         }
     }
