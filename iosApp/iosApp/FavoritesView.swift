@@ -4,9 +4,18 @@ import Shared
 struct FavoritesView: View {
     @EnvironmentObject var container: DependencyContainer
     @State private var selectedSubTab: Int
+    private let initialSubTab: Int?
+    private let initialBattleId: Int32?
 
-    init(initialSubTab: Int? = nil) {
+    init(initialSubTab: Int? = nil, initialBattleId: Int32? = nil) {
         _selectedSubTab = State(initialValue: initialSubTab ?? 0)
+        self.initialSubTab = initialSubTab
+        self.initialBattleId = initialBattleId
+    }
+
+    private var battleIdForTab: Int32? {
+        guard selectedSubTab == (initialSubTab ?? 0) else { return nil }
+        return initialBattleId
     }
 
     var body: some View {
@@ -27,7 +36,8 @@ struct FavoritesView: View {
                         repository: container.battleRepository,
                         mode: .favorites(contentType: .battles),
                         favoritesStore: container.favoritesStore,
-                        settingsStore: container.settingsStore
+                        settingsStore: container.settingsStore,
+                        initialBattleId: battleIdForTab
                     )
                 case 1:
                     ContentListView(
@@ -35,7 +45,8 @@ struct FavoritesView: View {
                         mode: .favorites(contentType: .pokemon),
                         favoritesStore: container.favoritesStore,
                         settingsStore: container.settingsStore,
-                        appConfigStore: container.appConfigStore
+                        appConfigStore: container.appConfigStore,
+                        initialBattleId: battleIdForTab
                     )
                 default:
                     ContentListView(
@@ -43,7 +54,8 @@ struct FavoritesView: View {
                         mode: .favorites(contentType: .players),
                         favoritesStore: container.favoritesStore,
                         settingsStore: container.settingsStore,
-                        appConfigStore: container.appConfigStore
+                        appConfigStore: container.appConfigStore,
+                        initialBattleId: battleIdForTab
                     )
                 }
             }

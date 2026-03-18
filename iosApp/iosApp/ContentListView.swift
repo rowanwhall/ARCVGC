@@ -1,7 +1,7 @@
 import SwiftUI
 import Shared
 
-struct PokemonNavTarget: Equatable {
+struct PokemonNavTarget: Hashable {
     let id: Int32
     let name: String
     let imageUrl: String?
@@ -19,7 +19,7 @@ struct PokemonNavTarget: Equatable {
     }
 }
 
-struct PlayerNavTarget: Equatable {
+struct PlayerNavTarget: Hashable {
     let id: Int32
     let name: String
     let formatId: Int32?

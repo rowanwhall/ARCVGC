@@ -35,7 +35,13 @@ struct SearchView: View {
     @ObservedObject var appConfigStore: AppConfigStore
     @EnvironmentObject var container: DependencyContainer
     @State private var activeSheet: SearchSheet? = nil
-    @State private var searchParams: SearchParams? = nil
+    @State private var searchParams: SearchParams?
+
+    init(catalogStore: CatalogStore, appConfigStore: AppConfigStore, initialSearchParams: SearchParams? = nil) {
+        self._catalogStore = ObservedObject(wrappedValue: catalogStore)
+        self._appConfigStore = ObservedObject(wrappedValue: appConfigStore)
+        _searchParams = State(initialValue: initialSearchParams)
+    }
 
     private var searchEnabled: Bool {
         !viewModel.state.filterSlots.isEmpty

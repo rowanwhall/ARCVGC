@@ -9,16 +9,21 @@ struct ContentView: View {
     }
 }
 
+private enum DeepLinkNavTarget: Hashable {
+    case pokemon(PokemonNavTarget)
+    case player(PlayerNavTarget)
+}
+
 private struct ThemedContentView: View {
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var appConfigStore: AppConfigStore
     @ObservedObject var container: DependencyContainer
 
     @State private var selectedTab = 0
-    @State private var deepLinkPokemonTarget: PokemonNavTarget?
-    @State private var deepLinkPlayerTarget: PlayerNavTarget?
+    @State private var deepLinkNavTarget: DeepLinkNavTarget?
     @State private var deepLinkBattleId: Int32?
     @State private var deepLinkFavoritesSubTab: Int?
+    @State private var deepLinkSearchParams: SearchParams?
 
     private var requiresUpgrade: Bool {
         guard let config = appConfigStore.config else { return false }
@@ -36,33 +41,36 @@ private struct ThemedContentView: View {
                     appConfigStore: container.appConfigStore,
                     initialBattleId: deepLinkBattleId
                 )
+                .id(deepLinkBattleId ?? 0)
                 .navigationDestination(isPresented: Binding(
-                    get: { deepLinkPokemonTarget != nil },
-                    set: { if !$0 { deepLinkPokemonTarget = nil } }
+                    get: { deepLinkNavTarget != nil },
+                    set: { if !$0 { deepLinkNavTarget = nil } }
                 )) {
-                    if let target = deepLinkPokemonTarget {
-                        ContentListView(
-                            repository: container.battleRepository,
-                            mode: .pokemon(id: target.id, name: target.name, imageUrl: target.imageUrl, typeImageUrl1: target.typeImageUrl1, typeImageUrl2: target.typeImageUrl2, formatId: target.formatId),
-                            favoritesStore: container.favoritesStore,
-                            settingsStore: container.settingsStore,
-                            appConfigStore: container.appConfigStore
-                        )
+                    Group {
+                        switch deepLinkNavTarget {
+                        case .pokemon(let target):
+                            ContentListView(
+                                repository: container.battleRepository,
+                                mode: .pokemon(id: target.id, name: target.name, imageUrl: target.imageUrl, typeImageUrl1: target.typeImageUrl1, typeImageUrl2: target.typeImageUrl2, formatId: target.formatId),
+                                favoritesStore: container.favoritesStore,
+                                settingsStore: container.settingsStore,
+                                appConfigStore: container.appConfigStore,
+                                initialBattleId: deepLinkBattleId
+                            )
+                        case .player(let target):
+                            ContentListView(
+                                repository: container.battleRepository,
+                                mode: .player(id: target.id, name: target.name, formatId: target.formatId),
+                                favoritesStore: container.favoritesStore,
+                                settingsStore: container.settingsStore,
+                                appConfigStore: container.appConfigStore,
+                                initialBattleId: deepLinkBattleId
+                            )
+                        case nil:
+                            EmptyView()
+                        }
                     }
-                }
-                .navigationDestination(isPresented: Binding(
-                    get: { deepLinkPlayerTarget != nil },
-                    set: { if !$0 { deepLinkPlayerTarget = nil } }
-                )) {
-                    if let target = deepLinkPlayerTarget {
-                        ContentListView(
-                            repository: container.battleRepository,
-                            mode: .player(id: target.id, name: target.name, formatId: target.formatId),
-                            favoritesStore: container.favoritesStore,
-                            settingsStore: container.settingsStore,
-                            appConfigStore: container.appConfigStore
-                        )
-                    }
+                    .id(deepLinkNavTarget)
                 }
             }
             .tabItem {
@@ -70,13 +78,13 @@ private struct ThemedContentView: View {
             }
             .tag(0)
 
-            SearchView(catalogStore: container.catalogStore, appConfigStore: container.appConfigStore)
+            SearchView(catalogStore: container.catalogStore, appConfigStore: container.appConfigStore, initialSearchParams: deepLinkSearchParams)
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
                 .tag(1)
 
-            FavoritesView(initialSubTab: deepLinkFavoritesSubTab)
+            FavoritesView(initialSubTab: deepLinkFavoritesSubTab, initialBattleId: deepLinkBattleId)
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")
                 }
@@ -100,27 +108,46 @@ private struct ThemedContentView: View {
         }
         .onChange(of: container.pendingDeepLink) { _, deepLink in
             guard let deepLink else { return }
-            deepLinkBattleId = container.pendingBattleId
+            let battleId = container.pendingBattleId
+            container.pendingDeepLink = nil
+            container.pendingBattleId = nil
+
+            deepLinkFavoritesSubTab = nil
+            deepLinkSearchParams = nil
+            deepLinkBattleId = battleId
+
             switch deepLink {
             case .battle(let id):
                 selectedTab = 0
+                deepLinkNavTarget = nil
                 deepLinkBattleId = id
             case .pokemon(let target):
                 selectedTab = 0
-                deepLinkPokemonTarget = target
+                deepLinkNavTarget = .pokemon(target)
             case .player(let target):
                 selectedTab = 0
-                deepLinkPlayerTarget = target
+                deepLinkNavTarget = .player(target)
             case .favorites(let subTab):
                 selectedTab = 2
+                deepLinkNavTarget = nil
                 deepLinkFavoritesSubTab = subTab
+            case .search(let params):
+                selectedTab = 1
+                deepLinkNavTarget = nil
+                deepLinkSearchParams = params
             case .searchTab:
                 selectedTab = 1
+                deepLinkNavTarget = nil
             case .settingsTab:
                 selectedTab = 3
+                deepLinkNavTarget = nil
             }
-            container.pendingDeepLink = nil
-            container.pendingBattleId = nil
+
+            // Clear battleId after SwiftUI has created views with it,
+            // preventing re-trigger on sheet dismissal
+            DispatchQueue.main.async {
+                deepLinkBattleId = nil
+            }
         }
         .fullScreenCover(isPresented: Binding(
             get: { requiresUpgrade },

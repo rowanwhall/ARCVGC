@@ -6,6 +6,7 @@ enum ResolvedDeepLink: Equatable {
     case pokemon(target: PokemonNavTarget)
     case player(target: PlayerNavTarget)
     case favorites(subTab: Int)
+    case search(params: SearchParams)
     case searchTab
     case settingsTab
 }
@@ -26,7 +27,6 @@ final class DependencyContainer: ObservableObject {
     init() {
         self.apiService = ApiService()
         self.battleRepository = BattleRepository(apiService: apiService)
-        self.deepLinkResolver = DeepLinkResolver(apiService: apiService, itemCatalogProvider: nil, teraTypeCatalogProvider: nil, formatCatalogProvider: nil)
         self.favoritesStore = FavoritesStore()
         let cacheStorage = CatalogCacheStorage()
         self.appConfigStore = AppConfigStore(apiService: apiService, cacheStorage: cacheStorage)
@@ -35,6 +35,13 @@ final class DependencyContainer: ObservableObject {
             apiService: apiService,
             cacheStorage: cacheStorage,
             defaultFormatIdProvider: { configStore.defaultFormatId }
+        )
+        let catalog = self.catalogStore
+        self.deepLinkResolver = DeepLinkResolver(
+            apiService: apiService,
+            itemCatalogProvider: { catalog.itemItems },
+            teraTypeCatalogProvider: { catalog.teraTypeItems },
+            formatCatalogProvider: { catalog.formatItems }
         )
         self.settingsStore = SettingsStore(favoritesRepository: favoritesStore.repo)
     }
@@ -75,8 +82,8 @@ final class DependencyContainer: ObservableObject {
                     subTab = 2
                 }
                 pendingDeepLink = .favorites(subTab: subTab)
-            case .search:
-                break
+            case .search(let search):
+                pendingDeepLink = .search(params: search.params)
             case .searchTab:
                 pendingDeepLink = .searchTab
             case .settingsTab:
