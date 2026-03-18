@@ -23,8 +23,10 @@ struct iOSApp: App {
                     let pathAndQuery: String
                     if url.scheme == "arcvgc" {
                         // Custom URL scheme: arcvgc://battle/42 or arcvgc://pokemon/150?battle=42
-                        var path = "/\(url.host ?? "")/\(url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))"
-                            .replacingOccurrences(of: "//", with: "/")
+                        let trimmedPath = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                        var path = trimmedPath.isEmpty
+                            ? "/\(url.host ?? "")"
+                            : "/\(url.host ?? "")/\(trimmedPath)"
                         if let query = url.query {
                             path += "?\(query)"
                         }

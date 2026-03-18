@@ -79,12 +79,14 @@ private struct ThemedContentView: View {
             .tag(0)
 
             SearchView(catalogStore: container.catalogStore, appConfigStore: container.appConfigStore, initialSearchParams: deepLinkSearchParams)
+                .id(deepLinkSearchParams?.hashValue ?? 0)
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
                 .tag(1)
 
             FavoritesView(initialSubTab: deepLinkFavoritesSubTab, initialBattleId: deepLinkBattleId)
+                .id(deepLinkFavoritesSubTab ?? -1)
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")
                 }
