@@ -203,7 +203,7 @@ private enum class Tab(
     Settings("Settings", Icons.Default.Settings)
 }
 
-private enum class NavDirection { Forward, Back }
+private enum class NavDirection { Forward, Back, BackInstant }
 
 private data class NavStackSnapshot(val size: Int, val topEntry: NavEntry?)
 
@@ -264,6 +264,15 @@ fun WebApp() {
         var popStatesToIgnore by popStatesToIgnoreState
         val navDirectionState = remember { mutableStateOf(NavDirection.Forward) }
         var navDirection by navDirectionState
+
+        // After a browser-initiated back (BackInstant), reset to Forward so
+        // AnimatedContent re-enters the composition tree before the next push
+        LaunchedEffect(navDirection) {
+            if (navDirection == NavDirection.BackInstant) {
+                navDirection = NavDirection.Forward
+            }
+        }
+
         val tabs = Tab.entries
         var deepLinkLoading by remember { mutableStateOf(false) }
         var deepLinkBattleId by remember { mutableStateOf<Int?>(null) }
@@ -341,7 +350,7 @@ fun WebApp() {
                 if (popStatesToIgnoreState.intValue > 0) {
                     popStatesToIgnoreState.intValue--
                 } else {
-                    navDirectionState.value = NavDirection.Back
+                    navDirectionState.value = NavDirection.BackInstant
                     if (navStackState.value.isNotEmpty()) {
                         navStackState.value = navStackState.value.dropLast(1)
                     } else if (desktopNavStackState.value.isNotEmpty()) {
@@ -748,34 +757,51 @@ private fun MobileLayout(
             )
         }
 
-        // Animate the top entry sliding in/out
-        val animDuration = 300
-        AnimatedContent(
-            targetState = NavStackSnapshot(navStack.size, navStack.lastOrNull()),
-            modifier = Modifier.fillMaxSize(),
-            transitionSpec = {
-                val isBack = navDirection == NavDirection.Back
-                if (!isBack) {
-                    slideInHorizontally(tween(animDuration)) { it } togetherWith
-                            slideOutHorizontally(tween(animDuration)) { -it }
-                } else {
-                    slideInHorizontally(tween(animDuration)) { -it } togetherWith
-                            slideOutHorizontally(tween(animDuration)) { it }
-                } using SizeTransform(clip = false)
-            },
-            label = "navStackAnimation"
-        ) { snapshot ->
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (snapshot.topEntry != null) {
-                    NavEntryContent(
-                        entry = snapshot.topEntry,
-                        favoriteBattleIds = favoriteBattleIds,
-                        showWinnerHighlight = showWinnerHighlight,
-                        onPushEntry = onPushEntry,
-                        onPopEntry = onPopEntry,
-                        onPokemonClick = pokemonClick,
-                        onPlayerClick = playerClick
-                    )
+        // Animate the top entry — bypass AnimatedContent for browser-initiated
+        // back (swipe/button) to avoid a flash frame. The LaunchedEffect in
+        // WebApp() resets navDirection to Forward immediately after, so
+        // AnimatedContent re-enters the tree before the next forward push.
+        if (navDirection == NavDirection.BackInstant) {
+            val topEntry = navStack.lastOrNull()
+            if (topEntry != null) {
+                NavEntryContent(
+                    entry = topEntry,
+                    favoriteBattleIds = favoriteBattleIds,
+                    showWinnerHighlight = showWinnerHighlight,
+                    onPushEntry = onPushEntry,
+                    onPopEntry = onPopEntry,
+                    onPokemonClick = pokemonClick,
+                    onPlayerClick = playerClick
+                )
+            }
+        } else {
+            val animDuration = 300
+            AnimatedContent(
+                targetState = NavStackSnapshot(navStack.size, navStack.lastOrNull()),
+                modifier = Modifier.fillMaxSize(),
+                transitionSpec = {
+                    if (navDirection == NavDirection.Forward) {
+                        slideInHorizontally(tween(animDuration)) { it } togetherWith
+                                slideOutHorizontally(tween(animDuration)) { -it }
+                    } else {
+                        slideInHorizontally(tween(animDuration)) { -it } togetherWith
+                                slideOutHorizontally(tween(animDuration)) { it }
+                    } using SizeTransform(clip = false)
+                },
+                label = "navStackAnimation"
+            ) { snapshot ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (snapshot.topEntry != null) {
+                        NavEntryContent(
+                            entry = snapshot.topEntry,
+                            favoriteBattleIds = favoriteBattleIds,
+                            showWinnerHighlight = showWinnerHighlight,
+                            onPushEntry = onPushEntry,
+                            onPopEntry = onPopEntry,
+                            onPokemonClick = pokemonClick,
+                            onPlayerClick = playerClick
+                        )
+                    }
                 }
             }
         }
