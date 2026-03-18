@@ -216,7 +216,9 @@ fun App(deepLink: DeepLink? = null) {
             val deepLinkViewModel: DeepLinkViewModel = hiltViewModel()
             LaunchedEffect(deepLink) {
                 try {
+                    android.util.Log.d("DeepLink", "Resolving: ${deepLink}")
                     val resolved = deepLinkViewModel.deepLinkResolver.resolve(deepLink)
+                    android.util.Log.d("DeepLink", "Resolved: $resolved")
                     when (resolved) {
                         is DeepLinkResolver.ResolvedLink.Home -> { /* default tab */ }
                         is DeepLinkResolver.ResolvedLink.Pokemon -> {
@@ -250,7 +252,9 @@ fun App(deepLink: DeepLink? = null) {
                         }
                         null -> {}
                     }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    android.util.Log.e("DeepLink", "Resolution failed", e)
+                }
             }
         }
 
