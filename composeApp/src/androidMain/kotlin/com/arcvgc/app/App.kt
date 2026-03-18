@@ -251,8 +251,6 @@ fun App(deepLink: DeepLink? = null) {
                         null -> {}
                     }
                 } catch (_: Exception) {}
-                // Clear after consumption so tab switches don't re-trigger the battle sheet
-                deepLinkBattleId = null
             }
         }
 
@@ -273,7 +271,10 @@ fun App(deepLink: DeepLink? = null) {
                             }
                             NavigationBarItem(
                                 selected = isSelected,
-                                onClick = { selectedTab = index },
+                                onClick = {
+                                    selectedTab = index
+                                    deepLinkBattleId = null
+                                },
                                 icon = { Icon(tab.icon, contentDescription = tab.label, tint = tint) },
                                 label = { Text(tab.label, color = tint) },
                                 colors = NavigationBarItemDefaults.colors(
@@ -304,7 +305,8 @@ fun App(deepLink: DeepLink? = null) {
                                 FavoriteContentType.Pokemon -> 1
                                 FavoriteContentType.Players -> 2
                             }
-                        }
+                        },
+                        initialBattleId = deepLinkBattleId
                     )
                     Tab.Settings -> SettingsPage(
                         modifier = Modifier.padding(innerPadding)
@@ -316,14 +318,16 @@ fun App(deepLink: DeepLink? = null) {
                 ContentListPage(
                     mode = ContentListMode.Search(params),
                     onBack = { searchOverlayParams = null },
-                    onSearchParamsChanged = { searchOverlayParams = it }
+                    onSearchParamsChanged = { searchOverlayParams = it },
+                    initialBattleId = deepLinkBattleId
                 )
             }
 
             deepLinkOverlay?.let { mode ->
                 ContentListPage(
                     mode = mode,
-                    onBack = { deepLinkOverlay = null }
+                    onBack = { deepLinkOverlay = null },
+                    initialBattleId = deepLinkBattleId
                 )
             }
 
