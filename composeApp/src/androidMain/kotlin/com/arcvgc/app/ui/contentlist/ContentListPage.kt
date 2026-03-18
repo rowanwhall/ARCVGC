@@ -121,14 +121,10 @@ fun ContentListPage(
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
 
-    android.util.Log.d("DeepLink", "ContentListPage composing: mode=$mode, initialBattleId=$initialBattleId, selectedBattleId=$selectedBattleId")
-
-    // Apply initialBattleId after first frame — ModalBottomSheet needs a laid-out host
+    // Apply initialBattleId once — deferred to LaunchedEffect so ModalBottomSheet has a laid-out host
     LaunchedEffect(initialBattleId) {
-        android.util.Log.d("DeepLink", "ContentListPage LaunchedEffect: initialBattleId=$initialBattleId, selectedBattleId=$selectedBattleId")
         if (initialBattleId != null && selectedBattleId == null) {
             selectedBattleId = initialBattleId
-            android.util.Log.d("DeepLink", "ContentListPage: set selectedBattleId=$initialBattleId")
         }
     }
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
