@@ -167,7 +167,11 @@ fun ContentListPage(
             is ContentListMode.Home -> "/"
         }
         LaunchedEffect(selectedBattleId) {
-            val path = appendBattleParam(modePath, selectedBattleId)
+            val path = if (mode is ContentListMode.Home && selectedBattleId != null) {
+                "/battle/$selectedBattleId"
+            } else {
+                appendBattleParam(modePath, selectedBattleId)
+            }
             replaceHistoryStateWithPath(path)
         }
     }

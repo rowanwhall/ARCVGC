@@ -21,7 +21,10 @@ class MainActivity : ComponentActivity() {
                 append(uri.path ?: "")
                 uri.query?.let { append("?$it") }
             }
-            parseDeepLink(pathAndQuery)
+            android.util.Log.d("DeepLink", "MainActivity: uri=$uri, pathAndQuery=$pathAndQuery")
+            val parsed = parseDeepLink(pathAndQuery)
+            android.util.Log.d("DeepLink", "MainActivity: parsed=$parsed")
+            parsed
         }
 
         setContent {

@@ -640,7 +640,7 @@ private sealed class NavEntry {
 }
 
 private fun navEntryToPath(entry: NavEntry): String = when (entry) {
-    is NavEntry.BattleDetail -> "/?battle=${entry.request.battleId}"
+    is NavEntry.BattleDetail -> "/battle/${entry.request.battleId}"
     is NavEntry.Pokemon -> "/pokemon/${entry.id}"
     is NavEntry.Player -> "/player/${entry.name}"
 }

@@ -212,13 +212,19 @@ fun App(deepLink: DeepLink? = null) {
         var deepLinkFavoritesType by remember { mutableStateOf<FavoriteContentType?>(null) }
         val tabs = Tab.entries
 
+        android.util.Log.d("DeepLink", "App composing: deepLink=$deepLink, deepLinkBattleId=$deepLinkBattleId")
+
         if (deepLink != null) {
             val deepLinkViewModel: DeepLinkViewModel = hiltViewModel()
             LaunchedEffect(deepLink) {
+                android.util.Log.d("DeepLink", "LaunchedEffect: resolving deepLink=$deepLink")
                 try {
                     val resolved = deepLinkViewModel.deepLinkResolver.resolve(deepLink)
+                    android.util.Log.d("DeepLink", "LaunchedEffect: resolved=$resolved")
                     when (resolved) {
-                        is DeepLinkResolver.ResolvedLink.Home -> { /* default tab */ }
+                        is DeepLinkResolver.ResolvedLink.Home -> {
+                            android.util.Log.d("DeepLink", "ResolvedLink.Home, battleId=$deepLinkBattleId")
+                        }
                         is DeepLinkResolver.ResolvedLink.Pokemon -> {
                             val item = resolved.item
                             deepLinkOverlay = ContentListMode.Pokemon(

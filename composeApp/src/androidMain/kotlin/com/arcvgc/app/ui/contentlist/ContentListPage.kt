@@ -118,8 +118,19 @@ fun ContentListPage(
     val showWinnerHighlight by viewModel.settingsRepository.showWinnerHighlight.collectAsStateWithLifecycle()
     val formatCatalogState by viewModel.formatCatalogRepository.state.collectAsStateWithLifecycle()
     val selectedFormatId by viewModel.selectedFormatId.collectAsStateWithLifecycle()
-    var selectedBattleId by remember { mutableStateOf(initialBattleId) }
+    var selectedBattleId by remember { mutableStateOf<Int?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
+
+    android.util.Log.d("DeepLink", "ContentListPage composing: mode=$mode, initialBattleId=$initialBattleId, selectedBattleId=$selectedBattleId")
+
+    // Apply initialBattleId after first frame — ModalBottomSheet needs a laid-out host
+    LaunchedEffect(initialBattleId) {
+        android.util.Log.d("DeepLink", "ContentListPage LaunchedEffect: initialBattleId=$initialBattleId, selectedBattleId=$selectedBattleId")
+        if (initialBattleId != null && selectedBattleId == null) {
+            selectedBattleId = initialBattleId
+            android.util.Log.d("DeepLink", "ContentListPage: set selectedBattleId=$initialBattleId")
+        }
+    }
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
 
     if (onBack != null && pokemonNavTarget == null && playerNavTarget == null) {
