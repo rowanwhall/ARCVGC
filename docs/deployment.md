@@ -10,7 +10,7 @@ From the project root on the local machine:
 ./deploy/deploy.sh
 ```
 
-This builds the webapp (`./gradlew :webApp:wasmJsBrowserDistribution`), uploads the production files to `/var/www/arcvgc/` on the server via rsync, and uploads the legal HTML pages. No server-side config changes or restarts are needed — nginx serves the new files immediately.
+This builds the webapp (`./gradlew :webApp:wasmJsBrowserDistribution`), uploads the production files to `/var/www/arcvgc/` on the server via rsync, uploads the legal HTML pages, and uploads `.well-known/` files (Apple AASA + Android assetlinks). The nginx config is also uploaded and reloaded.
 
 The script reads `DEPLOY_HOST` from `secrets.properties`. You can also pass the host as an argument: `./deploy/deploy.sh user@host`.
 
@@ -20,11 +20,15 @@ Deploy the web app after any changes to:
 - `webApp/` (web UI code)
 - `shared/` (shared code used by web)
 - `legal/*.html` (privacy policy, terms of service)
+- `deploy/.well-known/` (Apple AASA, Android assetlinks)
+- `deploy/arcvgc.conf` (nginx config)
 
 ## Deployment files
 
 - `deploy/deploy.sh` — Build + upload script (run from local machine)
-- `deploy/arcvgc.conf` — nginx server config (installed on server at `/etc/nginx/sites-available/arcvgc.conf`)
+- `deploy/arcvgc.conf` — nginx server config (installed on server at `/etc/nginx/sites-available/arcvgc.conf`). Includes `/.well-known/` location for deep link verification files.
+- `deploy/.well-known/apple-app-site-association` — iOS Universal Links config
+- `deploy/.well-known/assetlinks.json` — Android App Links config (currently debug key only)
 - `deploy/SETUP.md` — One-time server setup guide (DNS, nginx, HTTPS)
 
 ## Server details

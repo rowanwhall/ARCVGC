@@ -20,7 +20,7 @@ A Kotlin Multiplatform app for browsing [Pokémon Showdown](https://pokemonshowd
 - **Favorites** — Save battles, Pokémon, and players locally across three sub-tabs
 - **Player & Pokémon Pages** — Tap any player or Pokémon to see all their battles
 - **Settings** — Dark mode (system/light/dark), accent color themes, winner highlight toggle, catalog cache management
-- **Deep Linking** — Shareable URLs for every page; battle detail as `?battle=ID` on any root URL (web URL bar mirrors navigation, Android App Links, iOS custom URL scheme)
+- **Deep Linking** — Shareable URLs for every page; battle detail as `?battle=ID` on any root URL (web URL bar mirrors navigation, Android App Links, iOS Universal Links + custom URL scheme)
 - **Crash Reporting** — Sentry integration across all three platforms
 
 ## Tech Stack

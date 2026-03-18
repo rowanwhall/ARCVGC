@@ -231,6 +231,53 @@ class DeepLinkTargetTest {
         assertNull(parseDeepLink("/unknown"))
     }
 
+    // Battle param edge cases
+
+    @Test
+    fun parsePokemonWithNonNumericBattleIgnoresBattle() {
+        val result = parseDeepLink("/pokemon/150?battle=abc")!!
+        assertIs<DeepLinkTarget.Pokemon>(result.target)
+        assertEquals(150, (result.target as DeepLinkTarget.Pokemon).id)
+        assertNull(result.battleId)
+    }
+
+    @Test
+    fun parseSettingsWithBattle() {
+        val result = parseDeepLink("/settings?battle=42")!!
+        assertIs<DeepLinkTarget.SettingsTab>(result.target)
+        assertEquals(42, result.battleId)
+    }
+
+    @Test
+    fun parseSearchTabWithBattle() {
+        val result = parseDeepLink("/search?battle=42")!!
+        assertIs<DeepLinkTarget.SearchTab>(result.target)
+        assertEquals(42, result.battleId)
+    }
+
+    @Test
+    fun parseBattlePathIgnoresQueryBattle() {
+        // /battle/42 uses the path ID, not the query battle param
+        val result = parseDeepLink("/battle/42?battle=99")!!
+        assertIs<DeepLinkTarget.Home>(result.target)
+        assertEquals(42, result.battleId)
+    }
+
+    // Trailing slash edge cases (iOS custom scheme can produce these)
+
+    @Test
+    fun parsePokemonWithTrailingSlash() {
+        val result = parseDeepLink("/pokemon/150/")
+        // Trailing slash adds an empty segment → size 3, doesn't match
+        assertNull(result)
+    }
+
+    @Test
+    fun parseSettingsWithTrailingSlash() {
+        // "/settings/" → segments = ["settings", ""] → size 2, doesn't match size 1
+        assertNull(parseDeepLink("/settings/"))
+    }
+
     // Round-trip tests
 
     @Test

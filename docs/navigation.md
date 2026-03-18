@@ -120,27 +120,38 @@ All three platforms support deep links. Every page in the app is addressable via
 
 ### Web
 
-- `BrowserHistory.kt` includes `pushHistoryStateWithPath()`, `replaceHistoryStateWithPath()`, `getLocationPathname()` for URL-based navigation
-- On page load, `WebApp()` reads `window.location.pathname`, parses it via `parseDeepLink()`, resolves via `DeepLinkResolver`, and sets initial navigation state
-- Navigation handlers (`handlePushEntry`, `handlePushDesktopEntry`, `onReplaceNavStack`) push URL paths matching the current `NavEntry`
-- Back navigation via `historyGo(-1)` automatically restores the previous URL
+- `BrowserHistory.kt` includes `pushHistoryStateWithPath()`, `replaceHistoryStateWithPath()`, `getLocationPathAndSearch()` for URL-based navigation
+- On page load, `WebApp()` reads `window.location.pathname + search`, parses it via `parseDeepLink()`, resolves via `DeepLinkResolver`, and sets initial navigation state. Shows a loading spinner during resolution.
+- `battleId` from `DeepLink` is set generically for all root targets; mobile web pushes `NavEntry.BattleDetail` to `navStack`, desktop passes `initialBattleId` to `ContentListPage`
+- URL mirroring: `ContentListPage` mirrors `modePath` + `appendBattleParam()` via `replaceHistoryStateWithPath`. Home + battle uses `/battle/{id}`; other roots use `?battle={id}`. Search URLs mirror via `encodeSearchPath()`. Favorites sub-tabs mirror via their `ContentListPage` `modePath`. Tab switches mirror for Search (`/search`) and Settings (`/settings`).
+- Stale `navStack` entries from deep links are cleared on desktop via a `LaunchedEffect` (prevents popstate listener from popping mobile entries on desktop)
+- `deepLinkBattleId` is cleared on tab switch and when a new desktop nav entry is pushed
 - nginx SPA fallback (`try_files $uri $uri/ /index.html`) serves the app for all deep link paths
+- `DependencyContainer` provides catalog repos to `DeepLinkResolver` for search filter display data
+- `devServer.js` has `historyApiFallback: true` for local dev; `index.html` has `<base href="/">` for correct asset loading on deep link paths
 
 ### Android
 
-- Intent filters in `AndroidManifest.xml` for `https://arcvgc.com/battle/*`, `/pokemon/*`, `/player/*`
+- Intent filters in `AndroidManifest.xml` for `https://arcvgc.com/battle/*`, `/pokemon/*`, `/player/*`, `/favorites/*`, `/search`, `/settings`
 - `MainActivity` parses `intent.data` (path + query) via `parseDeepLink()` and passes the `DeepLink` to `App(deepLink:)`
-- Battle deep links use `initialBattleId` on the Home `ContentListPage` to auto-open the detail sheet
+- `deepLinkBattleId` initialized synchronously from `deepLink?.battleId`; cleared on manual tab switch (`NavigationBarItem.onClick`)
+- `initialBattleId` threaded to all `ContentListPage` instances: Home tab, `FavoritesPage` (with `battleIdForTab` sub-tab scoping), search overlay, and deep link overlay (Pokemon/Player)
+- `ContentListPage` applies `initialBattleId` via `LaunchedEffect(initialBattleId)` to handle async arrival
 - Pokemon/Player deep links render as overlays via `deepLinkOverlay` state in `App.kt`
-- `DeepLinkResolver` provided via Hilt in `NetworkModule`
-- App Links verification (`.well-known/assetlinks.json`) is **not yet configured** — deep links show a disambiguation dialog until verified
+- Search deep links set `searchOverlayParams` which renders `ContentListPage` in Search mode
+- `DeepLinkResolver` provided via Hilt in `NetworkModule` with catalog providers (item, tera type, format) for search filter resolution
+- App Links verified via `.well-known/assetlinks.json` (debug key only; production key to be added after Play Store release)
+- **Known limitation**: deep links only processed on cold start (`onCreate`); `onNewIntent` not yet handled for warm-start
 
 ### iOS
 
 - Custom URL scheme `arcvgc://` registered in `Info.plist` (`CFBundleURLTypes`)
-- `iOSApp.swift` handles `.onOpenURL` — parses path + query and calls `DependencyContainer.handleDeepLink(deepLink:)`
-- `DependencyContainer` resolves the target asynchronously and publishes via `@Published pendingDeepLink`
-- `ContentView` observes `pendingDeepLink` and switches to the Top tab, then navigates to the appropriate content
-- Battle deep links use `initialBattleId` on `ContentListView` to auto-open the detail sheet
-- Pokemon/Player deep links push via `navigationDestination(isPresented:)` at the `ThemedContentView` level
-- Universal Links (`apple-app-site-association`) are **not yet configured** — currently only the custom `arcvgc://` scheme works
+- Universal Links via Associated Domains entitlement (`applinks:arcvgc.com`) in `iosApp.entitlements` + server-side `apple-app-site-association`
+- `iOSApp.swift` handles `.onOpenURL` for both custom scheme and universal links — parses path + query and calls `DependencyContainer.handleDeepLink(deepLink:)`
+- `DependencyContainer` resolves the target asynchronously and publishes via `@Published pendingDeepLink` + `@Published pendingBattleId`. Catalog providers wired for search resolution.
+- `ContentView` observes `pendingDeepLink` via `.onChange`. Resets previous navigation state before applying new deep link. Pokemon/Player use a single `DeepLinkNavTarget` enum with one `navigationDestination(isPresented:)` to avoid dismiss/present race conditions. `.id(deepLinkNavTarget)` forces view recreation when target changes.
+- `deepLinkBattleId` cleared via `DispatchQueue.main.async` after SwiftUI processes the state update, preventing re-trigger on sheet dismissal
+- Home `ContentListView` keyed with `.id(deepLinkBattleId ?? 0)` to force recreation on battle deep link arrival
+- `initialBattleId` threaded to Home, Pokemon/Player destinations, and `FavoritesView` (with `battleIdForTab` sub-tab scoping)
+- Search deep links set `deepLinkSearchParams` passed to `SearchView(initialSearchParams:)`
+- `SearchView` keyed with `.id(deepLinkSearchParams?.hashValue)` and `FavoritesView` keyed with `.id(deepLinkFavoritesSubTab)` for re-init on subsequent deep links

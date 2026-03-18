@@ -80,8 +80,8 @@ Every page must have a deep link URL. `parseDeepLink()` returns `DeepLink(target
 2. **Shared resolver**: Add a `ResolvedLink` case in `shared/.../data/DeepLinkResolver.kt` and handle it in `resolve()`. If the page needs display data resolved from IDs, add the resolution logic.
 3. **Web URL mirroring**: Ensure navigating to the page updates the browser URL bar. For `ContentListPage` modes, add the path to `modePath` in `webApp/.../ui/contentlist/ContentListPage.kt`. For tab-level pages, update `handleTabSelected` in `WebApp.kt`. For overlay pages, update the handler that opens the overlay. Battle detail selection is mirrored via `appendBattleParam(modePath, selectedBattleId)`.
 4. **Web deep link loading**: Handle the new target in the `LaunchedEffect(Unit)` deep link handler in `WebApp.kt`. Pass `initialBattleId` to any new `ContentListPage` or `FavoritesPage` in DesktopLayout.
-5. **Android**: Handle the new resolved link in `App.kt`'s `LaunchedEffect(deepLink)`. Add path prefix to `AndroidManifest.xml` intent filters if needed.
-6. **iOS**: Handle the new case in `DependencyContainer.handleDeepLink()` and `ContentView.swift`'s `onChange(of: pendingDeepLink)`.
+5. **Android**: Handle the new resolved link in `App.kt`'s `LaunchedEffect(deepLink)`. Thread `initialBattleId` to any new `ContentListPage` or `FavoritesPage`. Add path prefix to `AndroidManifest.xml` intent filters if needed.
+6. **iOS**: Handle the new case in `DependencyContainer.handleDeepLink()` and `ContentView.swift`'s `onChange(of: pendingDeepLink)`. Thread `initialBattleId` to any new `ContentListView` or `FavoritesView`. If the new page uses `@State`, add `.id()` keyed on the deep link param to ensure re-init on subsequent deep links.
 7. **Tests**: Add parser tests in `DeepLinkTargetTest.kt`.
 8. **Docs**: Update the URL scheme table in `docs/navigation.md`.
 
