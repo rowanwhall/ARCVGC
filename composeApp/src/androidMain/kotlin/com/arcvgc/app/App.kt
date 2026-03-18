@@ -208,7 +208,7 @@ fun App(deepLink: DeepLink? = null) {
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
         var searchOverlayParams by remember { mutableStateOf<SearchParams?>(null) }
         var deepLinkOverlay by remember { mutableStateOf<ContentListMode?>(null) }
-        var deepLinkBattleId by remember { mutableStateOf<Int?>(null) }
+        var deepLinkBattleId by remember { mutableStateOf(deepLink?.battleId) }
         var deepLinkFavoritesType by remember { mutableStateOf<FavoriteContentType?>(null) }
         val tabs = Tab.entries
 
@@ -216,7 +216,6 @@ fun App(deepLink: DeepLink? = null) {
             val deepLinkViewModel: DeepLinkViewModel = hiltViewModel()
             LaunchedEffect(deepLink) {
                 try {
-                    deepLinkBattleId = deepLink.battleId
                     val resolved = deepLinkViewModel.deepLinkResolver.resolve(deepLink)
                     when (resolved) {
                         is DeepLinkResolver.ResolvedLink.Home -> { /* default tab */ }
