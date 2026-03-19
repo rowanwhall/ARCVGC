@@ -143,6 +143,73 @@ struct ContentListView: View {
         _selectedBattleId = State(initialValue: initialBattleId)
     }
 
+    private func buildShareUrl(battleId: Int32? = nil) -> String {
+        let bid: KotlinInt? = battleId.map { KotlinInt(int: $0) }
+        return ShareUrlBuilderKt.shareUrlForMode(mode: viewModel.mode.toSharedMode(), battleId: bid)
+    }
+
+    private var showShareButton: Bool {
+        switch mode {
+        case .home, .favorites: return false
+        default: return true
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        if showShareButton {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if let url = URL(string: buildShareUrl()) {
+                    ShareLink(item: url) {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(Color(.secondaryLabel))
+                    }
+                }
+            }
+        }
+        if case .pokemon(let pId, _, _, _, _, _) = mode {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    favoritesStore.togglePokemonFavorite(id: pId)
+                } label: {
+                    Image(systemName: favoritesStore.isPokemonFavorited(id: pId) ? "heart.fill" : "heart")
+                        .foregroundColor(favoritesStore.isPokemonFavorited(id: pId) ? settingsStore.themeColor : .gray)
+                }
+            }
+        }
+        if case .player(_, let pName, _) = mode {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    favoritesStore.togglePlayerFavorite(name: pName)
+                } label: {
+                    Image(systemName: favoritesStore.isPlayerFavorited(name: pName) ? "heart.fill" : "heart")
+                        .foregroundColor(favoritesStore.isPlayerFavorited(name: pName) ? settingsStore.themeColor : .gray)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func battleDetailSheetContent(battleId: Int32) -> some View {
+        let selectedBattle: BattleCardUiModel? = findBattle(in: viewModel.state.items, id: battleId)
+        BattleDetailSheet(
+            repository: repository,
+            battleId: battleId,
+            player1IsWinner: selectedBattle?.player1.isWinner,
+            player2IsWinner: selectedBattle?.player2.isWinner,
+            favoritesStore: favoritesStore,
+            showWinnerHighlight: settingsStore.showWinnerHighlight,
+            shareUrl: buildShareUrl(battleId: battleId),
+            onDismiss: { selectedBattleId = nil },
+            onPokemonClick: { id, name, imageUrl, typeImageUrls, formatId in
+                pokemonNavTarget = PokemonNavTarget(id: id, name: name, imageUrl: imageUrl, typeImageUrl1: typeImageUrls.first, typeImageUrl2: typeImageUrls.count > 1 ? typeImageUrls[1] : nil, formatId: formatId)
+            },
+            onPlayerClick: { id, name, formatId in
+                playerNavTarget = PlayerNavTarget(id: id, name: name, formatId: formatId)
+            }
+        )
+    }
+
     var body: some View {
         let header = ContentListHeader(mode: viewModel.mode)
 
@@ -298,50 +365,14 @@ struct ContentListView: View {
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if case .pokemon(let pId, _, _, _, _, _) = mode {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        favoritesStore.togglePokemonFavorite(id: pId)
-                    } label: {
-                        Image(systemName: favoritesStore.isPokemonFavorited(id: pId) ? "heart.fill" : "heart")
-                            .foregroundColor(favoritesStore.isPokemonFavorited(id: pId) ? settingsStore.themeColor : .gray)
-                    }
-                }
-            }
-            if case .player(_, let pName, _) = mode {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        favoritesStore.togglePlayerFavorite(name: pName)
-                    } label: {
-                        Image(systemName: favoritesStore.isPlayerFavorited(name: pName) ? "heart.fill" : "heart")
-                            .foregroundColor(favoritesStore.isPlayerFavorited(name: pName) ? settingsStore.themeColor : .gray)
-                    }
-                }
-            }
-        }
+        .toolbar { toolbarContent }
         .background(Color(.secondarySystemBackground))
         .sheet(isPresented: Binding(
             get: { selectedBattleId != nil && pokemonNavTarget == nil && playerNavTarget == nil },
             set: { if !$0 && pokemonNavTarget == nil && playerNavTarget == nil { selectedBattleId = nil } }
         )) {
             if let battleId = selectedBattleId {
-                let selectedBattle: BattleCardUiModel? = findBattle(in: viewModel.state.items, id: battleId)
-                BattleDetailSheet(
-                    repository: repository,
-                    battleId: battleId,
-                    player1IsWinner: selectedBattle?.player1.isWinner,
-                    player2IsWinner: selectedBattle?.player2.isWinner,
-                    favoritesStore: favoritesStore,
-                    showWinnerHighlight: settingsStore.showWinnerHighlight,
-                    onDismiss: { selectedBattleId = nil },
-                    onPokemonClick: { id, name, imageUrl, typeImageUrls, formatId in
-                        pokemonNavTarget = PokemonNavTarget(id: id, name: name, imageUrl: imageUrl, typeImageUrl1: typeImageUrls.first, typeImageUrl2: typeImageUrls.count > 1 ? typeImageUrls[1] : nil, formatId: formatId)
-                    },
-                    onPlayerClick: { id, name, formatId in
-                        playerNavTarget = PlayerNavTarget(id: id, name: name, formatId: formatId)
-                    }
-                )
+                battleDetailSheetContent(battleId: battleId)
             }
         }
         .navigationDestination(isPresented: Binding(

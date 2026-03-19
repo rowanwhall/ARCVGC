@@ -172,7 +172,7 @@ fun appendBattleParam(basePath: String, battleId: Int?): String {
     return "${basePath}${separator}battle=$battleId"
 }
 
-private fun encodePercent(value: String): String {
+internal fun encodePercent(value: String): String {
     val sb = StringBuilder()
     for (c in value) {
         when {

@@ -71,6 +71,14 @@ Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` an
 - Pokemon/Player tap callbacks are handled locally within each `ContentListPage` / `ContentListView` — they do not bubble up to parent
 - **Format threading**: When navigating to a Pokemon from battle detail, the battle's `formatId` is injected at the boundary (Android: `BattleDetailSheetWrapper`, iOS: `BattleDetailSheet`, Web: `BattleDetailPanel`) by wrapping the 4-param `onPokemonClick` into a 5-param version that appends the format. The Pokemon content list then defaults to that format, with a format dropdown in the hero header allowing the user to switch.
 
+## Share button (Android/iOS)
+- Share buttons appear in battle detail headers and content list toolbars for Pokemon, Player, and Search modes (not Home or Favorites)
+- `shareUrlForMode(mode, battleId)` in `shared/.../ui/ShareUrlBuilder.kt` generates the full `https://arcvgc.com/...` URL from a `ContentListMode` and optional battle ID
+- Battle detail share URLs include the parent page context: e.g. `https://arcvgc.com/pokemon/150?battle=42`
+- Android: `Intent.ACTION_SEND` with `Intent.createChooser()`. Share `IconButton` in `BattleDetailSheet` header and `TopAppBar` actions
+- iOS: `ShareLink(item: url)` SwiftUI view. In `BattleDetailSheet` header and `ContentListView` toolbar (via `toolbarContent` computed property)
+- iOS `ContentListView` uses `buildShareUrl(battleId:)` helper and extracted `battleDetailSheetContent(battleId:)` / `toolbarContent` to keep the `body` within Swift's type-check limits
+
 ## Key file locations — content list
 - Android: `ContentListPage.kt`, `ContentListViewModel.kt`, `ContentListUiState.kt` (all in `composeApp/.../ui/contentlist/`)
 - iOS: `ContentListView.swift`, `ContentListViewModel.swift`, `ContentListState.swift` (in `iosApp/iosApp/`)

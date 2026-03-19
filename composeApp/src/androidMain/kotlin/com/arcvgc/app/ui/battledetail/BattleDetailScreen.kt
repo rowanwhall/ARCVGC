@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -55,6 +56,7 @@ fun BattleDetailSheet(
     isFavorited: Boolean = false,
     showWinnerHighlight: Boolean = true,
     onToggleFavorite: () -> Unit = {},
+    onShare: (() -> Unit)? = null,
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
     onPlayerClick: ((Int, String) -> Unit)? = null
 ) {
@@ -94,12 +96,23 @@ fun BattleDetailSheet(
                             contentDescription = "Close"
                         )
                     }
-                    IconButton(onClick = onToggleFavorite) {
-                        Icon(
-                            imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
-                            tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Row {
+                        onShare?.let { share ->
+                            IconButton(onClick = share) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "Share",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        IconButton(onClick = onToggleFavorite) {
+                            Icon(
+                                imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
+                                tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }

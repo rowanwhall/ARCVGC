@@ -15,13 +15,15 @@ struct BattleDetailSheet: View {
     private let player1IsWinner: KotlinBoolean?
     private let player2IsWinner: KotlinBoolean?
     private let showWinnerHighlight: Bool
+    private let shareUrl: String?
 
-    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, onDismiss: (() -> Void)? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil) {
+    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, onDismiss: (() -> Void)? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil) {
         self.battleId = battleId
         self.player1IsWinner = player1IsWinner
         self.player2IsWinner = player2IsWinner
         self.favoritesStore = favoritesStore
         self.showWinnerHighlight = showWinnerHighlight
+        self.shareUrl = shareUrl
         self.onDismiss = onDismiss
         self.onPokemonClick = onPokemonClick
         self.onPlayerClick = onPlayerClick
@@ -51,6 +53,14 @@ struct BattleDetailSheet: View {
                 }
 
                 Spacer()
+
+                if let shareUrl = shareUrl, let url = URL(string: shareUrl) {
+                    ShareLink(item: url) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color(.secondaryLabel))
+                    }
+                }
 
                 Button {
                     favoritesStore.toggleBattleFavorite(id: battleId)

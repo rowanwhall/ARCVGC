@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.contentlist
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -81,6 +83,8 @@ import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FormatUiModel
+import com.arcvgc.app.ui.shareUrlForMode
+import androidx.compose.ui.platform.LocalContext
 
 private data class PokemonNavTarget(val id: Int, val name: String, val imageUrl: String?, val typeImageUrls: List<String> = emptyList(), val formatId: Int? = null)
 private data class PlayerNavTarget(val id: Int, val name: String, val formatId: Int? = null)
@@ -230,6 +234,21 @@ fun ContentListPage(
                         }
                     },
                     actions = {
+                        val actionContext = LocalContext.current
+                        IconButton(onClick = {
+                            val url = shareUrlForMode(mode, null)
+                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                putExtra(Intent.EXTRA_TEXT, url)
+                                type = "text/plain"
+                            }
+                            actionContext.startActivity(Intent.createChooser(sendIntent, null))
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         if (mode is ContentListMode.Pokemon) {
                             val pId = mode.pokemonId
                             val isFav = pId in favoritePokemonIds
@@ -264,6 +283,8 @@ fun ContentListPage(
         if (pokemonNavTarget == null && playerNavTarget == null) {
             selectedBattleId?.let { battleId ->
                 val selectedBattle = uiState.items.findBattle(battleId)
+                val context = LocalContext.current
+                val shareUrl = shareUrlForMode(mode, battleId)
                 BattleDetailSheetWrapper(
                     battleId = battleId,
                     player1IsWinner = selectedBattle?.uiModel?.player1?.isWinner,
@@ -271,6 +292,13 @@ fun ContentListPage(
                     isFavorited = battleId in favoriteBattleIds,
                     showWinnerHighlight = showWinnerHighlight,
                     onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
+                    onShare = {
+                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                            putExtra(Intent.EXTRA_TEXT, shareUrl)
+                            type = "text/plain"
+                        }
+                        context.startActivity(Intent.createChooser(sendIntent, null))
+                    },
                     onDismiss = {
                         selectedBattleId = null
                     },
@@ -319,6 +347,7 @@ private fun BattleDetailSheetWrapper(
     isFavorited: Boolean = false,
     showWinnerHighlight: Boolean = true,
     onToggleFavorite: () -> Unit = {},
+    onShare: (() -> Unit)? = null,
     onDismiss: () -> Unit,
     onPokemonClick: ((Int, String, String?, List<String>, Int?) -> Unit)? = null,
     onPlayerClick: ((Int, String, Int?) -> Unit)? = null
@@ -359,6 +388,7 @@ private fun BattleDetailSheetWrapper(
         isFavorited = isFavorited,
         showWinnerHighlight = showWinnerHighlight,
         onToggleFavorite = onToggleFavorite,
+        onShare = onShare,
         onDismiss = onDismiss,
         onRetry = { viewModel.loadBattleDetail(battleId) },
         onPokemonClick = wrappedOnPokemonClick,
