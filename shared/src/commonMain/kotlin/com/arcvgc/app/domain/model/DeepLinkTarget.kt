@@ -62,9 +62,9 @@ fun parseDeepLink(path: String): DeepLink? {
             DeepLinkTarget.SearchTab
         segments.size == 1 && segments[0] == "settings" ->
             DeepLinkTarget.SettingsTab
-        // Root path or /?battle=X
+        // Root path (/) or /?battle=X
         segments.size == 1 && segments[0].isEmpty() ->
-            if (battleId != null) DeepLinkTarget.Home else return null
+            DeepLinkTarget.Home
         else -> null
     } ?: return null
 

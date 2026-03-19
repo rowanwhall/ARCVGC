@@ -3,6 +3,7 @@ package com.arcvgc.app.domain.model
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -217,13 +218,19 @@ class DeepLinkTargetTest {
     // Null cases
 
     @Test
-    fun parseRootReturnsNull() {
-        assertNull(parseDeepLink("/"))
+    fun parseRootReturnsHome() {
+        val result = parseDeepLink("/")
+        assertNotNull(result)
+        assertIs<DeepLinkTarget.Home>(result.target)
+        assertNull(result.battleId)
     }
 
     @Test
-    fun parseEmptyReturnsNull() {
-        assertNull(parseDeepLink(""))
+    fun parseEmptyReturnsHome() {
+        val result = parseDeepLink("")
+        assertNotNull(result)
+        assertIs<DeepLinkTarget.Home>(result.target)
+        assertNull(result.battleId)
     }
 
     @Test
