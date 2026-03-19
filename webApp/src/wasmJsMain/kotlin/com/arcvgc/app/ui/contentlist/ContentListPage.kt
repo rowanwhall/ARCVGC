@@ -152,28 +152,25 @@ fun ContentListPage(
         viewModel.savedBattleId = selectedBattleId
     }
 
-    // Mirror desktop battle detail selection in the URL bar
-    val isDesktop = LocalWindowSizeClass.current == WindowSizeClass.Expanded
-    if (isDesktop) {
-        val modePath = when (mode) {
-            is ContentListMode.Pokemon -> "/pokemon/${mode.pokemonId}"
-            is ContentListMode.Player -> "/player/${mode.playerName}"
-            is ContentListMode.Favorites -> when (mode.contentType) {
-                FavoriteContentType.Battles -> "/favorites/battles"
-                FavoriteContentType.Pokemon -> "/favorites/pokemon"
-                FavoriteContentType.Players -> "/favorites/players"
-            }
-            is ContentListMode.Search -> encodeSearchPath(mode.params)
-            is ContentListMode.Home -> "/"
+    // Mirror page URL in the browser address bar
+    val modePath = when (mode) {
+        is ContentListMode.Pokemon -> "/pokemon/${mode.pokemonId}"
+        is ContentListMode.Player -> "/player/${mode.playerName}"
+        is ContentListMode.Favorites -> when (mode.contentType) {
+            FavoriteContentType.Battles -> "/favorites/battles"
+            FavoriteContentType.Pokemon -> "/favorites/pokemon"
+            FavoriteContentType.Players -> "/favorites/players"
         }
-        LaunchedEffect(selectedBattleId) {
-            val path = if (mode is ContentListMode.Home && selectedBattleId != null) {
-                "/battle/$selectedBattleId"
-            } else {
-                appendBattleParam(modePath, selectedBattleId)
-            }
-            replaceHistoryStateWithPath(path)
+        is ContentListMode.Search -> encodeSearchPath(mode.params)
+        is ContentListMode.Home -> "/"
+    }
+    LaunchedEffect(selectedBattleId) {
+        val path = if (mode is ContentListMode.Home && selectedBattleId != null) {
+            "/battle/$selectedBattleId"
+        } else {
+            appendBattleParam(modePath, selectedBattleId)
         }
+        replaceHistoryStateWithPath(path)
     }
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }

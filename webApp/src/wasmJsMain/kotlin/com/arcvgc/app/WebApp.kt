@@ -264,6 +264,7 @@ fun WebApp() {
         var popStatesToIgnore by popStatesToIgnoreState
         val navDirectionState = remember { mutableStateOf(NavDirection.Forward) }
         var navDirection by navDirectionState
+        val pendingReplacePathState = remember { mutableStateOf<String?>(null) }
 
         // After a browser-initiated back (BackInstant), reset to Forward so
         // AnimatedContent re-enters the composition tree before the next push
@@ -349,6 +350,11 @@ fun WebApp() {
             val listener: (Event) -> Unit = {
                 if (popStatesToIgnoreState.intValue > 0) {
                     popStatesToIgnoreState.intValue--
+                    val pendingPath = pendingReplacePathState.value
+                    if (pendingPath != null) {
+                        replaceHistoryStateWithPath(pendingPath)
+                        pendingReplacePathState.value = null
+                    }
                 } else {
                     navDirectionState.value = NavDirection.BackInstant
                     if (navStackState.value.isNotEmpty()) {
@@ -423,23 +429,25 @@ fun WebApp() {
         }
 
         val handleTabSelected: (Int) -> Unit = { index ->
-            if (historyDepth > 0) {
-                popStatesToIgnore++
-                historyGo(-historyDepth)
-                historyDepth = 0
-            }
             selectedTab = index
             searchOverlayParams = null
             navStack = emptyList()
             desktopNavStack = emptyList()
             deepLinkBattleId = null
-            // Mirror tab URL — Top and Favorites are handled by their ContentListPage modePath
+            // Mirror tab URL in browser address bar
             val tabPath = when (tabs[index]) {
+                Tab.Top -> "/"
                 Tab.Search -> "/search"
+                Tab.Favorites -> "/favorites/battles"
                 Tab.Settings -> "/settings"
-                else -> null
             }
-            if (tabPath != null) {
+            if (historyDepth > 0) {
+                // historyGo is async — defer the URL replace until the popstate fires
+                pendingReplacePathState.value = tabPath
+                popStatesToIgnore++
+                historyGo(-historyDepth)
+                historyDepth = 0
+            } else {
                 replaceHistoryStateWithPath(tabPath)
             }
         }
