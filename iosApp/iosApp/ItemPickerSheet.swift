@@ -37,8 +37,8 @@ struct ItemPickerSheet: View {
                     .listStyle(.plain)
                 }
 
-                TextField("Search Items", text: $query)
-                    .textFieldStyle(.roundedBorder)
+                TextField("", text: $query, prompt: Text("Search Items").foregroundColor(Color(.secondaryLabel)))
+                    .outlinedTextFieldStyle()
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
             }

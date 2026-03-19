@@ -17,8 +17,8 @@ struct PlayerNamePickerSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
-                TextField("Enter player name", text: $text)
-                    .textFieldStyle(.roundedBorder)
+                TextField("", text: $text, prompt: Text("Enter player name").foregroundColor(Color(.secondaryLabel)))
+                    .outlinedTextFieldStyle()
                     .focused($isFocused)
                     .submitLabel(.done)
                     .onSubmit {

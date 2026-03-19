@@ -40,8 +40,8 @@ struct PokemonPickerSheet: View {
                     .listStyle(.plain)
                 }
 
-                TextField("Search Pokémon", text: $query)
-                    .textFieldStyle(.roundedBorder)
+                TextField("", text: $query, prompt: Text("Search Pokémon").foregroundColor(Color(.secondaryLabel)))
+                    .outlinedTextFieldStyle()
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
             }

@@ -37,8 +37,8 @@ struct TeraTypePickerSheet: View {
                     .listStyle(.plain)
                 }
 
-                TextField("Search Tera Types", text: $query)
-                    .textFieldStyle(.roundedBorder)
+                TextField("", text: $query, prompt: Text("Search Tera Types").foregroundColor(Color(.secondaryLabel)))
+                    .outlinedTextFieldStyle()
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
             }

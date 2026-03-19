@@ -41,8 +41,8 @@ struct FormatPickerSheet: View {
                     }
                 }
 
-                TextField("Search Formats", text: $query)
-                    .textFieldStyle(.roundedBorder)
+                TextField("", text: $query, prompt: Text("Search Formats").foregroundColor(Color(.secondaryLabel)))
+                    .outlinedTextFieldStyle()
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
             }
