@@ -198,9 +198,9 @@ data class ContentListUiState(
 ## Empty States
 
 - **Loading**: centered spinner (fills 50% of parent height)
-- **Error** (with no items): `ErrorView` / `ErrorBanner` with retry button
-- **Empty** (loaded, no items): `EmptyView` ("There's nothing here")
-- **Empty section** (section with 0 items, not loading): inline `EmptyView` / `BattleEmptyView` below the section header. Used in Pokemon and Player modes when the Battles section is always present (even with no results) so the section header + sort toggle remain visible.
+- **Error** (with no content items): `ErrorView` / `ErrorBanner` with retry button
+- **Empty** (loaded, no content items): `EmptyView` ("There's nothing here"). Non-content items (e.g. `FormatSelector`) are still rendered above the empty view so the user can change format. The `isContentItem` flag on `ContentListItem` determines whether an item counts as content for empty state purposes (default `true`, `FormatSelector` overrides to `false`).
+- Sections are only added to the items list when they have data — empty sections (including Battles with no results) are omitted entirely, and the full-screen empty view shows instead.
 
 ## Pagination
 

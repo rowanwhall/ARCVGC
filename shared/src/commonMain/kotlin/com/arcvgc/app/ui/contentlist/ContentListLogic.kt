@@ -268,7 +268,7 @@ class ContentListLogic(
     }
 
     private fun reloadSections(): Set<String> = when (mode) {
-        is ContentListMode.Pokemon -> setOf("Top Teammates", "Top Abilities", "Top Items", "Top Moves", "Top Tera Types", "Battles")
+        is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles")
         else -> setOf("Battles")
     }
 
@@ -412,7 +412,9 @@ class ContentListLogic(
                     }
                     add(ContentListItem.Section("Top Tera Types", listOf(ContentListItem.StatChipRow(chipItems, "tera_types"))))
                 }
-                add(ContentListItem.Section("Battles", battleItems))
+                if (battleItems.isNotEmpty()) {
+                    add(ContentListItem.Section("Battles", battleItems))
+                }
             }
             sections to result.pagination
         } else {
@@ -463,7 +465,9 @@ class ContentListLogic(
                 }
 
                 add(ContentListItem.FormatSelector)
-                add(ContentListItem.Section("Battles", battleItems))
+                if (battleItems.isNotEmpty()) {
+                    add(ContentListItem.Section("Battles", battleItems))
+                }
             }
             sections to result.pagination
         } else {

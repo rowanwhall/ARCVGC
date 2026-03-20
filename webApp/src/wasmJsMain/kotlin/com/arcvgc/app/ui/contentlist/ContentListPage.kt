@@ -921,7 +921,31 @@ private fun ContentListContent(
                 }
             }
 
-            uiState.items.isEmpty() -> {
+            uiState.items.none { it.isContentItem } -> {
+                uiState.items.forEach { topItem ->
+                    if (topItem is ContentListItem.FormatSelector && formats.isNotEmpty() && onFormatSelected != null) {
+                        val isLoadingFormat = "format_selector" in uiState.loadingSections
+                        item(key = topItem.listKey) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                FormatDropdown(
+                                    formats = formats,
+                                    selectedFormatId = selectedFormatId,
+                                    onFormatSelected = onFormatSelected
+                                )
+                                if (isLoadingFormat) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.padding(start = 8.dp).size(16.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
                 item(key = "empty") {
                     EmptyView(
                         modifier = Modifier
@@ -960,16 +984,24 @@ private fun ContentListContent(
                         }
                         is ContentListItem.FormatSelector -> {
                             if (formats.isNotEmpty() && onFormatSelected != null) {
+                                val isLoadingFormat = "format_selector" in uiState.loadingSections
                                 item(key = topItem.listKey) {
-                                    Box(
+                                    Row(
                                         modifier = Modifier.fillMaxWidth().then(itemPadding),
-                                        contentAlignment = Alignment.Center
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         FormatDropdown(
                                             formats = formats,
                                             selectedFormatId = selectedFormatId,
                                             onFormatSelected = onFormatSelected
                                         )
+                                        if (isLoadingFormat) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.padding(start = 8.dp).size(16.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                        }
                                     }
                                 }
                             }

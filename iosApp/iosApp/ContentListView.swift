@@ -297,17 +297,45 @@ struct ContentListView: View {
                         .padding(.horizontal, 16)
                     }
 
+                    let hasContent = (viewModel.state.items as! [ContentListItem]).contains { $0.isContentItem }
                     if viewModel.state.isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity)
                             .frame(height: geometry.size.height * 0.6)
-                    } else if viewModel.state.error != nil, viewModel.state.items.isEmpty {
+                    } else if viewModel.state.error != nil, !hasContent {
                         ErrorView {
                             viewModel.loadContent()
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: geometry.size.height * 0.6)
-                    } else if viewModel.state.items.isEmpty {
+                    } else if !hasContent {
+                        // Render non-content items (e.g. FormatSelector) before the empty view
+                        ForEach(Array(viewModel.state.items.enumerated()), id: \.element.listKey) { _, item in
+                            if !item.isContentItem {
+                                switch onEnum(of: item) {
+                                case .formatSelector:
+                                    if !formatItems.isEmpty {
+                                        let isLoadingFormat = viewModel.state.loadingSections.contains("format_selector")
+                                        HStack(spacing: 8) {
+                                            Spacer()
+                                            FormatDropdown(
+                                                formats: formatItems,
+                                                selectedFormatId: viewModel.selectedFormatId,
+                                                onFormatSelected: { viewModel.selectFormat($0) }
+                                            )
+                                            if isLoadingFormat {
+                                                ProgressView()
+                                                    .scaleEffect(0.7)
+                                            }
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 16)
+                                    }
+                                default:
+                                    EmptyView()
+                                }
+                            }
+                        }
                         BattleEmptyView()
                             .frame(maxWidth: .infinity)
                             .frame(height: geometry.size.height * 0.6)
@@ -337,13 +365,18 @@ struct ContentListView: View {
                                 }
                             case .formatSelector:
                                 if !formatItems.isEmpty {
-                                    HStack {
+                                    let isLoadingFormat = viewModel.state.loadingSections.contains("format_selector")
+                                    HStack(spacing: 8) {
                                         Spacer()
                                         FormatDropdown(
                                             formats: formatItems,
                                             selectedFormatId: viewModel.selectedFormatId,
                                             onFormatSelected: { viewModel.selectFormat($0) }
                                         )
+                                        if isLoadingFormat {
+                                            ProgressView()
+                                                .scaleEffect(0.7)
+                                        }
                                         Spacer()
                                     }
                                     .padding(.horizontal, 16)
