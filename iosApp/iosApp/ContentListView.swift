@@ -572,7 +572,7 @@ struct ContentListView: View {
                                 }
                                 .frame(width: 24, height: 24)
                             }
-                            VStack(alignment: chip.imageUrl != nil ? .leading : .center, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text(chip.name)
                                     .font(.subheadline)
                                     .foregroundColor(Color(.label))

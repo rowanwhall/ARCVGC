@@ -78,7 +78,8 @@ final class ContentListViewModel: ObservableObject {
                 catalogCacheStorage: CatalogCacheStorage()
             ),
             mode: sharedMode,
-            pokemonCatalogItems: pokemonCatalogItems
+            pokemonCatalogItems: pokemonCatalogItems,
+            pokemonCatalogState: nil
         )
 
         self.state = logic.uiState.value

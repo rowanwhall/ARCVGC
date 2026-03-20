@@ -1188,9 +1188,7 @@ private fun StatChip(name: String, usagePercent: String?, imageUrl: String? = nu
                     modifier = Modifier.size(24.dp)
                 )
             }
-            Column(
-                horizontalAlignment = if (imageUrl != null) Alignment.Start else Alignment.CenterHorizontally
-            ) {
+            Column {
                 Text(
                     text = name,
                     style = MaterialTheme.typography.bodySmall,

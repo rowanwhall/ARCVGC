@@ -388,12 +388,6 @@ class ContentListLogic(
                     }
                     add(ContentListItem.Section("Top Teammates", listOf(ContentListItem.PokemonGrid(gridItems))))
                 }
-                if (profile != null && profile.topAbilities.isNotEmpty()) {
-                    val chipItems = profile.topAbilities.map {
-                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
-                    }
-                    add(ContentListItem.Section("Top Abilities", listOf(ContentListItem.StatChipRow(chipItems, "abilities"))))
-                }
                 if (profile != null && profile.topItems.isNotEmpty()) {
                     val chipItems = profile.topItems.map {
                         ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount), it.imageUrl)
@@ -405,6 +399,12 @@ class ContentListLogic(
                         ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
                     }
                     add(ContentListItem.Section("Top Moves", listOf(ContentListItem.StatChipRow(chipItems, "moves"))))
+                }
+                if (profile != null && profile.topAbilities.isNotEmpty()) {
+                    val chipItems = profile.topAbilities.map {
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
+                    }
+                    add(ContentListItem.Section("Top Abilities", listOf(ContentListItem.StatChipRow(chipItems, "abilities"))))
                 }
                 if (profile != null && profile.topTeraTypes.isNotEmpty()) {
                     val chipItems = profile.topTeraTypes.map {
