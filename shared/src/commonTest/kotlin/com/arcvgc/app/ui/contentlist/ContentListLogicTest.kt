@@ -9,7 +9,14 @@ import com.arcvgc.app.domain.model.Format
 import com.arcvgc.app.domain.model.MostUsedPokemon
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerProfile
+import com.arcvgc.app.domain.model.PokemonProfile
+import com.arcvgc.app.domain.model.PokemonType
 import com.arcvgc.app.domain.model.RatedMatch
+import com.arcvgc.app.domain.model.TopStatAbility
+import com.arcvgc.app.domain.model.TopStatItem
+import com.arcvgc.app.domain.model.TopStatMove
+import com.arcvgc.app.domain.model.TopStatTeammate
+import com.arcvgc.app.domain.model.TopStatTeraType
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.testutil.FakeAppConfigStorage
 import com.arcvgc.app.testutil.FakeBattleRepository
@@ -17,7 +24,6 @@ import com.arcvgc.app.testutil.FakeCatalogCacheStorage
 import com.arcvgc.app.testutil.FakeFavoritesStorage
 import com.arcvgc.app.testutil.testMatchPreview
 import com.arcvgc.app.testutil.testPlayerListItem
-import com.arcvgc.app.testutil.testPokemonListItem
 import com.arcvgc.app.testutil.testSearchFilterSlot
 import com.arcvgc.app.ui.mapper.BattleCardUiMapper
 import com.arcvgc.app.ui.model.BattleCardUiModel
@@ -277,6 +283,65 @@ class ContentListLogicTest {
         assertTrue(items[0] is ContentListItem.FormatSelector)
         assertTrue(items[1] is ContentListItem.Section)
         assertEquals("Battles", (items[1] as ContentListItem.Section).header)
+    }
+
+    @Test
+    fun pokemonMode_page1_withProfile_hasStatSections() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 1, 1)
+        )
+        fakeRepo.pokemonProfileResult = PokemonProfile(
+            id = 25,
+            name = "Pikachu",
+            pokedexNumber = 25,
+            tier = "OU",
+            types = listOf(PokemonType(1, "Electric", null)),
+            imageUrl = null,
+            baseSpecies = null,
+            teamCount = 100,
+            topTeammates = listOf(TopStatTeammate(80, 6, "Charizard", 6, null)),
+            topItems = listOf(TopStatItem(50, 1, "Choice Band", null)),
+            topMoves = listOf(TopStatMove(90, 1, "Thunderbolt")),
+            topAbilities = listOf(TopStatAbility(95, 1, "Static")),
+            topTeraTypes = listOf(TopStatTeraType(70, 1, "Fire", null))
+        )
+
+        val logic = createLogic(ContentListMode.Pokemon(
+            pokemonId = 25, name = "Pikachu", imageUrl = null,
+            typeImageUrl1 = null, typeImageUrl2 = null, formatId = 1
+        ))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        val sectionHeaders = items.filterIsInstance<ContentListItem.Section>().map { it.header }
+        assertTrue(items[0] is ContentListItem.FormatSelector)
+        assertEquals(listOf("Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles"), sectionHeaders)
+
+        // Verify usage percentages are formatted
+        val teammatesGrid = (items[1] as ContentListItem.Section).items[0] as ContentListItem.PokemonGrid
+        assertEquals("80.00%", teammatesGrid.pokemon[0].usagePercent)
+    }
+
+    @Test
+    fun pokemonMode_page1_emptyProfile_showsOnlyFormatSelector() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = emptyList(),
+            pagination = Pagination(1, 10, 0, 1)
+        )
+
+        val logic = createLogic(ContentListMode.Pokemon(
+            pokemonId = 25, name = "Pikachu", imageUrl = null,
+            typeImageUrl1 = null, typeImageUrl2 = null, formatId = 1
+        ))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        assertEquals(1, items.size)
+        assertTrue(items[0] is ContentListItem.FormatSelector)
+        assertTrue(items.none { it.isContentItem })
     }
 
     @Test

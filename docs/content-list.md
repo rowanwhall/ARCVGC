@@ -151,7 +151,8 @@ class ContentListLogic(
     favoritesRepository: FavoritesRepository,
     appConfigRepository: AppConfigRepository,
     mode: ContentListMode,
-    pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList()
+    pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
+    pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null  // for favorites Pokemon tab
 )
 ```
 

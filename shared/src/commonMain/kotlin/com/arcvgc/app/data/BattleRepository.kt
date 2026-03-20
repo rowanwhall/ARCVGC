@@ -4,7 +4,6 @@ import com.arcvgc.app.domain.model.NetworkResult
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
-import com.arcvgc.app.domain.model.PokemonListItem
 import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.network.ApiService
@@ -39,7 +38,6 @@ interface BattleRepositoryApi {
         playerName: String? = null
     ): MatchesResult
     suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel>
-    suspend fun getPokemonByIds(ids: List<Int>): List<PokemonListItem>
     suspend fun getPlayerProfile(id: Int): PlayerProfile
     suspend fun getPokemonProfile(id: Int, formatId: Int? = null): PokemonProfile
     suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem>
@@ -129,19 +127,6 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
                 async {
                     when (val result = apiService.getMatchDetail(id)) {
                         is NetworkResult.Success -> BattleCardUiMapper.map(result.data)
-                        is NetworkResult.Error -> null
-                    }
-                }
-            }.awaitAll().filterNotNull()
-        }
-    }
-
-    override suspend fun getPokemonByIds(ids: List<Int>): List<PokemonListItem> {
-        return coroutineScope {
-            ids.map { id ->
-                async {
-                    when (val result = apiService.getPokemonById(id)) {
-                        is NetworkResult.Success -> result.data.toPokemonListItem()
                         is NetworkResult.Error -> null
                     }
                 }

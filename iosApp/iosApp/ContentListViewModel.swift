@@ -1,5 +1,4 @@
 import Foundation
-import os
 import Shared
 
 enum FavoriteContentType {

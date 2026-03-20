@@ -5,7 +5,6 @@ import com.arcvgc.app.data.MatchesResult
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
-import com.arcvgc.app.domain.model.PokemonListItem
 import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.ui.model.BattleCardUiModel
@@ -20,9 +19,6 @@ class FakeBattleRepository : BattleRepositoryApi {
 
     var matchesByIdsResult: List<BattleCardUiModel> = emptyList()
     var matchesByIdsError: Exception? = null
-
-    var pokemonByIdsResult: List<PokemonListItem> = emptyList()
-    var pokemonByIdsError: Exception? = null
 
     var playerProfileResult: PlayerProfile? = null
     var playerProfileError: Exception? = null
@@ -64,11 +60,6 @@ class FakeBattleRepository : BattleRepositoryApi {
     override suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel> {
         matchesByIdsError?.let { throw it }
         return matchesByIdsResult
-    }
-
-    override suspend fun getPokemonByIds(ids: List<Int>): List<PokemonListItem> {
-        pokemonByIdsError?.let { throw it }
-        return pokemonByIdsResult
     }
 
     override suspend fun getPlayerProfile(id: Int): PlayerProfile {
