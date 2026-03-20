@@ -383,32 +383,32 @@ class ContentListLogic(
                     val gridItems = profile.topTeammates.map {
                         ContentListItem.PokemonGridItem(
                             it.id, it.name, it.imageUrl,
-                            formatUsagePercent(it.count, profile.matchCount)
+                            formatUsagePercent(it.count, profile.teamCount)
                         )
                     }
                     add(ContentListItem.Section("Top Teammates", listOf(ContentListItem.PokemonGrid(gridItems))))
                 }
                 if (profile != null && profile.topAbilities.isNotEmpty()) {
                     val chipItems = profile.topAbilities.map {
-                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.matchCount))
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
                     }
                     add(ContentListItem.Section("Top Abilities", listOf(ContentListItem.StatChipRow(chipItems, "abilities"))))
                 }
                 if (profile != null && profile.topItems.isNotEmpty()) {
                     val chipItems = profile.topItems.map {
-                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.matchCount), it.imageUrl)
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount), it.imageUrl)
                     }
                     add(ContentListItem.Section("Top Items", listOf(ContentListItem.StatChipRow(chipItems, "items"))))
                 }
                 if (profile != null && profile.topMoves.isNotEmpty()) {
                     val chipItems = profile.topMoves.map {
-                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.matchCount))
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
                     }
                     add(ContentListItem.Section("Top Moves", listOf(ContentListItem.StatChipRow(chipItems, "moves"))))
                 }
                 if (profile != null && profile.topTeraTypes.isNotEmpty()) {
                     val chipItems = profile.topTeraTypes.map {
-                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.matchCount), it.imageUrl)
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount), it.imageUrl)
                     }
                     add(ContentListItem.Section("Top Tera Types", listOf(ContentListItem.StatChipRow(chipItems, "tera_types"))))
                 }

@@ -9,6 +9,7 @@ data class PokemonProfile(
     val imageUrl: String?,
     val baseSpecies: BaseSpecies?,
     val matchCount: Int = 0,
+    val teamCount: Int = 0,
     val matchPercent: Double = 0.0,
     val topItems: List<TopStatItem> = emptyList(),
     val topTeraTypes: List<TopStatTeraType> = emptyList(),
