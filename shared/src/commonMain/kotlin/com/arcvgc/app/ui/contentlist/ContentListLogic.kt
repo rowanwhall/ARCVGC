@@ -251,7 +251,7 @@ class ContentListLogic(
         _sortOrder.value = if (_sortOrder.value == "time") "rating" else "time"
         scope.launch {
             try {
-                _uiState.update { it.copy(loadingSections = reloadSections(), currentPage = 1, canPaginate = false) }
+                _uiState.update { it.copy(loadingSections = setOf("Battles"), currentPage = 1, canPaginate = false) }
                 val (items, pagination) = fetchContent()
                 _uiState.update {
                     it.copy(
