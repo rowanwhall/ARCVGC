@@ -36,6 +36,12 @@ sealed class ContentListItem {
         override val listKey get() = "pokemon_grid"
     }
 
+    data class StatChipItem(val name: String, val usagePercent: String?, val imageUrl: String? = null)
+
+    data class StatChipRow(val chips: List<StatChipItem>, val id: String = "") : ContentListItem() {
+        override val listKey get() = "stat_chip_row_$id"
+    }
+
     data object FormatSelector : ContentListItem() {
         override val listKey get() = "format_selector"
     }

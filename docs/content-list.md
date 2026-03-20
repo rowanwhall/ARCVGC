@@ -40,7 +40,8 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 | `Player(id, name)` | Player row (favorites, search pinned) | `"player_{id}"` |
 | `Section(header, items)` | Grouping container with title | `"section_{header}"` |
 | `HighlightButtons(buttons)` | Player profile highlight cards (Top Rated / Latest Rated) | `"highlight_buttons"` |
-| `PokemonGrid(pokemon)` | 3-column grid of Pokemon (player profile "Favorite Pokemon") | `"pokemon_grid"` |
+| `PokemonGrid(pokemon)` | 3-column grid of Pokemon (player profile "Favorite Pokemon", pokemon profile "Top Teammates") | `"pokemon_grid"` |
+| `StatChipRow(chips)` | Horizontal scrolling row of chips with name+percent and optional image (mobile), FlowRow (desktop web). Used for Top Abilities, Items, Moves, Tera Types. | `"stat_chip_row"` |
 | `FormatSelector` | Format dropdown rendered as a list item (Pokemon, Player modes) | `"format_selector"` |
 
 `ContentListItemMapper` (in `shared/.../ui/mapper/`) provides factory methods: `fromBattles()`, `fromPokemon()`, `fromPlayers()`, `fromPokemonCatalog()`.
@@ -65,10 +66,15 @@ This is a key behavioral detail: several modes compose a richer page 1 with sect
 ### Pokemon mode
 - **Page 1**: Up to 3 items — profile + battles fetched in parallel via `getPokemonProfile(id, formatId)` + `searchMatches(...)`. Profile errors are silently swallowed; page still shows battles.
   1. `FormatSelector` — format dropdown (rendered as a centered list item)
-  2. `Section("Top Teammates", [PokemonGrid([...])])` — 3-column grid of top teammates from pokemon profile API, with usage percentage (count / matchCount). Only shown if profile succeeds and has teammates.
-  3. `Section("Battles", [...])` — battle results
+  2. `Section("Top Teammates", [PokemonGrid([...])])` — 3-column grid of top teammates with usage %. Only shown if profile succeeds and has teammates.
+  3. `Section("Top Abilities", [StatChipRow([...])])` — chip carousel of abilities with usage %. Name + percent only.
+  4. `Section("Top Items", [StatChipRow([...])])` — chip carousel of items with image, name, and usage %.
+  5. `Section("Top Moves", [StatChipRow([...])])` — chip carousel of moves with usage %. Name + percent only.
+  6. `Section("Top Tera Types", [StatChipRow([...])])` — chip carousel of tera types with image, name, and usage %.
+  7. `Section("Battles", [...])` — battle results
+  All profile sections are from pokemon profile API (count / matchCount), only shown if data is non-empty.
 - **Pages 2+**: bare `Battle` items
-- **Format change**: reloads both profile and battles (`loadingSections = {"Top Teammates", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
+- **Format change**: reloads all profile sections and battles (`loadingSections = {"Top Teammates", "Top Abilities", "Top Items", "Top Moves", "Top Tera Types", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
 
 ### Player mode
 - **Page 1**: Up to 4 items —

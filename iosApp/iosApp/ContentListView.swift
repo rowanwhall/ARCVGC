@@ -549,6 +549,40 @@ struct ContentListView: View {
             .padding(12)
             .background(Color(.systemBackground))
             .cornerRadius(12)
+        case .statChipRow(let chipRow):
+            let allChips = chipRow.chips as! [ContentListItem.StatChipItem]
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(allChips.enumerated()), id: \.element.name) { _, chip in
+                        HStack(spacing: 8) {
+                            if let imageUrl = chip.imageUrl, let url = URL(string: imageUrl) {
+                                AsyncImage(url: url) { image in
+                                    image.resizable().scaledToFit()
+                                } placeholder: {
+                                    Color.clear
+                                }
+                                .frame(width: 24, height: 24)
+                            }
+                            VStack(alignment: chip.imageUrl != nil ? .leading : .center, spacing: 2) {
+                                Text(chip.name)
+                                    .font(.subheadline)
+                                    .foregroundColor(Color(.label))
+                                    .lineLimit(1)
+                                if let pct = chip.usagePercent {
+                                    Text(pct)
+                                        .font(.caption2)
+                                        .foregroundColor(Color(.secondaryLabel))
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                    }
+                }
+            }
         case .section:
             EmptyView()
         case .formatSelector:

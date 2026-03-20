@@ -245,7 +245,7 @@ class ContentListLogic(
     }
 
     private fun reloadSections(): Set<String> = when (mode) {
-        is ContentListMode.Pokemon -> setOf("Top Teammates", "Battles")
+        is ContentListMode.Pokemon -> setOf("Top Teammates", "Top Abilities", "Top Items", "Top Moves", "Top Tera Types", "Battles")
         else -> setOf("Battles")
     }
 
@@ -363,6 +363,30 @@ class ContentListLogic(
                         )
                     }
                     add(ContentListItem.Section("Top Teammates", listOf(ContentListItem.PokemonGrid(gridItems))))
+                }
+                if (profile != null && profile.topAbilities.isNotEmpty()) {
+                    val chipItems = profile.topAbilities.map {
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.matchCount))
+                    }
+                    add(ContentListItem.Section("Top Abilities", listOf(ContentListItem.StatChipRow(chipItems, "abilities"))))
+                }
+                if (profile != null && profile.topItems.isNotEmpty()) {
+                    val chipItems = profile.topItems.map {
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.matchCount), it.imageUrl)
+                    }
+                    add(ContentListItem.Section("Top Items", listOf(ContentListItem.StatChipRow(chipItems, "items"))))
+                }
+                if (profile != null && profile.topMoves.isNotEmpty()) {
+                    val chipItems = profile.topMoves.map {
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.matchCount))
+                    }
+                    add(ContentListItem.Section("Top Moves", listOf(ContentListItem.StatChipRow(chipItems, "moves"))))
+                }
+                if (profile != null && profile.topTeraTypes.isNotEmpty()) {
+                    val chipItems = profile.topTeraTypes.map {
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.matchCount), it.imageUrl)
+                    }
+                    add(ContentListItem.Section("Top Tera Types", listOf(ContentListItem.StatChipRow(chipItems, "tera_types"))))
                 }
                 add(ContentListItem.Section("Battles", battleItems))
             }

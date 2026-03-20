@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -290,6 +291,7 @@ fun ContentListPage(
                             is ContentListItem.Section -> {}
                             is ContentListItem.HighlightButtons -> {}
                             is ContentListItem.PokemonGrid -> {}
+                            is ContentListItem.StatChipRow -> {}
                             is ContentListItem.FormatSelector -> {}
                         }
                     },
@@ -382,6 +384,7 @@ fun ContentListPage(
                                 is ContentListItem.HighlightButtons -> {}
                                 is ContentListItem.PokemonGrid -> {}
                                 is ContentListItem.FormatSelector -> {}
+                                is ContentListItem.StatChipRow -> {}
                             }
                         },
                         onHighlightBattleClick = { battleId -> selectedBattleId = battleId },
@@ -1130,8 +1133,71 @@ private fun ContentListItemRow(
                 }
             }
         }
+        is ContentListItem.StatChipRow -> {
+            val isCompact = LocalWindowSizeClass.current == WindowSizeClass.Compact
+            if (isCompact) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 0.dp)
+                ) {
+                    items(item.chips, key = { it.name }) { chip ->
+                        StatChip(name = chip.name, usagePercent = chip.usagePercent, imageUrl = chip.imageUrl)
+                    }
+                }
+            } else {
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item.chips.forEach { chip ->
+                        StatChip(name = chip.name, usagePercent = chip.usagePercent, imageUrl = chip.imageUrl)
+                    }
+                }
+            }
+        }
         is ContentListItem.Section -> {}
         is ContentListItem.FormatSelector -> {}
+    }
+}
+
+@Composable
+private fun StatChip(name: String, usagePercent: String?, imageUrl: String? = null) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = name,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Column(
+                horizontalAlignment = if (imageUrl != null) Alignment.Start else Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+                usagePercent?.let { pct ->
+                    Text(
+                        text = pct,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
     }
 }
 
