@@ -5,6 +5,7 @@ import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonListItem
+import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.network.ApiService
 import com.arcvgc.app.network.buildSearchRequest
@@ -40,6 +41,7 @@ interface BattleRepositoryApi {
     suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel>
     suspend fun getPokemonByIds(ids: List<Int>): List<PokemonListItem>
     suspend fun getPlayerProfile(id: Int): PlayerProfile
+    suspend fun getPokemonProfile(id: Int, formatId: Int? = null): PokemonProfile
     suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem>
 }
 
@@ -139,11 +141,34 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
             ids.map { id ->
                 async {
                     when (val result = apiService.getPokemonById(id)) {
-                        is NetworkResult.Success -> result.data
+                        is NetworkResult.Success -> result.data.toPokemonListItem()
                         is NetworkResult.Error -> null
                     }
                 }
             }.awaitAll().filterNotNull()
+        }
+    }
+
+    override suspend fun getPokemonProfile(id: Int, formatId: Int?): PokemonProfile {
+        return when (val result = apiService.getPokemonById(id, formatId)) {
+            is NetworkResult.Success -> result.data
+            is NetworkResult.Error -> {
+                val error = Exception(result.message)
+                captureException(error)
+                throw error
+            }
+        }
+    }
+
+    /**
+     * Non-throwing variant for iOS — returns null on error instead of throwing.
+     * Errors are reported to Sentry automatically.
+     */
+    suspend fun getPokemonProfileOrNull(id: Int, formatId: Int? = null): PokemonProfile? {
+        return try {
+            getPokemonProfile(id, formatId)
+        } catch (e: Exception) {
+            null
         }
     }
 

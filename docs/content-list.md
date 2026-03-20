@@ -63,10 +63,12 @@ This is a key behavioral detail: several modes compose a richer page 1 with sect
 - **Pages 2+**: bare `Battle` items (appended to flat list, no wrapping section)
 
 ### Pokemon mode
-- **Page 1**: Up to 2 items —
+- **Page 1**: Up to 3 items — profile + battles fetched in parallel via `getPokemonProfile(id, formatId)` + `searchMatches(...)`. Profile errors are silently swallowed; page still shows battles.
   1. `FormatSelector` — format dropdown (rendered as a centered list item)
-  2. `Section("Battles", [...])` — battle results
+  2. `Section("Top Teammates", [PokemonGrid([...])])` — 3-column grid of top teammates from pokemon profile API, with usage percentage (count / matchCount). Only shown if profile succeeds and has teammates.
+  3. `Section("Battles", [...])` — battle results
 - **Pages 2+**: bare `Battle` items
+- **Format change**: reloads both profile and battles (`loadingSections = {"Top Teammates", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
 
 ### Player mode
 - **Page 1**: Up to 4 items —

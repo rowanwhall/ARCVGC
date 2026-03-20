@@ -30,7 +30,7 @@ sealed class ContentListItem {
         override val listKey get() = "highlight_buttons"
     }
 
-    data class PokemonGridItem(val id: Int, val name: String, val imageUrl: String?)
+    data class PokemonGridItem(val id: Int, val name: String, val imageUrl: String?, val usagePercent: String? = null)
 
     data class PokemonGrid(val pokemon: List<PokemonGridItem>) : ContentListItem() {
         override val listKey get() = "pokemon_grid"

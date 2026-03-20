@@ -11,6 +11,7 @@ import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonListItem
+import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.TeraType
 import com.arcvgc.app.network.mapper.toDomain
 import com.arcvgc.app.network.model.AppConfigResponseDto
@@ -195,10 +196,12 @@ class ApiService {
         }
     }
 
-    suspend fun getPokemonById(id: Int): NetworkResult<PokemonListItem> {
+    suspend fun getPokemonById(id: Int, formatId: Int? = null): NetworkResult<PokemonProfile> {
         return try {
             val response: PokemonDetailResponseDto = client
-                .get("${ApiConstants.BASE_URL}${ApiConstants.POKEMON_ENDPOINT}$id")
+                .get("${ApiConstants.BASE_URL}${ApiConstants.POKEMON_ENDPOINT}$id") {
+                    formatId?.let { parameter("format_id", it) }
+                }
                 .body()
 
             if (response.success) {

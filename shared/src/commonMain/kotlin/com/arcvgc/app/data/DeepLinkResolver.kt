@@ -40,7 +40,7 @@ class DeepLinkResolver(
         is DeepLinkTarget.Home -> ResolvedLink.Home
         is DeepLinkTarget.Pokemon -> {
             when (val result = apiService.getPokemonById(target.id)) {
-                is NetworkResult.Success -> ResolvedLink.Pokemon(result.data)
+                is NetworkResult.Success -> ResolvedLink.Pokemon(result.data.toPokemonListItem())
                 is NetworkResult.Error -> null
             }
         }
@@ -74,7 +74,7 @@ class DeepLinkResolver(
             query.pokemonIds.map { id ->
                 async {
                     when (val result = apiService.getPokemonById(id)) {
-                        is NetworkResult.Success -> result.data
+                        is NetworkResult.Success -> result.data.toPokemonListItem()
                         is NetworkResult.Error -> null
                     }
                 }

@@ -4,6 +4,7 @@ import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonListItem
+import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.network.ApiService
 import com.arcvgc.app.ui.model.BattleCardUiModel
@@ -32,6 +33,7 @@ interface BattleRepository {
     ): Result<Pair<List<BattleCardUiModel>, Pagination>>
     suspend fun getMatchesByIds(ids: List<Int>): Result<List<BattleCardUiModel>>
     suspend fun getPokemonByIds(ids: List<Int>): Result<List<PokemonListItem>>
+    suspend fun getPokemonProfile(id: Int, formatId: Int? = null): Result<PokemonProfile>
     suspend fun getPlayerProfile(id: Int): Result<PlayerProfile>
     suspend fun getPlayersByNames(names: List<String>): Result<List<PlayerListItem>>
 }
@@ -104,6 +106,14 @@ class BattleRepositoryImpl @Inject constructor(
     override suspend fun getPokemonByIds(ids: List<Int>): Result<List<PokemonListItem>> {
         return try {
             Result.success(shared.getPokemonByIds(ids))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getPokemonProfile(id: Int, formatId: Int?): Result<PokemonProfile> {
+        return try {
+            Result.success(shared.getPokemonProfile(id, formatId))
         } catch (e: Exception) {
             Result.failure(e)
         }

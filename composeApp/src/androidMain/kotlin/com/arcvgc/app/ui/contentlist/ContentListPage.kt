@@ -985,6 +985,14 @@ private fun ContentListItemRow(
                                             maxLines = 1,
                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
+                                        pokemon.usagePercent?.let { pct ->
+                                            Text(
+                                                text = pct,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1
+                                            )
+                                        }
                                     }
                                 }
                             }

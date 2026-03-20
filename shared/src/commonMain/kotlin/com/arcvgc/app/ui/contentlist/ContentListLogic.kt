@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.roundToLong
 
 class ContentListLogic(
     private val scope: CoroutineScope,
@@ -207,7 +208,7 @@ class ContentListLogic(
         _selectedFormatId.value = formatId
         scope.launch {
             try {
-                _uiState.update { it.copy(loadingSections = setOf("Battles"), currentPage = 1, canPaginate = false) }
+                _uiState.update { it.copy(loadingSections = reloadSections(), currentPage = 1, canPaginate = false) }
                 val (items, pagination) = fetchContent()
                 _uiState.update {
                     it.copy(
@@ -227,7 +228,7 @@ class ContentListLogic(
         _sortOrder.value = if (_sortOrder.value == "time") "rating" else "time"
         scope.launch {
             try {
-                _uiState.update { it.copy(loadingSections = setOf("Battles"), currentPage = 1, canPaginate = false) }
+                _uiState.update { it.copy(loadingSections = reloadSections(), currentPage = 1, canPaginate = false) }
                 val (items, pagination) = fetchContent()
                 _uiState.update {
                     it.copy(
@@ -241,6 +242,11 @@ class ContentListLogic(
                 _uiState.update { it.copy(loadingSections = emptySet()) }
             }
         }
+    }
+
+    private fun reloadSections(): Set<String> = when (mode) {
+        is ContentListMode.Pokemon -> setOf("Top Teammates", "Battles")
+        else -> setOf("Battles")
     }
 
     fun updateSearchParams(params: SearchParams) {
@@ -332,23 +338,43 @@ class ContentListLogic(
                 battleItems to result.pagination
             }
         }
-        is ContentListMode.Pokemon -> {
+        is ContentListMode.Pokemon -> if (page == 1) coroutineScope {
+            val profileDeferred = async { runCatching { repository.getPokemonProfile(m.pokemonId, _selectedFormatId.value) } }
+            val battlesDeferred = async {
+                repository.searchMatches(
+                    filters = listOf(SearchFilterSlot(pokemonId = m.pokemonId)),
+                    formatId = _selectedFormatId.value,
+                    orderBy = _sortOrder.value,
+                    page = page
+                )
+            }
+
+            val result = battlesDeferred.await()
+            val battleItems = ContentListItemMapper.fromBattles(result.battles)
+            val profile = profileDeferred.await().getOrNull()
+
+            val sections = buildList {
+                add(ContentListItem.FormatSelector)
+                if (profile != null && profile.topTeammates.isNotEmpty()) {
+                    val gridItems = profile.topTeammates.map {
+                        ContentListItem.PokemonGridItem(
+                            it.id, it.name, it.imageUrl,
+                            formatUsagePercent(it.count, profile.matchCount)
+                        )
+                    }
+                    add(ContentListItem.Section("Top Teammates", listOf(ContentListItem.PokemonGrid(gridItems))))
+                }
+                add(ContentListItem.Section("Battles", battleItems))
+            }
+            sections to result.pagination
+        } else {
             val result = repository.searchMatches(
-                filters = listOf(SearchFilterSlot(pokemonId = m.pokemonId)),
+                filters = listOf(SearchFilterSlot(pokemonId = (mode as ContentListMode.Pokemon).pokemonId)),
                 formatId = _selectedFormatId.value,
                 orderBy = _sortOrder.value,
                 page = page
             )
-            val battleItems = ContentListItemMapper.fromBattles(result.battles)
-            if (page == 1) {
-                val sections = buildList {
-                    add(ContentListItem.FormatSelector)
-                    add(ContentListItem.Section("Battles", battleItems))
-                }
-                sections to result.pagination
-            } else {
-                battleItems to result.pagination
-            }
+            ContentListItemMapper.fromBattles(result.battles) to result.pagination
         }
         is ContentListMode.Player -> if (page == 1) coroutineScope {
             val profileDeferred = async { runCatching { repository.getPlayerProfile(m.playerId) } }
@@ -402,5 +428,13 @@ class ContentListLogic(
             )
             ContentListItemMapper.fromBattles(result.battles) to result.pagination
         }
+    }
+
+    private fun formatUsagePercent(count: Int, total: Int): String? {
+        if (total <= 0) return null
+        val hundredths = (count.toDouble() / total * 10000).roundToLong()
+        val intPart = hundredths / 100
+        val decPart = (hundredths % 100).toString().padStart(2, '0')
+        return "$intPart.$decPart%"
     }
 }

@@ -6,6 +6,7 @@ import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonListItem
+import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.ui.model.BattleCardUiModel
 
@@ -25,6 +26,9 @@ class FakeBattleRepository : BattleRepositoryApi {
 
     var playerProfileResult: PlayerProfile? = null
     var playerProfileError: Exception? = null
+
+    var pokemonProfileResult: PokemonProfile? = null
+    var pokemonProfileError: Exception? = null
 
     var playersByNamesResult: List<PlayerListItem> = emptyList()
     var playersByNamesError: Exception? = null
@@ -70,6 +74,11 @@ class FakeBattleRepository : BattleRepositoryApi {
     override suspend fun getPlayerProfile(id: Int): PlayerProfile {
         playerProfileError?.let { throw it }
         return playerProfileResult ?: throw Exception("No player profile configured")
+    }
+
+    override suspend fun getPokemonProfile(id: Int, formatId: Int?): PokemonProfile {
+        pokemonProfileError?.let { throw it }
+        return pokemonProfileResult ?: throw Exception("No pokemon profile configured")
     }
 
     override suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem> {

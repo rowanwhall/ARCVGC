@@ -529,6 +529,12 @@ struct ContentListView: View {
                                         .foregroundColor(Color(.label))
                                         .lineLimit(1)
                                         .truncationMode(.tail)
+                                    if let pct = pokemon.usagePercent {
+                                        Text(pct)
+                                            .font(.caption2)
+                                            .foregroundColor(Color(.secondaryLabel))
+                                            .lineLimit(1)
+                                    }
                                 }
                                 .frame(maxWidth: .infinity)
                             }
