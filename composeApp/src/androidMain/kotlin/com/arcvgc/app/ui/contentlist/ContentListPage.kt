@@ -681,8 +681,6 @@ private fun ContentListContent(
         LazyColumn(
             state = listState,
             contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
                 top = topPadding,
                 bottom = 16.dp
             ),
@@ -696,6 +694,7 @@ private fun ContentListContent(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
                                 .padding(top = 24.dp, bottom = 8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -717,6 +716,7 @@ private fun ContentListContent(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
                                 .padding(top = 24.dp, bottom = 8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -736,17 +736,19 @@ private fun ContentListContent(
                 }
                 is ContentListHeaderUiModel.SearchFilters -> {
                     item(key = "search_filters") {
-                        SearchFilterChips(
-                            filters = h,
-                            searchParams = searchParams,
-                            onSearchParamsChanged = onSearchParamsChanged
-                        )
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            SearchFilterChips(
+                                filters = h,
+                                searchParams = searchParams,
+                                onSearchParamsChanged = onSearchParamsChanged
+                            )
+                        }
                     }
                 }
                 is ContentListHeaderUiModel.PokemonHero -> {
                     item(key = "pokemon_hero") {
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             PokemonAvatar(
@@ -774,7 +776,7 @@ private fun ContentListContent(
                 is ContentListHeaderUiModel.PlayerHero -> {
                     item(key = "player_hero") {
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -827,6 +829,7 @@ private fun ContentListContent(
                 }
 
                 else -> {
+                    val itemPadding = Modifier.padding(horizontal = 16.dp)
                     uiState.items.forEach { topItem ->
                         when (topItem) {
                             is ContentListItem.Section -> {
@@ -836,16 +839,18 @@ private fun ContentListContent(
                                         title = topItem.header,
                                         isLoading = isLoadingSection,
                                         sortOrder = if (topItem.header == "Battles") sortOrder else null,
-                                        onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null
+                                        onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
+                                        modifier = itemPadding
                                     )
                                 }
                                 if (topItem.items.isEmpty() && !isLoadingSection) {
                                     item(key = "${topItem.listKey}_empty") {
-                                        EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
+                                        EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp).then(itemPadding))
                                     }
                                 }
                                 items(items = topItem.items, key = { it.listKey }) { child ->
-                                    Box(modifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier) {
+                                    val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
+                                    Box(modifier = childModifier.then(if (!child.edgeToEdge) itemPadding else Modifier)) {
                                         ContentListItemRow(child, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
                                     }
                                 }
@@ -854,7 +859,7 @@ private fun ContentListContent(
                                 if (formats.isNotEmpty() && onFormatSelected != null) {
                                     item(key = topItem.listKey) {
                                         Box(
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier.fillMaxWidth().then(itemPadding),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             FormatDropdown(
@@ -867,7 +872,9 @@ private fun ContentListContent(
                                 }
                             }
                             else -> item(key = topItem.listKey) {
-                                ContentListItemRow(topItem, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                Box(modifier = if (!topItem.edgeToEdge) itemPadding else Modifier) {
+                                    ContentListItemRow(topItem, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                }
                             }
                         }
                     }
@@ -1009,7 +1016,7 @@ private fun ContentListItemRow(
         is ContentListItem.StatChipRow -> {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 0.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 items(item.chips, key = { it.name }) { chip ->
                     StatChip(name = chip.name, usagePercent = chip.usagePercent, imageUrl = chip.imageUrl)
@@ -1064,12 +1071,13 @@ private fun StatChip(name: String, usagePercent: String?, imageUrl: String? = nu
 @Composable
 private fun SectionHeader(
     title: String,
+    modifier: Modifier = Modifier,
     isLoading: Boolean = false,
     sortOrder: String? = null,
     onToggleSortOrder: (() -> Unit)? = null
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(

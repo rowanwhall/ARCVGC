@@ -224,6 +224,7 @@ struct ContentListView: View {
                                 .font(.system(size: 20, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 16)
                         .padding(.top, 24)
                         .padding(.bottom, 8)
                     }
@@ -237,6 +238,7 @@ struct ContentListView: View {
                                 .font(.system(size: 20, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 16)
                         .padding(.top, 24)
                         .padding(.bottom, 8)
                     }
@@ -262,6 +264,7 @@ struct ContentListView: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 16)
                     }
 
                     if case .playerHero(let name) = header {
@@ -275,6 +278,7 @@ struct ContentListView: View {
                                 .cornerRadius(16)
                         }
                         .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 16)
                     }
 
                     if case .searchFilters(let data) = header {
@@ -290,6 +294,7 @@ struct ContentListView: View {
                                 onSearchParamsChanged?(newParams)
                             }
                         )
+                        .padding(.horizontal, 16)
                     }
 
                     if viewModel.state.isLoading {
@@ -318,14 +323,17 @@ struct ContentListView: View {
                                     sortOrder: showSort ? viewModel.sortOrder : nil,
                                     onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil
                                 )
+                                .padding(.horizontal, 16)
                                 if section.items.isEmpty && !isLoadingSection {
                                     BattleEmptyView()
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 32)
+                                        .padding(.horizontal, 16)
                                 }
                                 ForEach(Array((section.items as! [ContentListItem]).enumerated()), id: \.element.listKey) { _, child in
                                     contentItemView(child)
                                         .opacity(isLoadingSection ? 0.5 : 1.0)
+                                        .padding(.horizontal, child.edgeToEdge ? 0 : 16)
                                 }
                             case .formatSelector:
                                 if !formatItems.isEmpty {
@@ -338,9 +346,11 @@ struct ContentListView: View {
                                         )
                                         Spacer()
                                     }
+                                    .padding(.horizontal, 16)
                                 }
                             default:
                                 contentItemView(item)
+                                    .padding(.horizontal, item.edgeToEdge ? 0 : 16)
                                     .onAppear {
                                         if index >= viewModel.state.items.count - paginationThreshold {
                                             viewModel.paginate()
@@ -355,7 +365,6 @@ struct ContentListView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
                 .padding(.top, header.hasPokemonHero ? 4 : 0)
                 .padding(.bottom, 16)
             }
@@ -582,6 +591,7 @@ struct ContentListView: View {
                         .cornerRadius(12)
                     }
                 }
+                .padding(.horizontal, 16)
             }
         case .section:
             EmptyView()

@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.model
 
 sealed class ContentListItem {
     abstract val listKey: String
+    open val edgeToEdge: Boolean get() = false
 
     data class Battle(val uiModel: BattleCardUiModel) : ContentListItem() {
         override val listKey get() = "battle_${uiModel.id}"
@@ -40,6 +41,7 @@ sealed class ContentListItem {
 
     data class StatChipRow(val chips: List<StatChipItem>, val id: String = "") : ContentListItem() {
         override val listKey get() = "stat_chip_row_$id"
+        override val edgeToEdge: Boolean get() = true
     }
 
     data object FormatSelector : ContentListItem() {
