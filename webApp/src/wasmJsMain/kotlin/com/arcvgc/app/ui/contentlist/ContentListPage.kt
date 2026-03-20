@@ -126,7 +126,8 @@ fun ContentListPage(
             mode = mode,
             pokemonCatalogItems = DependencyContainer.pokemonCatalogRepository.state.value.items,
             appConfigRepository = DependencyContainer.appConfigRepository,
-            formatCatalogRepository = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) DependencyContainer.formatCatalogRepository else null
+            formatCatalogRepository = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player) DependencyContainer.formatCatalogRepository else null,
+            pokemonCatalogRepository = DependencyContainer.pokemonCatalogRepository
         )
     }
 

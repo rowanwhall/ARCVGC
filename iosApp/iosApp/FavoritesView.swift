@@ -45,6 +45,7 @@ struct FavoritesView: View {
                         mode: .favorites(contentType: .pokemon),
                         favoritesStore: container.favoritesStore,
                         settingsStore: container.settingsStore,
+                        pokemonCatalogItems: container.catalogStore.pokemonItems,
                         appConfigStore: container.appConfigStore,
                         initialBattleId: battleIdForTab
                     )

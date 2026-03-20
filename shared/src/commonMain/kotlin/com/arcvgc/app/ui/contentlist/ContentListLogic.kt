@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.contentlist
 
 import com.arcvgc.app.data.AppConfigRepository
 import com.arcvgc.app.data.BattleRepositoryApi
+import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.currentTimeMillis
 import com.arcvgc.app.domain.model.Pagination
@@ -18,8 +19,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.roundToLong
@@ -30,7 +33,8 @@ class ContentListLogic(
     private val favoritesRepository: FavoritesRepository,
     private val appConfigRepository: AppConfigRepository,
     private var mode: ContentListMode,
-    private val pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList()
+    private val pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
+    private val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null
 ) {
     private val _uiState = MutableStateFlow(ContentListUiState())
     val uiState: StateFlow<ContentListUiState> = _uiState.asStateFlow()
@@ -82,15 +86,34 @@ class ContentListLogic(
     }
 
     private fun observeFavoritePokemon() {
+        val catalogState = pokemonCatalogState
         scope.launch {
             try {
-                favoritesRepository.favoritePokemonIds.collect { ids ->
-                    loadFavoriteItems(
-                        ids = ids.toList(),
-                        isEmpty = ids.isEmpty(),
-                        fetch = { repository.getPokemonByIds(it) },
-                        map = { ContentListItemMapper.fromPokemon(it) }
-                    )
+                if (catalogState != null) {
+                    combine(
+                        favoritesRepository.favoritePokemonIds,
+                        catalogState.map { it.items }
+                    ) { ids, catalog -> ids to catalog }.collect { (ids, catalog) ->
+                        if (ids.isEmpty()) {
+                            _uiState.update { it.copy(items = emptyList(), isLoading = false, error = null, canPaginate = false) }
+                            return@collect
+                        }
+                        if (catalog.isEmpty() && catalogState.value.isLoading) {
+                            _uiState.update { it.copy(isLoading = true, error = null) }
+                            return@collect
+                        }
+                        val items = ContentListItemMapper.fromPokemonCatalog(ids.toList(), catalog)
+                        _uiState.update { it.copy(isLoading = false, items = items, error = null, canPaginate = false) }
+                    }
+                } else {
+                    favoritesRepository.favoritePokemonIds.collect { ids ->
+                        if (ids.isEmpty()) {
+                            _uiState.update { it.copy(items = emptyList(), isLoading = false, error = null, canPaginate = false) }
+                            return@collect
+                        }
+                        val items = ContentListItemMapper.fromPokemonCatalog(ids.toList(), pokemonCatalogItems)
+                        _uiState.update { it.copy(isLoading = false, items = items, error = null, canPaginate = false) }
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -282,11 +305,12 @@ class ContentListLogic(
             }
             FavoriteContentType.Pokemon -> {
                 val ids = favoritesRepository.favoritePokemonIds.value.toList()
+                val catalog = pokemonCatalogState?.value?.items ?: pokemonCatalogItems
                 if (ids.isEmpty()) {
                     emptyList<ContentListItem>() to Pagination(1, 0, 0, 1)
                 } else {
-                    val pokemon = repository.getPokemonByIds(ids)
-                    ContentListItemMapper.fromPokemon(pokemon) to Pagination(1, pokemon.size, pokemon.size, 1)
+                    val items = ContentListItemMapper.fromPokemonCatalog(ids, catalog)
+                    items to Pagination(1, items.size, items.size, 1)
                 }
             }
             FavoriteContentType.Players -> {

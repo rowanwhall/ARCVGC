@@ -51,7 +51,8 @@ class ContentListViewModel @Inject constructor(
             favoritesRepository = favoritesRepositoryImpl.shared,
             appConfigRepository = appConfigRepositoryImpl.shared,
             mode = mode,
-            pokemonCatalogItems = pokemonCatalogRepository.state.value.items
+            pokemonCatalogItems = pokemonCatalogRepository.state.value.items,
+            pokemonCatalogState = pokemonCatalogRepository.state
         )
         logic = l
 

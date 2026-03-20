@@ -9,7 +9,7 @@
 
 ## Android
 - `FavoritesRepository` interface + `FavoritesRepositoryImpl` (delegates to shared, injected via Hilt)
-- `ContentListViewModel` handles all favorites modes: `Favorites(Battles)` loads battle IDs, `Favorites(Pokemon)` observes `favoritePokemonIds` flow and loads Pokemon details via `BattleRepository.getPokemonByIds()`, `Favorites(Players)` observes `favoritePlayerNames` flow and loads Player details via `BattleRepository.getPlayersByNames()`. Auto-refreshes when favorites change.
+- `ContentListViewModel` handles all favorites modes: `Favorites(Battles)` loads battle IDs, `Favorites(Pokemon)` observes `favoritePokemonIds` flow and resolves Pokemon from the local catalog (no API calls — uses `pokemonCatalogState` combined with favorite IDs, shows loading if catalog is still loading), `Favorites(Players)` observes `favoritePlayerNames` flow and loads Player details via `BattleRepository.getPlayersByNames()`. Auto-refreshes when favorites change.
 - `FavoritesPage`: Three sub-tabs (Battles, Pokemon, Players), all rendered via `ContentListPage(mode = ContentListMode.Favorites(contentType))`
 - Heart buttons: `BattleDetailSheetWrapper` toggles battle favorites; `ContentListPage` toolbar toggles Pokemon favorites in Pokemon mode
 

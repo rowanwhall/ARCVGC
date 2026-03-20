@@ -7,6 +7,7 @@ import com.arcvgc.app.data.BattleRepository
 import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.FormatCatalogRepository
+import com.arcvgc.app.data.PokemonCatalogRepository
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -18,7 +19,8 @@ class ContentListViewModel(
     mode: ContentListMode = ContentListMode.Home,
     pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
     appConfigRepository: AppConfigRepository,
-    private val formatCatalogRepository: FormatCatalogRepository? = null
+    private val formatCatalogRepository: FormatCatalogRepository? = null,
+    pokemonCatalogRepository: PokemonCatalogRepository? = null
 ) : ViewModel() {
 
     private val logic = ContentListLogic(
@@ -27,7 +29,8 @@ class ContentListViewModel(
         favoritesRepository = favoritesRepository,
         appConfigRepository = appConfigRepository,
         mode = mode,
-        pokemonCatalogItems = pokemonCatalogItems
+        pokemonCatalogItems = pokemonCatalogItems,
+        pokemonCatalogState = pokemonCatalogRepository?.state
     )
 
     val uiState: StateFlow<ContentListUiState> = logic.uiState

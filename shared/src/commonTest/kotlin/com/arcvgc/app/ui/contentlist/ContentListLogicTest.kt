@@ -1,6 +1,7 @@
 package com.arcvgc.app.ui.contentlist
 
 import com.arcvgc.app.data.AppConfigRepository
+import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.MatchesResult
 import com.arcvgc.app.domain.model.AppConfig
@@ -26,6 +27,7 @@ import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -90,7 +92,8 @@ class ContentListLogicTest {
 
     private fun createLogic(
         mode: ContentListMode = ContentListMode.Home,
-        pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList()
+        pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
+        pokemonCatalogState: MutableStateFlow<CatalogState<PokemonPickerUiModel>>? = null
     ): ContentListLogic {
         return ContentListLogic(
             scope = testScope,
@@ -98,7 +101,8 @@ class ContentListLogicTest {
             favoritesRepository = favoritesRepo,
             appConfigRepository = appConfigRepo,
             mode = mode,
-            pokemonCatalogItems = pokemonCatalogItems
+            pokemonCatalogItems = pokemonCatalogItems,
+            pokemonCatalogState = pokemonCatalogState
         )
     }
 
@@ -181,9 +185,15 @@ class ContentListLogicTest {
 
     @Test
     fun favoritePokemon_observesAndReloads() {
-        fakeRepo.pokemonByIdsResult = listOf(testPokemonListItem())
+        val catalog = listOf(
+            PokemonPickerUiModel(id = 1, name = "Pikachu", imageUrl = "img.png", types = emptyList())
+        )
+        val catalogState = MutableStateFlow(CatalogState(isLoading = false, items = catalog))
 
-        val logic = createLogic(ContentListMode.Favorites(FavoriteContentType.Pokemon))
+        val logic = createLogic(
+            ContentListMode.Favorites(FavoriteContentType.Pokemon),
+            pokemonCatalogState = catalogState
+        )
         logic.initialize()
         testScope.advanceUntilIdle()
 
