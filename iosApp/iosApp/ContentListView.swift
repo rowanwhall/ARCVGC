@@ -220,8 +220,6 @@ struct ContentListView: View {
                         VStack(spacing: 0) {
                             Text("ARC")
                                 .font(.system(size: 34, weight: .bold))
-                            Text("Today's Top Battles")
-                                .font(.system(size: 20, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 16)
@@ -345,11 +343,13 @@ struct ContentListView: View {
                             case .section(let section):
                                 let showSort = section.header == "Battles" && hasSortToggle
                                 let isLoadingSection = viewModel.state.loadingSections.contains(section.header)
+                                let hasSeeMore = section.trailingAction is ContentListItem.SectionActionSeeMore
                                 SectionHeaderView(
                                     title: section.header,
                                     isLoading: isLoadingSection,
                                     sortOrder: showSort ? viewModel.sortOrder : nil,
-                                    onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil
+                                    onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil,
+                                    onSeeMore: hasSeeMore ? { } : nil
                                 )
                                 .padding(.horizontal, 16)
                                 if section.items.isEmpty && !isLoadingSection {
@@ -486,6 +486,7 @@ struct ContentListView: View {
                 let typeUrls = pokemonItem.types.compactMap { $0.imageUrl }
                 let derivedFormatId: Int32? = {
                     switch mode {
+                    case .home: return viewModel.selectedFormatId
                     case .search(let params): return params.formatId
                     case .pokemon: return viewModel.selectedFormatId
                     case .player: return viewModel.selectedFormatId
@@ -514,6 +515,7 @@ struct ContentListView: View {
             .onTapGesture {
                 let derivedFormatId: Int32? = {
                     switch mode {
+                    case .home: return viewModel.selectedFormatId
                     case .search(let params): return params.formatId
                     case .pokemon: return viewModel.selectedFormatId
                     case .player: return viewModel.selectedFormatId
@@ -886,6 +888,7 @@ private struct SectionHeaderView: View {
     var isLoading: Bool = false
     var sortOrder: String? = nil
     var onToggleSortOrder: (() -> Void)? = nil
+    var onSeeMore: (() -> Void)? = nil
 
     var body: some View {
         HStack {
@@ -895,6 +898,16 @@ private struct SectionHeaderView: View {
             Spacer()
             if let sortOrder = sortOrder, let toggle = onToggleSortOrder {
                 SortToggleButton(sortOrder: sortOrder, isLoading: isLoading, action: toggle)
+            } else if let seeMore = onSeeMore {
+                Button(action: seeMore) {
+                    HStack(spacing: 2) {
+                        Text("See More")
+                            .font(.caption)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(Color(.secondaryLabel))
+                }
             }
         }
     }

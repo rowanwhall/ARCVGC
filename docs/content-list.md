@@ -12,7 +12,7 @@ Sealed class defining the five modes. Each mode maps to a header via `toHeaderUi
 
 | Mode | Parameters | Header | Sort toggle | Pagination |
 |---|---|---|---|---|
-| `Home` | — | `HomeHero` | No | Yes |
+| `Home` | — | `HomeHero` | No (has format selector) | Yes |
 | `Favorites(contentType)` | `FavoriteContentType` enum | `FavoritesHero` | No | No (loads all at once) |
 | `Search(params)` | `SearchParams` | `SearchFilters` | Yes | Yes |
 | `Pokemon(pokemonId, name, imageUrl, typeImageUrl1, typeImageUrl2, formatId?)` | Optional `formatId` threaded from battle detail | `PokemonHero` | Yes | Yes |
@@ -23,7 +23,7 @@ Sealed class defining the five modes. Each mode maps to a header via `toHeaderUi
 Sealed class with six variants controlling what renders above the list:
 
 - **`None`** — no header
-- **`HomeHero`** — "ARC" title + "Today's Top Battles" subtitle
+- **`HomeHero`** — "ARC" title
 - **`FavoritesHero`** — heart icon + "Favorites" subtitle
 - **`SearchFilters`** — flow row of removable filter chips (Pokemon with items/tera, format, rating range, unrated, player name, date range). Each chip type has `canRemove*()` / `remove*()` methods on `SearchParams` controlling removability.
 - **`PokemonHero`** — large Pokemon avatar (158dp circle / 227dp sprite) + name (headlineMedium/20pt) + type icons (24dp)
@@ -38,7 +38,7 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 | `Battle(uiModel)` | Battle card | `"battle_{id}"` |
 | `Pokemon(id, name, imageUrl, types)` | Pokemon row (favorites, search pinned) | `"pokemon_{id}"` |
 | `Player(id, name)` | Player row (favorites, search pinned) | `"player_{id}"` |
-| `Section(header, items)` | Grouping container with title | `"section_{header}"` |
+| `Section(header, items, trailingAction?)` | Grouping container with title and optional trailing action (e.g., `SectionAction.SeeMore` renders "See More" + chevron) | `"section_{header}"` |
 | `HighlightButtons(buttons)` | Player profile highlight cards (Top Rated / Latest Rated) | `"highlight_buttons"` |
 | `PokemonGrid(pokemon)` | 3-column grid of Pokemon (player profile "Favorite Pokemon", pokemon profile "Top Teammates") | `"pokemon_grid"` |
 | `StatChipRow(chips)` | Horizontal scrolling row of chips with name+percent and optional image (mobile), FlowRow (desktop web). Used for Top Abilities, Items, Moves, Tera Types. | `"stat_chip_row"` |
@@ -51,7 +51,13 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 This is a key behavioral detail: several modes compose a richer page 1 with sections, while pages 2+ append bare battle items.
 
 ### Home mode
-- All pages: flat list of `Battle` items (no sections)
+- **Page 1**: Up to 3 items — format detail + battles fetched in parallel via `getFormatDetail(formatId, topPokemonCount=6)` + `searchMatches(...)`. Format detail errors are silently swallowed; page still shows battles.
+  1. `FormatSelector` — format dropdown (same as Pokemon/Player modes), fed from app config default format
+  2. `Section("Top Pokémon", [PokemonGrid([...])])` — 3-column grid of top usage Pokemon with usage %. Has `SectionAction.SeeMore` trailing action (renders "See More" + chevron button in section header). Only shown if format detail succeeds and has Pokemon.
+  3. `Section("Today's Top Battles", [...])` — battle results sorted by rating from last 24 hours. No sort toggle.
+  Both sections are omitted if their data is empty. If both API calls fail, the error state shows. If one fails, that section is omitted.
+- **Pages 2+**: bare `Battle` items
+- **Format change**: reloads all sections (`loadingSections = {"format_selector", "Top Pokémon", "Today's Top Battles"}`)
 
 ### Favorites mode
 - Single page (no pagination): flat list of `Battle`, `Pokemon`, or `Player` items depending on `contentType`
@@ -93,9 +99,9 @@ Documented in detail in [`docs/search.md`](search.md) under "Sort Toggle & Secti
 - Section children render at 50% opacity (Android/Web) or with a spinner overlay (iOS) while loading
 - **Pagination guard**: `paginate()` refuses to run when `loadingSections.isNotEmpty()` — prevents race conditions between sort/format fetches and pagination
 
-## Format Selection (Pokemon & Player Modes)
+## Format Selection (Home, Pokemon & Player Modes)
 
-A `FormatSelector` list item renders a format dropdown in both Pokemon and Player modes. It appears as a centered dropdown between the header/profile content and the Battles section.
+A `FormatSelector` list item renders a format dropdown in Home, Pokemon, and Player modes. It appears as a centered dropdown between the header/profile content and the Battles section.
 
 - **Default format**: inherited from `formatId` parameter (threaded from battle detail or parent page's selected format) or falls back to app config's default format
 - **On change**: sets `loadingSections = setOf("Battles")`, re-fetches page 1 with new format
@@ -213,9 +219,10 @@ data class ContentListUiState(
 ## Home Mode Special Behavior
 
 Home mode waits for app config before loading (needs default format ID):
-1. If config already available, loads immediately
-2. Otherwise, shows loading state and waits for `appConfigRepository.config` to emit non-null
-3. Fetches battles sorted by rating from the last 24 hours using the config's default format
+1. If config already available, syncs `_selectedFormatId` and loads immediately
+2. Otherwise, shows loading state and waits for `appConfigRepository.config` to emit non-null, then syncs format ID
+3. Fetches format detail (top 6 Pokemon) and battles (last 24h, sorted by rating) in parallel using the selected format
+4. Format selector allows changing the format, which reloads both sections
 
 ## Key File Locations
 

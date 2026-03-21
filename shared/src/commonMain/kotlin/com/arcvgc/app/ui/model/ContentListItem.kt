@@ -22,7 +22,15 @@ sealed class ContentListItem {
         override val listKey get() = "player_$id"
     }
 
-    data class Section(val header: String, val items: List<ContentListItem>) : ContentListItem() {
+    sealed class SectionAction {
+        data object SeeMore : SectionAction()
+    }
+
+    data class Section(
+        val header: String,
+        val items: List<ContentListItem>,
+        val trailingAction: SectionAction? = null
+    ) : ContentListItem() {
         override val listKey get() = "section_$header"
     }
 

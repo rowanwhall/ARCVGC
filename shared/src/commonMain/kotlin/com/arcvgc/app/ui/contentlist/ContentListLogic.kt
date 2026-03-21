@@ -46,6 +46,7 @@ class ContentListLogic(
 
     private val _selectedFormatId = MutableStateFlow(
         when (mode) {
+            is ContentListMode.Home -> appConfigRepository.getDefaultFormatId()
             is ContentListMode.Pokemon -> (mode as ContentListMode.Pokemon).formatId
                 ?: appConfigRepository.getDefaultFormatId()
             is ContentListMode.Player -> (mode as ContentListMode.Player).formatId
@@ -73,10 +74,12 @@ class ContentListLogic(
             try {
                 val currentConfig = appConfigRepository.config.value
                 if (currentConfig != null) {
+                    _selectedFormatId.value = appConfigRepository.getDefaultFormatId()
                     loadContent()
                 } else {
                     _uiState.update { it.copy(isLoading = true) }
                     appConfigRepository.config.filterNotNull().first()
+                    _selectedFormatId.value = appConfigRepository.getDefaultFormatId()
                     loadContent()
                 }
             } catch (e: Exception) {
@@ -268,6 +271,7 @@ class ContentListLogic(
     }
 
     private fun reloadSections(): Set<String> = when (mode) {
+        is ContentListMode.Home -> setOf("format_selector", "Top Pokémon", "Today's Top Battles")
         is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles")
         else -> setOf("Battles")
     }
@@ -280,12 +284,60 @@ class ContentListLogic(
     }
 
     private suspend fun fetchContent(page: Int = 1): Pair<List<ContentListItem>, Pagination> = when (val m = mode) {
-        is ContentListMode.Home -> {
+        is ContentListMode.Home -> if (page == 1) coroutineScope {
+            val formatId = _selectedFormatId.value
             val nowSeconds = currentTimeMillis() / 1000
-            val formatId = appConfigRepository.getDefaultFormatId()
+
+            val formatDeferred = async { runCatching { repository.getFormatDetail(formatId, topPokemonCount = 6) } }
+            val battlesDeferred = async {
+                runCatching {
+                    repository.searchMatches(
+                        filters = emptyList(),
+                        formatId = formatId,
+                        orderBy = "rating",
+                        page = page,
+                        timeRangeStart = nowSeconds - 86400,
+                        timeRangeEnd = nowSeconds
+                    )
+                }
+            }
+
+            val formatResult = formatDeferred.await()
+            val battlesResult = battlesDeferred.await()
+
+            if (formatResult.isFailure && battlesResult.isFailure) {
+                throw battlesResult.exceptionOrNull()!!
+            }
+
+            val formatDetail = formatResult.getOrNull()
+            val battlesData = battlesResult.getOrNull()
+            val battleItems = battlesData?.let { ContentListItemMapper.fromBattles(it.battles) }.orEmpty()
+
+            val sections = buildList {
+                add(ContentListItem.FormatSelector)
+                if (formatDetail != null && formatDetail.topPokemon.isNotEmpty()) {
+                    val gridItems = formatDetail.topPokemon.map {
+                        ContentListItem.PokemonGridItem(
+                            it.id, it.name, it.imageUrl,
+                            formatUsagePercent(it.count, formatDetail.teamCount)
+                        )
+                    }
+                    add(ContentListItem.Section(
+                        "Top Pokémon",
+                        listOf(ContentListItem.PokemonGrid(gridItems)),
+                        trailingAction = ContentListItem.SectionAction.SeeMore
+                    ))
+                }
+                if (battleItems.isNotEmpty()) {
+                    add(ContentListItem.Section("Today's Top Battles", battleItems))
+                }
+            }
+            sections to (battlesData?.pagination ?: Pagination(1, 0, 0, 1))
+        } else {
+            val nowSeconds = currentTimeMillis() / 1000
             val result = repository.searchMatches(
                 filters = emptyList(),
-                formatId = formatId,
+                formatId = _selectedFormatId.value,
                 orderBy = "rating",
                 page = page,
                 timeRangeStart = nowSeconds - 86400,

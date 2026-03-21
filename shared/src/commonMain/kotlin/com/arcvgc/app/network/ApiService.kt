@@ -4,6 +4,7 @@ import com.arcvgc.app.data.captureException
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.DomainItem
 import com.arcvgc.app.domain.model.Format
+import com.arcvgc.app.domain.model.FormatDetail
 import com.arcvgc.app.domain.model.MatchDetail
 import com.arcvgc.app.domain.model.MatchPreview
 import com.arcvgc.app.domain.model.NetworkResult
@@ -15,6 +16,7 @@ import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.TeraType
 import com.arcvgc.app.network.mapper.toDomain
 import com.arcvgc.app.network.model.AppConfigResponseDto
+import com.arcvgc.app.network.model.FormatDetailResponseDto
 import com.arcvgc.app.network.model.FormatListResponseDto
 import com.arcvgc.app.network.model.ItemListResponseDto
 import com.arcvgc.app.network.model.MatchDetailResponseDto
@@ -167,6 +169,28 @@ class ApiService {
                 )
             } else {
                 NetworkResult.Error("API returned success=false")
+            }
+        } catch (e: Exception) {
+            captureException(e)
+            NetworkResult.Error(e.message ?: "Unknown error", e)
+        }
+    }
+
+    suspend fun getFormatDetail(
+        formatId: Int,
+        topPokemonCount: Int? = null
+    ): NetworkResult<FormatDetail> {
+        return try {
+            val response: FormatDetailResponseDto = client
+                .get("${ApiConstants.BASE_URL}${ApiConstants.FORMATS_ENDPOINT}$formatId") {
+                    topPokemonCount?.let { parameter("top_pokemon_count", it) }
+                }
+                .body()
+
+            if (response.success) {
+                NetworkResult.Success(response.data.toDomain())
+            } else {
+                NetworkResult.Error("Format not found")
             }
         } catch (e: Exception) {
             captureException(e)

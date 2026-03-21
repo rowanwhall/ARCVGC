@@ -6,8 +6,10 @@ import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.MatchesResult
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.Format
+import com.arcvgc.app.domain.model.FormatDetail
 import com.arcvgc.app.domain.model.MostUsedPokemon
 import com.arcvgc.app.domain.model.Pagination
+import com.arcvgc.app.domain.model.TopPokemon
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.PokemonType
@@ -120,6 +122,7 @@ class ContentListLogicTest {
             battles = listOf(testBattle),
             pagination = Pagination(1, 10, 1, 1)
         )
+        fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
         logic.initialize()
@@ -127,8 +130,13 @@ class ContentListLogicTest {
 
         val state = logic.uiState.value
         assertFalse(state.isLoading)
-        assertEquals(1, state.items.size)
-        assertTrue(state.items.first() is ContentListItem.Battle)
+        // FormatSelector + Top Pokemon section + Today's Top Battles section
+        assertEquals(3, state.items.size)
+        assertTrue(state.items[0] is ContentListItem.FormatSelector)
+        assertTrue(state.items[1] is ContentListItem.Section)
+        assertEquals("Top Pokémon", (state.items[1] as ContentListItem.Section).header)
+        assertTrue(state.items[2] is ContentListItem.Section)
+        assertEquals("Today's Top Battles", (state.items[2] as ContentListItem.Section).header)
     }
 
     @Test
@@ -421,6 +429,7 @@ class ContentListLogicTest {
             battles = listOf(testBattle),
             pagination = Pagination(1, 10, 1, 1)
         )
+        fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
         assertTrue(logic.uiState.value.isLoading) // initial state
@@ -431,12 +440,13 @@ class ContentListLogicTest {
         val state = logic.uiState.value
         assertFalse(state.isLoading)
         assertNull(state.error)
-        assertEquals(1, state.items.size)
+        assertTrue(state.items.isNotEmpty())
     }
 
     @Test
     fun loadContent_setsErrorOnFailure() {
         fakeRepo.searchMatchesError = Exception("Network error")
+        fakeRepo.formatDetailError = Exception("Network error")
 
         val logic = createLogic(ContentListMode.Home)
         logic.initialize()
@@ -477,6 +487,7 @@ class ContentListLogicTest {
             battles = listOf(testBattle),
             pagination = Pagination(1, 10, 20, 2)
         )
+        fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
         logic.initialize()
@@ -484,6 +495,7 @@ class ContentListLogicTest {
 
         assertTrue(logic.uiState.value.canPaginate)
         assertEquals(1, logic.uiState.value.currentPage)
+        val page1ItemCount = logic.uiState.value.items.size
 
         // Set up page 2 response with a different battle
         val battle2 = testBattle.copy(id = 2)
@@ -498,7 +510,8 @@ class ContentListLogicTest {
         val state = logic.uiState.value
         assertFalse(state.isPaginating)
         assertEquals(2, state.currentPage)
-        assertEquals(2, state.items.size)
+        // Page 1 items + 1 bare battle from page 2
+        assertEquals(page1ItemCount + 1, state.items.size)
         assertFalse(state.canPaginate) // page 2 of 2
     }
 
@@ -508,6 +521,7 @@ class ContentListLogicTest {
             battles = listOf(testBattle),
             pagination = Pagination(1, 10, 20, 2)
         )
+        fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
         logic.initialize()
@@ -654,6 +668,145 @@ class ContentListLogicTest {
         assertTrue(fakeRepo.searchMatchesCalls.isEmpty())
     }
 
+    // --- Home mode ---
+
+    @Test
+    fun homeMode_initializesFormatIdFromConfig() {
+        val logic = createLogic(ContentListMode.Home)
+        assertEquals(appConfigRepo.getDefaultFormatId(), logic.selectedFormatId.value)
+    }
+
+    @Test
+    fun homeMode_page1_topPokemonSectionHasSeeMoreAction() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 1, 1)
+        )
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val topPokemonSection = logic.uiState.value.items
+            .filterIsInstance<ContentListItem.Section>()
+            .first { it.header == "Top Pokémon" }
+        assertTrue(topPokemonSection.trailingAction is ContentListItem.SectionAction.SeeMore)
+    }
+
+    @Test
+    fun homeMode_page1_topPokemonUsagePercent() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 1, 1)
+        )
+        fakeRepo.formatDetailResult = testFormatDetail(teamCount = 1000, pokemonCount = 500)
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val topPokemonSection = logic.uiState.value.items
+            .filterIsInstance<ContentListItem.Section>()
+            .first { it.header == "Top Pokémon" }
+        val grid = topPokemonSection.items[0] as ContentListItem.PokemonGrid
+        assertEquals("50.00%", grid.pokemon[0].usagePercent)
+    }
+
+    @Test
+    fun homeMode_formatDetailFails_omitsTopPokemonSection() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 1, 1)
+        )
+        fakeRepo.formatDetailError = Exception("Format error")
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val state = logic.uiState.value
+        assertFalse(state.isLoading)
+        assertNull(state.error)
+        assertEquals(2, state.items.size)
+        assertTrue(state.items[0] is ContentListItem.FormatSelector)
+        assertTrue(state.items[1] is ContentListItem.Section)
+        assertEquals("Today's Top Battles", (state.items[1] as ContentListItem.Section).header)
+    }
+
+    @Test
+    fun homeMode_battlesFails_omitsTopBattlesSection() {
+        fakeRepo.searchMatchesError = Exception("Battles error")
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val state = logic.uiState.value
+        assertFalse(state.isLoading)
+        assertNull(state.error)
+        assertEquals(2, state.items.size)
+        assertTrue(state.items[0] is ContentListItem.FormatSelector)
+        assertTrue(state.items[1] is ContentListItem.Section)
+        assertEquals("Top Pokémon", (state.items[1] as ContentListItem.Section).header)
+    }
+
+    @Test
+    fun homeMode_bothFail_showsError() {
+        fakeRepo.searchMatchesError = Exception("Both failed")
+        fakeRepo.formatDetailError = Exception("Both failed")
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val state = logic.uiState.value
+        assertFalse(state.isLoading)
+        assertEquals("Both failed", state.error)
+    }
+
+    @Test
+    fun homeMode_selectFormat_reloadsWithCorrectSections() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 1, 1)
+        )
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        fakeRepo.searchMatchesCalls.clear()
+
+        logic.selectFormat(42)
+        testScope.advanceUntilIdle()
+
+        assertEquals(42, logic.selectedFormatId.value)
+        assertTrue(fakeRepo.searchMatchesCalls.isNotEmpty())
+        assertEquals(42, fakeRepo.searchMatchesCalls.last().formatId)
+        assertTrue(logic.uiState.value.loadingSections.isEmpty())
+    }
+
+    @Test
+    fun homeMode_todaysTopBattles_hasNoSortToggle() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 1, 1)
+        )
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val battlesSection = logic.uiState.value.items
+            .filterIsInstance<ContentListItem.Section>()
+            .first { it.header == "Today's Top Battles" }
+        assertNull(battlesSection.trailingAction)
+    }
+
     // --- updateSearchParams ---
 
     @Test
@@ -689,4 +842,25 @@ class ContentListLogicTest {
         assertEquals("rating", logic.sortOrder.value)
         assertTrue(fakeRepo.searchMatchesCalls.isNotEmpty())
     }
+
+    private fun testFormatDetail(
+        teamCount: Int = 22482,
+        pokemonCount: Int = 10365
+    ) = FormatDetail(
+        id = 1,
+        name = "gen9vgc2026regibo3",
+        formattedName = "[Gen 9] VGC 2026 Reg I (Bo3)",
+        matchCount = 11241,
+        teamCount = teamCount,
+        topPokemon = listOf(
+            TopPokemon(
+                id = 725,
+                name = "Incineroar",
+                pokedexNumber = 727,
+                types = listOf(PokemonType(2, "Dark", null)),
+                imageUrl = "https://arcvgc.com/static/images/pokemon/incineroar.png",
+                count = pokemonCount
+            )
+        )
+    )
 }

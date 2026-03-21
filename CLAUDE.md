@@ -38,7 +38,7 @@ Network DTOs  →  Domain Models  →  UI Models  →  Screen
 - **Domain layer** (`shared/.../domain/model/`): Pure Kotlin data classes — `MatchPreview`, `MatchDetail`, `PlayerDetail`, `PokemonListItem`, `SearchFilterSlot`, `AppConfig`, `Format`, etc.
 - **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), and `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
 - **Data layer** (`shared/.../data/`): Shared business logic used by all platforms
-  - `BattleRepository` (implements `BattleRepositoryApi`) — Match data (getMatches, searchMatches, getMatchDetail, getMatchesByIds, getPokemonProfile, getPlayerProfile, getPlayersByNames). Throws exceptions on error. Android wraps in `Result<T>` via a thin adapter; iOS uses directly via SKIE `async throws` bridge. `ContentListLogic` depends on the `BattleRepositoryApi` interface for testability.
+  - `BattleRepository` (implements `BattleRepositoryApi`) — Match data (getMatches, searchMatches, getMatchDetail, getMatchesByIds, getPokemonProfile, getPlayerProfile, getPlayersByNames, getFormatDetail). Throws exceptions on error. Android wraps in `Result<T>` via a thin adapter; iOS uses directly via SKIE `async throws` bridge. `ContentListLogic` depends on the `BattleRepositoryApi` interface for testability.
   - `FavoritesRepository` — Favorites toggle/check with `StateFlow` state, delegates to `FavoritesStorage` (expect/actual)
   - `SettingsRepository` — App settings with `StateFlow` per setting + combined `settingItems` flow. Delegates to `SettingsStorage` (expect/actual)
   - `AppConfigRepository` — Remote config (default format, min app versions, catalog version). Caches to `AppConfigStorage` (expect/actual). Signals `catalogVersionChanged` when catalog cache needs clearing.
@@ -62,6 +62,7 @@ Base URL: `https://arcvgc.com`
 | `GET /api/v0/items/?limit=50&page=N` | Item catalog |
 | `GET /api/v0/types/tera?limit=50&page=N` | Tera type catalog |
 | `GET /api/v0/formats?limit=50&page=N` | Format catalog |
+| `GET /api/v0/formats/{id}?top_pokemon_count=N` | Format detail with top usage Pokemon |
 | `POST /api/v0/matches/search` | Search matches (body: `SearchRequestDto`) |
 
 All catalog endpoints return `{ success, data, pagination }` using `PaginationDto`. Constants in `shared/.../network/ApiConstants.kt`.

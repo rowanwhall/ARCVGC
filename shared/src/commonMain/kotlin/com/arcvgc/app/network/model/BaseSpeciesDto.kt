@@ -7,5 +7,5 @@ import kotlinx.serialization.Serializable
 data class BaseSpeciesDto(
     val id: Int,
     val name: String,
-    @SerialName("pokedex_number") val pokedexNumber: Int?
+    @SerialName("pokedex_number") val pokedexNumber: Int? = null
 )

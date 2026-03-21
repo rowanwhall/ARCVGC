@@ -2,6 +2,7 @@ package com.arcvgc.app.testutil
 
 import com.arcvgc.app.data.BattleRepositoryApi
 import com.arcvgc.app.data.MatchesResult
+import com.arcvgc.app.domain.model.FormatDetail
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
@@ -25,6 +26,9 @@ class FakeBattleRepository : BattleRepositoryApi {
 
     var pokemonProfileResult: PokemonProfile? = null
     var pokemonProfileError: Exception? = null
+
+    var formatDetailResult: FormatDetail? = null
+    var formatDetailError: Exception? = null
 
     var playersByNamesResult: List<PlayerListItem> = emptyList()
     var playersByNamesError: Exception? = null
@@ -55,6 +59,11 @@ class FakeBattleRepository : BattleRepositoryApi {
         searchMatchesCalls.add(SearchMatchesCall(filters, formatId, orderBy, page, playerName))
         searchMatchesError?.let { throw it }
         return searchMatchesResult
+    }
+
+    override suspend fun getFormatDetail(formatId: Int, topPokemonCount: Int?): FormatDetail {
+        formatDetailError?.let { throw it }
+        return formatDetailResult ?: throw Exception("No format detail configured")
     }
 
     override suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel> {

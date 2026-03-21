@@ -1,5 +1,6 @@
 package com.arcvgc.app.data
 
+import com.arcvgc.app.domain.model.FormatDetail
 import com.arcvgc.app.domain.model.NetworkResult
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
@@ -37,6 +38,7 @@ interface BattleRepositoryApi {
         timeRangeEnd: Long? = null,
         playerName: String? = null
     ): MatchesResult
+    suspend fun getFormatDetail(formatId: Int, topPokemonCount: Int? = null): FormatDetail
     suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel>
     suspend fun getPlayerProfile(id: Int): PlayerProfile
     suspend fun getPokemonProfile(id: Int, formatId: Int? = null): PokemonProfile
@@ -56,6 +58,25 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
                 captureException(error)
                 throw error
             }
+        }
+    }
+
+    override suspend fun getFormatDetail(formatId: Int, topPokemonCount: Int?): FormatDetail {
+        return when (val result = apiService.getFormatDetail(formatId, topPokemonCount)) {
+            is NetworkResult.Success -> result.data
+            is NetworkResult.Error -> {
+                val error = Exception(result.message)
+                captureException(error)
+                throw error
+            }
+        }
+    }
+
+    suspend fun getFormatDetailOrNull(formatId: Int, topPokemonCount: Int? = null): FormatDetail? {
+        return try {
+            getFormatDetail(formatId, topPokemonCount)
+        } catch (e: Exception) {
+            null
         }
     }
 
