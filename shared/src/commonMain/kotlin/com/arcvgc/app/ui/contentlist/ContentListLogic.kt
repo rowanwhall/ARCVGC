@@ -474,6 +474,12 @@ class ContentListLogic(
                     }
                     add(ContentListItem.Section("Top Items", listOf(ContentListItem.StatChipRow(chipItems, "items"))))
                 }
+                if (profile != null && profile.topTeraTypes.isNotEmpty()) {
+                    val chipItems = profile.topTeraTypes.map {
+                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount), it.imageUrl)
+                    }
+                    add(ContentListItem.Section("Top Tera Types", listOf(ContentListItem.StatChipRow(chipItems, "tera_types"))))
+                }
                 if (profile != null && profile.topMoves.isNotEmpty()) {
                     val chipItems = profile.topMoves.map {
                         ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
@@ -485,12 +491,6 @@ class ContentListLogic(
                         ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
                     }
                     add(ContentListItem.Section("Top Abilities", listOf(ContentListItem.StatChipRow(chipItems, "abilities"))))
-                }
-                if (profile != null && profile.topTeraTypes.isNotEmpty()) {
-                    val chipItems = profile.topTeraTypes.map {
-                        ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount), it.imageUrl)
-                    }
-                    add(ContentListItem.Section("Top Tera Types", listOf(ContentListItem.StatChipRow(chipItems, "tera_types"))))
                 }
                 if (battleItems.isNotEmpty()) {
                     add(ContentListItem.Section("Battles", battleItems))
