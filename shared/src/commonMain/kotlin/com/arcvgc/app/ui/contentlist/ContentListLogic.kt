@@ -300,6 +300,7 @@ class ContentListLogic(
         is ContentListMode.Home -> setOf("format_selector", "Top Pokémon", "Today's Top Battles")
         is ContentListMode.TopPokemon -> setOf("format_selector", "")
         is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles")
+        is ContentListMode.Player -> setOf("format_selector", "Battles")
         else -> setOf("Battles")
     }
 
@@ -565,9 +566,7 @@ class ContentListLogic(
                 }
 
                 add(ContentListItem.FormatSelector)
-                if (battleItems.isNotEmpty()) {
-                    add(ContentListItem.Section("Battles", battleItems))
-                }
+                add(ContentListItem.Section("Battles", battleItems))
             }
             sections to result.pagination
         } else {

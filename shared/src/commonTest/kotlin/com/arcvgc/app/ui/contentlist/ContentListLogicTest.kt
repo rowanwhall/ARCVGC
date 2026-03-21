@@ -421,6 +421,41 @@ class ContentListLogicTest {
         assertEquals("Battles", (items[2] as ContentListItem.Section).header)
     }
 
+    @Test
+    fun playerMode_page1_showsEmptyBattlesSectionWhenNoBattles() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = emptyList(),
+            pagination = Pagination(1, 0, 0, 1)
+        )
+        fakeRepo.playerProfileResult = PlayerProfile(
+            id = 1,
+            name = "TestPlayer",
+            matchCount = 10,
+            winCount = 5,
+            topRatedMatch = RatedMatch(id = 99, rating = 1800),
+            mostRecentRatedMatch = RatedMatch(id = 100, rating = 1700),
+            mostUsedPokemon = listOf(
+                MostUsedPokemon(id = 25, name = "Pikachu", usageCount = 5, imageUrl = null)
+            )
+        )
+
+        val logic = createLogic(ContentListMode.Player(
+            playerId = 1, playerName = "TestPlayer", formatId = 1
+        ))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        // HighlightButtons, Favorite Pokemon section, FormatSelector, empty Battles section
+        assertEquals(4, items.size)
+        assertTrue(items[0] is ContentListItem.HighlightButtons)
+        assertEquals("Favorite Pokémon", (items[1] as ContentListItem.Section).header)
+        assertTrue(items[2] is ContentListItem.FormatSelector)
+        val battlesSection = items[3] as ContentListItem.Section
+        assertEquals("Battles", battlesSection.header)
+        assertTrue(battlesSection.items.isEmpty())
+    }
+
     // --- State transitions ---
 
     @Test
