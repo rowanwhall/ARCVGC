@@ -245,6 +245,6 @@ Home mode waits for app config before loading (needs default format ID):
 | Shared mapper | `shared/.../ui/mapper/ContentListItemMapper.kt` |
 | Shared util | `shared/.../util/CoroutineScopeFactory.kt` |
 | Shared tests | `shared/src/commonTest/.../ui/contentlist/ContentListLogicTest.kt` |
-| Android | `composeApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt` |
-| iOS | `iosApp/iosApp/ContentListView.swift`, `ContentListViewModel.swift` |
-| Web | `webApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt` |
+| Android | `composeApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt`, `SearchFilterChips.kt`, `ContentListItemRow.kt`, `ContentListComponents.kt` |
+| iOS | `iosApp/iosApp/ContentListView.swift`, `ContentListViewModel.swift`, `SearchFilterChipsView.swift`, `ContentListComponents.swift` |
+| Web | `webApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt`, `SearchFilterChips.kt`, `ContentListItemRow.kt`, `ContentListComponents.kt` |
