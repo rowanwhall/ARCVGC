@@ -40,6 +40,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -109,6 +110,7 @@ fun ContentListPage(
             is ContentListMode.Search -> "content_list_search_${mode.params}"
             is ContentListMode.Pokemon -> "content_list_pokemon_${mode.pokemonId}"
             is ContentListMode.Player -> "content_list_player_${mode.playerId}_${mode.formatId}"
+            is ContentListMode.TopPokemon -> "content_list_top_pokemon_${mode.formatId}"
         }
     )
 ) {
@@ -126,6 +128,8 @@ fun ContentListPage(
     val selectedFormatId by viewModel.selectedFormatId.collectAsStateWithLifecycle()
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
+    var topPokemonFormatId by remember { mutableStateOf<Int?>(null) }
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     // Apply initialBattleId once — deferred to LaunchedEffect so ModalBottomSheet has a laid-out host
     LaunchedEffect(initialBattleId) {
@@ -135,7 +139,7 @@ fun ContentListPage(
     }
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
 
-    if (onBack != null && pokemonNavTarget == null && playerNavTarget == null) {
+    if (onBack != null && pokemonNavTarget == null && playerNavTarget == null && topPokemonFormatId == null) {
         BackHandler { onBack() }
     }
 
@@ -161,6 +165,7 @@ fun ContentListPage(
                     is ContentListItem.Pokemon -> {
                         val derivedFormatId = when (mode) {
                             is ContentListMode.Home -> viewModel.selectedFormatId.value
+                            is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
                             is ContentListMode.Search -> mode.params.formatId
                             is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
                             is ContentListMode.Player -> viewModel.selectedFormatId.value
@@ -175,6 +180,7 @@ fun ContentListPage(
                     is ContentListItem.Player -> {
                         val derivedFormatId = when (mode) {
                             is ContentListMode.Home -> viewModel.selectedFormatId.value
+                            is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
                             is ContentListMode.Search -> mode.params.formatId
                             is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
                             is ContentListMode.Player -> viewModel.selectedFormatId.value
@@ -187,12 +193,14 @@ fun ContentListPage(
                     is ContentListItem.PokemonGrid -> {}
                     is ContentListItem.StatChipRow -> {}
                     is ContentListItem.FormatSelector -> {}
+                    is ContentListItem.SearchField -> {}
                 }
             },
             onHighlightBattleClick = { battleId -> selectedBattleId = battleId },
             onPokemonGridClick = { pokemon ->
                 val derivedFormatId = when (mode) {
                     is ContentListMode.Home -> viewModel.selectedFormatId.value
+                    is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
                     is ContentListMode.Search -> mode.params.formatId
                     is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
                     is ContentListMode.Player -> viewModel.selectedFormatId.value
@@ -210,9 +218,12 @@ fun ContentListPage(
                 is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
                 else -> null
             },
-            formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home) formatCatalogState.items else emptyList(),
-            selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home) selectedFormatId else 0,
-            onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home) viewModel::selectFormat else null
+            formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) formatCatalogState.items else emptyList(),
+            selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
+            onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
+            searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
+            onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
+            onSeeMore = { topPokemonFormatId = viewModel.selectedFormatId.value }
         )
 
         if (onBack != null) {
@@ -240,20 +251,22 @@ fun ContentListPage(
                         }
                     },
                     actions = {
-                        val actionContext = LocalContext.current
-                        IconButton(onClick = {
-                            val url = shareUrlForMode(mode, null)
-                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                putExtra(Intent.EXTRA_TEXT, url)
-                                type = "text/plain"
+                        if (mode !is ContentListMode.TopPokemon) {
+                            val actionContext = LocalContext.current
+                            IconButton(onClick = {
+                                val url = shareUrlForMode(mode, null)
+                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                    putExtra(Intent.EXTRA_TEXT, url)
+                                    type = "text/plain"
+                                }
+                                actionContext.startActivity(Intent.createChooser(sendIntent, null))
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "Share",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
-                            actionContext.startActivity(Intent.createChooser(sendIntent, null))
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = "Share",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
                         if (mode is ContentListMode.Pokemon) {
                             val pId = mode.pokemonId
@@ -316,6 +329,16 @@ fun ContentListPage(
                     }
                 )
             }
+        }
+
+        topPokemonFormatId?.let { formatId ->
+            BackHandler { topPokemonFormatId = null }
+            ContentListPage(
+                mode = ContentListMode.TopPokemon(formatId = formatId),
+                onBack = { topPokemonFormatId = null },
+                consumeTopInsets = consumeTopInsets,
+                modifier = Modifier.fillMaxSize()
+            )
         }
 
         pokemonNavTarget?.let { target ->
@@ -649,7 +672,10 @@ private fun ContentListContent(
     onToggleSortOrder: (() -> Unit)? = null,
     formats: List<FormatUiModel> = emptyList(),
     selectedFormatId: Int = 0,
-    onFormatSelected: ((Int) -> Unit)? = null
+    onFormatSelected: ((Int) -> Unit)? = null,
+    searchQuery: String = "",
+    onSearchQueryChanged: ((String) -> Unit)? = null,
+    onSeeMore: (() -> Unit)? = null
 ) {
     val listState = rememberLazyListState()
 
@@ -704,6 +730,23 @@ private fun ContentListContent(
                         ) {
                             Text(
                                 text = "ARC",
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                is ContentListHeaderUiModel.TopPokemonHero -> {
+                    item(key = "top_pokemon_hero") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 24.dp, bottom = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Top Pok\u00E9mon",
                                 style = MaterialTheme.typography.displayMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -819,6 +862,19 @@ private fun ContentListContent(
 
                 uiState.items.none { it.isContentItem } -> {
                     uiState.items.forEach { topItem ->
+                        if (topItem is ContentListItem.SearchField && onSearchQueryChanged != null) {
+                            item(key = topItem.listKey) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = onSearchQueryChanged,
+                                    label = { Text("Search Pok\u00E9mon") },
+                                    singleLine = true,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                )
+                            }
+                        }
                         if (topItem is ContentListItem.FormatSelector && formats.isNotEmpty() && onFormatSelected != null) {
                             val isLoadingFormat = "format_selector" in uiState.loadingSections
                             item(key = topItem.listKey) {
@@ -863,7 +919,7 @@ private fun ContentListContent(
                                         isLoading = isLoadingSection,
                                         sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                         onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                        onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) { { } } else null,
+                                        onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
                                         modifier = itemPadding
                                     )
                                 }
@@ -876,6 +932,21 @@ private fun ContentListContent(
                                     val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
                                     Box(modifier = childModifier.then(if (!child.edgeToEdge) itemPadding else Modifier)) {
                                         ContentListItemRow(child, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                    }
+                                }
+                            }
+                            is ContentListItem.SearchField -> {
+                                if (onSearchQueryChanged != null) {
+                                    item(key = topItem.listKey) {
+                                        OutlinedTextField(
+                                            value = searchQuery,
+                                            onValueChange = onSearchQueryChanged,
+                                            label = { Text("Search Pok\u00E9mon") },
+                                            singleLine = true,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .then(itemPadding)
+                                        )
                                     }
                                 }
                             }
@@ -949,6 +1020,7 @@ private fun ContentListItemRow(
             name = item.name,
             imageUrl = item.imageUrl,
             types = item.types,
+            usagePercent = item.usagePercent,
             onClick = { onItemClick(item) }
         )
         is ContentListItem.Player -> PlayerListRow(
@@ -1057,6 +1129,7 @@ private fun ContentListItemRow(
         }
         is ContentListItem.Section -> {}
         is ContentListItem.FormatSelector -> {}
+        is ContentListItem.SearchField -> {}
     }
 }
 
@@ -1124,7 +1197,8 @@ private fun SectionHeader(
             Row(
                 modifier = Modifier
                     .height(28.dp)
-                    .clickable(onClick = onSeeMore),
+                    .clickable(onClick = onSeeMore)
+                    .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
@@ -1197,6 +1271,7 @@ private fun PokemonListRow(
     name: String,
     imageUrl: String?,
     types: List<com.arcvgc.app.ui.model.TypeUiModel>,
+    usagePercent: String? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1224,6 +1299,13 @@ private fun PokemonListRow(
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
+                if (usagePercent != null) {
+                    Text(
+                        text = usagePercent,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             TypeIconRow(

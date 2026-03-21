@@ -59,6 +59,7 @@ class ContentListViewModel @Inject constructor(
         viewModelScope.launch { l.uiState.collect { _uiState.value = it } }
         viewModelScope.launch { l.sortOrder.collect { _sortOrder.value = it } }
         viewModelScope.launch { l.selectedFormatId.collect { _selectedFormatId.value = it } }
+        viewModelScope.launch { l.searchQuery.collect { _searchQuery.value = it } }
 
         l.initialize()
     }
@@ -68,4 +69,9 @@ class ContentListViewModel @Inject constructor(
     fun paginate() { logic?.paginate() }
     fun selectFormat(formatId: Int) { logic?.selectFormat(formatId) }
     fun toggleSortOrder() { logic?.toggleSortOrder() }
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    fun setSearchQuery(query: String) { logic?.setSearchQuery(query) }
 }

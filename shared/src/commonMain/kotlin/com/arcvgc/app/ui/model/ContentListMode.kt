@@ -8,6 +8,7 @@ sealed class ContentListMode {
     data class Search(val params: SearchParams) : ContentListMode()
     data class Pokemon(val pokemonId: Int, val name: String, val imageUrl: String?, val typeImageUrl1: String?, val typeImageUrl2: String?, val formatId: Int? = null) : ContentListMode()
     data class Player(val playerId: Int, val playerName: String, val formatId: Int? = null) : ContentListMode()
+    data class TopPokemon(val formatId: Int? = null) : ContentListMode()
 
     fun toHeaderUiModel(): ContentListHeaderUiModel = when (this) {
         is Home -> ContentListHeaderUiModel.HomeHero
@@ -34,5 +35,6 @@ sealed class ContentListMode {
             name, imageUrl, listOfNotNull(typeImageUrl1, typeImageUrl2)
         )
         is Player -> ContentListHeaderUiModel.PlayerHero(playerName)
+        is TopPokemon -> ContentListHeaderUiModel.TopPokemonHero
     }
 }

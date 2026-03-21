@@ -11,6 +11,7 @@ enum ContentListMode {
     case search(params: SearchParams)
     case pokemon(id: Int32, name: String, imageUrl: String?, typeImageUrl1: String?, typeImageUrl2: String?, formatId: Int32? = nil)
     case player(id: Int32, name: String, formatId: Int32? = nil)
+    case topPokemon(formatId: Int32? = nil)
 
     func toSharedMode() -> Shared.ContentListMode {
         switch self {
@@ -42,6 +43,10 @@ enum ContentListMode {
                 playerName: name,
                 formatId: formatId.map { KotlinInt(int: $0) }
             )
+        case .topPokemon(let formatId):
+            return Shared.ContentListMode.TopPokemon(
+                formatId: formatId.map { KotlinInt(int: $0) }
+            )
         }
     }
 }
@@ -51,6 +56,7 @@ final class ContentListViewModel: ObservableObject {
     @Published private(set) var state: ContentListUiState
     @Published private(set) var sortOrder: String
     @Published private(set) var selectedFormatId: Int32
+    @Published private(set) var searchQuery: String
     @Published private(set) var mode: ContentListMode
 
     let formatItems: [FormatUiModel]
@@ -84,6 +90,7 @@ final class ContentListViewModel: ObservableObject {
         self.state = logic.uiState.value
         self.sortOrder = logic.sortOrder.value as String
         self.selectedFormatId = (logic.selectedFormatId.value as! KotlinInt).int32Value
+        self.searchQuery = logic.searchQuery.value as String
 
         observationTasks.append(Task { [weak self] in
             for await uiState in logic.uiState {
@@ -100,6 +107,11 @@ final class ContentListViewModel: ObservableObject {
                 self?.selectedFormatId = (id as! KotlinInt).int32Value
             }
         })
+        observationTasks.append(Task { [weak self] in
+            for await query in logic.searchQuery {
+                self?.searchQuery = query as String
+            }
+        })
 
         logic.initialize()
     }
@@ -109,6 +121,7 @@ final class ContentListViewModel: ObservableObject {
     func paginate() { logic.paginate() }
     func selectFormat(_ formatId: Int32) { logic.selectFormat(formatId: formatId) }
     func toggleSortOrder() { logic.toggleSortOrder() }
+    func setSearchQuery(_ query: String) { logic.setSearchQuery(query: query) }
 
     func updateSearchParams(_ params: SearchParams) {
         mode = .search(params: params)

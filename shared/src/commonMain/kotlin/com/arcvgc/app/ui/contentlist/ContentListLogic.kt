@@ -11,6 +11,7 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.mapper.ContentListItemMapper
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
+import com.arcvgc.app.ui.model.TypeUiModel
 import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import kotlinx.coroutines.CoroutineScope
@@ -51,10 +52,18 @@ class ContentListLogic(
                 ?: appConfigRepository.getDefaultFormatId()
             is ContentListMode.Player -> (mode as ContentListMode.Player).formatId
                 ?: appConfigRepository.getDefaultFormatId()
+            is ContentListMode.TopPokemon -> (mode as ContentListMode.TopPokemon).formatId
+                ?: appConfigRepository.getDefaultFormatId()
             else -> 0
         }
     )
     val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private var allTopPokemonItems: List<ContentListItem.Pokemon> = emptyList()
+    private var topPokemonTeamCount: Int = 0
 
     fun initialize() {
         when {
@@ -229,9 +238,24 @@ class ContentListLogic(
         }
     }
 
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+        if (mode !is ContentListMode.TopPokemon) return
+        val filtered = if (query.isBlank()) allTopPokemonItems
+        else allTopPokemonItems.filter { it.name.contains(query, ignoreCase = true) }
+        _uiState.update {
+            it.copy(items = buildList {
+                add(ContentListItem.FormatSelector)
+                add(ContentListItem.SearchField(query))
+                addAll(filtered)
+            })
+        }
+    }
+
     fun selectFormat(formatId: Int) {
         if (_selectedFormatId.value == formatId) return
         _selectedFormatId.value = formatId
+        if (mode is ContentListMode.TopPokemon) _searchQuery.value = ""
         scope.launch {
             try {
                 _uiState.update { it.copy(loadingSections = reloadSections(), currentPage = 1, canPaginate = false) }
@@ -272,6 +296,7 @@ class ContentListLogic(
 
     private fun reloadSections(): Set<String> = when (mode) {
         is ContentListMode.Home -> setOf("format_selector", "Top Pokémon", "Today's Top Battles")
+        is ContentListMode.TopPokemon -> setOf("format_selector")
         is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles")
         else -> setOf("Battles")
     }
@@ -477,6 +502,25 @@ class ContentListLogic(
                 page = page
             )
             ContentListItemMapper.fromBattles(result.battles) to result.pagination
+        }
+        is ContentListMode.TopPokemon -> {
+            val formatDetail = repository.getFormatDetail(_selectedFormatId.value, topPokemonCount = 100)
+            topPokemonTeamCount = formatDetail.teamCount
+            allTopPokemonItems = formatDetail.topPokemon.map { pokemon ->
+                ContentListItem.Pokemon(
+                    id = pokemon.id,
+                    name = pokemon.name,
+                    imageUrl = pokemon.imageUrl,
+                    types = pokemon.types.map { TypeUiModel(it.name, it.imageUrl) },
+                    usagePercent = formatUsagePercent(pokemon.count, formatDetail.teamCount)
+                )
+            }
+            val items = buildList {
+                add(ContentListItem.FormatSelector)
+                add(ContentListItem.SearchField(""))
+                addAll(allTopPokemonItems)
+            }
+            items to Pagination(1, allTopPokemonItems.size, allTopPokemonItems.size, 1)
         }
         is ContentListMode.Player -> if (page == 1) coroutineScope {
             val profileDeferred = async { runCatching { repository.getPlayerProfile(m.playerId) } }

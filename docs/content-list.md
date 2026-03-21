@@ -8,7 +8,7 @@ All shared models live in `shared/.../ui/model/`.
 
 ### ContentListMode
 
-Sealed class defining the five modes. Each mode maps to a header via `toHeaderUiModel()`.
+Sealed class defining the six modes. Each mode maps to a header via `toHeaderUiModel()`.
 
 | Mode | Parameters | Header | Sort toggle | Pagination |
 |---|---|---|---|---|
@@ -17,13 +17,15 @@ Sealed class defining the five modes. Each mode maps to a header via `toHeaderUi
 | `Search(params)` | `SearchParams` | `SearchFilters` | Yes | Yes |
 | `Pokemon(pokemonId, name, imageUrl, typeImageUrl1, typeImageUrl2, formatId?)` | Optional `formatId` threaded from battle detail | `PokemonHero` | Yes | Yes |
 | `Player(playerId, playerName, formatId?)` | Optional `formatId` threaded from battle detail | `PlayerHero` | Yes | Yes |
+| `TopPokemon(formatId?)` | Optional `formatId` threaded from Home page | `TopPokemonHero` | No (has format selector + search field) | No |
 
 ### ContentListHeaderUiModel
 
-Sealed class with six variants controlling what renders above the list:
+Sealed class with seven variants controlling what renders above the list:
 
 - **`None`** — no header
 - **`HomeHero`** — "ARC" title
+- **`TopPokemonHero`** — "Top Pokemon" title (same style as HomeHero, separate type for planned redesign)
 - **`FavoritesHero`** — heart icon + "Favorites" subtitle
 - **`SearchFilters`** — flow row of removable filter chips (Pokemon with items/tera, format, rating range, unrated, player name, date range). Each chip type has `canRemove*()` / `remove*()` methods on `SearchParams` controlling removability.
 - **`PokemonHero`** — large Pokemon avatar (158dp circle / 227dp sprite) + name (headlineMedium/20pt) + type icons (24dp)
@@ -42,7 +44,8 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 | `HighlightButtons(buttons)` | Player profile highlight cards (Top Rated / Latest Rated) | `"highlight_buttons"` |
 | `PokemonGrid(pokemon)` | 3-column grid of Pokemon (player profile "Favorite Pokemon", pokemon profile "Top Teammates") | `"pokemon_grid"` |
 | `StatChipRow(chips)` | Horizontal scrolling row of chips with name+percent and optional image (mobile), FlowRow (desktop web). Used for Top Abilities, Items, Moves, Tera Types. | `"stat_chip_row"` |
-| `FormatSelector` | Format dropdown rendered as a list item (Pokemon, Player modes) | `"format_selector"` |
+| `FormatSelector` | Format dropdown rendered as a list item (Home, TopPokemon, Pokemon, Player modes) | `"format_selector"` |
+| `SearchField(query)` | Text input for client-side filtering (TopPokemon mode) | `"search_field"` |
 
 `ContentListItemMapper` (in `shared/.../ui/mapper/`) provides factory methods: `fromBattles()`, `fromPokemon()`, `fromPlayers()`, `fromPokemonCatalog()`.
 
@@ -90,6 +93,15 @@ This is a key behavioral detail: several modes compose a richer page 1 with sect
   4. `Section("Battles", [...])` — battle results
 - **Pages 2+**: bare `Battle` items
 
+### TopPokemon mode
+- **Single page** (no pagination): Fetches top 100 Pokemon via `getFormatDetail(formatId, topPokemonCount=100)`.
+  1. `FormatSelector` — format dropdown
+  2. `SearchField("")` — text field for client-side name filtering
+  3. `Pokemon` items with `usagePercent` — full list filtered by search query
+- **Format change**: reloads from API (`loadingSections = {"format_selector"}`), clears search query
+- **Search filtering**: client-side via `setSearchQuery()`, filters stored Pokemon list by name (case-insensitive), no API call
+- Navigated to from Home page's "See More" button on the "Top Pokemon" section, threading the current format
+
 ## Section Loading & Sort Toggle
 
 Documented in detail in [`docs/search.md`](search.md) under "Sort Toggle & Section Loading". Key points:
@@ -99,9 +111,9 @@ Documented in detail in [`docs/search.md`](search.md) under "Sort Toggle & Secti
 - Section children render at 50% opacity (Android/Web) or with a spinner overlay (iOS) while loading
 - **Pagination guard**: `paginate()` refuses to run when `loadingSections.isNotEmpty()` — prevents race conditions between sort/format fetches and pagination
 
-## Format Selection (Home, Pokemon & Player Modes)
+## Format Selection (Home, TopPokemon, Pokemon & Player Modes)
 
-A `FormatSelector` list item renders a format dropdown in Home, Pokemon, and Player modes. It appears as a centered dropdown between the header/profile content and the Battles section.
+A `FormatSelector` list item renders a format dropdown in Home, TopPokemon, Pokemon, and Player modes. It appears as a centered dropdown between the header/profile content and the Battles section.
 
 - **Default format**: inherited from `formatId` parameter (threaded from battle detail or parent page's selected format) or falls back to app config's default format
 - **On change**: sets `loadingSections = setOf("Battles")`, re-fetches page 1 with new format

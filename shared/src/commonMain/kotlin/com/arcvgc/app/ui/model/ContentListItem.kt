@@ -13,7 +13,8 @@ sealed class ContentListItem {
         val id: Int,
         val name: String,
         val imageUrl: String?,
-        val types: List<TypeUiModel>
+        val types: List<TypeUiModel>,
+        val usagePercent: String? = null
     ) : ContentListItem() {
         override val listKey get() = "pokemon_$id"
     }
@@ -55,6 +56,11 @@ sealed class ContentListItem {
 
     data object FormatSelector : ContentListItem() {
         override val listKey get() = "format_selector"
+        override val isContentItem: Boolean get() = false
+    }
+
+    data class SearchField(val query: String) : ContentListItem() {
+        override val listKey get() = "search_field"
         override val isContentItem: Boolean get() = false
     }
 }

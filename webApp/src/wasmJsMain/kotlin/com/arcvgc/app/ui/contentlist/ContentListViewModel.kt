@@ -36,6 +36,7 @@ class ContentListViewModel(
     val uiState: StateFlow<ContentListUiState> = logic.uiState
     val sortOrder: StateFlow<String> = logic.sortOrder
     val selectedFormatId: StateFlow<Int> = logic.selectedFormatId
+    val searchQuery: StateFlow<String> = logic.searchQuery
 
     val formatCatalogState: StateFlow<CatalogState<FormatUiModel>>?
         get() = formatCatalogRepository?.state
@@ -51,4 +52,5 @@ class ContentListViewModel(
     fun paginate() = logic.paginate()
     fun selectFormat(formatId: Int) = logic.selectFormat(formatId)
     fun toggleSortOrder() = logic.toggleSortOrder()
+    fun setSearchQuery(query: String) = logic.setSearchQuery(query)
 }

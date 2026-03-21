@@ -807,6 +807,104 @@ class ContentListLogicTest {
         assertNull(battlesSection.trailingAction)
     }
 
+    // --- TopPokemon mode ---
+
+    @Test
+    fun topPokemonMode_loadsFormatSelectorSearchFieldAndPokemon() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val state = logic.uiState.value
+        assertFalse(state.isLoading)
+        assertNull(state.error)
+        assertTrue(state.items[0] is ContentListItem.FormatSelector)
+        assertTrue(state.items[1] is ContentListItem.SearchField)
+        assertTrue(state.items[2] is ContentListItem.Pokemon)
+        assertFalse(state.canPaginate)
+    }
+
+    @Test
+    fun topPokemonMode_pokemonHasUsagePercent() {
+        fakeRepo.formatDetailResult = testFormatDetail(teamCount = 1000, pokemonCount = 500)
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val pokemon = logic.uiState.value.items.filterIsInstance<ContentListItem.Pokemon>().first()
+        assertEquals("50.00%", pokemon.usagePercent)
+    }
+
+    @Test
+    fun topPokemonMode_setSearchQuery_filtersItems() {
+        fakeRepo.formatDetailResult = FormatDetail(
+            id = 1, name = "test", formattedName = null, matchCount = 100, teamCount = 1000,
+            topPokemon = listOf(
+                TopPokemon(id = 1, name = "Pikachu", pokedexNumber = 25, types = emptyList(), imageUrl = null, count = 500),
+                TopPokemon(id = 2, name = "Charizard", pokedexNumber = 6, types = emptyList(), imageUrl = null, count = 300)
+            )
+        )
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        assertEquals(4, logic.uiState.value.items.size) // FormatSelector + SearchField + 2 Pokemon
+
+        logic.setSearchQuery("pika")
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        assertEquals(3, items.size) // FormatSelector + SearchField + 1 Pokemon
+        val pokemon = items.filterIsInstance<ContentListItem.Pokemon>()
+        assertEquals(1, pokemon.size)
+        assertEquals("Pikachu", pokemon.first().name)
+    }
+
+    @Test
+    fun topPokemonMode_selectFormat_reloadsAndClearsSearchQuery() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        logic.setSearchQuery("test")
+        assertEquals("test", logic.searchQuery.value)
+
+        logic.selectFormat(42)
+        testScope.advanceUntilIdle()
+
+        assertEquals(42, logic.selectedFormatId.value)
+        assertEquals("", logic.searchQuery.value)
+    }
+
+    @Test
+    fun topPokemonMode_emptyPokemon_showsFormatSelectorAndSearchFieldOnly() {
+        fakeRepo.formatDetailResult = FormatDetail(
+            id = 1, name = "test", formattedName = null, matchCount = 0, teamCount = 0, topPokemon = emptyList()
+        )
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val state = logic.uiState.value
+        assertEquals(2, state.items.size)
+        assertTrue(state.items[0] is ContentListItem.FormatSelector)
+        assertTrue(state.items[1] is ContentListItem.SearchField)
+        assertTrue(state.items.none { it.isContentItem })
+    }
+
+    @Test
+    fun topPokemonMode_initializesFormatIdFromParam() {
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 42))
+        assertEquals(42, logic.selectedFormatId.value)
+    }
+
     // --- updateSearchParams ---
 
     @Test

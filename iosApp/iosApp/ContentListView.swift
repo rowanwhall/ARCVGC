@@ -55,6 +55,7 @@ private struct SearchFiltersData {
 private enum ContentListHeader {
     case none
     case homeHero
+    case topPokemonHero
     case favoritesHero
     case pokemonHero(name: String, imageUrl: String?, typeImageUrls: [String])
     case playerHero(name: String)
@@ -71,6 +72,8 @@ private enum ContentListHeader {
             self = .pokemonHero(name: name, imageUrl: imageUrl, typeImageUrls: typeUrls)
         case .player(_, let name, _):
             self = .playerHero(name: name)
+        case .topPokemon:
+            self = .topPokemonHero
         case .search(let params):
             let chips = params.filters.enumerated().map { index, slot in
                 SearchFilterChipData(
@@ -110,6 +113,7 @@ struct ContentListView: View {
     @State private var selectedBattleId: Int32? = nil
     @State private var pokemonNavTarget: PokemonNavTarget? = nil
     @State private var playerNavTarget: PlayerNavTarget? = nil
+    @State private var topPokemonFormatId: Int32? = nil
     @EnvironmentObject private var container: DependencyContainer
 
     private let repository: BattleRepository
@@ -150,7 +154,7 @@ struct ContentListView: View {
 
     private var showShareButton: Bool {
         switch mode {
-        case .home, .favorites: return false
+        case .home, .favorites, .topPokemon: return false
         default: return true
         }
     }
@@ -219,6 +223,17 @@ struct ContentListView: View {
                     if case .homeHero = header {
                         VStack(spacing: 0) {
                             Text("ARC")
+                                .font(.system(size: 34, weight: .bold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 24)
+                        .padding(.bottom, 8)
+                    }
+
+                    if case .topPokemonHero = header {
+                        VStack(spacing: 0) {
+                            Text("Top Pokémon")
                                 .font(.system(size: 34, weight: .bold))
                         }
                         .frame(maxWidth: .infinity)
@@ -329,6 +344,13 @@ struct ContentListView: View {
                                         }
                                         .padding(.horizontal, 16)
                                     }
+                                case .searchField:
+                                    TextField("", text: Binding(
+                                        get: { viewModel.searchQuery },
+                                        set: { viewModel.setSearchQuery($0) }
+                                    ), prompt: Text("Search Pokémon").foregroundColor(Color(.secondaryLabel)))
+                                        .outlinedTextFieldStyle()
+                                        .padding(.horizontal, 16)
                                 default:
                                     EmptyView()
                                 }
@@ -349,7 +371,7 @@ struct ContentListView: View {
                                     isLoading: isLoadingSection,
                                     sortOrder: showSort ? viewModel.sortOrder : nil,
                                     onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil,
-                                    onSeeMore: hasSeeMore ? { } : nil
+                                    onSeeMore: hasSeeMore ? { topPokemonFormatId = viewModel.selectedFormatId } : nil
                                 )
                                 .padding(.horizontal, 16)
                                 if section.items.isEmpty && !isLoadingSection {
@@ -381,6 +403,13 @@ struct ContentListView: View {
                                     }
                                     .padding(.horizontal, 16)
                                 }
+                            case .searchField:
+                                TextField("", text: Binding(
+                                    get: { viewModel.searchQuery },
+                                    set: { viewModel.setSearchQuery($0) }
+                                ), prompt: Text("Search Pokémon").foregroundColor(Color(.secondaryLabel)))
+                                    .outlinedTextFieldStyle()
+                                    .padding(.horizontal, 16)
                             default:
                                 contentItemView(item)
                                     .padding(.horizontal, item.edgeToEdge ? 0 : 16)
@@ -410,8 +439,8 @@ struct ContentListView: View {
         .toolbar { toolbarContent }
         .background(Color(.secondarySystemBackground))
         .sheet(isPresented: Binding(
-            get: { selectedBattleId != nil && pokemonNavTarget == nil && playerNavTarget == nil },
-            set: { if !$0 && pokemonNavTarget == nil && playerNavTarget == nil { selectedBattleId = nil } }
+            get: { selectedBattleId != nil && pokemonNavTarget == nil && playerNavTarget == nil && topPokemonFormatId == nil },
+            set: { if !$0 && pokemonNavTarget == nil && playerNavTarget == nil && topPokemonFormatId == nil { selectedBattleId = nil } }
         )) {
             if let battleId = selectedBattleId {
                 battleDetailSheetContent(battleId: battleId)
@@ -445,6 +474,20 @@ struct ContentListView: View {
                 )
             }
         }
+        .navigationDestination(isPresented: Binding(
+            get: { topPokemonFormatId != nil },
+            set: { if !$0 { topPokemonFormatId = nil } }
+        )) {
+            if let formatId = topPokemonFormatId {
+                ContentListView(
+                    repository: repository,
+                    mode: .topPokemon(formatId: formatId),
+                    favoritesStore: favoritesStore,
+                    settingsStore: settingsStore,
+                    appConfigStore: appConfigStore
+                )
+            }
+        }
         .onAppear {
             if viewModel.state.items.isEmpty {
                 viewModel.loadContent()
@@ -470,14 +513,27 @@ struct ContentListView: View {
                 selectedBattleId = battleItem.uiModel.id
             }
         case .pokemon(let pokemonItem):
-            SimplePokemonRow(
-                imageUrl: pokemonItem.imageUrl,
-                name: pokemonItem.name,
-                types: pokemonItem.types.map { (name: $0.name, imageUrl: $0.imageUrl) },
-                circleSize: 40,
-                spriteSize: 56,
-                fontWeight: .medium
-            )
+            HStack(spacing: 12) {
+                PokemonAvatar(
+                    imageUrl: pokemonItem.imageUrl,
+                    circleSize: 40,
+                    spriteSize: 56
+                )
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(pokemonItem.name)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(Color(.label))
+                    if let pct = pokemonItem.usagePercent {
+                        Text(pct)
+                            .font(.subheadline)
+                            .foregroundColor(Color(.secondaryLabel))
+                    }
+                }
+                Spacer()
+                TypeIconRow(types: pokemonItem.types.map { (name: $0.name, imageUrl: $0.imageUrl) })
+            }
+            .contentShape(Rectangle())
             .padding(.vertical, 4)
             .padding(.horizontal, 12)
             .background(Color(.systemBackground))
@@ -487,6 +543,7 @@ struct ContentListView: View {
                 let derivedFormatId: Int32? = {
                     switch mode {
                     case .home: return viewModel.selectedFormatId
+                    case .topPokemon: return viewModel.selectedFormatId
                     case .search(let params): return params.formatId
                     case .pokemon: return viewModel.selectedFormatId
                     case .player: return viewModel.selectedFormatId
@@ -516,6 +573,7 @@ struct ContentListView: View {
                 let derivedFormatId: Int32? = {
                     switch mode {
                     case .home: return viewModel.selectedFormatId
+                    case .topPokemon: return viewModel.selectedFormatId
                     case .search(let params): return params.formatId
                     case .pokemon: return viewModel.selectedFormatId
                     case .player: return viewModel.selectedFormatId
@@ -631,6 +689,8 @@ struct ContentListView: View {
         case .section:
             EmptyView()
         case .formatSelector:
+            EmptyView()
+        case .searchField:
             EmptyView()
         }
     }
@@ -907,6 +967,9 @@ private struct SectionHeaderView: View {
                             .font(.system(size: 10, weight: .semibold))
                     }
                     .foregroundColor(Color(.secondaryLabel))
+                    .padding(.horizontal, 8)
+                    .frame(height: 28)
+                    .contentShape(Rectangle())
                 }
             }
         }
