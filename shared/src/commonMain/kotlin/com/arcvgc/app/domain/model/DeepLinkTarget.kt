@@ -13,6 +13,7 @@ sealed class DeepLinkTarget {
     data class Search(val params: SearchQueryParams) : DeepLinkTarget()
     data object SearchTab : DeepLinkTarget()
     data object SettingsTab : DeepLinkTarget()
+    data class TopPokemon(val formatId: Int? = null) : DeepLinkTarget()
 }
 
 data class SearchQueryParams(
@@ -62,6 +63,8 @@ fun parseDeepLink(path: String): DeepLink? {
             DeepLinkTarget.SearchTab
         segments.size == 1 && segments[0] == "settings" ->
             DeepLinkTarget.SettingsTab
+        segments.size == 1 && segments[0] == "top-pokemon" ->
+            DeepLinkTarget.TopPokemon(formatId = queryParams["f"]?.toIntOrNull())
         // Root path (/) or /?battle=X
         segments.size == 1 && segments[0].isEmpty() ->
             DeepLinkTarget.Home
@@ -164,6 +167,10 @@ fun encodeSearchPath(params: SearchParams): String {
     params.playerName?.takeIf { it.isNotBlank() }?.let { parts.add("player=${encodePercent(it)}") }
 
     return "/search?${parts.joinToString("&")}"
+}
+
+fun encodeTopPokemonPath(formatId: Int?): String {
+    return if (formatId != null) "/top-pokemon?f=$formatId" else "/top-pokemon"
 }
 
 fun appendBattleParam(basePath: String, battleId: Int?): String {

@@ -10,6 +10,8 @@ All shared models live in `shared/.../ui/model/`.
 
 Sealed class defining the six modes. Each mode maps to a header via `toHeaderUiModel()`.
 
+**When adding a new mode**, you must also integrate it into the deep linking system (shared parser, resolver, per-platform handling, web browser history, tests, docs). See the "Deep Linking" checklist in `.claude/rules/coding-conventions.md` and the URL scheme table in [`docs/navigation.md`](navigation.md).
+
 | Mode | Parameters | Header | Sort toggle | Pagination |
 |---|---|---|---|---|
 | `Home` | — | `HomeHero` | No (has format selector) | Yes |

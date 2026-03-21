@@ -198,6 +198,57 @@ class DeepLinkTargetTest {
         assertEquals("Wolfe Glick", (result.target as DeepLinkTarget.Search).params.playerName)
     }
 
+    // TopPokemon deep links
+
+    @Test
+    fun parseTopPokemonLink() {
+        val result = parseDeepLink("/top-pokemon")!!
+        assertIs<DeepLinkTarget.TopPokemon>(result.target)
+        assertNull((result.target as DeepLinkTarget.TopPokemon).formatId)
+        assertNull(result.battleId)
+    }
+
+    @Test
+    fun parseTopPokemonWithFormat() {
+        val result = parseDeepLink("/top-pokemon?f=5")!!
+        assertIs<DeepLinkTarget.TopPokemon>(result.target)
+        assertEquals(5, (result.target as DeepLinkTarget.TopPokemon).formatId)
+        assertNull(result.battleId)
+    }
+
+    @Test
+    fun parseTopPokemonWithBattle() {
+        val result = parseDeepLink("/top-pokemon?battle=42")!!
+        assertIs<DeepLinkTarget.TopPokemon>(result.target)
+        assertNull((result.target as DeepLinkTarget.TopPokemon).formatId)
+        assertEquals(42, result.battleId)
+    }
+
+    @Test
+    fun parseTopPokemonWithFormatAndBattle() {
+        val result = parseDeepLink("/top-pokemon?f=5&battle=42")!!
+        assertIs<DeepLinkTarget.TopPokemon>(result.target)
+        assertEquals(5, (result.target as DeepLinkTarget.TopPokemon).formatId)
+        assertEquals(42, result.battleId)
+    }
+
+    @Test
+    fun encodeTopPokemonPathRoundTrip() {
+        val encoded = encodeTopPokemonPath(5)
+        val parsed = parseDeepLink(encoded)!!
+        assertIs<DeepLinkTarget.TopPokemon>(parsed.target)
+        assertEquals(5, (parsed.target as DeepLinkTarget.TopPokemon).formatId)
+    }
+
+    @Test
+    fun encodeTopPokemonPathNullFormat() {
+        val encoded = encodeTopPokemonPath(null)
+        assertEquals("/top-pokemon", encoded)
+        val parsed = parseDeepLink(encoded)!!
+        assertIs<DeepLinkTarget.TopPokemon>(parsed.target)
+        assertNull((parsed.target as DeepLinkTarget.TopPokemon).formatId)
+    }
+
     // Tab deep links
 
     @Test

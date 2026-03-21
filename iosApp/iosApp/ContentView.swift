@@ -143,6 +143,11 @@ private struct ThemedContentView: View {
             case .settingsTab:
                 selectedTab = 3
                 deepLinkNavTarget = nil
+            case .topPokemon:
+                // TopPokemon is managed as local state within ContentListView;
+                // deep link navigates to Home tab (TopPokemon defaults from config)
+                selectedTab = 0
+                deepLinkNavTarget = nil
             }
 
             // Clear battleId after SwiftUI has created views with it,

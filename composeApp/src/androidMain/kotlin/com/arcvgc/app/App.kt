@@ -248,6 +248,11 @@ fun App(deepLink: DeepLink? = null) {
                         is DeepLinkResolver.ResolvedLink.SettingsTab -> {
                             selectedTab = 3
                         }
+                        is DeepLinkResolver.ResolvedLink.TopPokemon -> {
+                            deepLinkOverlay = ContentListMode.TopPokemon(
+                                formatId = resolved.formatId
+                            )
+                        }
                         null -> {}
                     }
                 } catch (_: Exception) {}

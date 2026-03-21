@@ -75,6 +75,7 @@ import com.arcvgc.app.ui.contentlist.ContentListPage
 import com.arcvgc.app.data.DeepLinkResolver
 import com.arcvgc.app.domain.model.appendBattleParam
 import com.arcvgc.app.domain.model.encodeSearchPath
+import com.arcvgc.app.domain.model.encodeTopPokemonPath
 import com.arcvgc.app.domain.model.parseDeepLink
 import com.arcvgc.app.network.normalizeImageUrl
 import com.arcvgc.app.ui.model.FavoriteContentType
@@ -333,6 +334,11 @@ fun WebApp() {
                         }
                         is DeepLinkResolver.ResolvedLink.SettingsTab -> {
                             selectedTab = 3
+                        }
+                        is DeepLinkResolver.ResolvedLink.TopPokemon -> {
+                            val entry = NavEntry.TopPokemon(resolved.formatId)
+                            navStack = navStack + entry
+                            desktopNavStack = listOf(entry)
                         }
                     }
                     replaceHistoryStateWithPath(path)
@@ -626,6 +632,7 @@ private fun DesktopLayout(
                     modifier = contentModifier,
                     onPokemonClick = desktopPokemonClick,
                     onPlayerClick = desktopPlayerClick,
+                    onTopPokemonClick = { formatId -> onPushDesktopEntry(NavEntry.TopPokemon(formatId)) },
                     initialBattleId = initialBattleId
                 )
                 Tab.Search -> SearchPage(modifier = contentModifier, onSearch = onSearch)
@@ -659,7 +666,7 @@ private fun navEntryToPath(entry: NavEntry): String = when (entry) {
     is NavEntry.BattleDetail -> "/battle/${entry.request.battleId}"
     is NavEntry.Pokemon -> "/pokemon/${entry.id}"
     is NavEntry.Player -> "/player/${entry.name}"
-    is NavEntry.TopPokemon -> "/top-pokemon"
+    is NavEntry.TopPokemon -> encodeTopPokemonPath(entry.formatId)
 }
 
 @Composable

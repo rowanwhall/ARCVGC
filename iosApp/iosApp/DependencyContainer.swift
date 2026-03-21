@@ -9,6 +9,7 @@ enum ResolvedDeepLink: Equatable {
     case search(params: SearchParams)
     case searchTab
     case settingsTab
+    case topPokemon(formatId: Int32?)
 }
 
 @MainActor
@@ -86,6 +87,8 @@ final class DependencyContainer: ObservableObject {
                 pendingDeepLink = .searchTab
             case .settingsTab:
                 pendingDeepLink = .settingsTab
+            case .topPokemon(let topPokemon):
+                pendingDeepLink = .topPokemon(formatId: topPokemon.formatId?.int32Value)
             }
         }
     }

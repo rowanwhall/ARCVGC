@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.appendBattleParam
 import com.arcvgc.app.domain.model.encodeSearchPath
+import com.arcvgc.app.domain.model.encodeTopPokemonPath
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.replaceHistoryStateWithPath
@@ -142,7 +143,7 @@ fun ContentListPage(
         }
         is ContentListMode.Search -> encodeSearchPath(mode.params)
         is ContentListMode.Home -> "/"
-        is ContentListMode.TopPokemon -> "/top-pokemon"
+        is ContentListMode.TopPokemon -> encodeTopPokemonPath(mode.formatId)
     }
     LaunchedEffect(selectedBattleId) {
         val path = if (mode is ContentListMode.Home && selectedBattleId != null) {

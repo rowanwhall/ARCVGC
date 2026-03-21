@@ -108,6 +108,7 @@ All three platforms support deep links. Every page in the app is addressable via
 | Favorites sub-tab | `/favorites/{type}` | `arcvgc.com/favorites/pokemon` |
 | Search tab | `/search` | `arcvgc.com/search` |
 | Search results | `/search?p=...&f=...&order=...` | see search params below |
+| Top Pokémon | `/top-pokemon` or `/top-pokemon?f={formatId}` | `arcvgc.com/top-pokemon?f=5` |
 | Settings | `/settings` | `arcvgc.com/settings` |
 
 **Battle detail as query param:** Any root URL can have `?battle={id}` appended to open a battle detail pane/sheet alongside the root page. On desktop web, the root page renders in the left pane and the battle detail in the right pane. On mobile apps, the root page renders behind the battle detail sheet. On mobile web, the root is ignored (full-screen battle overlay). Examples:
@@ -122,7 +123,7 @@ All three platforms support deep links. Every page in the app is addressable via
 ### Shared module
 
 - `DeepLink` data class (wraps `DeepLinkTarget` + optional `battleId`) returned by `parseDeepLink(path)` in `shared/.../domain/model/DeepLinkTarget.kt`
-- `DeepLinkTarget` sealed class: `Home`, `Pokemon`, `Player`, `Favorites`, `Search`, `SearchTab`, `SettingsTab`
+- `DeepLinkTarget` sealed class: `Home`, `Pokemon`, `Player`, `Favorites`, `Search`, `SearchTab`, `SettingsTab`, `TopPokemon`
 - `appendBattleParam(basePath, battleId)` appends `?battle=X` or `&battle=X` to any path
 - `DeepLinkResolver` resolves targets to navigation data (fetches Pokemon/Player display info from API, looks up items/tera types/formats from catalog providers) in `shared/.../data/DeepLinkResolver.kt`
 
