@@ -913,15 +913,17 @@ private fun ContentListContent(
                         when (topItem) {
                             is ContentListItem.Section -> {
                                 val isLoadingSection = topItem.header in uiState.loadingSections
-                                item(key = topItem.listKey) {
-                                    SectionHeader(
-                                        title = topItem.header,
-                                        isLoading = isLoadingSection,
-                                        sortOrder = if (topItem.header == "Battles") sortOrder else null,
-                                        onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                        onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
-                                        modifier = itemPadding
-                                    )
+                                if (topItem.header.isNotEmpty()) {
+                                    item(key = topItem.listKey) {
+                                        SectionHeader(
+                                            title = topItem.header,
+                                            isLoading = isLoadingSection,
+                                            sortOrder = if (topItem.header == "Battles") sortOrder else null,
+                                            onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
+                                            onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
+                                            modifier = itemPadding
+                                        )
+                                    }
                                 }
                                 if (topItem.items.isEmpty() && !isLoadingSection) {
                                     item(key = "${topItem.listKey}_empty") {

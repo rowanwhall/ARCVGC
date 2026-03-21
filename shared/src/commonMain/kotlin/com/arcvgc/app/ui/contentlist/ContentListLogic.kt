@@ -247,7 +247,9 @@ class ContentListLogic(
             it.copy(items = buildList {
                 add(ContentListItem.FormatSelector)
                 add(ContentListItem.SearchField(query))
-                addAll(filtered)
+                if (filtered.isNotEmpty()) {
+                    add(ContentListItem.Section("", filtered))
+                }
             })
         }
     }
@@ -296,7 +298,7 @@ class ContentListLogic(
 
     private fun reloadSections(): Set<String> = when (mode) {
         is ContentListMode.Home -> setOf("format_selector", "Top Pokémon", "Today's Top Battles")
-        is ContentListMode.TopPokemon -> setOf("format_selector")
+        is ContentListMode.TopPokemon -> setOf("format_selector", "")
         is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles")
         else -> setOf("Battles")
     }
@@ -518,7 +520,9 @@ class ContentListLogic(
             val items = buildList {
                 add(ContentListItem.FormatSelector)
                 add(ContentListItem.SearchField(""))
-                addAll(allTopPokemonItems)
+                if (allTopPokemonItems.isNotEmpty()) {
+                    add(ContentListItem.Section("", allTopPokemonItems))
+                }
             }
             items to Pagination(1, allTopPokemonItems.size, allTopPokemonItems.size, 1)
         }

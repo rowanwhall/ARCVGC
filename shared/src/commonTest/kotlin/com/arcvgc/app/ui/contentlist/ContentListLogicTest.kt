@@ -822,7 +822,10 @@ class ContentListLogicTest {
         assertNull(state.error)
         assertTrue(state.items[0] is ContentListItem.FormatSelector)
         assertTrue(state.items[1] is ContentListItem.SearchField)
-        assertTrue(state.items[2] is ContentListItem.Pokemon)
+        assertTrue(state.items[2] is ContentListItem.Section)
+        val section = state.items[2] as ContentListItem.Section
+        assertTrue(section.header.isEmpty())
+        assertTrue(section.items.first() is ContentListItem.Pokemon)
         assertFalse(state.canPaginate)
     }
 
@@ -834,7 +837,8 @@ class ContentListLogicTest {
         logic.initialize()
         testScope.advanceUntilIdle()
 
-        val pokemon = logic.uiState.value.items.filterIsInstance<ContentListItem.Pokemon>().first()
+        val section = logic.uiState.value.items.filterIsInstance<ContentListItem.Section>().first()
+        val pokemon = section.items.first() as ContentListItem.Pokemon
         assertEquals("50.00%", pokemon.usagePercent)
     }
 
@@ -852,16 +856,20 @@ class ContentListLogicTest {
         logic.initialize()
         testScope.advanceUntilIdle()
 
-        assertEquals(4, logic.uiState.value.items.size) // FormatSelector + SearchField + 2 Pokemon
+        // FormatSelector + SearchField + Section(2 Pokemon)
+        assertEquals(3, logic.uiState.value.items.size)
+        val fullSection = logic.uiState.value.items[2] as ContentListItem.Section
+        assertEquals(2, fullSection.items.size)
 
         logic.setSearchQuery("pika")
         testScope.advanceUntilIdle()
 
         val items = logic.uiState.value.items
-        assertEquals(3, items.size) // FormatSelector + SearchField + 1 Pokemon
-        val pokemon = items.filterIsInstance<ContentListItem.Pokemon>()
-        assertEquals(1, pokemon.size)
-        assertEquals("Pikachu", pokemon.first().name)
+        // FormatSelector + SearchField + Section(1 Pokemon)
+        assertEquals(3, items.size)
+        val filteredSection = items[2] as ContentListItem.Section
+        assertEquals(1, filteredSection.items.size)
+        assertEquals("Pikachu", (filteredSection.items.first() as ContentListItem.Pokemon).name)
     }
 
     @Test

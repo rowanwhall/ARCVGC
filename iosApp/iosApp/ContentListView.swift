@@ -366,14 +366,16 @@ struct ContentListView: View {
                                 let showSort = section.header == "Battles" && hasSortToggle
                                 let isLoadingSection = viewModel.state.loadingSections.contains(section.header)
                                 let hasSeeMore = section.trailingAction is ContentListItem.SectionActionSeeMore
-                                SectionHeaderView(
-                                    title: section.header,
-                                    isLoading: isLoadingSection,
-                                    sortOrder: showSort ? viewModel.sortOrder : nil,
-                                    onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil,
-                                    onSeeMore: hasSeeMore ? { topPokemonFormatId = viewModel.selectedFormatId } : nil
-                                )
-                                .padding(.horizontal, 16)
+                                if !section.header.isEmpty {
+                                    SectionHeaderView(
+                                        title: section.header,
+                                        isLoading: isLoadingSection,
+                                        sortOrder: showSort ? viewModel.sortOrder : nil,
+                                        onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil,
+                                        onSeeMore: hasSeeMore ? { topPokemonFormatId = viewModel.selectedFormatId } : nil
+                                    )
+                                    .padding(.horizontal, 16)
+                                }
                                 if section.items.isEmpty && !isLoadingSection {
                                     BattleEmptyView()
                                         .frame(maxWidth: .infinity)
