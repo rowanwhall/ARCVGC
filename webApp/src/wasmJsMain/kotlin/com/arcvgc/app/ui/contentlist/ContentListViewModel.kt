@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arcvgc.app.data.AppConfigRepository
 import com.arcvgc.app.data.BattleRepository
+import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.FormatCatalogRepository
@@ -18,7 +19,7 @@ class ContentListViewModel(
     val favoritesRepository: FavoritesRepository,
     mode: ContentListMode = ContentListMode.Home,
     pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
-    appConfigRepository: AppConfigRepository,
+    private val appConfigRepository: AppConfigRepository,
     private val formatCatalogRepository: FormatCatalogRepository? = null,
     pokemonCatalogRepository: PokemonCatalogRepository? = null
 ) : ViewModel() {
@@ -40,6 +41,8 @@ class ContentListViewModel(
 
     val formatCatalogState: StateFlow<CatalogState<FormatUiModel>>?
         get() = formatCatalogRepository?.state
+
+    val appConfigState: StateFlow<AppConfig?> = appConfigRepository.config
 
     // Persisted UI state for restoration on back navigation
     var savedBattleId: Int? = null

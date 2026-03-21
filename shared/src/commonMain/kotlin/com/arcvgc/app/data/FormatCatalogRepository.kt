@@ -12,8 +12,7 @@ import kotlinx.coroutines.launch
 
 class FormatCatalogRepository(
     private val apiService: ApiService,
-    private val cacheStorage: CatalogCacheStorageApi,
-    private val defaultFormatIdProvider: () -> Int? = { null }
+    private val cacheStorage: CatalogCacheStorageApi
 ) {
     private val scope = createSafeScope()
     private val _state = MutableStateFlow(CatalogState<FormatUiModel>(isLoading = true))
@@ -33,7 +32,7 @@ class FormatCatalogRepository(
                     cacheStorage, CACHE_KEY, CatalogCache.TTL_7_DAYS, FormatUiModel.serializer()
                 )
                 if (cached != null) {
-                    _state.value = CatalogState(items = sortFormats(cached))
+                    _state.value = CatalogState(items = cached)
                     return@launch
                 }
 
@@ -41,7 +40,7 @@ class FormatCatalogRepository(
                     fetch = { limit, page -> apiService.getFormats(limit, page) },
                     map = { FormatUiMapper.mapList(it) }
                 )
-                val items = sortFormats(result.items ?: emptyList())
+                val items = result.items ?: emptyList()
                 _state.value = CatalogState(items = items, error = result.error)
                 if (result.error == null && items.isNotEmpty()) {
                     CatalogCache.save(cacheStorage, CACHE_KEY, items, FormatUiModel.serializer())
@@ -50,14 +49,6 @@ class FormatCatalogRepository(
                 _state.value = CatalogState(error = e.message ?: "Unknown error")
             }
         }
-    }
-
-    private fun sortFormats(formats: List<FormatUiModel>): List<FormatUiModel> {
-        val defaultId = defaultFormatIdProvider()
-        val sorted = formats.sortedByDescending { it.id }
-        if (defaultId == null) return sorted
-        val defaultFormat = sorted.find { it.id == defaultId } ?: return sorted
-        return listOf(defaultFormat) + sorted.filter { it.id != defaultId }
     }
 
     companion object {

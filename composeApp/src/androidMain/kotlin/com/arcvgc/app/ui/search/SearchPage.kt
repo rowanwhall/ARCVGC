@@ -43,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.ui.model.FormatSorter
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -61,6 +62,10 @@ fun SearchPage(
     val itemCatalog by viewModel.itemCatalogState.collectAsStateWithLifecycle()
     val teraTypeCatalog by viewModel.teraTypeCatalogState.collectAsStateWithLifecycle()
     val formatCatalog by viewModel.formatCatalogState.collectAsStateWithLifecycle()
+    val appConfig by viewModel.appConfigState.collectAsStateWithLifecycle()
+    val sortedFormatCatalog = remember(formatCatalog, appConfig) {
+        formatCatalog.copy(items = FormatSorter.sorted(formatCatalog.items, appConfig?.defaultFormat?.id))
+    }
 
     var showPokemonPicker by remember { mutableStateOf(false) }
     var itemPickerSlotIndex by remember { mutableIntStateOf(-1) }
@@ -93,7 +98,7 @@ fun SearchPage(
         // Format button (first — sets context for all other filters)
         item {
             when {
-                formatCatalog.isLoading -> {
+                sortedFormatCatalog.isLoading -> {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -109,9 +114,9 @@ fun SearchPage(
                         )
                     }
                 }
-                formatCatalog.error == null -> {
+                sortedFormatCatalog.error == null -> {
                     val displayName = uiState.selectedFormat?.displayName
-                        ?: formatCatalog.items.firstOrNull()?.displayName
+                        ?: sortedFormatCatalog.items.firstOrNull()?.displayName
                     SearchOptionButton(
                         text = "Format: ${displayName ?: "Select"}",
                         onClick = { showFormatPicker = true }
@@ -266,10 +271,10 @@ fun SearchPage(
                         )
                     }
                     val resolvedFormatId = uiState.selectedFormat?.id
-                        ?: formatCatalog.items.firstOrNull()?.id
+                        ?: sortedFormatCatalog.items.firstOrNull()?.id
                         ?: 1
                     val resolvedFormatName = uiState.selectedFormat?.displayName
-                        ?: formatCatalog.items.firstOrNull()?.displayName
+                        ?: sortedFormatCatalog.items.firstOrNull()?.displayName
                     val resolvedOrderBy = uiState.selectedOrderBy
                     onSearch(
                         SearchParams(
@@ -334,7 +339,7 @@ fun SearchPage(
     // Format picker sheet
     if (showFormatPicker) {
         FormatPickerSheet(
-            catalogState = formatCatalog,
+            catalogState = sortedFormatCatalog,
             onSelect = { format ->
                 viewModel.setFormat(format)
                 showFormatPicker = false

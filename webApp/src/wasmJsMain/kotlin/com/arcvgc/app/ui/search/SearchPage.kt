@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
@@ -72,6 +73,10 @@ fun SearchPage(
     val itemCatalog by viewModel.itemCatalogState.collectAsState()
     val teraTypeCatalog by viewModel.teraTypeCatalogState.collectAsState()
     val formatCatalog by viewModel.formatCatalogState.collectAsState()
+    val appConfig by viewModel.appConfigState.collectAsState()
+    val sortedFormatCatalog = remember(formatCatalog, appConfig) {
+        formatCatalog.copy(items = FormatSorter.sorted(formatCatalog.items, appConfig?.defaultFormat?.id))
+    }
 
     val todayMillis = remember { currentTimeMillis() }
 
@@ -108,7 +113,7 @@ fun SearchPage(
         // Format button (first — sets context for all other filters)
         item {
             when {
-                formatCatalog.isLoading -> {
+                sortedFormatCatalog.isLoading -> {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -124,9 +129,9 @@ fun SearchPage(
                         )
                     }
                 }
-                formatCatalog.error == null -> {
+                sortedFormatCatalog.error == null -> {
                     val displayName = uiState.selectedFormat?.displayName
-                        ?: formatCatalog.items.firstOrNull()?.displayName
+                        ?: sortedFormatCatalog.items.firstOrNull()?.displayName
                     SearchOptionButton(
                         text = "Format: ${displayName ?: "Select"}",
                         onClick = { showFormatPicker = true }
@@ -280,10 +285,10 @@ fun SearchPage(
                         )
                     }
                     val resolvedFormatId = uiState.selectedFormat?.id
-                        ?: formatCatalog.items.firstOrNull()?.id
+                        ?: sortedFormatCatalog.items.firstOrNull()?.id
                         ?: 1
                     val resolvedFormatName = uiState.selectedFormat?.displayName
-                        ?: formatCatalog.items.firstOrNull()?.displayName
+                        ?: sortedFormatCatalog.items.firstOrNull()?.displayName
                     val resolvedOrderBy = uiState.selectedOrderBy
                     onSearch(
                         SearchParams(
@@ -352,7 +357,7 @@ fun SearchPage(
 
     if (showFormatPicker) {
         FormatPickerDialog(
-            catalogState = formatCatalog,
+            catalogState = sortedFormatCatalog,
             onSelect = { format ->
                 viewModel.setFormat(format)
                 showFormatPicker = false

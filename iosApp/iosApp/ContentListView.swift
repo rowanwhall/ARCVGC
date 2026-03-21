@@ -24,9 +24,13 @@ struct ContentListView: View {
 
     private let appConfigStore: AppConfigStore?
 
-    /// Live format items from the catalog store, available for the dropdown and child navigation.
+    /// Live format items from the catalog store, sorted with default format first.
     private var formatItems: [FormatUiModel] {
-        container.catalogStore.formatItems
+        let defaultId = appConfigStore?.config?.defaultFormat.id
+        return FormatSorter.shared.sorted(
+            formats: container.catalogStore.formatItems,
+            defaultFormatId: defaultId.map { KotlinInt(int: $0) }
+        )
     }
 
     init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], onSearchParamsChanged: ((SearchParams) -> Void)? = nil, initialBattleId: Int32? = nil) {

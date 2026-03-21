@@ -8,6 +8,7 @@ import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.ItemCatalogRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
 import com.arcvgc.app.data.repository.TeraTypeCatalogRepository
+import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -62,6 +63,8 @@ class SearchViewModel @Inject constructor(
 
     val formatCatalogState: StateFlow<CatalogState<FormatUiModel>> =
         formatCatalogRepository.state
+
+    val appConfigState: StateFlow<AppConfig?> = appConfigRepository.config
 
     fun addPokemon(pokemon: PokemonPickerUiModel) {
         _uiState.update { SearchStateReducer.addPokemon(it, pokemon) }

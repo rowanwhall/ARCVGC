@@ -21,12 +21,10 @@ final class CatalogStore: ObservableObject {
 
     private let apiService: ApiService
     private let cacheStorage: CatalogCacheStorage
-    private let defaultFormatIdProvider: () -> Int32?
 
-    init(apiService: ApiService, cacheStorage: CatalogCacheStorage, defaultFormatIdProvider: @escaping () -> Int32? = { nil }) {
+    init(apiService: ApiService, cacheStorage: CatalogCacheStorage) {
         self.apiService = apiService
         self.cacheStorage = cacheStorage
-        self.defaultFormatIdProvider = defaultFormatIdProvider
         Task { await loadPokemonCatalog() }
         Task { await loadItemCatalog() }
         Task { await loadTeraTypeCatalog() }
@@ -85,19 +83,11 @@ final class CatalogStore: ObservableObject {
     private func loadFormatCatalog() async {
         if let result = try? await CatalogLoaderKt.loadFormatCatalog(apiService: apiService, cacheStorage: cacheStorage),
            let items = result.items as? [FormatUiModel] {
-            formatItems = sortFormats(items)
+            formatItems = items
         } else {
             formatError = "Failed to load formats"
         }
         formatLoading = false
     }
 
-    private func sortFormats(_ formats: [FormatUiModel]) -> [FormatUiModel] {
-        let sorted = formats.sorted { $0.id > $1.id }
-        guard let defaultId = defaultFormatIdProvider(),
-              let defaultFormat = sorted.first(where: { $0.id == defaultId }) else {
-            return sorted
-        }
-        return [defaultFormat] + sorted.filter { $0.id != defaultId }
-    }
 }

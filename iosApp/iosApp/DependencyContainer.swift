@@ -30,11 +30,9 @@ final class DependencyContainer: ObservableObject {
         self.favoritesStore = FavoritesStore()
         let cacheStorage = CatalogCacheStorage()
         self.appConfigStore = AppConfigStore(apiService: apiService, cacheStorage: cacheStorage)
-        let configStore = self.appConfigStore
         self.catalogStore = CatalogStore(
             apiService: apiService,
-            cacheStorage: cacheStorage,
-            defaultFormatIdProvider: { configStore.defaultFormatId }
+            cacheStorage: cacheStorage
         )
         let catalog = self.catalogStore
         self.deepLinkResolver = DeepLinkResolver(

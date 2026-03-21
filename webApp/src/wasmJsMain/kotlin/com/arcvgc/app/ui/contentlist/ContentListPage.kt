@@ -67,6 +67,7 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
+import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,6 +109,10 @@ fun ContentListPage(
     val favoritePlayerNames by viewModel.favoritesRepository.favoritePlayerNames.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
     val formatCatalogState = viewModel.formatCatalogState?.collectAsState()
+    val appConfig by viewModel.appConfigState.collectAsState()
+    val sortedFormats = remember(formatCatalogState?.value?.items, appConfig) {
+        FormatSorter.sorted(formatCatalogState?.value?.items ?: emptyList(), appConfig?.defaultFormat?.id)
+    }
     val selectedFormatId by viewModel.selectedFormatId.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     var selectedBattleId by remember(viewModel) { mutableStateOf(initialBattleId ?: viewModel.savedBattleId) }
@@ -312,7 +317,7 @@ fun ContentListPage(
                         is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
                         else -> null
                     },
-                    formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) formatCatalogState?.value?.items ?: emptyList() else emptyList(),
+                    formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) sortedFormats else emptyList(),
                     selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
                     onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
                     searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
@@ -411,7 +416,7 @@ fun ContentListPage(
                             is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
                             else -> null
                         },
-                        formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) formatCatalogState?.value?.items ?: emptyList() else emptyList(),
+                        formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) sortedFormats else emptyList(),
                         selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
                         onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
                         searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",

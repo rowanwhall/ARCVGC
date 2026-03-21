@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.contentlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.AppConfigRepositoryImpl
 import com.arcvgc.app.data.repository.BattleRepositoryImpl
 import com.arcvgc.app.data.repository.FavoritesRepository
@@ -30,6 +31,7 @@ class ContentListViewModel @Inject constructor(
     private var logic: ContentListLogic? = null
 
     val favoritesRepository: FavoritesRepository get() = favoritesRepositoryImpl
+    val appConfigRepository: AppConfigRepository get() = appConfigRepositoryImpl
 
     private val _uiState = MutableStateFlow(ContentListUiState())
     val uiState: StateFlow<ContentListUiState> = _uiState.asStateFlow()

@@ -43,6 +43,14 @@ struct SearchView: View {
         _searchParams = State(initialValue: initialSearchParams)
     }
 
+    private var sortedFormatItems: [FormatUiModel] {
+        let defaultId = appConfigStore.config?.defaultFormat.id
+        return FormatSorter.shared.sorted(
+            formats: sortedFormatItems,
+            defaultFormatId: defaultId.map { KotlinInt(int: $0) }
+        )
+    }
+
     private var searchEnabled: Bool {
         !viewModel.state.filterSlots.isEmpty
             || viewModel.minRating != nil
@@ -63,7 +71,7 @@ struct SearchView: View {
                             .disabled(true)
                     } else if catalogStore.formatError == nil {
                         let displayName = viewModel.state.selectedFormat?.displayName
-                            ?? catalogStore.formatItems.first?.displayName
+                            ?? sortedFormatItems.first?.displayName
                         SearchOptionButton(text: "Format: \(displayName ?? "Select")") {
                             activeSheet = .format
                         }
@@ -174,10 +182,10 @@ struct SearchView: View {
                             )
                         }
                         let resolvedFormatId = viewModel.state.selectedFormat?.id
-                            ?? catalogStore.formatItems.first?.id
+                            ?? sortedFormatItems.first?.id
                             ?? 1
                         let resolvedFormatName = viewModel.state.selectedFormat?.displayName
-                            ?? catalogStore.formatItems.first?.displayName
+                            ?? sortedFormatItems.first?.displayName
                         let resolvedOrderBy = viewModel.state.selectedOrderBy
                         searchParams = SearchParams(
                             filters: filters,
@@ -271,7 +279,7 @@ struct SearchView: View {
 
                 case .format:
                     FormatPickerSheet(
-                        items: catalogStore.formatItems,
+                        items: sortedFormatItems,
                         isLoading: catalogStore.formatLoading,
                         error: catalogStore.formatError
                     ) { format in
