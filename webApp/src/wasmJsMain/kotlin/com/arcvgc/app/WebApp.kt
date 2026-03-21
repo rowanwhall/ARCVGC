@@ -601,6 +601,13 @@ private fun DesktopLayout(
                     onPlayerClick = desktopPlayerClick,
                     initialBattleId = initialBattleId
                 )
+                is NavEntry.TopPokemon -> ContentListPage(
+                    mode = ContentListMode.TopPokemon(formatId = entry.formatId),
+                    onBack = onPopDesktopEntry,
+                    modifier = contentModifier,
+                    onPokemonClick = desktopPokemonClick,
+                    onPlayerClick = desktopPlayerClick
+                )
                 is NavEntry.BattleDetail -> {} // Desktop doesn't use BattleDetail entries
             }
         } else if (searchOverlayParams != null) {
@@ -645,12 +652,14 @@ private sealed class NavEntry {
         val formatId: Int? = null
     ) : NavEntry()
     data class Player(val id: Int, val name: String, val formatId: Int? = null) : NavEntry()
+    data class TopPokemon(val formatId: Int? = null) : NavEntry()
 }
 
 private fun navEntryToPath(entry: NavEntry): String = when (entry) {
     is NavEntry.BattleDetail -> "/battle/${entry.request.battleId}"
     is NavEntry.Pokemon -> "/pokemon/${entry.id}"
     is NavEntry.Player -> "/player/${entry.name}"
+    is NavEntry.TopPokemon -> "/top-pokemon"
 }
 
 @Composable
@@ -676,6 +685,9 @@ private fun MobileLayout(
     }
     val playerClick: (Int, String, Int?) -> Unit = { id, name, formatId ->
         onPushEntry(NavEntry.Player(id, name, formatId))
+    }
+    val topPokemonClick: (Int?) -> Unit = { formatId ->
+        onPushEntry(NavEntry.TopPokemon(formatId))
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -713,7 +725,8 @@ private fun MobileLayout(
                     Tab.Top -> ContentListPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding),
                         onPokemonClick = pokemonClick,
-                        onPlayerClick = playerClick
+                        onPlayerClick = playerClick,
+                        onTopPokemonClick = topPokemonClick
                     )
                     Tab.Search -> SearchPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -881,6 +894,15 @@ private fun NavEntryContent(
                     onPlayerClick = onPlayerClick
                 )
             }
+        }
+        is NavEntry.TopPokemon -> {
+            ContentListPage(
+                mode = ContentListMode.TopPokemon(formatId = entry.formatId),
+                onBack = { onPopEntry() },
+                modifier = Modifier.fillMaxSize(),
+                onPokemonClick = onPokemonClick,
+                onPlayerClick = onPlayerClick
+            )
         }
     }
 }

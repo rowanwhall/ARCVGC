@@ -261,8 +261,8 @@ struct ContentListView: View {
                             if imageUrl != nil {
                                 PokemonAvatar(
                                     imageUrl: imageUrl,
-                                    circleSize: 158,
-                                    spriteSize: 227
+                                    circleSize: 132,
+                                    spriteSize: 184
                                 )
                             }
                             Text(name)

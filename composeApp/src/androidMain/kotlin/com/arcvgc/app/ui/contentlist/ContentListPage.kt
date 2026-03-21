@@ -796,8 +796,8 @@ private fun ContentListContent(
                             PokemonAvatar(
                                 imageUrl = h.imageUrl,
                                 contentDescription = h.name,
-                                circleSize = 158.dp,
-                                spriteSize = 227.dp
+                                circleSize = 132.dp,
+                                spriteSize = 184.dp
                             )
                             Text(
                                 text = h.name,

@@ -112,6 +112,7 @@ fun ContentListPage(
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?) -> Unit)? = null,
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null,
+    onTopPokemonClick: ((formatId: Int?) -> Unit)? = null,
     initialBattleId: Int? = null
 ) {
     val viewModelKey = when (mode) {
@@ -207,7 +208,9 @@ fun ContentListPage(
     topPokemonFormatId?.let { formatId ->
         ContentListPage(
             mode = ContentListMode.TopPokemon(formatId = formatId),
-            onBack = { topPokemonFormatId = null }
+            onBack = { topPokemonFormatId = null },
+            onPokemonClick = onPokemonClick,
+            onPlayerClick = onPlayerClick
         )
         return
     }
@@ -348,7 +351,10 @@ fun ContentListPage(
                     onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
                     searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
                     onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
-                    onSeeMore = { topPokemonFormatId = viewModel.selectedFormatId.value },
+                    onSeeMore = {
+                        val fmtId = viewModel.selectedFormatId.value
+                        if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -444,7 +450,10 @@ fun ContentListPage(
                         onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
                         searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
                         onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
-                        onSeeMore = { topPokemonFormatId = viewModel.selectedFormatId.value },
+                        onSeeMore = {
+                        val fmtId = viewModel.selectedFormatId.value
+                        if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
+                    },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -907,8 +916,8 @@ private fun ContentListContent(
                         PokemonAvatar(
                             imageUrl = h.imageUrl,
                             contentDescription = h.name,
-                            circleSize = 158.dp,
-                            spriteSize = 227.dp
+                            circleSize = 132.dp,
+                            spriteSize = 184.dp
                         )
                         Text(
                             text = h.name,

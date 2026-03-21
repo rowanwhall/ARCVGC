@@ -94,4 +94,4 @@ Pokemon images use a consistent pattern: a smaller gray circle background (`surf
 - **BattleDetail**: 100dp circle / 144dp sprite
 - **SearchFilterCard**: 40dp circle / 56dp sprite
 - **PokemonPickerSheet**: 46dp circle / 64dp sprite
-- **PokemonHero**: 158dp circle / 227dp sprite
+- **PokemonHero**: 132dp circle / 184dp sprite
