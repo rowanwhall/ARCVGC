@@ -325,7 +325,7 @@ class ContentListLogicTest {
         val items = logic.uiState.value.items
         val sectionHeaders = items.filterIsInstance<ContentListItem.Section>().map { it.header }
         assertTrue(items[0] is ContentListItem.FormatSelector)
-        assertEquals(listOf("Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles"), sectionHeaders)
+        assertEquals(listOf("Top Teammates", "Top Items", "Top Tera Types", "Top Moves", "Top Abilities", "Battles"), sectionHeaders)
 
         // Verify usage percentages are formatted
         val teammatesGrid = (items[1] as ContentListItem.Section).items[0] as ContentListItem.PokemonGrid
@@ -905,6 +905,35 @@ class ContentListLogicTest {
         val filteredSection = items[2] as ContentListItem.Section
         assertEquals(1, filteredSection.items.size)
         assertEquals("Pikachu", (filteredSection.items.first() as ContentListItem.Pokemon).name)
+    }
+
+    @Test
+    fun topPokemonMode_setSearchQuery_noMatch_keepsSectionForFocusStability() {
+        fakeRepo.formatDetailResult = FormatDetail(
+            id = 1, name = "test", formattedName = null, matchCount = 100, teamCount = 1000,
+            topPokemon = listOf(
+                TopPokemon(id = 1, name = "Pikachu", pokedexNumber = 25, types = emptyList(), imageUrl = null, count = 500)
+            )
+        )
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        // Section present with content
+        assertEquals(3, logic.uiState.value.items.size)
+        assertTrue(logic.uiState.value.items.any { it.isContentItem })
+
+        // Filter to no matches — Section must still be present to prevent focus loss
+        logic.setSearchQuery("zzz")
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        assertEquals(3, items.size)
+        assertTrue(items[2] is ContentListItem.Section)
+        assertEquals(0, (items[2] as ContentListItem.Section).items.size)
+        // isContentItem remains true so the UI stays in the content branch
+        assertTrue(items.any { it.isContentItem })
     }
 
     @Test

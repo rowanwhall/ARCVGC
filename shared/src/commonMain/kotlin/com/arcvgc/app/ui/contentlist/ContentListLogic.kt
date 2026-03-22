@@ -247,9 +247,7 @@ class ContentListLogic(
             it.copy(items = buildList {
                 add(ContentListItem.FormatSelector)
                 add(ContentListItem.SearchField(query))
-                if (filtered.isNotEmpty()) {
-                    add(ContentListItem.Section("", filtered))
-                }
+                add(ContentListItem.Section("", filtered))
             })
         }
     }
