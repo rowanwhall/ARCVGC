@@ -8,6 +8,7 @@ struct ItemPickerSheet: View {
     let onSelect: (ItemUiModel) -> Void
 
     @State private var query = ""
+    @FocusState private var isSearchFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
     private var filtered: [ItemUiModel] {
@@ -38,7 +39,8 @@ struct ItemPickerSheet: View {
                 }
 
                 TextField("", text: $query, prompt: Text("Search Items").foregroundColor(Color(.secondaryLabel)))
-                    .outlinedTextFieldStyle()
+                    .focused($isSearchFocused)
+                    .outlinedTextFieldStyle(isFocused: isSearchFocused)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
             }

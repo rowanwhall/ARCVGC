@@ -8,6 +8,7 @@ struct FormatPickerSheet: View {
     let onSelect: (FormatUiModel) -> Void
 
     @State private var query = ""
+    @FocusState private var isSearchFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
     private var filtered: [FormatUiModel] {
@@ -42,7 +43,8 @@ struct FormatPickerSheet: View {
                 }
 
                 TextField("", text: $query, prompt: Text("Search Formats").foregroundColor(Color(.secondaryLabel)))
-                    .outlinedTextFieldStyle()
+                    .focused($isSearchFocused)
+                    .outlinedTextFieldStyle(isFocused: isSearchFocused)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
             }

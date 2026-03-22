@@ -7,6 +7,7 @@ struct ContentListView: View {
     @State private var pokemonNavTarget: PokemonNavTarget? = nil
     @State private var playerNavTarget: PlayerNavTarget? = nil
     @State private var topPokemonFormatId: Int32? = nil
+    @FocusState private var isSearchFieldFocused: Bool
     @EnvironmentObject private var container: DependencyContainer
 
     private let repository: BattleRepository
@@ -246,7 +247,8 @@ struct ContentListView: View {
                                         get: { viewModel.searchQuery },
                                         set: { viewModel.setSearchQuery($0) }
                                     ), prompt: Text("Search Pok\u{00E9}mon").foregroundColor(Color(.secondaryLabel)))
-                                        .outlinedTextFieldStyle()
+                                        .focused($isSearchFieldFocused)
+                                        .outlinedTextFieldStyle(isFocused: isSearchFieldFocused)
                                         .padding(.horizontal, 16)
                                 default:
                                     EmptyView()
@@ -307,7 +309,8 @@ struct ContentListView: View {
                                     get: { viewModel.searchQuery },
                                     set: { viewModel.setSearchQuery($0) }
                                 ), prompt: Text("Search Pok\u{00E9}mon").foregroundColor(Color(.secondaryLabel)))
-                                    .outlinedTextFieldStyle()
+                                    .focused($isSearchFieldFocused)
+                                    .outlinedTextFieldStyle(isFocused: isSearchFieldFocused)
                                     .padding(.horizontal, 16)
                             default:
                                 contentItemView(item)

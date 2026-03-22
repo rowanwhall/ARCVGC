@@ -9,6 +9,7 @@ struct PokemonPickerSheet: View {
     let onSelect: (PokemonPickerUiModel) -> Void
 
     @State private var query = ""
+    @FocusState private var isSearchFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
     private var filtered: [PokemonPickerUiModel] {
@@ -41,7 +42,8 @@ struct PokemonPickerSheet: View {
                 }
 
                 TextField("", text: $query, prompt: Text("Search Pokémon").foregroundColor(Color(.secondaryLabel)))
-                    .outlinedTextFieldStyle()
+                    .focused($isSearchFocused)
+                    .outlinedTextFieldStyle(isFocused: isSearchFocused)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
             }

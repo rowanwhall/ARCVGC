@@ -8,6 +8,7 @@ struct TeraTypePickerSheet: View {
     let onSelect: (TeraTypeUiModel) -> Void
 
     @State private var query = ""
+    @FocusState private var isSearchFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
     private var filtered: [TeraTypeUiModel] {
@@ -38,7 +39,8 @@ struct TeraTypePickerSheet: View {
                 }
 
                 TextField("", text: $query, prompt: Text("Search Tera Types").foregroundColor(Color(.secondaryLabel)))
-                    .outlinedTextFieldStyle()
+                    .focused($isSearchFocused)
+                    .outlinedTextFieldStyle(isFocused: isSearchFocused)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
             }

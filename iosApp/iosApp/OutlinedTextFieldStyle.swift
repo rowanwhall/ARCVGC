@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OutlinedTextFieldModifier: ViewModifier {
     @Environment(\.themeColor) private var themeColor
+    let isFocused: Bool
 
     func body(content: Content) -> some View {
         content
@@ -11,14 +12,14 @@ struct OutlinedTextFieldModifier: ViewModifier {
             .background(Color.clear)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(themeColor, lineWidth: 1.5)
+                    .stroke(isFocused ? themeColor : Color(.secondaryLabel), lineWidth: 1.5)
             )
             .foregroundColor(Color(.label))
     }
 }
 
 extension View {
-    func outlinedTextFieldStyle() -> some View {
-        modifier(OutlinedTextFieldModifier())
+    func outlinedTextFieldStyle(isFocused: Bool) -> some View {
+        modifier(OutlinedTextFieldModifier(isFocused: isFocused))
     }
 }

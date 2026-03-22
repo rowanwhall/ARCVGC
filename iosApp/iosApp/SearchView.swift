@@ -46,7 +46,7 @@ struct SearchView: View {
     private var sortedFormatItems: [FormatUiModel] {
         let defaultId = appConfigStore.config?.defaultFormat.id
         return FormatSorter.shared.sorted(
-            formats: sortedFormatItems,
+            formats: catalogStore.formatItems,
             defaultFormatId: defaultId.map { KotlinInt(int: $0) }
         )
     }

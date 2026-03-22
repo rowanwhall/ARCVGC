@@ -18,8 +18,8 @@ struct PlayerNamePickerSheet: View {
         NavigationStack {
             VStack(spacing: 12) {
                 TextField("", text: $text, prompt: Text("Enter player name").foregroundColor(Color(.secondaryLabel)))
-                    .outlinedTextFieldStyle()
                     .focused($isFocused)
+                    .outlinedTextFieldStyle(isFocused: isFocused)
                     .submitLabel(.done)
                     .onSubmit {
                         onConfirm(text.trimmingCharacters(in: .whitespaces))
