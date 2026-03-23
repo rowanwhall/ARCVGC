@@ -1,5 +1,14 @@
 package com.arcvgc.app
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -303,71 +312,105 @@ fun App(deepLink: DeepLink? = null) {
                 },
 
             ) { innerPadding ->
-                when (tabs[selectedTab]) {
-                    Tab.Top -> ContentListPage(
-                        modifier = Modifier.padding(innerPadding),
-                        consumeTopInsets = false
-                    )
-                    Tab.Search -> SearchPage(
-                        modifier = Modifier.padding(innerPadding),
-                        onSearch = { searchOverlayParams = it }
-                    )
-                    Tab.Favorites -> FavoritesPage(
-                        modifier = Modifier.padding(innerPadding),
-                        consumeTopInsets = false,
-                        initialSubTab = deepLinkFavoritesType?.let { type ->
-                            when (type) {
-                                FavoriteContentType.Battles -> 0
-                                FavoriteContentType.Pokemon -> 1
-                                FavoriteContentType.Players -> 2
+                AnimatedContent(
+                    targetState = selectedTab,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "tab_crossfade"
+                ) { tab ->
+                    when (tabs[tab]) {
+                        Tab.Top -> ContentListPage(
+                            modifier = Modifier.padding(innerPadding),
+                            consumeTopInsets = false
+                        )
+                        Tab.Search -> SearchPage(
+                            modifier = Modifier.padding(innerPadding),
+                            onSearch = { searchOverlayParams = it }
+                        )
+                        Tab.Favorites -> FavoritesPage(
+                            modifier = Modifier.padding(innerPadding),
+                            consumeTopInsets = false,
+                            initialSubTab = deepLinkFavoritesType?.let { type ->
+                                when (type) {
+                                    FavoriteContentType.Battles -> 0
+                                    FavoriteContentType.Pokemon -> 1
+                                    FavoriteContentType.Players -> 2
+                                }
                             }
-                        }
-                    )
-                    Tab.Settings -> SettingsPage(
-                        modifier = Modifier.padding(innerPadding)
+                        )
+                        Tab.Settings -> SettingsPage(
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
+                }
+            }
+
+            val lastSearchOverlayParams = rememberLastNonNull(searchOverlayParams)
+            AnimatedVisibility(
+                visible = searchOverlayParams != null,
+                enter = slideInHorizontally { it },
+                exit = slideOutHorizontally { it }
+            ) {
+                lastSearchOverlayParams?.let { params ->
+                    ContentListPage(
+                        mode = ContentListMode.Search(params),
+                        onBack = { searchOverlayParams = null },
+                        onSearchParamsChanged = { searchOverlayParams = it }
                     )
                 }
             }
 
-            searchOverlayParams?.let { params ->
-                ContentListPage(
-                    mode = ContentListMode.Search(params),
-                    onBack = { searchOverlayParams = null },
-                    onSearchParamsChanged = { searchOverlayParams = it }
-                )
-            }
-
-            deepLinkOverlay?.let { mode ->
-                ContentListPage(
-                    mode = mode,
-                    onBack = { deepLinkOverlay = null }
-                )
-            }
-
-            deepLinkBattleDetailId?.let { battleId ->
-                val battleDetailViewModel: BattleDetailViewModel = hiltViewModel(
-                    key = "deep_link_battle_detail_$battleId"
-                )
-                val battleDetailState by battleDetailViewModel.state.collectAsStateWithLifecycle()
-
-                LaunchedEffect(battleId) {
-                    battleDetailViewModel.loadBattleDetail(battleId)
+            val lastDeepLinkOverlay = rememberLastNonNull(deepLinkOverlay)
+            AnimatedVisibility(
+                visible = deepLinkOverlay != null,
+                enter = slideInHorizontally { it },
+                exit = slideOutHorizontally { it }
+            ) {
+                lastDeepLinkOverlay?.let { mode ->
+                    ContentListPage(
+                        mode = mode,
+                        onBack = { deepLinkOverlay = null }
+                    )
                 }
-
-                BattleDetailPage(
-                    state = battleDetailState,
-                    onBack = { deepLinkBattleDetailId = null },
-                    onRetry = { battleDetailViewModel.loadBattleDetail(battleId) },
-                    onViewReplay = { url -> deepLinkReplayUrl = url },
-                    modifier = Modifier.fillMaxSize()
-                )
             }
 
-            deepLinkReplayUrl?.let { url ->
-                ReplayOverlay(
-                    replayUrl = url,
-                    onDismiss = { deepLinkReplayUrl = null }
-                )
+            val lastDeepLinkBattleDetailId = rememberLastNonNull(deepLinkBattleDetailId)
+            AnimatedVisibility(
+                visible = deepLinkBattleDetailId != null,
+                enter = slideInHorizontally { it },
+                exit = slideOutHorizontally { it }
+            ) {
+                lastDeepLinkBattleDetailId?.let { battleId ->
+                    val battleDetailViewModel: BattleDetailViewModel = hiltViewModel(
+                        key = "deep_link_battle_detail_$battleId"
+                    )
+                    val battleDetailState by battleDetailViewModel.state.collectAsStateWithLifecycle()
+
+                    LaunchedEffect(battleId) {
+                        battleDetailViewModel.loadBattleDetail(battleId)
+                    }
+
+                    BattleDetailPage(
+                        state = battleDetailState,
+                        onBack = { deepLinkBattleDetailId = null },
+                        onRetry = { battleDetailViewModel.loadBattleDetail(battleId) },
+                        onViewReplay = { url -> deepLinkReplayUrl = url },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            val lastDeepLinkReplayUrl = rememberLastNonNull(deepLinkReplayUrl)
+            AnimatedVisibility(
+                visible = deepLinkReplayUrl != null,
+                enter = slideInVertically { it },
+                exit = slideOutVertically { it }
+            ) {
+                lastDeepLinkReplayUrl?.let { url ->
+                    ReplayOverlay(
+                        replayUrl = url,
+                        onDismiss = { deepLinkReplayUrl = null }
+                    )
+                }
             }
 
             val config by settingsViewModel.appConfigRepository.config.collectAsStateWithLifecycle()
@@ -387,4 +430,11 @@ fun App(deepLink: DeepLink? = null) {
             }
         }
     }
+}
+
+@Composable
+private fun <T> rememberLastNonNull(value: T?): T? {
+    var last by remember { mutableStateOf(value) }
+    if (value != null) last = value
+    return last
 }
