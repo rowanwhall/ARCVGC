@@ -557,7 +557,10 @@ class ContentListLogic(
 
                     if (profile.mostUsedPokemon.isNotEmpty()) {
                         val gridItems = profile.mostUsedPokemon.map {
-                            ContentListItem.PokemonGridItem(it.id, it.name, it.imageUrl)
+                            ContentListItem.PokemonGridItem(
+                                it.id, it.name, it.imageUrl,
+                                formatUsagePercent(it.usageCount, profile.matchCount)
+                            )
                         }
                         add(ContentListItem.Section("Favorite Pokémon", listOf(ContentListItem.PokemonGrid(gridItems))))
                     }

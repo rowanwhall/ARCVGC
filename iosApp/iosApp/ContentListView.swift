@@ -513,17 +513,22 @@ struct ContentListView: View {
                     Button {
                         selectedBattleId = button.battleId
                     } label: {
-                        VStack(spacing: 2) {
-                            Text(button.label)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(button.label)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(Color(.label))
+                                Text(String(button.rating))
+                                    .font(.subheadline)
+                                    .fontWeight(.regular)
+                                    .foregroundColor(Color(.label))
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
                                 .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(Color(.label))
-                            Text(String(button.rating))
-                                .font(.subheadline)
-                                .fontWeight(.regular)
-                                .foregroundColor(Color(.label))
+                                .foregroundColor(Color(.secondaryLabel))
                         }
-                        .frame(maxWidth: .infinity)
                         .padding(12)
                     }
                     .background(Color(.systemBackground))

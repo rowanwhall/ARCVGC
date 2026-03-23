@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -462,7 +463,7 @@ private fun ContentListContent(
     val toolbarSpacing = if (hasToolbar) ToolbarHeight + statusBarHeight else 0.dp
     val topPadding = toolbarSpacing + when (header) {
         is ContentListHeaderUiModel.PokemonHero -> 4.dp
-        is ContentListHeaderUiModel.PlayerHero -> 4.dp
+        is ContentListHeaderUiModel.PlayerHero -> 0.dp
         is ContentListHeaderUiModel.SearchFilters -> 8.dp
         is ContentListHeaderUiModel.FavoritesHero -> 16.dp
         else -> 16.dp
@@ -592,6 +593,7 @@ private fun ContentListContent(
                                 fontSize = 18.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
                                     .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             )
