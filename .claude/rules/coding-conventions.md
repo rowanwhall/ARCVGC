@@ -13,6 +13,7 @@ globs:
 - **Previews required**: All `@Composable` functions (Android) must include `@Preview` blocks. Use `PreviewAsyncImage` for any image that loads from a URL at runtime:
   - `PreviewAsyncImage(url, previewDrawable = R.drawable.preview_xxx, contentDescription, modifier)` — shows the drawable in `@Preview` mode (`LocalInspectionMode`), `AsyncImage` at runtime. Located in `composeApp/.../ui/components/PreviewAsyncImage.kt`.
   - Available preview assets: `preview_pokemon`, `preview_item`, `preview_tera`, `preview_type_1`, `preview_type_2`
+- **Gradient toolbar**: All Android pages with a back-navigation toolbar must use `GradientToolbarScaffold` (`composeApp/.../ui/components/GradientToolbarScaffold.kt`) instead of `Scaffold` + `TopAppBar`. It renders a transparent toolbar with a vertical gradient overlay so content scrolls underneath. Callers receive a `topPadding: Dp` in the content lambda — apply it as content padding *inside* the scrollable container (after `.verticalScroll()` / in `LazyColumn` `contentPadding`) so the content starts below the toolbar but scrolls under it.
 - Auto-sizing text: Android uses custom `AutoSizeText` composable (Compose Multiplatform 1.10.0 lacks `TextDefaults.AutoSize`)
 
 ## SwiftUI (iOS)

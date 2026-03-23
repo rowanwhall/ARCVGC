@@ -39,11 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -65,6 +61,8 @@ import com.arcvgc.app.ui.battledetail.BattleDetailViewModel
 import com.arcvgc.app.ui.battledetail.ReplayOverlay
 import com.arcvgc.app.ui.components.EmptyView
 import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.components.GradientToolbarHeight
+import com.arcvgc.app.ui.components.GradientToolbarScaffold
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.TypeIconRow
 import com.arcvgc.app.ui.components.TypeInfo
@@ -208,76 +206,58 @@ fun ContentListPage(
         )
 
         if (onBack != null) {
-            Box {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0f)
-                                )
-                            )
+            GradientToolbarScaffold(
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
                         )
-                )
-                TopAppBar(
-                    title = {},
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
+                    }
+                },
+                actions = {
+                    if (mode !is ContentListMode.TopPokemon) {
+                        val actionContext = LocalContext.current
+                        IconButton(onClick = {
+                            val url = shareUrlForMode(mode, null)
+                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                putExtra(Intent.EXTRA_TEXT, url)
+                                type = "text/plain"
+                            }
+                            actionContext.startActivity(Intent.createChooser(sendIntent, null))
+                        }) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    },
-                    actions = {
-                        if (mode !is ContentListMode.TopPokemon) {
-                            val actionContext = LocalContext.current
-                            IconButton(onClick = {
-                                val url = shareUrlForMode(mode, null)
-                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                    putExtra(Intent.EXTRA_TEXT, url)
-                                    type = "text/plain"
-                                }
-                                actionContext.startActivity(Intent.createChooser(sendIntent, null))
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = "Share",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                    }
+                    if (mode is ContentListMode.Pokemon) {
+                        val pId = mode.pokemonId
+                        val isFav = pId in favoritePokemonIds
+                        IconButton(onClick = { viewModel.favoritesRepository.togglePokemonFavorite(pId) }) {
+                            Icon(
+                                imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        if (mode is ContentListMode.Pokemon) {
-                            val pId = mode.pokemonId
-                            val isFav = pId in favoritePokemonIds
-                            IconButton(onClick = { viewModel.favoritesRepository.togglePokemonFavorite(pId) }) {
-                                Icon(
-                                    imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = if (isFav) "Unfavorite" else "Favorite",
-                                    tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                    }
+                    if (mode is ContentListMode.Player) {
+                        val pName = mode.playerName
+                        val isFav = pName in favoritePlayerNames
+                        IconButton(onClick = { viewModel.favoritesRepository.togglePlayerFavorite(pName) }) {
+                            Icon(
+                                imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        if (mode is ContentListMode.Player) {
-                            val pName = mode.playerName
-                            val isFav = pName in favoritePlayerNames
-                            IconButton(onClick = { viewModel.favoritesRepository.togglePlayerFavorite(pName) }) {
-                                Icon(
-                                    imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = if (isFav) "Unfavorite" else "Favorite",
-                                    tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    },
-                    windowInsets = if (consumeTopInsets) TopAppBarDefaults.windowInsets else WindowInsets(0),
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
-                )
-            }
+                    }
+                },
+                consumeTopInsets = consumeTopInsets
+            ) { /* topPadding unused — ContentListContent computes its own */ }
         }
 
         val lastSelectedBattleId = rememberLastNonNull(selectedBattleId)
@@ -417,7 +397,6 @@ private fun <T> rememberLastNonNull(value: T?): T? {
     return last
 }
 
-private val ToolbarHeight = 72.dp
 
 @Composable
 private fun ContentListContent(
@@ -461,7 +440,7 @@ private fun ContentListContent(
     }
 
     val statusBarHeight = if (consumeTopInsets) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
-    val toolbarSpacing = if (hasToolbar) ToolbarHeight + statusBarHeight else 0.dp
+    val toolbarSpacing = if (hasToolbar) GradientToolbarHeight + statusBarHeight else 0.dp
     val topPadding = toolbarSpacing + when (header) {
         is ContentListHeaderUiModel.PokemonHero -> 4.dp
         is ContentListHeaderUiModel.PlayerHero -> 0.dp

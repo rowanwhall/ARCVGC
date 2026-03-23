@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,15 +32,11 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,9 +52,11 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.components.GradientToolbarScaffold
 import com.arcvgc.app.ui.components.InfoButton
 import com.arcvgc.app.ui.components.InfoSheet
 import com.arcvgc.app.ui.components.VsDivider
@@ -74,7 +71,6 @@ import com.arcvgc.app.ui.model.TeraTypeUiModel
 import com.arcvgc.app.ui.model.TypeUiModel
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BattleDetailPage(
     state: BattleDetailState,
@@ -89,49 +85,40 @@ fun BattleDetailPage(
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
     onPlayerClick: ((Int, String) -> Unit)? = null
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    onShare?.let { share ->
-                        IconButton(onClick = share) {
-                            Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = "Share",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    IconButton(onClick = onToggleFavorite) {
-                        Icon(
-                            imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
-                            tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                windowInsets = WindowInsets(0),
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+    GradientToolbarScaffold(
+        modifier = modifier,
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
                 )
-            )
-        }
-    ) { innerPadding ->
+            }
+        },
+        actions = {
+            onShare?.let { share ->
+                IconButton(onClick = share) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            IconButton(onClick = onToggleFavorite) {
+                Icon(
+                    imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
+                    tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        consumeTopInsets = false
+    ) { topPadding ->
         when {
             state.isLoading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier.fillMaxSize().padding(top = topPadding),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -141,14 +128,14 @@ fun BattleDetailPage(
             state.error != null -> {
                 ErrorView(
                     onRetry = onRetry,
-                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+                    modifier = Modifier.fillMaxSize().padding(top = topPadding)
                 )
             }
 
             state.battleDetail != null -> {
                 BattleDetailBody(
                     battleDetail = state.battleDetail,
-                    modifier = Modifier.padding(innerPadding),
+                    topPadding = topPadding,
                     showWinnerHighlight = showWinnerHighlight,
                     onViewReplay = onViewReplay,
                     onPokemonClick = onPokemonClick,
@@ -165,6 +152,7 @@ private data class GameButton(val positionInSet: Int, val replayUrl: String, val
 private fun BattleDetailBody(
     battleDetail: BattleDetailUiModel,
     modifier: Modifier = Modifier,
+    topPadding: Dp = 0.dp,
     showWinnerHighlight: Boolean = true,
     onViewReplay: (String) -> Unit = {},
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
@@ -175,7 +163,7 @@ private fun BattleDetailBody(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 16.dp),
+            .padding(top = topPadding, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Format name, rating, and replay buttons
