@@ -251,6 +251,15 @@ struct ContentListView: View {
                                     ), prompt: Text("Search Pok\u{00E9}mon").foregroundColor(Color(.secondaryLabel)))
                                         .focused($isSearchFieldFocused)
                                         .outlinedTextFieldStyle(isFocused: isSearchFieldFocused)
+                                        .overlay(alignment: .trailing) {
+                                            if !viewModel.searchQuery.isEmpty {
+                                                Button { viewModel.setSearchQuery("") } label: {
+                                                    Image(systemName: "xmark.circle.fill")
+                                                        .foregroundColor(Color(.tertiaryLabel))
+                                                }
+                                                .padding(.trailing, 8)
+                                            }
+                                        }
                                         .padding(.horizontal, 16)
                                 default:
                                     EmptyView()
@@ -313,6 +322,15 @@ struct ContentListView: View {
                                 ), prompt: Text("Search Pok\u{00E9}mon").foregroundColor(Color(.secondaryLabel)))
                                     .focused($isSearchFieldFocused)
                                     .outlinedTextFieldStyle(isFocused: isSearchFieldFocused)
+                                    .overlay(alignment: .trailing) {
+                                        if !viewModel.searchQuery.isEmpty {
+                                            Button { viewModel.setSearchQuery("") } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundColor(Color(.tertiaryLabel))
+                                            }
+                                            .padding(.trailing, 8)
+                                        }
+                                    }
                                     .padding(.horizontal, 16)
                             default:
                                 contentItemView(item)

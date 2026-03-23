@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.CircularProgressIndicator
@@ -743,6 +744,13 @@ private fun ContentListContent(
                                 onValueChange = onSearchQueryChanged,
                                 label = { Text("Search Pok\u00E9mon") },
                                 singleLine = true,
+                                trailingIcon = if (searchQuery.isNotEmpty()) {
+                                    {
+                                        IconButton(onClick = { onSearchQueryChanged("") }) {
+                                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                        }
+                                    }
+                                } else null,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                                 ),
@@ -824,6 +832,13 @@ private fun ContentListContent(
                                         onValueChange = onSearchQueryChanged,
                                         label = { Text("Search Pok\u00E9mon") },
                                         singleLine = true,
+                                        trailingIcon = if (searchQuery.isNotEmpty()) {
+                                            {
+                                                IconButton(onClick = { onSearchQueryChanged("") }) {
+                                                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                                }
+                                            }
+                                        } else null,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .then(itemPadding)
