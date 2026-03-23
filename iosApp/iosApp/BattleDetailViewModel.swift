@@ -17,7 +17,7 @@ final class BattleDetailViewModel: ObservableObject {
     }
 
     func loadBattleDetail() {
-        guard !state.isLoading else { return }
+        guard !state.isLoading, state.battleDetail == nil else { return }
 
         state.isLoading = true
         state.error = nil

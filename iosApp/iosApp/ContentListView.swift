@@ -94,20 +94,16 @@ struct ContentListView: View {
     @ViewBuilder
     private func battleDetailPageContent(battleId: Int32) -> some View {
         let selectedBattle: BattleCardUiModel? = findBattle(in: viewModel.state.items, id: battleId)
-        BattleDetailPage(
+        BattleDetailNavWrapper(
             repository: repository,
             battleId: battleId,
             player1IsWinner: selectedBattle?.player1.isWinner,
             player2IsWinner: selectedBattle?.player2.isWinner,
             favoritesStore: favoritesStore,
+            settingsStore: settingsStore,
             showWinnerHighlight: settingsStore.showWinnerHighlight,
             shareUrl: ShareUrlBuilderKt.shareBattleUrl(battleId: battleId),
-            onPokemonClick: { id, name, imageUrl, typeImageUrls, formatId in
-                pokemonNavTarget = PokemonNavTarget(id: id, name: name, imageUrl: imageUrl, typeImageUrl1: typeImageUrls.first, typeImageUrl2: typeImageUrls.count > 1 ? typeImageUrls[1] : nil, formatId: formatId)
-            },
-            onPlayerClick: { id, name, formatId in
-                playerNavTarget = PlayerNavTarget(id: id, name: name, formatId: formatId)
-            },
+            appConfigStore: appConfigStore,
             onViewReplay: { url in
                 replayUrl = url
             }

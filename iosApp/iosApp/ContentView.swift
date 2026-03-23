@@ -74,10 +74,12 @@ private struct ThemedContentView: View {
                     set: { if !$0 { deepLinkBattleDetailId = nil } }
                 )) {
                     if let battleId = deepLinkBattleDetailId {
-                        BattleDetailPage(
+                        BattleDetailNavWrapper(
                             repository: container.battleRepository,
                             battleId: battleId,
                             favoritesStore: container.favoritesStore,
+                            settingsStore: container.settingsStore,
+                            appConfigStore: container.appConfigStore,
                             onViewReplay: { url in
                                 deepLinkReplayUrl = url
                             }

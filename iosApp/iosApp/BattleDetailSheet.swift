@@ -3,7 +3,7 @@ import WebKit
 import Shared
 
 struct BattleDetailPage: View {
-    @StateObject private var viewModel: BattleDetailViewModel
+    @ObservedObject private var viewModel: BattleDetailViewModel
     @ObservedObject private var favoritesStore: FavoritesStore
     @Environment(\.themeColor) private var themeColor
     var onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil
@@ -16,7 +16,8 @@ struct BattleDetailPage: View {
     private let showWinnerHighlight: Bool
     private let shareUrl: String?
 
-    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil, onViewReplay: ((String) -> Void)? = nil) {
+    init(viewModel: BattleDetailViewModel, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil, onViewReplay: ((String) -> Void)? = nil) {
+        self.viewModel = viewModel
         self.battleId = battleId
         self.player1IsWinner = player1IsWinner
         self.player2IsWinner = player2IsWinner
@@ -26,10 +27,6 @@ struct BattleDetailPage: View {
         self.onPokemonClick = onPokemonClick
         self.onPlayerClick = onPlayerClick
         self.onViewReplay = onViewReplay
-        _viewModel = StateObject(wrappedValue: BattleDetailViewModel(
-            repository: repository,
-            battleId: battleId
-        ))
     }
 
     var body: some View {
@@ -298,9 +295,93 @@ struct WebView: UIViewRepresentable {
         .padding()
 }
 
+/// Wrapper that adds pokemon/player drill-down navigation from battle detail.
+/// Attaches `navigationDestination` at the battle-detail level so pushes/pops
+/// happen from the correct position in the NavigationStack.
+struct BattleDetailNavWrapper: View {
+    @StateObject private var viewModel: BattleDetailViewModel
+    let repository: BattleRepository
+    let battleId: Int32
+    var player1IsWinner: KotlinBoolean? = nil
+    var player2IsWinner: KotlinBoolean? = nil
+    let favoritesStore: FavoritesStore
+    let settingsStore: SettingsStore
+    var showWinnerHighlight: Bool = true
+    var shareUrl: String? = nil
+    var appConfigStore: AppConfigStore? = nil
+    var onViewReplay: ((String) -> Void)? = nil
+
+    @State private var pokemonNavTarget: PokemonNavTarget? = nil
+    @State private var playerNavTarget: PlayerNavTarget? = nil
+
+    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, settingsStore: SettingsStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, appConfigStore: AppConfigStore? = nil, onViewReplay: ((String) -> Void)? = nil) {
+        self.repository = repository
+        self.battleId = battleId
+        self.player1IsWinner = player1IsWinner
+        self.player2IsWinner = player2IsWinner
+        self.favoritesStore = favoritesStore
+        self.settingsStore = settingsStore
+        self.showWinnerHighlight = showWinnerHighlight
+        self.shareUrl = shareUrl
+        self.appConfigStore = appConfigStore
+        self.onViewReplay = onViewReplay
+        _viewModel = StateObject(wrappedValue: BattleDetailViewModel(
+            repository: repository,
+            battleId: battleId
+        ))
+    }
+
+    var body: some View {
+        BattleDetailPage(
+            viewModel: viewModel,
+            battleId: battleId,
+            player1IsWinner: player1IsWinner,
+            player2IsWinner: player2IsWinner,
+            favoritesStore: favoritesStore,
+            showWinnerHighlight: showWinnerHighlight,
+            shareUrl: shareUrl,
+            onPokemonClick: { id, name, imageUrl, typeImageUrls, formatId in
+                pokemonNavTarget = PokemonNavTarget(id: id, name: name, imageUrl: imageUrl, typeImageUrl1: typeImageUrls.first, typeImageUrl2: typeImageUrls.count > 1 ? typeImageUrls[1] : nil, formatId: formatId)
+            },
+            onPlayerClick: { id, name, formatId in
+                playerNavTarget = PlayerNavTarget(id: id, name: name, formatId: formatId)
+            },
+            onViewReplay: onViewReplay
+        )
+        .navigationDestination(isPresented: Binding(
+            get: { pokemonNavTarget != nil },
+            set: { if !$0 { pokemonNavTarget = nil } }
+        )) {
+            if let target = pokemonNavTarget {
+                ContentListView(
+                    repository: repository,
+                    mode: .pokemon(id: target.id, name: target.name, imageUrl: target.imageUrl, typeImageUrl1: target.typeImageUrl1, typeImageUrl2: target.typeImageUrl2, formatId: target.formatId),
+                    favoritesStore: favoritesStore,
+                    settingsStore: settingsStore,
+                    appConfigStore: appConfigStore
+                )
+            }
+        }
+        .navigationDestination(isPresented: Binding(
+            get: { playerNavTarget != nil },
+            set: { if !$0 { playerNavTarget = nil } }
+        )) {
+            if let target = playerNavTarget {
+                ContentListView(
+                    repository: repository,
+                    mode: .player(id: target.id, name: target.name, formatId: target.formatId),
+                    favoritesStore: favoritesStore,
+                    settingsStore: settingsStore,
+                    appConfigStore: appConfigStore
+                )
+            }
+        }
+    }
+}
+
 #Preview {
     let container = DependencyContainer()
     return NavigationStack {
-        BattleDetailPage(repository: container.battleRepository, battleId: 1, favoritesStore: container.favoritesStore)
+        BattleDetailPage(viewModel: BattleDetailViewModel(repository: container.battleRepository, battleId: 1), battleId: 1, favoritesStore: container.favoritesStore)
     }
 }

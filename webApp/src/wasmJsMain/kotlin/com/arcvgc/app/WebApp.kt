@@ -857,6 +857,7 @@ private fun NavEntryContent(
                     DependencyContainer.favoritesRepository.toggleBattleFavorite(request.battleId)
                 },
                 onClose = { onPopEntry() },
+                showBackArrow = true,
                 player1IsWinner = request.player1IsWinner,
                 player2IsWinner = request.player2IsWinner,
                 showWinnerHighlight = showWinnerHighlight,

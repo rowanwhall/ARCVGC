@@ -65,7 +65,7 @@ Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` an
 
 ## Battle detail presentation
 - **Android**: Full-screen page overlay in `ContentListPage.kt` via `BattleDetailPage`, keyed by `selectedBattleId`. Has a `TopAppBar` with back arrow, share button, and favorite heart. `BackHandler` pops it on system back.
-- **iOS**: Pushed via `.navigationDestination(isPresented:)` in `ContentListView.swift`, bound to `selectedBattleId`. Toolbar has share + favorite buttons; back button provided automatically by `NavigationStack`.
+- **iOS**: Pushed via `.navigationDestination(isPresented:)` in `ContentListView.swift`, bound to `selectedBattleId`. Wrapped in `BattleDetailNavWrapper` (`BattleDetailSheet.swift`) which owns its own `pokemonNavTarget`/`playerNavTarget` state and `navigationDestination` modifiers — this ensures Pokemon/Player views push from the battle detail level (level 2 → level 3) rather than from the content list level (level 1 → level 2), giving correct animations and back navigation. Toolbar has share + favorite buttons; back button provided automatically by `NavigationStack`.
 - **Web (desktop)**: `BattleDetailPanel` renders inline in a right pane (`weight(0.6f)`) of a master-detail `Row` layout. List pane takes `weight(0.4f)`. Selected battle highlighted with `primaryContainer` background. No sheet/overlay.
 - **Web (mobile)**: `BattleDetailPanel` renders as a full-screen overlay via the `MobileNavEntry.BattleDetail` nav stack entry. Pokemon/Player drill-down pushes additional entries onto the stack.
 - Pokemon/Player clicks from battle detail push on top of battle detail in the nav stack (battle detail stays underneath). Back from Pokemon → battle detail → list.
