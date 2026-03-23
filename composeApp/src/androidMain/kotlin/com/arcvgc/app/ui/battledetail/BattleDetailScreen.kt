@@ -60,8 +60,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.components.InfoButton
+import com.arcvgc.app.ui.components.InfoSheet
 import com.arcvgc.app.ui.components.VsDivider
 import com.arcvgc.app.ui.mapper.ShowdownPasteFormatter
+import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.BattleDetailUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PlayerDetailUiModel
@@ -156,6 +159,8 @@ fun BattleDetailPage(
     }
 }
 
+private data class GameButton(val positionInSet: Int, val replayUrl: String, val isCurrent: Boolean)
+
 @Composable
 private fun BattleDetailBody(
     battleDetail: BattleDetailUiModel,
@@ -173,47 +178,69 @@ private fun BattleDetailBody(
             .padding(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Format name
-        Text(
-            text = battleDetail.formatName,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
+        // Format name, rating, and replay buttons
+        var showUnratedInfo by remember { mutableStateOf(false) }
+        var showReplayInfo by remember { mutableStateOf(false) }
 
-        // Replay buttons
-        if (battleDetail.setMatches.isEmpty()) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(onClick = { onViewReplay(battleDetail.replayUrl) }) {
-                    Text("View Replay")
+                val headerText = if (battleDetail.rating != null) {
+                    "${battleDetail.formatName} \u2022 ${battleDetail.rating}"
+                } else {
+                    "${battleDetail.formatName} \u2022 Unrated"
+                }
+                Text(
+                    text = headerText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                if (battleDetail.rating == null) {
+                    InfoButton(onClick = { showUnratedInfo = true })
                 }
             }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-            ) {
-                data class GameButton(val positionInSet: Int, val replayUrl: String, val isCurrent: Boolean)
-                val allGames = buildList {
-                    add(GameButton(battleDetail.positionInSet ?: 1, battleDetail.replayUrl, true))
-                    battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
-                }.sortedBy { it.positionInSet }
 
-                allGames.forEach { game ->
-                    if (game.isCurrent) {
-                        Button(onClick = { onViewReplay(game.replayUrl) }) {
-                            Text("Game ${game.positionInSet}")
-                        }
-                    } else {
-                        OutlinedButton(onClick = { onViewReplay(game.replayUrl) }) {
-                            Text("Game ${game.positionInSet}")
-                        }
+            Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val allGames = buildList {
+                add(GameButton(battleDetail.positionInSet ?: 1, battleDetail.replayUrl, true))
+                battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
+            }.sortedBy { it.positionInSet }
+
+            allGames.forEach { game ->
+                if (game.isCurrent) {
+                    Button(onClick = { onViewReplay(game.replayUrl) }) {
+                        Text("Game ${game.positionInSet}")
+                    }
+                } else {
+                    OutlinedButton(onClick = { onViewReplay(game.replayUrl) }) {
+                        Text("Game ${game.positionInSet}")
                     }
                 }
+            }
+            InfoButton(onClick = { showReplayInfo = true })
+            }
+        }
+
+        if (showUnratedInfo) {
+            InfoContentProvider.get("unrated")?.let { content ->
+                InfoSheet(content = content, onDismiss = { showUnratedInfo = false })
+            }
+        }
+
+        if (showReplayInfo) {
+            InfoContentProvider.get("replay")?.let { content ->
+                InfoSheet(content = content, onDismiss = { showReplayInfo = false })
             }
         }
 

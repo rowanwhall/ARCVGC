@@ -76,10 +76,16 @@ Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` an
 - **iOS**: `.fullScreenCover` presenting `ReplayOverlay.swift` with a `NavigationStack` + close X button + `WebView` (UIViewRepresentable). Triggered by `replayUrl` state in `ContentListView`.
 - **Web**: "View Replay" button opens the replay URL in a new browser tab via `window.open(url, "_blank")`.
 
-## Set match replay buttons
-- When a match has `setMatches` (e.g., best-of-3), the battle detail page shows a "View Replay (Game N)" button for the current match and additional "Game N" buttons for other matches in the set.
+## Replay buttons and set matches
+- The battle detail page always shows "Game N" buttons (even for single-game matches). The current game uses a filled `Button`; other games in a set use `OutlinedButton`.
+- An info icon next to the replay buttons opens an info dialog explaining replays and set matching (key: `"replay"` in `InfoContentProvider`).
 - Clicking any replay button opens the replay overlay (Android/iOS) or a new browser tab (web) with the corresponding replay URL (`https://replay.pokemonshowdown.com/{showdownId}`).
 - Set match data is mapped in `BattleDetailUiMapper` — the current match is filtered out and remaining matches are sorted by position.
+
+## Battle detail header
+- Shows format name + bullet separator + rating (e.g., "VGC 2026 Reg H • 1542").
+- `BattleDetailUiModel.rating` is `Int?` — null means unrated. When null, displays "Unrated" with an info icon that opens an info dialog (key: `"unrated"` in `InfoContentProvider`).
+- The format/rating header and replay buttons are grouped in a sub-column with 8dp spacing (tighter than the 16dp spacing between other sections).
 
 ## Share button (Android/iOS)
 - Share buttons appear in battle detail toolbars and content list toolbars for Pokemon, Player, and Search modes (not Home or Favorites)
@@ -100,7 +106,7 @@ Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` an
 ## Key file locations — battle detail
 - Android: `BattleDetailScreen.kt` (page + team preview + player sections), `ReplayOverlay.kt`, `PokemonDetailCard.kt` (all in `composeApp/.../ui/battledetail/`)
 - iOS: `BattleDetailSheet.swift` (page + player sections), `ReplayOverlay.swift`, `PokemonDetailCard.swift` (in `iosApp/iosApp/`)
-- Web: `BattleDetailPanel.kt` (inline panel), `TeamPreviewTab.kt` (compact/expanded layouts + player sections), `PokemonDetailCard.kt` (all in `webApp/.../ui/battledetail/`)
+- Web: `BattleDetailPanel.kt` (inline panel), `BattleDetailContent.kt` (compact/expanded layouts + player sections), `PokemonDetailCard.kt` (all in `webApp/.../ui/battledetail/`)
 - Shared `BattleRepository`: `shared/.../data/BattleRepository.kt` (used by all platforms)
 
 ## Deep Linking

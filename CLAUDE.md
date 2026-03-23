@@ -36,7 +36,7 @@ Network DTOs  →  Domain Models  →  UI Models  →  Screen
 
 - **Network layer** (`shared/.../network/`): `ApiService` with Ktor, DTO models, `ApiConstants` for base URL/endpoints, `CatalogLoader` (generic pagination), `SearchRequestMapper` (search request building)
 - **Domain layer** (`shared/.../domain/model/`): Pure Kotlin data classes — `MatchPreview`, `MatchDetail`, `PlayerDetail`, `PokemonListItem`, `SearchFilterSlot`, `AppConfig`, `Format`, etc.
-- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), and `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
+- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation), and `InfoContentProvider` (key-based registry for info dialog content); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
 - **Data layer** (`shared/.../data/`): Shared business logic used by all platforms
   - `BattleRepository` (implements `BattleRepositoryApi`) — Match data (getMatches, searchMatches, getMatchDetail, getMatchesByIds, getPokemonProfile, getPlayerProfile, getPlayersByNames, getFormatDetail). Throws exceptions on error. Android wraps in `Result<T>` via a thin adapter; iOS uses directly via SKIE `async throws` bridge. `ContentListLogic` depends on the `BattleRepositoryApi` interface for testability.
   - `FavoritesRepository` — Favorites toggle/check with `StateFlow` state, delegates to `FavoritesStorage` (expect/actual)
@@ -70,7 +70,7 @@ All catalog endpoints return `{ success, data, pagination }` using `PaginationDt
 ## Key Screens
 
 - **ContentListPage** — Generic paginated list page for Home, Search results, per-Pokemon battles, Favorites sub-tabs. Sort toggle in Search/Pokemon/Player modes.
-- **BattleDetailScreen** — Full-screen battle detail page with team preview, "View Replay" button (opens WebView overlay), and set match replay buttons for best-of-3
+- **BattleDetailScreen** — Full-screen battle detail page with format name + rating header (shows "Unrated" with info icon when null), "Game N" replay buttons with info icon, and team preview cards
 - **SearchPage** — Pokemon filter UI with format (pre-selected from config), rating, date, player name, sort order
 - **FavoritesPage** — Three sub-tabs: Battles, Pokemon, Players
 - **SettingsPage** — Dark Mode, Theme Color, Winner Highlight, Clear Favorites, Invalidate Cache, Privacy Policy, Terms of Service
@@ -111,6 +111,7 @@ Feature-specific architecture docs. **You MUST read the relevant doc(s) before s
 | [`docs/dark-mode.md`](docs/dark-mode.md) | Theme implementation per platform |
 | [`docs/sentry.md`](docs/sentry.md) | Crash reporting setup |
 | [`docs/deployment.md`](docs/deployment.md) | Web deployment, nginx, CORS, image URL handling |
+| [`docs/info-dialogs.md`](docs/info-dialogs.md) | Info dialog system — shared content registry, per-platform components, adding new info content |
 | [`docs/legal.md`](docs/legal.md) | Legal documents, key claims, hosted URLs |
 
 Coding conventions and quality rules are in `.claude/rules/` (automatically loaded).

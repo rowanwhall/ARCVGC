@@ -134,7 +134,7 @@ fun BattleDetailPanel(
             }
 
             displayDetail != null -> {
-                TeamPreviewTab(
+                BattleDetailContent(
                     battleDetail = displayDetail,
                     showWinnerHighlight = showWinnerHighlight,
                     onPokemonClick = wrappedOnPokemonClick,

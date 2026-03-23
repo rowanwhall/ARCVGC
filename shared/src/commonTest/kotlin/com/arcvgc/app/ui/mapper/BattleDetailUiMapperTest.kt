@@ -39,25 +39,16 @@ class BattleDetailUiMapperTest {
     }
 
     @Test
-    fun nullRatingDefaultsTo1000() {
+    fun nullRatingPassedThrough() {
         val detail = testMatchDetail(rating = null)
 
         val result = BattleDetailUiMapper.map(detail)
 
-        assertEquals(1000, result.rating)
+        assertNull(result.rating)
     }
 
     @Test
-    fun ratingBelow1000ClampedTo1000() {
-        val detail = testMatchDetail(rating = 500)
-
-        val result = BattleDetailUiMapper.map(detail)
-
-        assertEquals(1000, result.rating)
-    }
-
-    @Test
-    fun rating1500PassedThrough() {
+    fun ratingPassedThrough() {
         val detail = testMatchDetail(rating = 1500)
 
         val result = BattleDetailUiMapper.map(detail)

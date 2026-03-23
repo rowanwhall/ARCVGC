@@ -14,11 +14,9 @@ import com.arcvgc.app.ui.model.TypeUiModel
 
 object BattleDetailUiMapper {
 
-    private const val DEFAULT_RATING = 1000
-
     fun map(matchDetail: MatchDetail): BattleDetailUiModel {
         val players = matchDetail.players
-        val rating = matchDetail.rating?.takeIf { it >= DEFAULT_RATING } ?: DEFAULT_RATING
+        val rating = matchDetail.rating
 
         return BattleDetailUiModel(
             id = matchDetail.id,

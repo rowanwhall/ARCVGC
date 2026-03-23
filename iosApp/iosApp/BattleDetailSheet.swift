@@ -9,6 +9,8 @@ struct BattleDetailPage: View {
     var onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil
     var onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil
     var onViewReplay: ((String) -> Void)? = nil
+    @State private var showReplayInfo = false
+    @State private var showUnratedInfo = false
 
     private let battleId: Int32
     private let player1IsWinner: KotlinBoolean?
@@ -52,47 +54,50 @@ struct BattleDetailPage: View {
                 }
                 ScrollView {
                     VStack(spacing: 16) {
-                        Text(battleDetail.formatName)
-                            .font(.subheadline)
-                            .foregroundColor(Color(.secondaryLabel))
+                        HStack(spacing: 0) {
+                            if let rating = battleDetail.rating?.intValue {
+                                Text("\(battleDetail.formatName) \u{2022} \(String(rating))")
+                                    .font(.subheadline)
+                                    .foregroundColor(Color(.secondaryLabel))
+                            } else {
+                                Text("\(battleDetail.formatName) \u{2022} Unrated")
+                                    .font(.subheadline)
+                                    .foregroundColor(Color(.secondaryLabel))
+
+                                InfoButton { showUnratedInfo = true }
+                                    .padding(.leading, 8)
+                            }
+                        }
 
                         let setMatches = (battleDetail.setMatches as? [SetMatchUiModel]) ?? []
-                        if setMatches.isEmpty {
-                            Button {
-                                onViewReplay?(battleDetail.replayUrl)
-                            } label: {
-                                Text("View Replay")
-                                    .fontWeight(.semibold)
-                            }
-                            .buttonStyle(.borderedProminent)
-                        } else {
-                            HStack(spacing: 8) {
-                                let currentPosition = battleDetail.positionInSet?.intValue ?? 1
-                                let allGames: [(position: Int, url: String, isCurrent: Bool)] = (
-                                    [(currentPosition, battleDetail.replayUrl, true)] +
-                                    setMatches.map { (Int($0.positionInSet), $0.replayUrl, false) }
-                                ).sorted { $0.position < $1.position }
+                        HStack(spacing: 8) {
+                            let currentPosition = battleDetail.positionInSet?.intValue ?? 1
+                            let allGames: [(position: Int, url: String, isCurrent: Bool)] = (
+                                [(currentPosition, battleDetail.replayUrl, true)] +
+                                setMatches.map { (Int($0.positionInSet), $0.replayUrl, false) }
+                            ).sorted { $0.position < $1.position }
 
-                                ForEach(Array(allGames.enumerated()), id: \.offset) { _, game in
-                                    if game.isCurrent {
-                                        Button {
-                                            onViewReplay?(game.url)
-                                        } label: {
-                                            Text("Game \(game.position)")
-                                                .font(.subheadline)
-                                        }
-                                        .buttonStyle(.borderedProminent)
-                                    } else {
-                                        Button {
-                                            onViewReplay?(game.url)
-                                        } label: {
-                                            Text("Game \(game.position)")
-                                                .font(.subheadline)
-                                        }
-                                        .buttonStyle(.bordered)
+                            ForEach(Array(allGames.enumerated()), id: \.offset) { _, game in
+                                if game.isCurrent {
+                                    Button {
+                                        onViewReplay?(game.url)
+                                    } label: {
+                                        Text("Game \(game.position)")
+                                            .font(.subheadline)
                                     }
+                                    .buttonStyle(.borderedProminent)
+                                } else {
+                                    Button {
+                                        onViewReplay?(game.url)
+                                    } label: {
+                                        Text("Game \(game.position)")
+                                            .font(.subheadline)
+                                    }
+                                    .buttonStyle(.bordered)
                                 }
                             }
+
+                            InfoButton { showReplayInfo = true }
                         }
 
                         PlayerTeamDetailSection(player: battleDetail.player1, isWinnerOverride: player1IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
@@ -104,6 +109,16 @@ struct BattleDetailPage: View {
                     .padding(.bottom, 16)
                 }
                 .background(Color(.systemBackground))
+                .sheet(isPresented: $showReplayInfo) {
+                    if let content = InfoContentProvider.shared.get(key: "replay") {
+                        InfoSheet(content: content)
+                    }
+                }
+                .sheet(isPresented: $showUnratedInfo) {
+                    if let content = InfoContentProvider.shared.get(key: "unrated") {
+                        InfoSheet(content: content)
+                    }
+                }
             }
         }
         .background(Color(.secondarySystemBackground))

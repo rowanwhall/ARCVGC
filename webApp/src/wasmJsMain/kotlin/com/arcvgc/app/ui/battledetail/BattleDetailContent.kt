@@ -34,7 +34,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -53,8 +52,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
+import com.arcvgc.app.ui.components.InfoButton
+import com.arcvgc.app.ui.components.InfoDialog
 import com.arcvgc.app.ui.components.VsDivider
 import com.arcvgc.app.ui.mapper.ShowdownPasteFormatter
+import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.BattleDetailUiModel
 import com.arcvgc.app.ui.model.PlayerDetailUiModel
 import kotlinx.browser.window
@@ -63,8 +65,10 @@ import kotlinx.coroutines.launch
 
 private val CARD_WIDTH = 280.dp
 
+private data class GameButton(val positionInSet: Int, val replayUrl: String, val isCurrent: Boolean)
+
 @Composable
-fun TeamPreviewTab(
+fun BattleDetailContent(
     battleDetail: BattleDetailUiModel,
     modifier: Modifier = Modifier,
     showWinnerHighlight: Boolean = true,
@@ -86,30 +90,39 @@ fun TeamPreviewTab(
                 .padding(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = battleDetail.formatName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-            if (battleDetail.setMatches.isEmpty()) {
-                Button(
-                    onClick = { window.open(battleDetail.replayUrl, "_blank") },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text("View Replay")
+            var showUnratedInfo by remember { mutableStateOf(false) }
+            var showReplayInfo by remember { mutableStateOf(false) }
+
+            Column(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val headerText = if (battleDetail.rating != null) {
+                        "${battleDetail.formatName} \u2022 ${battleDetail.rating}"
+                    } else {
+                        "${battleDetail.formatName} \u2022 Unrated"
+                    }
+                    Text(
+                        text = headerText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (battleDetail.rating == null) {
+                        InfoButton(onClick = { showUnratedInfo = true })
+                    }
                 }
-            } else {
-                data class GameButton(val positionInSet: Int, val replayUrl: String, val isCurrent: Boolean)
-                val allGames = buildList {
-                    add(GameButton(battleDetail.positionInSet ?: 1, battleDetail.replayUrl, true))
-                    battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
-                }.sortedBy { it.positionInSet }
 
                 Row(
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val allGames = buildList {
+                        add(GameButton(battleDetail.positionInSet ?: 1, battleDetail.replayUrl, true))
+                        battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
+                    }.sortedBy { it.positionInSet }
+
                     allGames.forEach { game ->
                         if (game.isCurrent) {
                             Button(onClick = { window.open(game.replayUrl, "_blank") }) {
@@ -121,6 +134,19 @@ fun TeamPreviewTab(
                             }
                         }
                     }
+                    InfoButton(onClick = { showReplayInfo = true })
+                }
+            }
+
+            if (showUnratedInfo) {
+                InfoContentProvider.get("unrated")?.let { content ->
+                    InfoDialog(content = content, onDismiss = { showUnratedInfo = false })
+                }
+            }
+
+            if (showReplayInfo) {
+                InfoContentProvider.get("replay")?.let { content ->
+                    InfoDialog(content = content, onDismiss = { showReplayInfo = false })
                 }
             }
 

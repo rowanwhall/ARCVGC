@@ -6,7 +6,7 @@ data class BattleDetailUiModel(
     val player2: PlayerDetailUiModel,
     val formatId: Int,
     val formatName: String,
-    val rating: Int,
+    val rating: Int?,
     val formattedTime: String,
     val replayUrl: String,
     val positionInSet: Int? = null,
