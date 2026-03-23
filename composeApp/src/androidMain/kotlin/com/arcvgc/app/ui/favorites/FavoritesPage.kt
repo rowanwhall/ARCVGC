@@ -34,11 +34,11 @@ fun FavoritesPage(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         TabRow(
             selectedTabIndex = selectedSubTab,
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            containerColor = MaterialTheme.colorScheme.surface,
             modifier = Modifier.padding(
                 top = if (consumeTopInsets) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp else 8.dp
             )

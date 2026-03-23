@@ -1,6 +1,7 @@
 package com.arcvgc.app.ui.contentlist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -219,7 +221,7 @@ fun ContentListPage(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         if (isCompact) {
             // Compact: full-width list, battle detail hoisted to MobileLayout via LocalBattleOverlay
@@ -499,7 +501,7 @@ private fun ContentListToolbar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surface
         )
     )
 }
@@ -677,7 +679,7 @@ private fun ContentListContent(
                             fontSize = 18.sp,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
-                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
@@ -741,6 +743,9 @@ private fun ContentListContent(
                                 onValueChange = onSearchQueryChanged,
                                 label = { Text("Search Pok\u00E9mon") },
                                 singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                ),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp)

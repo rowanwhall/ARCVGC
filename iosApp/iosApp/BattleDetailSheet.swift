@@ -165,6 +165,10 @@ struct PlayerTeamDetailSection: View {
                     .padding(.vertical, 6)
                     .background(Color(.systemBackground))
                     .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                    )
                 }
                 .buttonStyle(.plain)
 

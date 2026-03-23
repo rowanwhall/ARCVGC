@@ -169,8 +169,9 @@ private fun PlayerTeamHeader(
     ) {
         Row(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
                 .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
                 .clickable { onPlayerClick?.invoke(player.id, player.name) }
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically

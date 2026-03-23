@@ -1,6 +1,6 @@
 package com.arcvgc.app.ui.contentlist
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -82,7 +82,8 @@ internal fun SectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
         )
         if (sortOrder != null && onToggleSortOrder != null) {
             Spacer(modifier = Modifier.weight(1f))
@@ -118,10 +119,7 @@ internal fun SortToggleButton(sortOrder: String, isLoading: Boolean = false, onC
     Row(
         modifier = Modifier
             .height(28.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(4.dp)
-            )
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
             .then(if (isLoading) Modifier else Modifier.clickable(onClick = onClick))
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -162,7 +160,8 @@ internal fun PokemonListRow(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -208,7 +207,8 @@ internal fun PlayerListRow(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -238,7 +238,6 @@ internal fun FormatDropdown(
         Row(
             modifier = Modifier
                 .clickable { expanded = true }
-                .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,

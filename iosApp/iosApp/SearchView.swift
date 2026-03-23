@@ -211,7 +211,7 @@ struct SearchView: View {
                 .padding(.top, 32)
                 .padding(.bottom, 16)
             }
-            .background(Color(.secondarySystemBackground))
+            .background(Color(.systemBackground))
             .navigationDestination(isPresented: Binding(
                 get: { searchParams != nil },
                 set: { if !$0 { searchParams = nil } }

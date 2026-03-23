@@ -48,7 +48,7 @@ struct FavoritesView: View {
                     )
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(.systemBackground))
         }
     }
 }

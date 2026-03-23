@@ -14,11 +14,11 @@ struct BattleCardView: View {
             HStack {
                 Text(uiModel.formattedTime)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color(.label).opacity(0.75))
                 Spacer()
                 Text(uiModel.rating)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color(.label).opacity(0.75))
             }
             .padding(.horizontal, 8)
 
@@ -35,12 +35,16 @@ struct BattleCardView: View {
 
             Text(uiModel.formatName)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color(.label).opacity(0.75))
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(8)
         .background(Color(.systemBackground))
         .cornerRadius(cardCornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: cardCornerRadius)
+                .stroke(Color(.opaqueSeparator), lineWidth: 1)
+        )
         .contentShape(Rectangle())
         .onTapGesture {
             onTap?()
@@ -56,10 +60,12 @@ struct PlayerTeamSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Player name at top-left
+            let isWinner = showWinnerHighlight && player.isWinner?.boolValue == true
+            let isLoser = showWinnerHighlight && player.isWinner?.boolValue == false
             Text(player.name)
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundColor(Color(.label))
+                .foregroundColor(isWinner ? themeColor : isLoser ? Color(.label).opacity(0.75) : Color(.label))
                 .padding(.horizontal, 4)
                 .padding(.vertical, 2)
 
@@ -71,12 +77,13 @@ struct PlayerTeamSection: View {
             }
         }
         .padding(4)
-        .background(Color(.secondarySystemBackground))
         .cornerRadius(cardCornerRadius)
         .overlay(
-            showWinnerHighlight && player.isWinner?.boolValue == true
-                ? RoundedRectangle(cornerRadius: cardCornerRadius).stroke(themeColor, lineWidth: 2)
-                : nil
+            RoundedRectangle(cornerRadius: cardCornerRadius)
+                .stroke(
+                    showWinnerHighlight && player.isWinner?.boolValue == true ? themeColor : Color(.separator),
+                    lineWidth: showWinnerHighlight && player.isWinner?.boolValue == true ? 2 : 1
+                )
         )
     }
 }

@@ -63,6 +63,10 @@ struct SearchFilterCard: View {
         .padding(12)
         .background(Color(.systemBackground))
         .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.opaqueSeparator), lineWidth: 1)
+        )
     }
 }
 

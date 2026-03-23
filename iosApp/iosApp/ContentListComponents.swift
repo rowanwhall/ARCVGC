@@ -119,7 +119,8 @@ struct SectionHeaderView: View {
         HStack {
             Text(title)
                 .font(.subheadline)
-                .foregroundColor(Color(.secondaryLabel))
+                .fontWeight(.semibold)
+                .foregroundColor(Color(.label))
             Spacer()
             if let sortOrder = sortOrder, let toggle = onToggleSortOrder {
                 SortToggleButton(sortOrder: sortOrder, isLoading: isLoading, action: toggle)
@@ -131,7 +132,7 @@ struct SectionHeaderView: View {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .semibold))
                     }
-                    .foregroundColor(Color(.secondaryLabel))
+                    .foregroundColor(Color(.label).opacity(0.75))
                     .padding(.horizontal, 8)
                     .frame(height: 28)
                     .contentShape(Rectangle())
@@ -160,11 +161,14 @@ struct SortToggleButton: View {
                 Text(sortOrder == "rating" ? "Rating" : "Time")
                     .font(.system(size: 12))
             }
-            .foregroundColor(Color(.secondaryLabel))
+            .foregroundColor(Color(.label).opacity(0.75))
             .padding(.horizontal, 8)
             .frame(height: 28)
-            .background(Color(.systemGray5))
             .cornerRadius(4)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
+            )
         }
         .disabled(isLoading)
     }
@@ -193,18 +197,17 @@ struct FormatDropdown: View {
             HStack(spacing: 4) {
                 Text(selectedFormat?.displayName ?? "Format")
                     .font(.system(size: 14))
-                    .foregroundColor(Color(.secondaryLabel))
+                    .foregroundColor(Color(.label).opacity(0.75))
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 10))
-                    .foregroundColor(Color(.secondaryLabel))
+                    .foregroundColor(Color(.label).opacity(0.75))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(Color(.systemGray6))
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
+                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
             )
         }
     }

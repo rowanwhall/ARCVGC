@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -124,7 +125,7 @@ fun ContentListPage(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         ContentListContent(
             uiState = uiState,
@@ -212,8 +213,8 @@ fun ContentListPage(
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f),
-                                    MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0f)
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0f)
                                 )
                             )
                         )
@@ -633,6 +634,9 @@ private fun ContentListContent(
                                     onValueChange = onSearchQueryChanged,
                                     label = { Text("Search Pok\u00E9mon") },
                                     singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                    ),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp)

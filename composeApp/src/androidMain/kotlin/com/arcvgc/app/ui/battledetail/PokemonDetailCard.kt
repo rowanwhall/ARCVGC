@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,11 +54,12 @@ fun PokemonDetailCard(
     modifier: Modifier = Modifier,
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null
 ) {
-    Card(
+    OutlinedCard(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
+        colors = CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
+        border = CardDefaults.outlinedCardBorder(),
         onClick = if (onPokemonClick != null) {
             { onPokemonClick(pokemon.id, pokemon.name, pokemon.imageUrl, pokemon.types.mapNotNull { it.imageUrl }) }
         } else {

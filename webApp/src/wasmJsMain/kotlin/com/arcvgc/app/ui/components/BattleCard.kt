@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -46,13 +46,14 @@ fun BattleCard(
     showWinnerHighlight: Boolean = true,
     onClick: () -> Unit = {},
 ) {
-    Card(
+    OutlinedCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(CardCornerRadius),
-        colors = CardDefaults.cardColors(
+        colors = CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        border = CardDefaults.outlinedCardBorder()
     ) {
         Column(
             modifier = Modifier
@@ -108,25 +109,31 @@ private fun PlayerTeamSection(
     showWinnerHighlight: Boolean = true
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
-    val winnerBorder = if (showWinnerHighlight && player.isWinner == true) {
+    val outlineColor = MaterialTheme.colorScheme.outlineVariant
+    val borderModifier = if (showWinnerHighlight && player.isWinner == true) {
         Modifier.border(2.dp, primaryColor, RoundedCornerShape(CardCornerRadius))
     } else {
-        Modifier
+        Modifier.border(1.dp, outlineColor.copy(alpha = 0.5f), RoundedCornerShape(CardCornerRadius))
     }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .then(winnerBorder)
+            .then(borderModifier)
             .clip(RoundedCornerShape(CardCornerRadius))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
             .padding(4.dp)
     ) {
+        val isWinner = showWinnerHighlight && player.isWinner == true
+        val isLoser = showWinnerHighlight && player.isWinner == false
         Text(
             text = player.name,
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = when {
+                isWinner -> primaryColor
+                isLoser -> MaterialTheme.colorScheme.onSurfaceVariant
+                else -> MaterialTheme.colorScheme.onSurface
+            },
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp)

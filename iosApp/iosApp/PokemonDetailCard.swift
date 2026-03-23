@@ -104,6 +104,10 @@ struct PokemonDetailCard: View {
         }
         .background(Color(.systemBackground))
         .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(.opaqueSeparator), lineWidth: 1)
+        )
         .onTapGesture {
             onPokemonClick?(pokemon.id, pokemon.name, pokemon.imageUrl, pokemon.types.compactMap { $0.imageUrl })
         }

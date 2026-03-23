@@ -12,7 +12,7 @@ struct OutlinedTextFieldModifier: ViewModifier {
             .background(Color.clear)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(isFocused ? themeColor : Color(.secondaryLabel), lineWidth: 1.5)
+                    .stroke(isFocused ? themeColor : Color(.opaqueSeparator), lineWidth: 1.5)
             )
             .foregroundColor(Color(.label))
     }

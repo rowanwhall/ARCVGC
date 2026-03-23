@@ -45,11 +45,11 @@ fun FavoritesPage(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         TabRow(
             selectedTabIndex = selectedSubTab,
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            containerColor = MaterialTheme.colorScheme.surface,
             modifier = Modifier.padding(top = 16.dp)
         ) {
             subTabs.forEachIndexed { index, title ->

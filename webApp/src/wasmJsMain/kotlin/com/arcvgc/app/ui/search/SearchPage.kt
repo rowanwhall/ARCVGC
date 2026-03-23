@@ -96,7 +96,7 @@ fun SearchPage(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
     Box(
         modifier = Modifier

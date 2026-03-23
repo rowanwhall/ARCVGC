@@ -185,6 +185,10 @@ struct ContentListView: View {
                                 .padding(.vertical, 6)
                                 .background(Color(.systemBackground))
                                 .cornerRadius(16)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                                )
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 16)
@@ -337,7 +341,7 @@ struct ContentListView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
-        .background(Color(.secondarySystemBackground))
+        .background(Color(.systemBackground))
         .navigationDestination(isPresented: Binding(
             get: { selectedBattleId != nil },
             set: { if !$0 { selectedBattleId = nil } }
@@ -435,7 +439,7 @@ struct ContentListView: View {
                     if let pct = pokemonItem.usagePercent {
                         Text(pct)
                             .font(.subheadline)
-                            .foregroundColor(Color(.secondaryLabel))
+                            .foregroundColor(Color(.label).opacity(0.75))
                     }
                 }
                 Spacer()
@@ -446,6 +450,10 @@ struct ContentListView: View {
             .padding(.horizontal, 12)
             .background(Color(.systemBackground))
             .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
+            )
             .onTapGesture {
                 let typeUrls = pokemonItem.types.compactMap { $0.imageUrl }
                 let derivedFormatId: Int32? = {
@@ -477,6 +485,10 @@ struct ContentListView: View {
             .padding(16)
             .background(Color(.systemBackground))
             .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
+            )
             .onTapGesture {
                 let derivedFormatId: Int32? = {
                     switch mode {
@@ -510,8 +522,12 @@ struct ContentListView: View {
                         .frame(maxWidth: .infinity)
                         .padding(12)
                     }
-                    .background(Color(.systemGray5))
+                    .background(Color(.systemBackground))
                     .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                    )
                 }
             }
         case .pokemonGrid(let gridItem):
@@ -542,7 +558,7 @@ struct ContentListView: View {
                                     if let pct = pokemon.usagePercent {
                                         Text(pct)
                                             .font(.caption2)
-                                            .foregroundColor(Color(.secondaryLabel))
+                                            .foregroundColor(Color(.label).opacity(0.75))
                                             .lineLimit(1)
                                     }
                                 }
@@ -559,6 +575,10 @@ struct ContentListView: View {
             .padding(12)
             .background(Color(.systemBackground))
             .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
+            )
         case .statChipRow(let chipRow):
             let allChips = chipRow.chips as! [ContentListItem.StatChipItem]
             ScrollView(.horizontal, showsIndicators: false) {
@@ -581,7 +601,7 @@ struct ContentListView: View {
                                 if let pct = chip.usagePercent {
                                     Text(pct)
                                         .font(.caption2)
-                                        .foregroundColor(Color(.secondaryLabel))
+                                        .foregroundColor(Color(.label).opacity(0.75))
                                         .lineLimit(1)
                                 }
                             }
@@ -590,6 +610,10 @@ struct ContentListView: View {
                         .padding(.vertical, 8)
                         .background(Color(.systemBackground))
                         .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                        )
                     }
                 }
                 .padding(.horizontal, 16)
