@@ -353,6 +353,93 @@ class ContentListLogicTest {
     }
 
     @Test
+    fun pokemonMode_progressiveLoading_showsProfileWhileBattlesLoad() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 1, 1)
+        )
+        fakeRepo.searchMatchesDelayMs = 5000
+        fakeRepo.pokemonProfileResult = PokemonProfile(
+            id = 25, name = "Pikachu", pokedexNumber = 25, tier = "OU",
+            types = listOf(PokemonType(1, "Electric", null)),
+            imageUrl = null, baseSpecies = null, teamCount = 100,
+            topTeammates = listOf(TopStatTeammate(80, 6, "Charizard", 6, null)),
+            topItems = listOf(TopStatItem(50, 1, "Choice Band", null)),
+            topMoves = listOf(TopStatMove(90, 1, "Thunderbolt")),
+            topAbilities = listOf(TopStatAbility(95, 1, "Static")),
+            topTeraTypes = listOf(TopStatTeraType(70, 1, "Fire", null))
+        )
+
+        val logic = createLogic(ContentListMode.Pokemon(
+            pokemonId = 25, name = "Pikachu", imageUrl = null,
+            typeImageUrl1 = null, typeImageUrl2 = null, formatId = 1
+        ))
+        logic.initialize()
+
+        // Advance past profile completion but before battles complete
+        testScope.testScheduler.advanceTimeBy(1000)
+        testScope.testScheduler.runCurrent()
+
+        val intermediateState = logic.uiState.value
+        assertFalse(intermediateState.isLoading)
+        assertTrue(intermediateState.loadingSections.contains("Battles"))
+        val sectionHeaders = intermediateState.items.filterIsInstance<ContentListItem.Section>().map { it.header }
+        assertTrue(sectionHeaders.contains("Top Teammates"))
+        assertTrue(sectionHeaders.contains("Battles"))
+        val battlesSection = intermediateState.items.filterIsInstance<ContentListItem.Section>().first { it.header == "Battles" }
+        assertTrue(battlesSection.items.isEmpty())
+
+        // Now let battles complete
+        testScope.advanceUntilIdle()
+
+        val finalState = logic.uiState.value
+        assertTrue(finalState.loadingSections.isEmpty())
+        val finalBattles = finalState.items.filterIsInstance<ContentListItem.Section>().first { it.header == "Battles" }
+        assertTrue(finalBattles.items.isNotEmpty())
+    }
+
+    @Test
+    fun pokemonMode_progressiveLoading_skipsIntermediateWhenBattlesFinishFirst() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 1, 1)
+        )
+        fakeRepo.pokemonProfileDelayMs = 5000
+        fakeRepo.pokemonProfileResult = PokemonProfile(
+            id = 25, name = "Pikachu", pokedexNumber = 25, tier = "OU",
+            types = listOf(PokemonType(1, "Electric", null)),
+            imageUrl = null, baseSpecies = null, teamCount = 100,
+            topTeammates = listOf(TopStatTeammate(80, 6, "Charizard", 6, null)),
+            topItems = emptyList(), topMoves = emptyList(),
+            topAbilities = emptyList(), topTeraTypes = emptyList()
+        )
+
+        val logic = createLogic(ContentListMode.Pokemon(
+            pokemonId = 25, name = "Pikachu", imageUrl = null,
+            typeImageUrl1 = null, typeImageUrl2 = null, formatId = 1
+        ))
+        logic.initialize()
+
+        // Advance past battles completion but before profile
+        testScope.testScheduler.advanceTimeBy(1000)
+        testScope.testScheduler.runCurrent()
+
+        // Should still be in unified loading state (profile not done)
+        val state = logic.uiState.value
+        assertTrue(state.isLoading)
+
+        // Now let profile complete
+        testScope.advanceUntilIdle()
+
+        val finalState = logic.uiState.value
+        assertFalse(finalState.isLoading)
+        assertTrue(finalState.loadingSections.isEmpty())
+        val sectionHeaders = finalState.items.filterIsInstance<ContentListItem.Section>().map { it.header }
+        assertTrue(sectionHeaders.contains("Top Teammates"))
+        assertTrue(sectionHeaders.contains("Battles"))
+    }
+
+    @Test
     fun playerMode_page1_hasProfileSectionsAndBattles() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),

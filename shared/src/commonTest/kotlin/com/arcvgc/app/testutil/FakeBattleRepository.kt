@@ -2,6 +2,7 @@ package com.arcvgc.app.testutil
 
 import com.arcvgc.app.data.BattleRepositoryApi
 import com.arcvgc.app.data.MatchesResult
+import kotlinx.coroutines.delay
 import com.arcvgc.app.domain.model.FormatDetail
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
@@ -33,6 +34,9 @@ class FakeBattleRepository : BattleRepositoryApi {
     var playersByNamesResult: List<PlayerListItem> = emptyList()
     var playersByNamesError: Exception? = null
 
+    var searchMatchesDelayMs: Long = 0
+    var pokemonProfileDelayMs: Long = 0
+
     var searchMatchesCalls = mutableListOf<SearchMatchesCall>()
 
     data class SearchMatchesCall(
@@ -57,6 +61,7 @@ class FakeBattleRepository : BattleRepositoryApi {
         playerName: String?
     ): MatchesResult {
         searchMatchesCalls.add(SearchMatchesCall(filters, formatId, orderBy, page, playerName))
+        if (searchMatchesDelayMs > 0) delay(searchMatchesDelayMs)
         searchMatchesError?.let { throw it }
         return searchMatchesResult
     }
@@ -77,6 +82,7 @@ class FakeBattleRepository : BattleRepositoryApi {
     }
 
     override suspend fun getPokemonProfile(id: Int, formatId: Int?): PokemonProfile {
+        if (pokemonProfileDelayMs > 0) delay(pokemonProfileDelayMs)
         pokemonProfileError?.let { throw it }
         return pokemonProfileResult ?: throw Exception("No pokemon profile configured")
     }

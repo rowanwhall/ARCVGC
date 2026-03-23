@@ -75,17 +75,18 @@ This is a key behavioral detail: several modes compose a richer page 1 with sect
 - **Pages 2+**: bare `Battle` items (appended to flat list, no wrapping section)
 
 ### Pokemon mode
-- **Page 1**: Up to 3 items — profile + battles fetched in parallel via `getPokemonProfile(id, formatId)` + `searchMatches(...)`. Profile errors are silently swallowed; page still shows battles.
+- **Page 1**: Up to 7 items — profile + battles fetched in parallel via `getPokemonProfile(id, formatId)` + `searchMatches(...)`. Profile errors are silently swallowed; page still shows battles.
   1. `FormatSelector` — format dropdown (rendered as a centered list item)
   2. `Section("Top Teammates", [PokemonGrid([...])])` — 3-column grid of top teammates with usage %. Only shown if profile succeeds and has teammates.
-  3. `Section("Top Abilities", [StatChipRow([...])])` — chip carousel of abilities with usage %. Name + percent only.
-  4. `Section("Top Items", [StatChipRow([...])])` — chip carousel of items with image, name, and usage %.
+  3. `Section("Top Items", [StatChipRow([...])])` — chip carousel of items with image, name, and usage %.
+  4. `Section("Top Tera Types", [StatChipRow([...])])` — chip carousel of tera types with image, name, and usage %.
   5. `Section("Top Moves", [StatChipRow([...])])` — chip carousel of moves with usage %. Name + percent only.
-  6. `Section("Top Tera Types", [StatChipRow([...])])` — chip carousel of tera types with image, name, and usage %.
+  6. `Section("Top Abilities", [StatChipRow([...])])` — chip carousel of abilities with usage %. Name + percent only.
   7. `Section("Battles", [...])` — battle results
   All profile sections are from pokemon profile API (count / matchCount), only shown if data is non-empty.
+- **Progressive loading**: Initial load uses `loadPokemonPage1()` which handles the two parallel API calls with progressive rendering. If the profile finishes before battles, profile sections are shown immediately with the Battles section header displaying a loading indicator in the sort toggle (`loadingSections = {"Battles"}`). If battles finishes before the profile, the unified loading spinner is maintained until the profile also completes (avoids layout jumpiness). Format change and sort toggle use the standard `fetchContent()` path with section-level loading.
 - **Pages 2+**: bare `Battle` items
-- **Format change**: reloads all profile sections and battles (`loadingSections = {"Top Teammates", "Top Abilities", "Top Items", "Top Moves", "Top Tera Types", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
+- **Format change**: reloads all profile sections and battles (`loadingSections = {"format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
 
 ### Player mode
 - **Page 1**: Up to 4 items —
