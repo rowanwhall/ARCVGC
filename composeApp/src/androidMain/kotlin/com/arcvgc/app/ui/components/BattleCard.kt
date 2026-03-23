@@ -110,18 +110,19 @@ private fun PlayerTeamSection(
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
-    val borderModifier = if (showWinnerHighlight && player.isWinner == true) {
+    val winnerBorder = if (showWinnerHighlight && player.isWinner == true) {
         Modifier.border(2.dp, primaryColor, RoundedCornerShape(CardCornerRadius))
     } else {
-        Modifier.border(1.dp, outlineColor.copy(alpha = 0.5f), RoundedCornerShape(CardCornerRadius))
+        Modifier
     }
 
     // Team rectangle with rounded corners
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .then(borderModifier)
+            .then(winnerBorder)
             .clip(RoundedCornerShape(CardCornerRadius))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .padding(4.dp)
     ) {
         // Player name at top-left

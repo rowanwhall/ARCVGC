@@ -58,11 +58,16 @@ struct PlayerTeamSection: View {
     var showWinnerHighlight: Bool = true
     @Environment(\.themeColor) private var themeColor
 
+    private var isWinner: Bool {
+        showWinnerHighlight && player.isWinner?.boolValue == true
+    }
+    private var isLoser: Bool {
+        showWinnerHighlight && player.isWinner?.boolValue == false
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Player name at top-left
-            let isWinner = showWinnerHighlight && player.isWinner?.boolValue == true
-            let isLoser = showWinnerHighlight && player.isWinner?.boolValue == false
             Text(player.name)
                 .font(.caption)
                 .fontWeight(.medium)
@@ -78,13 +83,12 @@ struct PlayerTeamSection: View {
             }
         }
         .padding(4)
+        .background(Color(.secondarySystemBackground))
         .cornerRadius(cardCornerRadius)
         .overlay(
-            RoundedRectangle(cornerRadius: cardCornerRadius)
-                .stroke(
-                    showWinnerHighlight && player.isWinner?.boolValue == true ? themeColor : Color(.separator),
-                    lineWidth: showWinnerHighlight && player.isWinner?.boolValue == true ? 2 : 1
-                )
+            isWinner
+                ? RoundedRectangle(cornerRadius: cardCornerRadius).stroke(themeColor, lineWidth: 2)
+                : nil
         )
     }
 }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -42,7 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -284,10 +285,11 @@ fun App(deepLink: DeepLink? = null) {
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 bottomBar = {
+                    Column {
+                    HorizontalDivider()
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 0.dp,
-                        modifier = Modifier.shadow(elevation = 8.dp)
+                        tonalElevation = 0.dp
                     ) {
                         tabs.forEachIndexed { index, tab ->
                             val isSelected = selectedTab == index
@@ -308,6 +310,7 @@ fun App(deepLink: DeepLink? = null) {
                                 )
                             )
                         }
+                    }
                     }
                 },
 

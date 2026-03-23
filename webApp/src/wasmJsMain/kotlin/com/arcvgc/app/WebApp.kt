@@ -9,6 +9,7 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -31,7 +32,9 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -580,6 +583,7 @@ private fun DesktopLayout(
                     .widthIn(max = 80.dp)
             )
         }
+        VerticalDivider(modifier = Modifier.fillMaxHeight())
 
         val contentModifier = Modifier.weight(1f).fillMaxHeight()
 
@@ -707,7 +711,12 @@ private fun MobileLayout(
         ) {
             Scaffold(
                 bottomBar = {
-                    NavigationBar {
+                    Column {
+                    HorizontalDivider()
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 0.dp
+                    ) {
                         tabs.forEachIndexed { index, tab ->
                             val isSelected = selectedTab == index
                             val tint = if (isSelected) {
@@ -725,6 +734,7 @@ private fun MobileLayout(
                                 )
                             )
                         }
+                    }
                     }
                 }
             ) { innerPadding ->
