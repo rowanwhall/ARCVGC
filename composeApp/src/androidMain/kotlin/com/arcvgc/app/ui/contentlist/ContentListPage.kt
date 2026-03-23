@@ -52,8 +52,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.arcvgc.app.ui.battledetail.BattleDetailSheet
+import com.arcvgc.app.ui.battledetail.BattleDetailPage
 import com.arcvgc.app.ui.battledetail.BattleDetailViewModel
+import com.arcvgc.app.ui.battledetail.ReplayOverlay
 import com.arcvgc.app.ui.components.EmptyView
 import com.arcvgc.app.ui.components.ErrorView
 import com.arcvgc.app.ui.components.PokemonAvatar
@@ -65,6 +66,7 @@ import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
+import com.arcvgc.app.ui.shareBattleUrl
 import com.arcvgc.app.ui.shareUrlForMode
 import androidx.compose.ui.platform.LocalContext
 
@@ -76,7 +78,6 @@ fun ContentListPage(
     onBack: (() -> Unit)? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     consumeTopInsets: Boolean = true,
-    initialBattleId: Int? = null,
     viewModel: ContentListViewModel = hiltViewModel(
         key = when (mode) {
             is ContentListMode.Home -> "content_list_home"
@@ -105,19 +106,13 @@ fun ContentListPage(
     }
     val selectedFormatId by viewModel.selectedFormatId.collectAsStateWithLifecycle()
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }
+    var replayUrl by remember { mutableStateOf<String?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
     var topPokemonFormatId by remember { mutableStateOf<Int?>(null) }
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
-
-    // Apply initialBattleId once — deferred to LaunchedEffect so ModalBottomSheet has a laid-out host
-    LaunchedEffect(initialBattleId) {
-        if (initialBattleId != null && selectedBattleId == null) {
-            selectedBattleId = initialBattleId
-        }
-    }
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
 
-    if (onBack != null && pokemonNavTarget == null && playerNavTarget == null && topPokemonFormatId == null) {
+    if (onBack != null && selectedBattleId == null && pokemonNavTarget == null && playerNavTarget == null && topPokemonFormatId == null) {
         BackHandler { onBack() }
     }
 
@@ -277,36 +272,62 @@ fun ContentListPage(
             }
         }
 
-        if (pokemonNavTarget == null && playerNavTarget == null) {
-            selectedBattleId?.let { battleId ->
-                val selectedBattle = uiState.items.findBattle(battleId)
-                val context = LocalContext.current
-                val shareUrl = shareUrlForMode(mode, battleId)
-                BattleDetailSheetWrapper(
-                    battleId = battleId,
-                    player1IsWinner = selectedBattle?.uiModel?.player1?.isWinner,
-                    player2IsWinner = selectedBattle?.uiModel?.player2?.isWinner,
-                    isFavorited = battleId in favoriteBattleIds,
-                    showWinnerHighlight = showWinnerHighlight,
-                    onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
-                    onShare = {
-                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                            putExtra(Intent.EXTRA_TEXT, shareUrl)
-                            type = "text/plain"
-                        }
-                        context.startActivity(Intent.createChooser(sendIntent, null))
-                    },
-                    onDismiss = {
-                        selectedBattleId = null
-                    },
-                    onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                        pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
-                    },
-                    onPlayerClick = { id, name, formatId ->
-                        playerNavTarget = PlayerNavTarget(id, name, formatId)
-                    }
-                )
+        selectedBattleId?.let { battleId ->
+            BackHandler { selectedBattleId = null }
+            val battleDetailViewModel: BattleDetailViewModel = hiltViewModel(
+                key = "battle_detail_$battleId"
+            )
+            val battleDetailState by battleDetailViewModel.state.collectAsStateWithLifecycle()
+
+            LaunchedEffect(battleId) {
+                battleDetailViewModel.loadBattleDetail(battleId)
             }
+
+            val selectedBattle = uiState.items.findBattle(battleId)
+            val patchedState = battleDetailState.battleDetail?.let { detail ->
+                battleDetailState.copy(
+                    battleDetail = detail.copy(
+                        player1 = detail.player1.copy(isWinner = selectedBattle?.uiModel?.player1?.isWinner),
+                        player2 = detail.player2.copy(isWinner = selectedBattle?.uiModel?.player2?.isWinner)
+                    )
+                )
+            } ?: battleDetailState
+
+            val context = LocalContext.current
+            val shareUrl = shareBattleUrl(battleId)
+
+            BattleDetailPage(
+                state = patchedState,
+                onBack = { selectedBattleId = null },
+                onRetry = { battleDetailViewModel.loadBattleDetail(battleId) },
+                isFavorited = battleId in favoriteBattleIds,
+                showWinnerHighlight = showWinnerHighlight,
+                onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
+                onShare = {
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        putExtra(Intent.EXTRA_TEXT, shareUrl)
+                        type = "text/plain"
+                    }
+                    context.startActivity(Intent.createChooser(sendIntent, null))
+                },
+                onViewReplay = { url -> replayUrl = url },
+                onPokemonClick = { id, name, imageUrl, typeImageUrls ->
+                    val formatId = patchedState.battleDetail?.formatId
+                    pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
+                },
+                onPlayerClick = { id, name ->
+                    val formatId = patchedState.battleDetail?.formatId
+                    playerNavTarget = PlayerNavTarget(id, name, formatId)
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        replayUrl?.let { url ->
+            ReplayOverlay(
+                replayUrl = url,
+                onDismiss = { replayUrl = null }
+            )
         }
 
         topPokemonFormatId?.let { formatId ->
@@ -344,63 +365,6 @@ fun ContentListPage(
             )
         }
     }
-}
-
-@Composable
-private fun BattleDetailSheetWrapper(
-    battleId: Int,
-    player1IsWinner: Boolean? = null,
-    player2IsWinner: Boolean? = null,
-    isFavorited: Boolean = false,
-    showWinnerHighlight: Boolean = true,
-    onToggleFavorite: () -> Unit = {},
-    onShare: (() -> Unit)? = null,
-    onDismiss: () -> Unit,
-    onPokemonClick: ((Int, String, String?, List<String>, Int?) -> Unit)? = null,
-    onPlayerClick: ((Int, String, Int?) -> Unit)? = null
-) {
-    val viewModel: BattleDetailViewModel = hiltViewModel(
-        key = "battle_detail_$battleId"
-    )
-    val state by viewModel.state.collectAsStateWithLifecycle()
-
-    LaunchedEffect(battleId) {
-        viewModel.loadBattleDetail(battleId)
-    }
-
-    // Patch winner values from the list endpoint (detail endpoint doesn't return them)
-    val patchedState = state.battleDetail?.let { detail ->
-        state.copy(
-            battleDetail = detail.copy(
-                player1 = detail.player1.copy(isWinner = player1IsWinner),
-                player2 = detail.player2.copy(isWinner = player2IsWinner)
-            )
-        )
-    } ?: state
-
-    val wrappedOnPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = onPokemonClick?.let { callback ->
-        { id, name, imageUrl, typeImageUrls ->
-            callback(id, name, imageUrl, typeImageUrls, patchedState.battleDetail?.formatId)
-        }
-    }
-
-    val wrappedOnPlayerClick: ((Int, String) -> Unit)? = onPlayerClick?.let { callback ->
-        { id, name ->
-            callback(id, name, patchedState.battleDetail?.formatId)
-        }
-    }
-
-    BattleDetailSheet(
-        state = patchedState,
-        isFavorited = isFavorited,
-        showWinnerHighlight = showWinnerHighlight,
-        onToggleFavorite = onToggleFavorite,
-        onShare = onShare,
-        onDismiss = onDismiss,
-        onRetry = { viewModel.loadBattleDetail(battleId) },
-        onPokemonClick = wrappedOnPokemonClick,
-        onPlayerClick = wrappedOnPlayerClick
-    )
 }
 
 private val ToolbarHeight = 72.dp

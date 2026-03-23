@@ -8,5 +8,13 @@ data class BattleDetailUiModel(
     val formatName: String,
     val rating: Int,
     val formattedTime: String,
+    val replayUrl: String,
+    val positionInSet: Int? = null,
+    val setMatches: List<SetMatchUiModel> = emptyList()
+)
+
+data class SetMatchUiModel(
+    val id: Int,
+    val positionInSet: Int,
     val replayUrl: String
 )

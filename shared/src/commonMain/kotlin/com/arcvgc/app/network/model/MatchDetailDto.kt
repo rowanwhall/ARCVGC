@@ -11,5 +11,8 @@ data class MatchDetailDto(
     val rating: Int?,
     val private: Boolean,
     val format: FormatDto,
-    val players: List<PlayerDetailDto>
+    val players: List<PlayerDetailDto>,
+    @SerialName("set_id") val setId: String? = null,
+    @SerialName("position_in_set") val positionInSet: Int? = null,
+    @SerialName("set_matches") val setMatches: List<SetMatchDto>? = null
 )

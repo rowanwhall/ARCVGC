@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -85,11 +86,42 @@ fun TeamPreviewTab(
                 .padding(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Button(
-                onClick = { window.open(battleDetail.replayUrl, "_blank") },
+            Text(
+                text = battleDetail.formatName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
-                Text("View Replay")
+            )
+            if (battleDetail.setMatches.isEmpty()) {
+                Button(
+                    onClick = { window.open(battleDetail.replayUrl, "_blank") },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("View Replay")
+                }
+            } else {
+                data class GameButton(val positionInSet: Int, val replayUrl: String, val isCurrent: Boolean)
+                val allGames = buildList {
+                    add(GameButton(battleDetail.positionInSet ?: 1, battleDetail.replayUrl, true))
+                    battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
+                }.sortedBy { it.positionInSet }
+
+                Row(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    allGames.forEach { game ->
+                        if (game.isCurrent) {
+                            Button(onClick = { window.open(game.replayUrl, "_blank") }) {
+                                Text("Game ${game.positionInSet}")
+                            }
+                        } else {
+                            OutlinedButton(onClick = { window.open(game.replayUrl, "_blank") }) {
+                                Text("Game ${game.positionInSet}")
+                            }
+                        }
+                    }
+                }
             }
 
             PlayerTeamSection(player = battleDetail.player1, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick, onTeamCopied = onTeamCopied)

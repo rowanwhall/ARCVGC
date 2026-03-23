@@ -7,7 +7,10 @@ data class MatchDetail(
     val rating: Int?,
     val isPrivate: Boolean,
     val format: Format,
-    val players: List<PlayerDetail>
+    val players: List<PlayerDetail>,
+    val setId: String? = null,
+    val positionInSet: Int? = null,
+    val setMatches: List<SetMatch> = emptyList()
 ) {
     val replayUrl: String
         get() = "https://replay.pokemonshowdown.com/$showdownId"

@@ -104,6 +104,22 @@ class ShareUrlBuilderTest {
     }
 
     @Test
+    fun shareBattleUrl_buildsDirectBattleLink() {
+        assertEquals(
+            "https://arcvgc.com/battle/42",
+            shareBattleUrl(42)
+        )
+    }
+
+    @Test
+    fun shareBattleUrl_withLargeId() {
+        assertEquals(
+            "https://arcvgc.com/battle/65972",
+            shareBattleUrl(65972)
+        )
+    }
+
+    @Test
     fun searchWithBattle() {
         val params = SearchParams(
             filters = listOf(SearchFilterSlot(pokemonId = 150, pokemonName = "Mewtwo", pokemonImageUrl = null)),

@@ -1,207 +1,336 @@
 package com.arcvgc.app.ui.battledetail
 
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.components.VsDivider
+import com.arcvgc.app.ui.mapper.ShowdownPasteFormatter
 import com.arcvgc.app.ui.model.BattleDetailUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PlayerDetailUiModel
 import com.arcvgc.app.ui.model.PokemonDetailUiModel
+import com.arcvgc.app.ui.model.SetMatchUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import com.arcvgc.app.ui.model.TypeUiModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BattleDetailSheet(
+fun BattleDetailPage(
     state: BattleDetailState,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     isFavorited: Boolean = false,
     showWinnerHighlight: Boolean = true,
     onToggleFavorite: () -> Unit = {},
     onShare: (() -> Unit)? = null,
+    onViewReplay: (String) -> Unit = {},
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
     onPlayerClick: ((Int, String) -> Unit)? = null
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Drag handle
-                Box(
-                    modifier = Modifier
-                        .padding(top = 6.dp, bottom = 2.dp)
-                        .width(36.dp)
-                        .height(4.dp)
-                        .background(
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            RoundedCornerShape(2.dp)
-                        )
-                )
-                // X and heart buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onDismiss) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0),
+        topBar = {
+            TopAppBar(
+                title = {},
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close"
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
                         )
                     }
-                    Row {
-                        onShare?.let { share ->
-                            IconButton(onClick = share) {
-                                Icon(
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = "Share",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        IconButton(onClick = onToggleFavorite) {
+                },
+                actions = {
+                    onShare?.let { share ->
+                        IconButton(onClick = share) {
                             Icon(
-                                imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
-                                tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+                    IconButton(onClick = onToggleFavorite) {
+                        Icon(
+                            imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
+                            tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                windowInsets = WindowInsets(0),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        }
+    ) { innerPadding ->
+        when {
+            state.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            state.error != null -> {
+                ErrorView(
+                    onRetry = onRetry,
+                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+                )
+            }
+
+            state.battleDetail != null -> {
+                BattleDetailBody(
+                    battleDetail = state.battleDetail,
+                    modifier = Modifier.padding(innerPadding),
+                    showWinnerHighlight = showWinnerHighlight,
+                    onViewReplay = onViewReplay,
+                    onPokemonClick = onPokemonClick,
+                    onPlayerClick = onPlayerClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BattleDetailBody(
+    battleDetail: BattleDetailUiModel,
+    modifier: Modifier = Modifier,
+    showWinnerHighlight: Boolean = true,
+    onViewReplay: (String) -> Unit = {},
+    onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
+    onPlayerClick: ((Int, String) -> Unit)? = null
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Format name
+        Text(
+            text = battleDetail.formatName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+
+        // Replay buttons
+        if (battleDetail.setMatches.isEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Button(onClick = { onViewReplay(battleDetail.replayUrl) }) {
+                    Text("View Replay")
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+            ) {
+                data class GameButton(val positionInSet: Int, val replayUrl: String, val isCurrent: Boolean)
+                val allGames = buildList {
+                    add(GameButton(battleDetail.positionInSet ?: 1, battleDetail.replayUrl, true))
+                    battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
+                }.sortedBy { it.positionInSet }
+
+                allGames.forEach { game ->
+                    if (game.isCurrent) {
+                        Button(onClick = { onViewReplay(game.replayUrl) }) {
+                            Text("Game ${game.positionInSet}")
+                        }
+                    } else {
+                        OutlinedButton(onClick = { onViewReplay(game.replayUrl) }) {
+                            Text("Game ${game.positionInSet}")
                         }
                     }
                 }
             }
         }
+
+        // Player teams
+        PlayerTeamSection(player = battleDetail.player1, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
+
+        VsDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+        PlayerTeamSection(player = battleDetail.player2, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
+    }
+}
+
+@Composable
+private fun PlayerTeamSection(
+    player: PlayerDetailUiModel,
+    modifier: Modifier = Modifier,
+    showWinnerHighlight: Boolean = true,
+    onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
+    onPlayerClick: ((Int, String) -> Unit)? = null
+) {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val cardWidth = screenWidth * 0.7f
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val winnerBorder = if (showWinnerHighlight && player.isWinner == true) {
+        Modifier.border(2.dp, primaryColor)
+    } else {
+        Modifier
+    }
+
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    var showCopied by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showCopied) {
+        if (showCopied) {
+            delay(1500)
+            showCopied = false
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(winnerBorder)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(vertical = 8.dp)
     ) {
-        BattleDetailContent(state = state, onRetry = onRetry, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
-    }
-}
-
-@Composable
-private fun BattleDetailContent(
-    state: BattleDetailState,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
-    showWinnerHighlight: Boolean = true,
-    onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
-    onPlayerClick: ((Int, String) -> Unit)? = null
-) {
-    when {
-        state.isLoading -> {
-            Box(
-                modifier = modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
-
-        state.error != null -> {
-            ErrorView(
-                onRetry = onRetry,
-                modifier = modifier.fillMaxSize()
-            )
-        }
-
-        state.battleDetail != null -> {
-            BattleDetailTabs(battleDetail = state.battleDetail, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
-        }
-    }
-}
-
-@Composable
-private fun BattleDetailTabs(
-    battleDetail: BattleDetailUiModel,
-    modifier: Modifier = Modifier,
-    showWinnerHighlight: Boolean = true,
-    onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
-    onPlayerClick: ((Int, String) -> Unit)? = null
-) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Team Preview", "Replay")
-
-    Column(modifier = modifier.fillMaxSize()) {
-        TabRow(
-            selectedTabIndex = selectedTabIndex,
-            modifier = Modifier.fillMaxWidth(),
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary,
-            indicator = { tabPositions ->
-                TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = {
-                        Text(
-                            text = title,
-                            color = if (selectedTabIndex == index) MaterialTheme.colorScheme.primary else Color.Gray
-                        )
-                    }
+            Row(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                    .clickable { onPlayerClick?.invoke(player.id, player.name) }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = player.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            IconButton(
+                onClick = {
+                    val text = ShowdownPasteFormatter.format(player.team)
+                    clipboardManager.setText(AnnotatedString(text))
+                    showCopied = true
+                    Toast.makeText(context, "Team copied to clipboard", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = if (showCopied) Icons.Default.Check else Icons.Outlined.ContentCopy,
+                    contentDescription = "Copy team",
+                    modifier = Modifier.size(20.dp),
+                    tint = if (showCopied) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
             }
         }
 
-        when (selectedTabIndex) {
-            0 -> TeamPreviewTab(battleDetail = battleDetail, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
-            1 -> ReplayTab(replayUrl = battleDetail.replayUrl)
+        Spacer(modifier = Modifier.height(4.dp))
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            itemsIndexed(player.team) { _, pokemon ->
+                PokemonDetailCard(
+                    pokemon = pokemon,
+                    modifier = Modifier.width(cardWidth),
+                    onPokemonClick = onPokemonClick
+                )
+            }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun BattleDetailTabsPreview() {
+private fun BattleDetailPagePreview() {
     val samplePokemon = PokemonDetailUiModel(
         id = 149,
         name = "Dragonite",
@@ -220,9 +349,18 @@ private fun BattleDetailTabsPreview() {
         formatName = "VGC 2026 Reg H",
         rating = 1542,
         formattedTime = "Feb 8, 5:03 PM",
-        replayUrl = "https://replay.pokemonshowdown.com/example"
+        replayUrl = "https://replay.pokemonshowdown.com/example",
+        positionInSet = 1,
+        setMatches = listOf(
+            SetMatchUiModel(id = 2, positionInSet = 2, replayUrl = "https://replay.pokemonshowdown.com/example2"),
+            SetMatchUiModel(id = 3, positionInSet = 3, replayUrl = "https://replay.pokemonshowdown.com/example3")
+        )
     )
     MaterialTheme {
-        BattleDetailTabs(battleDetail = sampleBattle)
+        BattleDetailPage(
+            state = BattleDetailState(battleDetail = sampleBattle),
+            onBack = {},
+            onRetry = {}
+        )
     }
 }

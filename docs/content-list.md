@@ -135,22 +135,23 @@ Pokemon and Player favorites modes observe the corresponding `StateFlow` from `F
 
 Battle favorites mode uses `fetchContent()` on initial load (no live observation — favorites don't change while viewing the list).
 
-## Battle Detail Sheet & Navigation Suppression
+## Battle Detail Page & Navigation
 
 Each `ContentListPage`/`ContentListView` manages three local state variables:
-- `selectedBattleId: Int?` — which battle detail sheet to show
+- `selectedBattleId: Int?` — which battle detail page to show
 - `pokemonNavTarget` — Pokemon drill-down destination
 - `playerNavTarget` — Player drill-down destination
 
-When a Pokemon or Player is tapped from within a battle detail sheet:
+Battle detail renders as a full-screen page overlay (Android: `BattleDetailPage` in `Box` with `BackHandler`; iOS: pushed via `.navigationDestination`; Web desktop: inline pane; Web mobile: `NavEntry.BattleDetail` stack entry).
+
+When a Pokemon or Player is tapped from within battle detail:
 1. The nav target is set
-2. The detail sheet is **suppressed** (not dismissed) — `selectedBattleId` stays set
-3. A child `ContentListPage`/`ContentListView` renders on top with the appropriate mode
-4. On back, the nav target clears and the detail sheet reappears with the battle still loaded
+2. The Pokemon/Player page pushes on top of battle detail in the nav stack
+3. On back, the nav target clears → user returns to battle detail, then back again returns to list
 
 This is recursive — each child instance has its own independent state, creating a natural navigation stack.
 
-**Format threading**: When navigating to a Pokemon or Player from battle detail, the battle's `formatId` is injected at the boundary (`BattleDetailSheetWrapper` on Android, `BattleDetailSheet` on iOS, `BattleDetailPanel` on Web) by wrapping the click callbacks to append the format. When navigating from search results, the search's format is passed. When navigating from another Pokemon/Player page, the current page's `selectedFormatId` is passed.
+**Format threading**: When navigating to a Pokemon or Player from battle detail, the battle's `formatId` is injected at the boundary (Android: inline in `ContentListPage`, iOS: `BattleDetailPage`, Web: `BattleDetailPanel`) by wrapping the click callbacks to append the format. When navigating from search results, the search's format is passed. When navigating from another Pokemon/Player page, the current page's `selectedFormatId` is passed.
 
 ## Toolbar & Favorite Buttons
 

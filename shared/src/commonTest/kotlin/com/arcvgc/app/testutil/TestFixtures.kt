@@ -16,6 +16,7 @@ import com.arcvgc.app.domain.model.PokemonListItem
 import com.arcvgc.app.domain.model.PokemonPreview
 import com.arcvgc.app.domain.model.PokemonType
 import com.arcvgc.app.domain.model.SearchFilterSlot
+import com.arcvgc.app.domain.model.SetMatch
 import com.arcvgc.app.domain.model.TeraType
 
 fun testFormat(
@@ -144,7 +145,10 @@ fun testMatchDetail(
     players: List<PlayerDetail> = listOf(
         testPlayerDetail(1, "PlayerOne", true),
         testPlayerDetail(2, "PlayerTwo", false)
-    )
+    ),
+    setId: String? = null,
+    positionInSet: Int? = null,
+    setMatches: List<SetMatch> = emptyList()
 ) = MatchDetail(
     id = id,
     showdownId = showdownId,
@@ -152,7 +156,10 @@ fun testMatchDetail(
     rating = rating,
     isPrivate = isPrivate,
     format = format,
-    players = players
+    players = players,
+    setId = setId,
+    positionInSet = positionInSet,
+    setMatches = setMatches
 )
 
 fun testSearchFilterSlot(

@@ -26,12 +26,10 @@ import com.arcvgc.app.ui.model.FavoriteContentType
 fun FavoritesPage(
     modifier: Modifier = Modifier,
     consumeTopInsets: Boolean = true,
-    initialSubTab: Int? = null,
-    initialBattleId: Int? = null
+    initialSubTab: Int? = null
 ) {
     var selectedSubTab by rememberSaveable { mutableIntStateOf(initialSubTab ?: 0) }
     val subTabs = listOf("Battles", "Pokémon", "Players")
-    val battleIdForTab = initialBattleId.takeIf { selectedSubTab == (initialSubTab ?: 0) }
 
     Column(
         modifier = modifier
@@ -59,19 +57,19 @@ fun FavoritesPage(
                 mode = ContentListMode.Favorites(FavoriteContentType.Battles),
                 consumeTopInsets = false,
                 modifier = Modifier.fillMaxSize(),
-                initialBattleId = battleIdForTab
+
             )
             1 -> ContentListPage(
                 mode = ContentListMode.Favorites(FavoriteContentType.Pokemon),
                 consumeTopInsets = false,
                 modifier = Modifier.fillMaxSize(),
-                initialBattleId = battleIdForTab
+
             )
             2 -> ContentListPage(
                 mode = ContentListMode.Favorites(FavoriteContentType.Players),
                 consumeTopInsets = false,
                 modifier = Modifier.fillMaxSize(),
-                initialBattleId = battleIdForTab
+
             )
         }
     }

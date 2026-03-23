@@ -6,6 +6,7 @@ import com.arcvgc.app.domain.model.DomainItem
 import com.arcvgc.app.domain.model.MatchDetail
 import com.arcvgc.app.domain.model.Move
 import com.arcvgc.app.domain.model.PlayerDetail
+import com.arcvgc.app.domain.model.SetMatch
 import com.arcvgc.app.domain.model.PokemonDetail
 import com.arcvgc.app.domain.model.PokemonType
 import com.arcvgc.app.domain.model.TeraType
@@ -13,6 +14,7 @@ import com.arcvgc.app.network.model.AbilityDto
 import com.arcvgc.app.network.model.BaseSpeciesDto
 import com.arcvgc.app.network.model.MatchDetailDto
 import com.arcvgc.app.network.model.MoveDto
+import com.arcvgc.app.network.model.SetMatchDto
 import com.arcvgc.app.network.model.NetworkItemDto
 import com.arcvgc.app.network.model.PlayerDetailDto
 import com.arcvgc.app.network.model.PokemonDetailDto
@@ -76,6 +78,14 @@ fun PlayerDetailDto.toDomain(): PlayerDetail {
     )
 }
 
+fun SetMatchDto.toDomain(): SetMatch {
+    return SetMatch(
+        id = id,
+        showdownId = showdownId,
+        positionInSet = positionInSet
+    )
+}
+
 fun MatchDetailDto.toDomain(): MatchDetail {
     return MatchDetail(
         id = id,
@@ -84,6 +94,9 @@ fun MatchDetailDto.toDomain(): MatchDetail {
         rating = rating,
         isPrivate = private,
         format = format.toDomain(),
-        players = players.map { it.toDomain() }
+        players = players.map { it.toDomain() },
+        setId = setId,
+        positionInSet = positionInSet,
+        setMatches = setMatches?.map { it.toDomain() }.orEmpty()
     )
 }

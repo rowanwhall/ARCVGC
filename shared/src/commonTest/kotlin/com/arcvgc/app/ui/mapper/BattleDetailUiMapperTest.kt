@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.mapper
 
 import com.arcvgc.app.testutil.testAbility
 import com.arcvgc.app.testutil.testFormat
+import com.arcvgc.app.domain.model.SetMatch
 import com.arcvgc.app.testutil.testMatchDetail
 import com.arcvgc.app.testutil.testMove
 import com.arcvgc.app.testutil.testPlayerDetail
@@ -148,5 +149,56 @@ class BattleDetailUiMapperTest {
         val result = BattleDetailUiMapper.map(detail)
 
         assertEquals("gen9vgc2024regh", result.formatName)
+    }
+
+    @Test
+    fun setMatchesMappedAndCurrentMatchFiltered() {
+        val setMatches = listOf(
+            SetMatch(id = 94, showdownId = "gen9vgc2026regfbo3-111", positionInSet = 3),
+            SetMatch(id = 95, showdownId = "gen9vgc2026regfbo3-222", positionInSet = 2),
+            SetMatch(id = 100, showdownId = "gen9vgc2026regfbo3-333", positionInSet = 1)
+        )
+        val detail = testMatchDetail(
+            id = 100,
+            positionInSet = 1,
+            setMatches = setMatches
+        )
+
+        val result = BattleDetailUiMapper.map(detail)
+
+        assertEquals(1, result.positionInSet)
+        assertEquals(2, result.setMatches.size)
+        assertEquals(95, result.setMatches[0].id)
+        assertEquals(2, result.setMatches[0].positionInSet)
+        assertEquals("https://replay.pokemonshowdown.com/gen9vgc2026regfbo3-222", result.setMatches[0].replayUrl)
+        assertEquals(94, result.setMatches[1].id)
+        assertEquals(3, result.setMatches[1].positionInSet)
+        assertEquals("https://replay.pokemonshowdown.com/gen9vgc2026regfbo3-111", result.setMatches[1].replayUrl)
+    }
+
+    @Test
+    fun emptySetMatchesProducesEmptyList() {
+        val detail = testMatchDetail()
+
+        val result = BattleDetailUiMapper.map(detail)
+
+        assertNull(result.positionInSet)
+        assertTrue(result.setMatches.isEmpty())
+    }
+
+    @Test
+    fun singleSetMatchFilteredOut_producesEmptyList() {
+        val setMatches = listOf(
+            SetMatch(id = 100, showdownId = "gen9vgc2026regfbo3-333", positionInSet = 1)
+        )
+        val detail = testMatchDetail(
+            id = 100,
+            positionInSet = 1,
+            setMatches = setMatches
+        )
+
+        val result = BattleDetailUiMapper.map(detail)
+
+        assertTrue(result.setMatches.isEmpty())
     }
 }

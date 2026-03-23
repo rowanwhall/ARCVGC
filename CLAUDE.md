@@ -70,7 +70,7 @@ All catalog endpoints return `{ success, data, pagination }` using `PaginationDt
 ## Key Screens
 
 - **ContentListPage** — Generic paginated list page for Home, Search results, per-Pokemon battles, Favorites sub-tabs. Sort toggle in Search/Pokemon/Player modes.
-- **BattleDetailScreen** — Two tabs: "Team Preview" and "Replay"
+- **BattleDetailScreen** — Full-screen battle detail page with team preview, "View Replay" button (opens WebView overlay), and set match replay buttons for best-of-3
 - **SearchPage** — Pokemon filter UI with format (pre-selected from config), rating, date, player name, sort order
 - **FavoritesPage** — Three sub-tabs: Battles, Pokemon, Players
 - **SettingsPage** — Dark Mode, Theme Color, Winner Highlight, Clear Favorites, Invalidate Cache, Privacy Policy, Terms of Service

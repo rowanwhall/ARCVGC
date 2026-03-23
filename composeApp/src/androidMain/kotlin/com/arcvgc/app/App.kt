@@ -44,6 +44,9 @@ import com.arcvgc.app.data.DeepLinkResolver
 import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.domain.model.DeepLink
 import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.ui.battledetail.BattleDetailPage
+import com.arcvgc.app.ui.battledetail.BattleDetailViewModel
+import com.arcvgc.app.ui.battledetail.ReplayOverlay
 import com.arcvgc.app.ui.components.ForceUpgradeOverlay
 import com.arcvgc.app.ui.contentlist.ContentListPage
 import com.arcvgc.app.ui.favorites.FavoritesPage
@@ -208,7 +211,8 @@ fun App(deepLink: DeepLink? = null) {
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
         var searchOverlayParams by remember { mutableStateOf<SearchParams?>(null) }
         var deepLinkOverlay by remember { mutableStateOf<ContentListMode?>(null) }
-        var deepLinkBattleId by remember { mutableStateOf(deepLink?.battleId) }
+        var deepLinkBattleDetailId by remember { mutableStateOf<Int?>(null) }
+        var deepLinkReplayUrl by remember { mutableStateOf<String?>(null) }
         var deepLinkFavoritesType by remember { mutableStateOf<FavoriteContentType?>(null) }
         val tabs = Tab.entries
 
@@ -216,44 +220,53 @@ fun App(deepLink: DeepLink? = null) {
             val deepLinkViewModel: DeepLinkViewModel = hiltViewModel()
             LaunchedEffect(deepLink) {
                 try {
+                    // If any deep link has a battleId, navigate directly to battle detail
+                    val battleId = deepLink.battleId
+                    if (battleId != null) {
+                        deepLinkBattleDetailId = battleId
+                    }
+
                     val resolved = deepLinkViewModel.deepLinkResolver.resolve(deepLink)
-                    when (resolved) {
-                        is DeepLinkResolver.ResolvedLink.Home -> { /* default tab */ }
-                        is DeepLinkResolver.ResolvedLink.Pokemon -> {
-                            val item = resolved.item
-                            deepLinkOverlay = ContentListMode.Pokemon(
-                                pokemonId = item.id,
-                                name = item.name,
-                                imageUrl = item.imageUrl,
-                                typeImageUrl1 = item.types.getOrNull(0)?.imageUrl,
-                                typeImageUrl2 = item.types.getOrNull(1)?.imageUrl
-                            )
+                    // Only apply root target if no battleId (otherwise battle detail takes over)
+                    if (battleId == null) {
+                        when (resolved) {
+                            is DeepLinkResolver.ResolvedLink.Home -> { /* default tab */ }
+                            is DeepLinkResolver.ResolvedLink.Pokemon -> {
+                                val item = resolved.item
+                                deepLinkOverlay = ContentListMode.Pokemon(
+                                    pokemonId = item.id,
+                                    name = item.name,
+                                    imageUrl = item.imageUrl,
+                                    typeImageUrl1 = item.types.getOrNull(0)?.imageUrl,
+                                    typeImageUrl2 = item.types.getOrNull(1)?.imageUrl
+                                )
+                            }
+                            is DeepLinkResolver.ResolvedLink.Player -> {
+                                deepLinkOverlay = ContentListMode.Player(
+                                    playerId = resolved.item.id,
+                                    playerName = resolved.item.name
+                                )
+                            }
+                            is DeepLinkResolver.ResolvedLink.Favorites -> {
+                                selectedTab = 2
+                                deepLinkFavoritesType = resolved.contentType
+                            }
+                            is DeepLinkResolver.ResolvedLink.Search -> {
+                                searchOverlayParams = resolved.params
+                            }
+                            is DeepLinkResolver.ResolvedLink.SearchTab -> {
+                                selectedTab = 1
+                            }
+                            is DeepLinkResolver.ResolvedLink.SettingsTab -> {
+                                selectedTab = 3
+                            }
+                            is DeepLinkResolver.ResolvedLink.TopPokemon -> {
+                                deepLinkOverlay = ContentListMode.TopPokemon(
+                                    formatId = resolved.formatId
+                                )
+                            }
+                            null -> {}
                         }
-                        is DeepLinkResolver.ResolvedLink.Player -> {
-                            deepLinkOverlay = ContentListMode.Player(
-                                playerId = resolved.item.id,
-                                playerName = resolved.item.name
-                            )
-                        }
-                        is DeepLinkResolver.ResolvedLink.Favorites -> {
-                            selectedTab = 2
-                            deepLinkFavoritesType = resolved.contentType
-                        }
-                        is DeepLinkResolver.ResolvedLink.Search -> {
-                            searchOverlayParams = resolved.params
-                        }
-                        is DeepLinkResolver.ResolvedLink.SearchTab -> {
-                            selectedTab = 1
-                        }
-                        is DeepLinkResolver.ResolvedLink.SettingsTab -> {
-                            selectedTab = 3
-                        }
-                        is DeepLinkResolver.ResolvedLink.TopPokemon -> {
-                            deepLinkOverlay = ContentListMode.TopPokemon(
-                                formatId = resolved.formatId
-                            )
-                        }
-                        null -> {}
                     }
                 } catch (_: Exception) {}
             }
@@ -278,7 +291,6 @@ fun App(deepLink: DeepLink? = null) {
                                 selected = isSelected,
                                 onClick = {
                                     selectedTab = index
-                                    deepLinkBattleId = null
                                 },
                                 icon = { Icon(tab.icon, contentDescription = tab.label, tint = tint) },
                                 label = { Text(tab.label, color = tint) },
@@ -294,8 +306,7 @@ fun App(deepLink: DeepLink? = null) {
                 when (tabs[selectedTab]) {
                     Tab.Top -> ContentListPage(
                         modifier = Modifier.padding(innerPadding),
-                        consumeTopInsets = false,
-                        initialBattleId = deepLinkBattleId
+                        consumeTopInsets = false
                     )
                     Tab.Search -> SearchPage(
                         modifier = Modifier.padding(innerPadding),
@@ -310,8 +321,7 @@ fun App(deepLink: DeepLink? = null) {
                                 FavoriteContentType.Pokemon -> 1
                                 FavoriteContentType.Players -> 2
                             }
-                        },
-                        initialBattleId = deepLinkBattleId
+                        }
                     )
                     Tab.Settings -> SettingsPage(
                         modifier = Modifier.padding(innerPadding)
@@ -323,16 +333,40 @@ fun App(deepLink: DeepLink? = null) {
                 ContentListPage(
                     mode = ContentListMode.Search(params),
                     onBack = { searchOverlayParams = null },
-                    onSearchParamsChanged = { searchOverlayParams = it },
-                    initialBattleId = deepLinkBattleId
+                    onSearchParamsChanged = { searchOverlayParams = it }
                 )
             }
 
             deepLinkOverlay?.let { mode ->
                 ContentListPage(
                     mode = mode,
-                    onBack = { deepLinkOverlay = null },
-                    initialBattleId = deepLinkBattleId
+                    onBack = { deepLinkOverlay = null }
+                )
+            }
+
+            deepLinkBattleDetailId?.let { battleId ->
+                val battleDetailViewModel: BattleDetailViewModel = hiltViewModel(
+                    key = "deep_link_battle_detail_$battleId"
+                )
+                val battleDetailState by battleDetailViewModel.state.collectAsStateWithLifecycle()
+
+                LaunchedEffect(battleId) {
+                    battleDetailViewModel.loadBattleDetail(battleId)
+                }
+
+                BattleDetailPage(
+                    state = battleDetailState,
+                    onBack = { deepLinkBattleDetailId = null },
+                    onRetry = { battleDetailViewModel.loadBattleDetail(battleId) },
+                    onViewReplay = { url -> deepLinkReplayUrl = url },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            deepLinkReplayUrl?.let { url ->
+                ReplayOverlay(
+                    replayUrl = url,
+                    onDismiss = { deepLinkReplayUrl = null }
                 )
             }
 

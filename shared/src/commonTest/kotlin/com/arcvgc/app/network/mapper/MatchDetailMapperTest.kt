@@ -8,6 +8,7 @@ import com.arcvgc.app.network.model.MoveDto
 import com.arcvgc.app.network.model.NetworkItemDto
 import com.arcvgc.app.network.model.PlayerDetailDto
 import com.arcvgc.app.network.model.PokemonDetailDto
+import com.arcvgc.app.network.model.SetMatchDto
 import com.arcvgc.app.network.model.TeraTypeDto
 import com.arcvgc.app.network.model.TypeDto
 import kotlin.test.Test
@@ -315,6 +316,90 @@ class MatchDetailMapperTest {
         assertEquals(2, result.players.size)
         assertEquals("Ash", result.players[0].name)
         assertEquals("Gary", result.players[1].name)
+    }
+
+    // endregion
+
+    @Test
+    fun matchDetailDto_mapsSetFields() {
+        val pokemon = PokemonDetailDto(
+            id = 25, name = "Pikachu", pokedexNumber = 25, tier = "OU",
+            ability = AbilityDto(id = 1, name = "Static"),
+            item = null, moves = emptyList(), types = emptyList(),
+            baseSpecies = null, teraType = null, imageUrl = null
+        )
+        val player = PlayerDetailDto(id = 1, name = "Ash", winner = true, team = listOf(pokemon))
+        val format = FormatDto(id = 1, name = "gen9vgc2026regfbo3", formattedName = null)
+        val setMatches = listOf(
+            SetMatchDto(id = 94, showdownId = "gen9vgc2026regfbo3-111", positionInSet = 3),
+            SetMatchDto(id = 95, showdownId = "gen9vgc2026regfbo3-222", positionInSet = 2),
+            SetMatchDto(id = 100, showdownId = "gen9vgc2026regfbo3-333", positionInSet = 1)
+        )
+
+        val dto = MatchDetailDto(
+            id = 100,
+            showdownId = "gen9vgc2026regfbo3-333",
+            uploadTime = "2026-02-23T02:15:59",
+            rating = null,
+            private = false,
+            format = format,
+            players = listOf(player),
+            setId = "1049",
+            positionInSet = 1,
+            setMatches = setMatches
+        )
+
+        val result = dto.toDomain()
+
+        assertEquals("1049", result.setId)
+        assertEquals(1, result.positionInSet)
+        assertEquals(3, result.setMatches.size)
+        assertEquals(94, result.setMatches[0].id)
+        assertEquals("gen9vgc2026regfbo3-111", result.setMatches[0].showdownId)
+        assertEquals(3, result.setMatches[0].positionInSet)
+    }
+
+    @Test
+    fun matchDetailDto_withNullSetFields_mapsToDefaults() {
+        val pokemon = PokemonDetailDto(
+            id = 25, name = "Pikachu", pokedexNumber = 25, tier = "OU",
+            ability = AbilityDto(id = 1, name = "Static"),
+            item = null, moves = emptyList(), types = emptyList(),
+            baseSpecies = null, teraType = null, imageUrl = null
+        )
+        val player = PlayerDetailDto(id = 1, name = "Ash", winner = true, team = listOf(pokemon))
+        val format = FormatDto(id = 1, name = "gen9vgc2024regg", formattedName = null)
+
+        val dto = MatchDetailDto(
+            id = 100,
+            showdownId = "gen9vgc2024regg-12345",
+            uploadTime = "2024-01-15T10:30:00Z",
+            rating = null,
+            private = false,
+            format = format,
+            players = listOf(player)
+        )
+
+        val result = dto.toDomain()
+
+        assertNull(result.setId)
+        assertNull(result.positionInSet)
+        assertEquals(0, result.setMatches.size)
+    }
+
+    // endregion
+
+    // region SetMatchDto.toDomain()
+
+    @Test
+    fun setMatchDto_mapsCorrectly() {
+        val dto = SetMatchDto(id = 94, showdownId = "gen9vgc2026regfbo3-111", positionInSet = 3)
+
+        val result = dto.toDomain()
+
+        assertEquals(94, result.id)
+        assertEquals("gen9vgc2026regfbo3-111", result.showdownId)
+        assertEquals(3, result.positionInSet)
     }
 
     // endregion

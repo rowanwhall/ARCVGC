@@ -4,6 +4,7 @@ import Shared
 struct ContentListView: View {
     @StateObject private var viewModel: ContentListViewModel
     @State private var selectedBattleId: Int32? = nil
+    @State private var replayUrl: String? = nil
     @State private var pokemonNavTarget: PokemonNavTarget? = nil
     @State private var playerNavTarget: PlayerNavTarget? = nil
     @State private var topPokemonFormatId: Int32? = nil
@@ -34,7 +35,7 @@ struct ContentListView: View {
         )
     }
 
-    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], onSearchParamsChanged: ((SearchParams) -> Void)? = nil, initialBattleId: Int32? = nil) {
+    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], onSearchParamsChanged: ((SearchParams) -> Void)? = nil) {
         self.repository = repository
         self.mode = mode
         self.favoritesStore = favoritesStore
@@ -42,7 +43,6 @@ struct ContentListView: View {
         self.appConfigStore = appConfigStore
         self.onSearchParamsChanged = onSearchParamsChanged
         _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems, appConfigStore: appConfigStore, formatItems: formatItems))
-        _selectedBattleId = State(initialValue: initialBattleId)
     }
 
     private func buildShareUrl(battleId: Int32? = nil) -> String {
@@ -92,22 +92,24 @@ struct ContentListView: View {
     }
 
     @ViewBuilder
-    private func battleDetailSheetContent(battleId: Int32) -> some View {
+    private func battleDetailPageContent(battleId: Int32) -> some View {
         let selectedBattle: BattleCardUiModel? = findBattle(in: viewModel.state.items, id: battleId)
-        BattleDetailSheet(
+        BattleDetailPage(
             repository: repository,
             battleId: battleId,
             player1IsWinner: selectedBattle?.player1.isWinner,
             player2IsWinner: selectedBattle?.player2.isWinner,
             favoritesStore: favoritesStore,
             showWinnerHighlight: settingsStore.showWinnerHighlight,
-            shareUrl: buildShareUrl(battleId: battleId),
-            onDismiss: { selectedBattleId = nil },
+            shareUrl: ShareUrlBuilderKt.shareBattleUrl(battleId: battleId),
             onPokemonClick: { id, name, imageUrl, typeImageUrls, formatId in
                 pokemonNavTarget = PokemonNavTarget(id: id, name: name, imageUrl: imageUrl, typeImageUrl1: typeImageUrls.first, typeImageUrl2: typeImageUrls.count > 1 ? typeImageUrls[1] : nil, formatId: formatId)
             },
             onPlayerClick: { id, name, formatId in
                 playerNavTarget = PlayerNavTarget(id: id, name: name, formatId: formatId)
+            },
+            onViewReplay: { url in
+                replayUrl = url
             }
         )
     }
@@ -340,12 +342,20 @@ struct ContentListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .background(Color(.secondarySystemBackground))
-        .sheet(isPresented: Binding(
-            get: { selectedBattleId != nil && pokemonNavTarget == nil && playerNavTarget == nil && topPokemonFormatId == nil },
-            set: { if !$0 && pokemonNavTarget == nil && playerNavTarget == nil && topPokemonFormatId == nil { selectedBattleId = nil } }
+        .navigationDestination(isPresented: Binding(
+            get: { selectedBattleId != nil },
+            set: { if !$0 { selectedBattleId = nil } }
         )) {
             if let battleId = selectedBattleId {
-                battleDetailSheetContent(battleId: battleId)
+                battleDetailPageContent(battleId: battleId)
+            }
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { replayUrl != nil },
+            set: { if !$0 { replayUrl = nil } }
+        )) {
+            if let url = replayUrl {
+                ReplayOverlay(replayUrl: url, onDismiss: { replayUrl = nil })
             }
         }
         .navigationDestination(isPresented: Binding(

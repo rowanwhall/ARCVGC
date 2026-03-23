@@ -1,11 +1,16 @@
 #!/bin/bash
 # Claude Code Stop hook: remind to review docs when non-doc source files were modified.
-# Only outputs if there are unstaged/staged changes to non-documentation files.
+# Checks both uncommitted changes AND the most recent commit (catches mid-session commits).
 
 cd "$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 
-# Collect modified files (staged + unstaged + untracked), exclude docs and config
-changed_files=$(git diff --name-only HEAD 2>/dev/null; git diff --name-only --cached 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null)
+# Collect modified files: uncommitted (staged + unstaged + untracked) + last commit
+changed_files=$(
+  git diff --name-only HEAD 2>/dev/null
+  git diff --name-only --cached 2>/dev/null
+  git ls-files --others --exclude-standard 2>/dev/null
+  git diff --name-only HEAD~1 HEAD 2>/dev/null
+)
 
 # Filter to only source files (exclude docs/, CLAUDE.md, .claude/, *.md in root)
 source_changes=$(echo "$changed_files" | grep -v '^$' | sort -u | grep -v -E '^(docs/|CLAUDE\.md|\.claude/|README\.md)')

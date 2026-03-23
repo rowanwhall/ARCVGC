@@ -21,7 +21,8 @@ private struct ThemedContentView: View {
 
     @State private var selectedTab = 0
     @State private var deepLinkNavTarget: DeepLinkNavTarget?
-    @State private var deepLinkBattleId: Int32?
+    @State private var deepLinkBattleDetailId: Int32?
+    @State private var deepLinkReplayUrl: String?
     @State private var deepLinkFavoritesSubTab: Int?
     @State private var deepLinkSearchParams: SearchParams?
 
@@ -38,10 +39,8 @@ private struct ThemedContentView: View {
                     repository: container.battleRepository,
                     favoritesStore: container.favoritesStore,
                     settingsStore: container.settingsStore,
-                    appConfigStore: container.appConfigStore,
-                    initialBattleId: deepLinkBattleId
+                    appConfigStore: container.appConfigStore
                 )
-                .id(deepLinkBattleId ?? 0)
                 .navigationDestination(isPresented: Binding(
                     get: { deepLinkNavTarget != nil },
                     set: { if !$0 { deepLinkNavTarget = nil } }
@@ -54,8 +53,7 @@ private struct ThemedContentView: View {
                                 mode: .pokemon(id: target.id, name: target.name, imageUrl: target.imageUrl, typeImageUrl1: target.typeImageUrl1, typeImageUrl2: target.typeImageUrl2, formatId: target.formatId),
                                 favoritesStore: container.favoritesStore,
                                 settingsStore: container.settingsStore,
-                                appConfigStore: container.appConfigStore,
-                                initialBattleId: deepLinkBattleId
+                                appConfigStore: container.appConfigStore
                             )
                         case .player(let target):
                             ContentListView(
@@ -63,14 +61,28 @@ private struct ThemedContentView: View {
                                 mode: .player(id: target.id, name: target.name, formatId: target.formatId),
                                 favoritesStore: container.favoritesStore,
                                 settingsStore: container.settingsStore,
-                                appConfigStore: container.appConfigStore,
-                                initialBattleId: deepLinkBattleId
+                                appConfigStore: container.appConfigStore
                             )
                         case nil:
                             EmptyView()
                         }
                     }
                     .id(deepLinkNavTarget)
+                }
+                .navigationDestination(isPresented: Binding(
+                    get: { deepLinkBattleDetailId != nil },
+                    set: { if !$0 { deepLinkBattleDetailId = nil } }
+                )) {
+                    if let battleId = deepLinkBattleDetailId {
+                        BattleDetailPage(
+                            repository: container.battleRepository,
+                            battleId: battleId,
+                            favoritesStore: container.favoritesStore,
+                            onViewReplay: { url in
+                                deepLinkReplayUrl = url
+                            }
+                        )
+                    }
                 }
             }
             .tabItem {
@@ -85,7 +97,7 @@ private struct ThemedContentView: View {
                 }
                 .tag(1)
 
-            FavoritesView(initialSubTab: deepLinkFavoritesSubTab, initialBattleId: deepLinkBattleId)
+            FavoritesView(initialSubTab: deepLinkFavoritesSubTab)
                 .id(deepLinkFavoritesSubTab ?? -1)
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")
@@ -116,13 +128,19 @@ private struct ThemedContentView: View {
 
             deepLinkFavoritesSubTab = nil
             deepLinkSearchParams = nil
-            deepLinkBattleId = battleId
+            deepLinkNavTarget = nil
+
+            // If any deep link has a battleId, navigate directly to battle detail
+            if let battleId {
+                selectedTab = 0
+                deepLinkBattleDetailId = battleId
+                return
+            }
 
             switch deepLink {
             case .battle(let id):
                 selectedTab = 0
-                deepLinkNavTarget = nil
-                deepLinkBattleId = id
+                deepLinkBattleDetailId = id
             case .pokemon(let target):
                 selectedTab = 0
                 deepLinkNavTarget = .pokemon(target)
@@ -131,29 +149,24 @@ private struct ThemedContentView: View {
                 deepLinkNavTarget = .player(target)
             case .favorites(let subTab):
                 selectedTab = 2
-                deepLinkNavTarget = nil
                 deepLinkFavoritesSubTab = subTab
             case .search(let params):
                 selectedTab = 1
-                deepLinkNavTarget = nil
                 deepLinkSearchParams = params
             case .searchTab:
                 selectedTab = 1
-                deepLinkNavTarget = nil
             case .settingsTab:
                 selectedTab = 3
-                deepLinkNavTarget = nil
             case .topPokemon:
-                // TopPokemon is managed as local state within ContentListView;
-                // deep link navigates to Home tab (TopPokemon defaults from config)
                 selectedTab = 0
-                deepLinkNavTarget = nil
             }
-
-            // Clear battleId after SwiftUI has created views with it,
-            // preventing re-trigger on sheet dismissal
-            DispatchQueue.main.async {
-                deepLinkBattleId = nil
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { deepLinkReplayUrl != nil },
+            set: { if !$0 { deepLinkReplayUrl = nil } }
+        )) {
+            if let url = deepLinkReplayUrl {
+                ReplayOverlay(replayUrl: url, onDismiss: { deepLinkReplayUrl = nil })
             }
         }
         .fullScreenCover(isPresented: Binding(

@@ -2,14 +2,13 @@ import SwiftUI
 import WebKit
 import Shared
 
-struct BattleDetailSheet: View {
+struct BattleDetailPage: View {
     @StateObject private var viewModel: BattleDetailViewModel
     @ObservedObject private var favoritesStore: FavoritesStore
     @Environment(\.themeColor) private var themeColor
-    @State private var selectedTab = 0
-    var onDismiss: (() -> Void)? = nil
     var onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil
     var onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil
+    var onViewReplay: ((String) -> Void)? = nil
 
     private let battleId: Int32
     private let player1IsWinner: KotlinBoolean?
@@ -17,16 +16,16 @@ struct BattleDetailSheet: View {
     private let showWinnerHighlight: Bool
     private let shareUrl: String?
 
-    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, onDismiss: (() -> Void)? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil) {
+    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil, onViewReplay: ((String) -> Void)? = nil) {
         self.battleId = battleId
         self.player1IsWinner = player1IsWinner
         self.player2IsWinner = player2IsWinner
         self.favoritesStore = favoritesStore
         self.showWinnerHighlight = showWinnerHighlight
         self.shareUrl = shareUrl
-        self.onDismiss = onDismiss
         self.onPokemonClick = onPokemonClick
         self.onPlayerClick = onPlayerClick
+        self.onViewReplay = onViewReplay
         _viewModel = StateObject(wrappedValue: BattleDetailViewModel(
             repository: repository,
             battleId: battleId
@@ -34,46 +33,8 @@ struct BattleDetailSheet: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Drag handle
-            Capsule()
-                .fill(Color(.systemGray3))
-                .frame(width: 36, height: 5)
-                .padding(.top, 8)
-                .padding(.bottom, 8)
-
-            // Header row with X button and heart
-            HStack {
-                Button {
-                    onDismiss?()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(Color(.secondaryLabel))
-                }
-
-                Spacer()
-
-                if let shareUrl = shareUrl, let url = URL(string: shareUrl) {
-                    ShareLink(item: url) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 18))
-                            .foregroundColor(Color(.secondaryLabel))
-                    }
-                }
-
-                Button {
-                    favoritesStore.toggleBattleFavorite(id: battleId)
-                } label: {
-                    Image(systemName: favoritesStore.isBattleFavorited(id: battleId) ? "heart.fill" : "heart")
-                        .font(.system(size: 20))
-                        .foregroundColor(favoritesStore.isBattleFavorited(id: battleId) ? themeColor : Color(.secondaryLabel))
-                }
-            }
-            .padding(.horizontal, 30)
-            .padding(.bottom, 18)
-
-            if viewModel.state.isLoading {
+        Group {
+            if viewModel.state.isLoading || (viewModel.state.battleDetail == nil && viewModel.state.error == nil) {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if viewModel.state.error != nil {
@@ -82,60 +43,97 @@ struct BattleDetailSheet: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let battleDetail = viewModel.state.battleDetail {
-                // Tab picker
-                Picker("", selection: $selectedTab) {
-                    Text("Team Preview").tag(0)
-                    Text("Replay").tag(1)
+                let wrappedOnPokemonClick: ((Int32, String, String?, [String]) -> Void)? = onPokemonClick.map { callback in
+                    { id, name, imageUrl, typeImageUrls in
+                        callback(id, name, imageUrl, typeImageUrls, battleDetail.formatId)
+                    }
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                .padding(.bottom, 8)
+                let wrappedOnPlayerClick: ((Int32, String) -> Void)? = onPlayerClick.map { callback in
+                    { id, name in
+                        callback(id, name, battleDetail.formatId)
+                    }
+                }
+                ScrollView {
+                    VStack(spacing: 16) {
+                        Text(battleDetail.formatName)
+                            .font(.subheadline)
+                            .foregroundColor(Color(.secondaryLabel))
 
-                // Tab content
-                if selectedTab == 0 {
-                    let wrappedOnPokemonClick: ((Int32, String, String?, [String]) -> Void)? = onPokemonClick.map { callback in
-                        { id, name, imageUrl, typeImageUrls in
-                            callback(id, name, imageUrl, typeImageUrls, battleDetail.formatId)
+                        let setMatches = (battleDetail.setMatches as? [SetMatchUiModel]) ?? []
+                        if setMatches.isEmpty {
+                            Button {
+                                onViewReplay?(battleDetail.replayUrl)
+                            } label: {
+                                Text("View Replay")
+                                    .fontWeight(.semibold)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        } else {
+                            HStack(spacing: 8) {
+                                let currentPosition = battleDetail.positionInSet?.intValue ?? 1
+                                let allGames: [(position: Int, url: String, isCurrent: Bool)] = (
+                                    [(currentPosition, battleDetail.replayUrl, true)] +
+                                    setMatches.map { (Int($0.positionInSet), $0.replayUrl, false) }
+                                ).sorted { $0.position < $1.position }
+
+                                ForEach(Array(allGames.enumerated()), id: \.offset) { _, game in
+                                    if game.isCurrent {
+                                        Button {
+                                            onViewReplay?(game.url)
+                                        } label: {
+                                            Text("Game \(game.position)")
+                                                .font(.subheadline)
+                                        }
+                                        .buttonStyle(.borderedProminent)
+                                    } else {
+                                        Button {
+                                            onViewReplay?(game.url)
+                                        } label: {
+                                            Text("Game \(game.position)")
+                                                .font(.subheadline)
+                                        }
+                                        .buttonStyle(.bordered)
+                                    }
+                                }
+                            }
                         }
+
+                        PlayerTeamDetailSection(player: battleDetail.player1, isWinnerOverride: player1IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
+
+                        VsDivider()
+
+                        PlayerTeamDetailSection(player: battleDetail.player2, isWinnerOverride: player2IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
                     }
-                    let wrappedOnPlayerClick: ((Int32, String) -> Void)? = onPlayerClick.map { callback in
-                        { id, name in
-                            callback(id, name, battleDetail.formatId)
-                        }
-                    }
-                    TeamPreviewTab(battleDetail: battleDetail, player1IsWinner: player1IsWinner, player2IsWinner: player2IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
-                } else {
-                    ReplayTab(replayUrl: battleDetail.replayUrl)
+                    .padding(.bottom, 16)
                 }
+                .background(Color(.systemBackground))
             }
         }
         .background(Color(.secondarySystemBackground))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack {
+                    if let shareUrl = shareUrl, let url = URL(string: shareUrl) {
+                        ShareLink(item: url) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 18))
+                                .foregroundColor(Color(.secondaryLabel))
+                        }
+                    }
+
+                    Button {
+                        favoritesStore.toggleBattleFavorite(id: battleId)
+                    } label: {
+                        Image(systemName: favoritesStore.isBattleFavorited(id: battleId) ? "heart.fill" : "heart")
+                            .font(.system(size: 20))
+                            .foregroundColor(favoritesStore.isBattleFavorited(id: battleId) ? themeColor : Color(.secondaryLabel))
+                    }
+                }
+            }
+        }
         .onAppear {
             viewModel.loadBattleDetail()
         }
-    }
-}
-
-struct TeamPreviewTab: View {
-    let battleDetail: BattleDetailUiModel
-    var player1IsWinner: KotlinBoolean? = nil
-    var player2IsWinner: KotlinBoolean? = nil
-    var showWinnerHighlight: Bool = true
-    var onPokemonClick: ((Int32, String, String?, [String]) -> Void)? = nil
-    var onPlayerClick: ((Int32, String) -> Void)? = nil
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                PlayerTeamDetailSection(player: battleDetail.player1, isWinnerOverride: player1IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: onPokemonClick, onPlayerClick: onPlayerClick)
-
-                VsDivider()
-
-                PlayerTeamDetailSection(player: battleDetail.player2, isWinnerOverride: player2IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: onPokemonClick, onPlayerClick: onPlayerClick)
-            }
-            .padding(.vertical, 16)
-        }
-        .background(Color(.systemBackground))
     }
 }
 
@@ -248,24 +246,6 @@ struct VsDivider: View {
     }
 }
 
-struct ReplayTab: View {
-    let replayUrl: String
-    @State private var isLoading = true
-
-    var body: some View {
-        ZStack {
-            if let url = URL(string: replayUrl) {
-                WebView(url: url, isLoading: $isLoading)
-                    .opacity(isLoading ? 0 : 1)
-            }
-
-            if isLoading {
-                ProgressView()
-            }
-        }
-    }
-}
-
 struct WebView: UIViewRepresentable {
     let url: URL
     @Binding var isLoading: Bool
@@ -320,5 +300,7 @@ struct WebView: UIViewRepresentable {
 
 #Preview {
     let container = DependencyContainer()
-    return BattleDetailSheet(repository: container.battleRepository, battleId: 1, favoritesStore: container.favoritesStore)
+    return NavigationStack {
+        BattleDetailPage(repository: container.battleRepository, battleId: 1, favoritesStore: container.favoritesStore)
+    }
 }

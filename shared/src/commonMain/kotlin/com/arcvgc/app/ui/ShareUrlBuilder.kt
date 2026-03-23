@@ -8,6 +8,10 @@ import com.arcvgc.app.ui.model.FavoriteContentType
 
 private const val SHARE_BASE_URL = "https://arcvgc.com"
 
+fun shareBattleUrl(battleId: Int): String {
+    return "$SHARE_BASE_URL/battle/$battleId"
+}
+
 fun shareUrlForMode(mode: ContentListMode, battleId: Int?): String {
     val basePath = when (mode) {
         is ContentListMode.Home -> "/"

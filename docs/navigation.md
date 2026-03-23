@@ -5,6 +5,7 @@
 - `searchOverlayParams: SearchParams?` controls a full-screen `ContentListPage` overlay for search results (hides tab bar)
 - `onBack` on the search overlay sets `searchOverlayParams = null` to return to tabs
 - Pokemon/Player navigation is **not** handled in `App.kt` — each `ContentListPage` manages its own (see below)
+- `deepLinkBattleDetailId: Int?` renders a standalone `BattleDetailPage` overlay for battle deep links
 
 ## iOS (`ContentView.swift`, `SearchView.swift`)
 - `TabView` with Top, Search, Favorites, and Settings tabs, each with its own `NavigationStack`
@@ -54,30 +55,39 @@
 - **Not integrated:** tab switching, desktop battle detail selection (inline pane — not a navigation event)
 
 ## Per-instance Pokemon/Player navigation (all platforms)
-Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` and `playerNavTarget` state locally. When a Pokemon or Player is tapped in a detail sheet or list:
-1. `pokemonNavTarget`/`playerNavTarget` is set (detail sheet is **suppressed**, not dismissed — `selectedBattleId` stays set)
+Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` and `playerNavTarget` state locally. When a Pokemon or Player is tapped in a battle detail page or list:
+1. `pokemonNavTarget`/`playerNavTarget` is set — the Pokemon/Player page pushes on top of battle detail in the nav stack
 2. A child `ContentListPage` / `ContentListView` renders on top with `mode = Pokemon` or `mode = Player`
-3. On back, the nav target clears -> detail sheet reappears with the battle still loaded
+3. On back, the nav target clears → user returns to battle detail, then back again returns to list
 4. This is recursive — each child has its own independent state, creating a natural navigation stack
 - Android: child renders in a `Box` overlay; `BackHandler` at each level intercepts system back
 - iOS: child pushed via `navigationDestination(isPresented:)`; NavigationStack handles back automatically
 
 ## Battle detail presentation
-- Android: `ModalBottomSheet` in `ContentListPage.kt` via `BattleDetailSheetWrapper`, keyed by `selectedBattleId`
-- iOS: `.sheet(isPresented:)` in `ContentListView.swift`, bound to `selectedBattleId`
-- Web (desktop): `BattleDetailPanel` renders inline in a right pane (`weight(0.6f)`) of a master-detail `Row` layout. List pane takes `weight(0.4f)`. Selected battle highlighted with `primaryContainer` background. No sheet/overlay.
-- Web (mobile): `BattleDetailPanel` renders as a full-screen overlay via the `MobileNavEntry.BattleDetail` nav stack entry. Pokemon/Player drill-down pushes additional entries onto the stack.
-- Sheet is suppressed (not dismissed) during Pokemon navigation: Android gates composition on `pokemonNavTarget == null`; iOS gates the sheet binding getter on `pokemonNavTarget == nil`; Web replaces the entire page with a child `ContentListPage(mode = Pokemon(...))`
-- Pokemon/Player tap callbacks are handled locally within each `ContentListPage` / `ContentListView` — they do not bubble up to parent
-- **Format threading**: When navigating to a Pokemon from battle detail, the battle's `formatId` is injected at the boundary (Android: `BattleDetailSheetWrapper`, iOS: `BattleDetailSheet`, Web: `BattleDetailPanel`) by wrapping the 4-param `onPokemonClick` into a 5-param version that appends the format. The Pokemon content list then defaults to that format, with a format dropdown in the hero header allowing the user to switch.
+- **Android**: Full-screen page overlay in `ContentListPage.kt` via `BattleDetailPage`, keyed by `selectedBattleId`. Has a `TopAppBar` with back arrow, share button, and favorite heart. `BackHandler` pops it on system back.
+- **iOS**: Pushed via `.navigationDestination(isPresented:)` in `ContentListView.swift`, bound to `selectedBattleId`. Toolbar has share + favorite buttons; back button provided automatically by `NavigationStack`.
+- **Web (desktop)**: `BattleDetailPanel` renders inline in a right pane (`weight(0.6f)`) of a master-detail `Row` layout. List pane takes `weight(0.4f)`. Selected battle highlighted with `primaryContainer` background. No sheet/overlay.
+- **Web (mobile)**: `BattleDetailPanel` renders as a full-screen overlay via the `MobileNavEntry.BattleDetail` nav stack entry. Pokemon/Player drill-down pushes additional entries onto the stack.
+- Pokemon/Player clicks from battle detail push on top of battle detail in the nav stack (battle detail stays underneath). Back from Pokemon → battle detail → list.
+- **Format threading**: When navigating to a Pokemon from battle detail, the battle's `formatId` is injected at the boundary (Android: inline in `ContentListPage`, iOS: `BattleDetailPage`, Web: `BattleDetailPanel`) by wrapping the `onPokemonClick` callback to append the format. The Pokemon content list then defaults to that format, with a format dropdown allowing the user to switch.
+
+## Replay overlay
+- **Android**: Full-screen `Dialog` (`ReplayOverlay.kt`) with a `TopAppBar` (close X button) + WebView. Triggered by `replayUrl` state in `ContentListPage`.
+- **iOS**: `.fullScreenCover` presenting `ReplayOverlay.swift` with a `NavigationStack` + close X button + `WebView` (UIViewRepresentable). Triggered by `replayUrl` state in `ContentListView`.
+- **Web**: "View Replay" button opens the replay URL in a new browser tab via `window.open(url, "_blank")`.
+
+## Set match replay buttons
+- When a match has `setMatches` (e.g., best-of-3), the battle detail page shows a "View Replay (Game N)" button for the current match and additional "Game N" buttons for other matches in the set.
+- Clicking any replay button opens the replay overlay (Android/iOS) or a new browser tab (web) with the corresponding replay URL (`https://replay.pokemonshowdown.com/{showdownId}`).
+- Set match data is mapped in `BattleDetailUiMapper` — the current match is filtered out and remaining matches are sorted by position.
 
 ## Share button (Android/iOS)
-- Share buttons appear in battle detail headers and content list toolbars for Pokemon, Player, and Search modes (not Home or Favorites)
+- Share buttons appear in battle detail toolbars and content list toolbars for Pokemon, Player, and Search modes (not Home or Favorites)
 - `shareUrlForMode(mode, battleId)` in `shared/.../ui/ShareUrlBuilder.kt` generates the full `https://arcvgc.com/...` URL from a `ContentListMode` and optional battle ID
 - Battle detail share URLs include the parent page context: e.g. `https://arcvgc.com/pokemon/150?battle=42`
-- Android: `Intent.ACTION_SEND` with `Intent.createChooser()`. Share `IconButton` in `BattleDetailSheet` header and `TopAppBar` actions
-- iOS: `ShareLink(item: url)` SwiftUI view. In `BattleDetailSheet` header and `ContentListView` toolbar (via `toolbarContent` computed property)
-- iOS `ContentListView` uses `buildShareUrl(battleId:)` helper and extracted `battleDetailSheetContent(battleId:)` / `toolbarContent` to keep the `body` within Swift's type-check limits
+- Android: `Intent.ACTION_SEND` with `Intent.createChooser()`. Share `IconButton` in `BattleDetailPage` toolbar and `TopAppBar` actions
+- iOS: `ShareLink(item: url)` SwiftUI view. In `BattleDetailPage` toolbar and `ContentListView` toolbar (via `toolbarContent` computed property)
+- iOS `ContentListView` uses `buildShareUrl(battleId:)` helper and extracted `battleDetailPageContent(battleId:)` / `toolbarContent` to keep the `body` within Swift's type-check limits
 
 ## Key file locations — content list
 - Android: `ContentListPage.kt`, `ContentListViewModel.kt`, `ContentListUiState.kt` (all in `composeApp/.../ui/contentlist/`)
@@ -88,9 +98,9 @@ Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` an
 - `webApp/.../ui/ViewModelStore.kt` — `ViewModelStore` class, `LocalViewModelStore`, `ProvideViewModelStore`, `rememberViewModel()`
 
 ## Key file locations — battle detail
-- Android: `BattleDetailScreen.kt` (sheet + tabs), `TeamPreviewTab.kt`, `PokemonDetailCard.kt` (all in `composeApp/.../ui/battledetail/`)
-- iOS: `BattleDetailSheet.swift` (sheet + tabs + TeamPreviewTab + PlayerTeamDetailSection), `PokemonDetailCard.swift` (in `iosApp/iosApp/`)
-- Web: `BattleDetailPanel.kt` (inline panel + tabs), `TeamPreviewTab.kt`, `PokemonDetailCard.kt`, `ReplayTab.kt` (all in `webApp/.../ui/battledetail/`)
+- Android: `BattleDetailScreen.kt` (page + team preview + player sections), `ReplayOverlay.kt`, `PokemonDetailCard.kt` (all in `composeApp/.../ui/battledetail/`)
+- iOS: `BattleDetailSheet.swift` (page + player sections), `ReplayOverlay.swift`, `PokemonDetailCard.swift` (in `iosApp/iosApp/`)
+- Web: `BattleDetailPanel.kt` (inline panel), `TeamPreviewTab.kt` (compact/expanded layouts + player sections), `PokemonDetailCard.kt` (all in `webApp/.../ui/battledetail/`)
 - Shared `BattleRepository`: `shared/.../data/BattleRepository.kt` (used by all platforms)
 
 ## Deep Linking
@@ -111,12 +121,10 @@ All three platforms support deep links. Every page in the app is addressable via
 | Top Pokémon | `/top-pokemon` or `/top-pokemon?f={formatId}` | `arcvgc.com/top-pokemon?f=5` |
 | Settings | `/settings` | `arcvgc.com/settings` |
 
-**Battle detail as query param:** Any root URL can have `?battle={id}` appended to open a battle detail pane/sheet alongside the root page. On desktop web, the root page renders in the left pane and the battle detail in the right pane. On mobile apps, the root page renders behind the battle detail sheet. On mobile web, the root is ignored (full-screen battle overlay). Examples:
-- `/pokemon/150?battle=42` — Pokemon page with battle 42 open
-- `/favorites/battles?battle=42` — Favorites with battle 42 open
-- `/search?p=150&f=1&order=rating&battle=42` — Search results with battle 42 open
-- `/?battle=42` — Home with battle 42 open
-- `/battle/42` — Legacy format, equivalent to `/?battle=42`
+**Battle detail as query param:** Any root URL can have `?battle={id}` appended. On all mobile platforms (Android, iOS, mobile web), the `?battle=X` param navigates directly to battle detail, ignoring the root page context. On desktop web, the root page renders in the left pane and the battle detail in the right pane. Examples:
+- `/pokemon/150?battle=42` — Opens battle 42 directly (mobile) or Pokemon page with battle 42 pane (desktop web)
+- `/battle/42` — Legacy format, opens battle 42 directly
+- `/?battle=42` — Opens battle 42 directly
 
 **Search query parameters:** `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `f` (format ID), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping.
 
@@ -143,9 +151,8 @@ All three platforms support deep links. Every page in the app is addressable via
 
 - Intent filters in `AndroidManifest.xml` for `https://arcvgc.com/battle/*`, `/pokemon/*`, `/player/*`, `/favorites/*`, `/search`, `/settings`
 - `MainActivity` parses `intent.data` (path + query) via `parseDeepLink()` and passes the `DeepLink` to `App(deepLink:)`
-- `deepLinkBattleId` initialized synchronously from `deepLink?.battleId`; cleared on manual tab switch (`NavigationBarItem.onClick`)
-- `initialBattleId` threaded to all `ContentListPage` instances: Home tab, `FavoritesPage` (with `battleIdForTab` sub-tab scoping), search overlay, and deep link overlay (Pokemon/Player)
-- `ContentListPage` applies `initialBattleId` via `LaunchedEffect(initialBattleId)` to handle async arrival
+- Deep links with `battleId` (from `/battle/{id}` or `?battle=X` on any route): `deepLinkBattleDetailId` is set, rendering a standalone `BattleDetailPage` overlay in the root `Box` — the root target is ignored
+- Deep links without `battleId`: resolve target normally (Pokemon overlay, Player overlay, Search overlay, tab selection)
 - Pokemon/Player deep links render as overlays via `deepLinkOverlay` state in `App.kt`
 - Search deep links set `searchOverlayParams` which renders `ContentListPage` in Search mode
 - `DeepLinkResolver` provided via Hilt in `NetworkModule` with catalog providers (item, tera type, format) for search filter resolution
@@ -158,9 +165,8 @@ All three platforms support deep links. Every page in the app is addressable via
 - Universal Links via Associated Domains entitlement (`applinks:arcvgc.com`) in `iosApp.entitlements` + server-side `apple-app-site-association`
 - `iOSApp.swift` handles `.onOpenURL` for both custom scheme and universal links — parses path + query and calls `DependencyContainer.handleDeepLink(deepLink:)`
 - `DependencyContainer` resolves the target asynchronously and publishes via `@Published pendingDeepLink` + `@Published pendingBattleId`. Catalog providers wired for search resolution.
-- `ContentView` observes `pendingDeepLink` via `.onChange`. Resets previous navigation state before applying new deep link. Pokemon/Player use a single `DeepLinkNavTarget` enum with one `navigationDestination(isPresented:)` to avoid dismiss/present race conditions. `.id(deepLinkNavTarget)` forces view recreation when target changes.
-- `deepLinkBattleId` cleared via `DispatchQueue.main.async` after SwiftUI processes the state update, preventing re-trigger on sheet dismissal
-- Home `ContentListView` keyed with `.id(deepLinkBattleId ?? 0)` to force recreation on battle deep link arrival
-- `initialBattleId` threaded to Home, Pokemon/Player destinations, and `FavoritesView` (with `battleIdForTab` sub-tab scoping)
+- `ContentView` observes `pendingDeepLink` via `.onChange`. If any deep link has a `battleId`, navigates directly to battle detail page via `deepLinkBattleDetailId` state (ignoring root target). Otherwise applies root target normally.
+- `deepLinkBattleDetailId` presented via `.navigationDestination(isPresented:)` on the Home tab's `NavigationStack`
+- Pokemon/Player deep links use `DeepLinkNavTarget` enum with `navigationDestination(isPresented:)`. `.id(deepLinkNavTarget)` forces view recreation when target changes.
 - Search deep links set `deepLinkSearchParams` passed to `SearchView(initialSearchParams:)`
 - `SearchView` keyed with `.id(deepLinkSearchParams?.hashValue)` and `FavoritesView` keyed with `.id(deepLinkFavoritesSubTab)` for re-init on subsequent deep links
