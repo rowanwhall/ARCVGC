@@ -425,36 +425,7 @@ struct ContentListView: View {
                 selectedBattleId = battleItem.uiModel.id
             }
         case .pokemon(let pokemonItem):
-            HStack(spacing: 12) {
-                PokemonAvatar(
-                    imageUrl: pokemonItem.imageUrl,
-                    circleSize: 40,
-                    spriteSize: 56
-                )
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(pokemonItem.name)
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(Color(.label))
-                    if let pct = pokemonItem.usagePercent {
-                        Text(pct)
-                            .font(.subheadline)
-                            .foregroundColor(Color(.label).opacity(0.75))
-                    }
-                }
-                Spacer()
-                TypeIconRow(types: pokemonItem.types.map { (name: $0.name, imageUrl: $0.imageUrl) })
-            }
-            .contentShape(Rectangle())
-            .padding(.vertical, 4)
-            .padding(.horizontal, 12)
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
-            )
-            .onTapGesture {
+            Button {
                 let typeUrls = pokemonItem.types.compactMap { $0.imageUrl }
                 let derivedFormatId: Int32? = {
                     switch mode {
@@ -474,22 +445,40 @@ struct ContentListView: View {
                     typeImageUrl2: typeUrls.count > 1 ? typeUrls[1] : nil,
                     formatId: derivedFormatId
                 )
+            } label: {
+                HStack(spacing: 12) {
+                    PokemonAvatar(
+                        imageUrl: pokemonItem.imageUrl,
+                        circleSize: 40,
+                        spriteSize: 56
+                    )
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(pokemonItem.name)
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundColor(Color(.label))
+                        if let pct = pokemonItem.usagePercent {
+                            Text(pct)
+                                .font(.subheadline)
+                                .foregroundColor(Color(.label).opacity(0.75))
+                        }
+                    }
+                    Spacer()
+                    TypeIconRow(types: pokemonItem.types.map { (name: $0.name, imageUrl: $0.imageUrl) })
+                }
+                .contentShape(Rectangle())
+                .padding(.vertical, 4)
+                .padding(.horizontal, 12)
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                )
             }
+            .buttonStyle(PressableButtonStyle())
         case .player(let playerItem):
-            HStack {
-                Text(playerItem.name)
-                    .font(.body)
-                    .fontWeight(.medium)
-                Spacer()
-            }
-            .padding(16)
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
-            )
-            .onTapGesture {
+            Button {
                 let derivedFormatId: Int32? = {
                     switch mode {
                     case .home: return viewModel.selectedFormatId
@@ -501,7 +490,22 @@ struct ContentListView: View {
                     }
                 }()
                 playerNavTarget = PlayerNavTarget(id: playerItem.id, name: playerItem.name, formatId: derivedFormatId)
+            } label: {
+                HStack {
+                    Text(playerItem.name)
+                        .font(.body)
+                        .fontWeight(.medium)
+                    Spacer()
+                }
+                .padding(16)
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                )
             }
+            .buttonStyle(PressableButtonStyle())
         case .highlightButtons(let buttonsItem):
             let buttons = buttonsItem.buttons as! [ContentListItem.HighlightButton]
             HStack(spacing: 8) {

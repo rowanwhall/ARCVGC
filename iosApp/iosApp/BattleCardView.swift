@@ -9,46 +9,47 @@ struct BattleCardView: View {
     var onTap: (() -> Void)? = nil
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header row with timestamp and rating
-            HStack {
-                Text(uiModel.formattedTime)
-                    .font(.caption)
-                    .foregroundColor(Color(.label).opacity(0.75))
-                Spacer()
-                Text(uiModel.rating)
-                    .font(.caption)
-                    .foregroundColor(Color(.label).opacity(0.75))
-            }
-            .padding(.horizontal, 8)
-
-            Spacer().frame(height: 8)
-
-            VStack(spacing: 8) {
-                PlayerTeamSection(player: uiModel.player1, showWinnerHighlight: showWinnerHighlight)
-                VsDivider()
-                    .padding(.horizontal, 16)
-                PlayerTeamSection(player: uiModel.player2, showWinnerHighlight: showWinnerHighlight)
-            }
-
-            Spacer().frame(height: 8)
-
-            Text(uiModel.formatName)
-                .font(.caption)
-                .foregroundColor(Color(.label).opacity(0.75))
-                .frame(maxWidth: .infinity, alignment: .center)
-        }
-        .padding(8)
-        .background(Color(.systemBackground))
-        .cornerRadius(cardCornerRadius)
-        .overlay(
-            RoundedRectangle(cornerRadius: cardCornerRadius)
-                .stroke(Color(.opaqueSeparator), lineWidth: 1)
-        )
-        .contentShape(Rectangle())
-        .onTapGesture {
+        Button {
             onTap?()
+        } label: {
+            VStack(spacing: 0) {
+                // Header row with timestamp and rating
+                HStack {
+                    Text(uiModel.formattedTime)
+                        .font(.caption)
+                        .foregroundColor(Color(.label).opacity(0.75))
+                    Spacer()
+                    Text(uiModel.rating)
+                        .font(.caption)
+                        .foregroundColor(Color(.label).opacity(0.75))
+                }
+                .padding(.horizontal, 8)
+
+                Spacer().frame(height: 8)
+
+                VStack(spacing: 8) {
+                    PlayerTeamSection(player: uiModel.player1, showWinnerHighlight: showWinnerHighlight)
+                    VsDivider()
+                        .padding(.horizontal, 16)
+                    PlayerTeamSection(player: uiModel.player2, showWinnerHighlight: showWinnerHighlight)
+                }
+
+                Spacer().frame(height: 8)
+
+                Text(uiModel.formatName)
+                    .font(.caption)
+                    .foregroundColor(Color(.label).opacity(0.75))
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .padding(8)
+            .background(Color(.systemBackground))
+            .cornerRadius(cardCornerRadius)
+            .overlay(
+                RoundedRectangle(cornerRadius: cardCornerRadius)
+                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
+            )
         }
+        .buttonStyle(PressableButtonStyle())
     }
 }
 

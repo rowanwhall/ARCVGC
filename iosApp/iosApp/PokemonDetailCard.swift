@@ -6,6 +6,9 @@ struct PokemonDetailCard: View {
     var onPokemonClick: ((Int32, String, String?, [String]) -> Void)? = nil
 
     var body: some View {
+        Button {
+            onPokemonClick?(pokemon.id, pokemon.name, pokemon.imageUrl, pokemon.types.compactMap { $0.imageUrl })
+        } label: {
         ZStack(alignment: .topLeading) {
             // Main centered content
             VStack(spacing: 0) {
@@ -108,9 +111,8 @@ struct PokemonDetailCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color(.opaqueSeparator), lineWidth: 1)
         )
-        .onTapGesture {
-            onPokemonClick?(pokemon.id, pokemon.name, pokemon.imageUrl, pokemon.types.compactMap { $0.imageUrl })
         }
+        .buttonStyle(PressableButtonStyle())
     }
 }
 
