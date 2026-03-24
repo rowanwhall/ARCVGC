@@ -15,6 +15,6 @@ data class BattleDetailUiModel(
 
 data class SetMatchUiModel(
     val id: Int,
-    val positionInSet: Int,
+    val positionInSet: Int? = null,
     val replayUrl: String
 )

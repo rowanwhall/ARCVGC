@@ -73,7 +73,7 @@ import kotlinx.coroutines.launch
 
 private val CARD_WIDTH = 280.dp
 
-private data class GameButton(val positionInSet: Int, val replayUrl: String, val isCurrent: Boolean)
+private data class GameButton(val positionInSet: Int?, val replayUrl: String, val isCurrent: Boolean)
 
 @Composable
 fun BattleDetailContent(
@@ -128,18 +128,19 @@ fun BattleDetailContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val allGames = buildList {
-                        add(GameButton(battleDetail.positionInSet ?: 1, battleDetail.replayUrl, true))
+                        add(GameButton(battleDetail.positionInSet, battleDetail.replayUrl, true))
                         battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
-                    }.sortedBy { it.positionInSet }
+                    }.sortedBy { it.positionInSet ?: Int.MAX_VALUE }
 
                     allGames.forEach { game ->
+                        val label = game.positionInSet?.let { "Game $it" } ?: "View Replay"
                         if (game.isCurrent) {
                             Button(onClick = { window.open(game.replayUrl, "_blank") }) {
-                                Text("Game ${game.positionInSet}")
+                                Text(label)
                             }
                         } else {
                             OutlinedButton(onClick = { window.open(game.replayUrl, "_blank") }) {
-                                Text("Game ${game.positionInSet}")
+                                Text(label)
                             }
                         }
                     }

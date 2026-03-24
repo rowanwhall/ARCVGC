@@ -27,6 +27,7 @@ val GradientToolbarHeight = 72.dp
 fun GradientToolbar(
     navigationIcon: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    statusBarPadding: Dp = 0.dp,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     Box(modifier = modifier) {
@@ -46,7 +47,7 @@ fun GradientToolbar(
             title = {},
             navigationIcon = navigationIcon,
             actions = actions,
-            windowInsets = WindowInsets(0),
+            windowInsets = WindowInsets(top = statusBarPadding),
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent
             )
@@ -77,6 +78,7 @@ fun GradientToolbarScaffold(
 
         GradientToolbar(
             navigationIcon = navigationIcon,
+            statusBarPadding = statusBarPadding,
             actions = actions
         )
     }

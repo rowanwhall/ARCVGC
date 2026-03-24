@@ -71,18 +71,19 @@ struct BattleDetailPage: View {
 
                         let setMatches = (battleDetail.setMatches as? [SetMatchUiModel]) ?? []
                         HStack(spacing: 8) {
-                            let currentPosition = battleDetail.positionInSet?.intValue ?? 1
-                            let allGames: [(position: Int, url: String, isCurrent: Bool)] = (
+                            let currentPosition = battleDetail.positionInSet?.intValue
+                            let allGames: [(position: Int?, url: String, isCurrent: Bool)] = (
                                 [(currentPosition, battleDetail.replayUrl, true)] +
-                                setMatches.map { (Int($0.positionInSet), $0.replayUrl, false) }
-                            ).sorted { $0.position < $1.position }
+                                setMatches.map { ($0.positionInSet?.intValue, $0.replayUrl, false) }
+                            ).sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
 
                             ForEach(Array(allGames.enumerated()), id: \.offset) { _, game in
+                                let label = game.position.map { "Game \($0)" } ?? "View Replay"
                                 if game.isCurrent {
                                     Button {
                                         onViewReplay?(game.url)
                                     } label: {
-                                        Text("Game \(game.position)")
+                                        Text(label)
                                             .font(.subheadline)
                                     }
                                     .buttonStyle(.borderedProminent)
@@ -90,7 +91,7 @@ struct BattleDetailPage: View {
                                     Button {
                                         onViewReplay?(game.url)
                                     } label: {
-                                        Text("Game \(game.position)")
+                                        Text(label)
                                             .font(.subheadline)
                                     }
                                     .buttonStyle(.bordered)

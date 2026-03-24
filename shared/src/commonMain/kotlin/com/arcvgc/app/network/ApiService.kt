@@ -46,6 +46,7 @@ class ApiService {
             json(Json {
                 ignoreUnknownKeys = true
                 isLenient = true
+                explicitNulls = false
             })
         }
     }

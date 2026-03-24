@@ -83,6 +83,7 @@ fun BattleDetailPage(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    statusBarPadding: Dp = 0.dp,
     isFavorited: Boolean = false,
     showWinnerHighlight: Boolean = true,
     onToggleFavorite: () -> Unit = {},
@@ -93,6 +94,7 @@ fun BattleDetailPage(
 ) {
     GradientToolbarScaffold(
         modifier = modifier,
+        statusBarPadding = statusBarPadding,
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
@@ -151,7 +153,7 @@ fun BattleDetailPage(
     }
 }
 
-private data class GameButton(val positionInSet: Int, val replayUrl: String, val isCurrent: Boolean)
+private data class GameButton(val positionInSet: Int?, val replayUrl: String, val isCurrent: Boolean)
 
 @Composable
 private fun BattleDetailBody(
@@ -206,18 +208,19 @@ private fun BattleDetailBody(
             verticalAlignment = Alignment.CenterVertically
         ) {
             val allGames = buildList {
-                add(GameButton(battleDetail.positionInSet ?: 1, battleDetail.replayUrl, true))
+                add(GameButton(battleDetail.positionInSet, battleDetail.replayUrl, true))
                 battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
-            }.sortedBy { it.positionInSet }
+            }.sortedBy { it.positionInSet ?: Int.MAX_VALUE }
 
             allGames.forEach { game ->
+                val label = game.positionInSet?.let { "Game $it" } ?: "View Replay"
                 if (game.isCurrent) {
                     Button(onClick = { onViewReplay(game.replayUrl) }) {
-                        Text("Game ${game.positionInSet}")
+                        Text(label)
                     }
                 } else {
                     OutlinedButton(onClick = { onViewReplay(game.replayUrl) }) {
-                        Text("Game ${game.positionInSet}")
+                        Text(label)
                     }
                 }
             }

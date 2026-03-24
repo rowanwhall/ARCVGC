@@ -276,9 +276,18 @@ class ContentListLogic(
                 _uiState.update { it.copy(isPaginating = true) }
                 val (items, pagination) = fetchContent(page = nextPage)
                 _uiState.update {
+                    val existingKeys = buildSet {
+                        it.items.forEach { item ->
+                            add(item.listKey)
+                            if (item is ContentListItem.Section) {
+                                item.items.forEach { child -> add(child.listKey) }
+                            }
+                        }
+                    }
+                    val newItems = items.filter { item -> item.listKey !in existingKeys }
                     it.copy(
                         isPaginating = false,
-                        items = (it.items + items).distinctBy { item -> item.listKey },
+                        items = it.items + newItems,
                         currentPage = pagination.page,
                         canPaginate = pagination.page < pagination.totalPages
                     )

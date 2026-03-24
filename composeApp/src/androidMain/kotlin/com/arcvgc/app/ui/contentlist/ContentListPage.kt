@@ -123,6 +123,8 @@ fun ContentListPage(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
 
+    val statusBarHeight = if (consumeTopInsets) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
+
     if (onBack != null && selectedBattleId == null && pokemonNavTarget == null && playerNavTarget == null && topPokemonFormatId == null) {
         BackHandler { onBack() }
     }
@@ -212,6 +214,7 @@ fun ContentListPage(
 
         if (onBack != null) {
             GradientToolbar(
+                statusBarPadding = statusBarHeight,
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -298,6 +301,7 @@ fun ContentListPage(
                     state = patchedState,
                     onBack = { selectedBattleId = null },
                     onRetry = { battleDetailViewModel.loadBattleDetail(battleId) },
+                    statusBarPadding = statusBarHeight,
                     isFavorited = battleId in favoriteBattleIds,
                     showWinnerHighlight = showWinnerHighlight,
                     onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },

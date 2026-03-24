@@ -7,5 +7,5 @@ import kotlinx.serialization.Serializable
 data class SetMatchDto(
     val id: Int,
     @SerialName("showdown_id") val showdownId: String,
-    @SerialName("position_in_set") val positionInSet: Int
+    @SerialName("position_in_set") val positionInSet: Int? = null
 )

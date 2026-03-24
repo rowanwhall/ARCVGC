@@ -44,6 +44,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -397,7 +400,8 @@ fun App(deepLink: DeepLink? = null) {
                         onBack = { deepLinkBattleDetailId = null },
                         onRetry = { battleDetailViewModel.loadBattleDetail(battleId) },
                         onViewReplay = { url -> deepLinkReplayUrl = url },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                     )
                 }
             }

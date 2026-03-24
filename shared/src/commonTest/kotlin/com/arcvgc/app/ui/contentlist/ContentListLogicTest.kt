@@ -638,6 +638,35 @@ class ContentListLogicTest {
     }
 
     @Test
+    fun paginate_deduplicatesBattlesInSectionChildren() {
+        // Page 1: battle inside a Section (e.g., Home "Today's Top Battles")
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, 20, 2)
+        )
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        assertTrue(logic.uiState.value.canPaginate)
+
+        // Page 2 returns the SAME battle (pagination overlap)
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(2, 10, 20, 2)
+        )
+
+        val page1ItemCount = logic.uiState.value.items.size
+        logic.paginate()
+        testScope.advanceUntilIdle()
+
+        // Duplicate battle should be filtered out — item count unchanged
+        assertEquals(page1ItemCount, logic.uiState.value.items.size)
+    }
+
+    @Test
     fun paginate_refusesWhenAlreadyPaginating() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
