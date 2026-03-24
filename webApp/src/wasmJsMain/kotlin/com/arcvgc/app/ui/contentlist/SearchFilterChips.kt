@@ -29,8 +29,9 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.FilterChipCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.FilterChipHeight
 
-internal val FilterChipHeight = 44.dp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -51,7 +52,7 @@ internal fun SearchFilterChips(
                     .height(FilterChipHeight)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(FilterChipCornerRadius)
                     )
                     .padding(horizontal = 6.dp),
                 contentAlignment = Alignment.Center
@@ -74,7 +75,7 @@ internal fun SearchFilterChips(
                     .height(FilterChipHeight)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(FilterChipCornerRadius)
                     )
                     .padding(start = 4.dp, end = if (canRemove) 0.dp else 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -121,7 +122,7 @@ internal fun SearchFilterChips(
                     .height(FilterChipHeight)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(FilterChipCornerRadius)
                     )
                     .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -145,7 +146,7 @@ internal fun SearchFilterChips(
                     .height(FilterChipHeight)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(FilterChipCornerRadius)
                     )
                     .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -169,7 +170,7 @@ internal fun SearchFilterChips(
                     .height(FilterChipHeight)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(FilterChipCornerRadius)
                     )
                     .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -193,7 +194,7 @@ internal fun SearchFilterChips(
                     .height(FilterChipHeight)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(FilterChipCornerRadius)
                     )
                     .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -219,7 +220,7 @@ internal fun SearchFilterChips(
                     .height(FilterChipHeight)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(FilterChipCornerRadius)
                     )
                     .padding(start = 6.dp, end = if (canRemove) 0.dp else 6.dp),
                 verticalAlignment = Alignment.CenterVertically

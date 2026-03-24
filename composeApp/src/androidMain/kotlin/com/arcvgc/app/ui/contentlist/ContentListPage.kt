@@ -74,6 +74,11 @@ import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.shareBattleUrl
 import com.arcvgc.app.ui.shareUrlForMode
+import com.arcvgc.app.ui.tokens.AppTokens.ContentListItemSpacing
+import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipVerticalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
 import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -459,7 +464,7 @@ private fun ContentListContent(
                 top = topPadding,
                 bottom = 16.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing),
             modifier = Modifier.fillMaxSize()
         ) {
             when (val h = header) {
@@ -572,9 +577,9 @@ private fun ContentListContent(
                                 fontSize = 18.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
-                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(PlayerChipCornerRadius))
+                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(PlayerChipCornerRadius))
+                                    .padding(horizontal = PlayerChipHorizontalPadding, vertical = PlayerChipVerticalPadding)
                             )
                         }
                     }

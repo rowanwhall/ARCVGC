@@ -20,6 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.arcvgc.app.ui.model.AppTheme
+import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,8 +55,8 @@ fun ThemePickerSheet(
                 trailingContent = {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .size(ColorSwatchSize)
+                            .clip(RoundedCornerShape(ColorSwatchCornerRadius))
                             .background(Color(theme.primaryColor))
                     )
                 },

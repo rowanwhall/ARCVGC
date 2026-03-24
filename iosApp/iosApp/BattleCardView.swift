@@ -1,7 +1,7 @@
 import SwiftUI
 import Shared
 
-private let cardCornerRadius: CGFloat = 12
+private let cardCornerRadius: CGFloat = AppTokens.cardCornerRadius
 
 struct BattleCardView: View {
     let uiModel: BattleCardUiModel
@@ -87,7 +87,7 @@ struct PlayerTeamSection: View {
         .cornerRadius(cardCornerRadius)
         .overlay(
             isWinner
-                ? RoundedRectangle(cornerRadius: cardCornerRadius).stroke(themeColor, lineWidth: 2)
+                ? RoundedRectangle(cornerRadius: cardCornerRadius).stroke(themeColor, lineWidth: AppTokens.winnerBorderWidth)
                 : nil
         )
     }

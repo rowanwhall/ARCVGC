@@ -19,6 +19,8 @@ import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.TypeIconRow
 import com.arcvgc.app.ui.components.TypeInfo
 import com.arcvgc.app.ui.model.TypeUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
 
 // SectionHeader, SortToggleButton, PlayerListRow, FormatDropdown,
 // PokemonNavTarget, PlayerNavTarget, PAGINATION_THRESHOLD, findBattle()
@@ -38,9 +40,9 @@ internal fun PokemonListRow(
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(CardCornerRadius),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),

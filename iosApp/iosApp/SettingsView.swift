@@ -68,9 +68,9 @@ struct SettingsView: View {
                                         .foregroundColor(.secondary)
                                 }
                                 Spacer()
-                                RoundedRectangle(cornerRadius: 6)
+                                RoundedRectangle(cornerRadius: AppTokens.colorSwatchCornerRadius)
                                     .fill(SettingsStore.colorForThemeId(colorChoice.selectedThemeId))
-                                    .frame(width: 24, height: 24)
+                                    .frame(width: AppTokens.colorSwatchSize, height: AppTokens.colorSwatchSize)
                             }
                         }
                     case .action(let action):

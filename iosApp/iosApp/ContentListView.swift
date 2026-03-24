@@ -115,7 +115,7 @@ struct ContentListView: View {
 
         GeometryReader { geometry in
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: AppTokens.contentListItemSpacing) {
                     if case .homeHero = header {
                         VStack(spacing: 0) {
                             Text("ARC")
@@ -181,13 +181,13 @@ struct ContentListView: View {
                             Text(name)
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(Color(.label))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
+                                .padding(.horizontal, AppTokens.playerChipHorizontalPadding)
+                                .padding(.vertical, AppTokens.playerChipVerticalPadding)
                                 .background(Color(.systemBackground))
-                                .cornerRadius(16)
+                                .cornerRadius(AppTokens.playerChipCornerRadius)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                                    RoundedRectangle(cornerRadius: AppTokens.playerChipCornerRadius)
+                                        .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
                                 )
                         }
                         .frame(maxWidth: .infinity)
@@ -488,10 +488,10 @@ struct ContentListView: View {
                 .padding(.vertical, 4)
                 .padding(.horizontal, 12)
                 .background(Color(.systemBackground))
-                .cornerRadius(12)
+                .cornerRadius(AppTokens.cardCornerRadius)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
+                        .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
                 )
             }
             .buttonStyle(PressableButtonStyle())
@@ -517,10 +517,10 @@ struct ContentListView: View {
                 }
                 .padding(16)
                 .background(Color(.systemBackground))
-                .cornerRadius(12)
+                .cornerRadius(AppTokens.cardCornerRadius)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
+                        .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
                 )
             }
             .buttonStyle(PressableButtonStyle())
@@ -550,10 +550,10 @@ struct ContentListView: View {
                         .padding(12)
                     }
                     .background(Color(.systemBackground))
-                    .cornerRadius(12)
+                    .cornerRadius(AppTokens.cardCornerRadius)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
+                            .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
                     )
                 }
             }
@@ -601,10 +601,10 @@ struct ContentListView: View {
             }
             .padding(12)
             .background(Color(.systemBackground))
-            .cornerRadius(12)
+            .cornerRadius(AppTokens.cardCornerRadius)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
+                    .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
             )
         case .statChipRow(let chipRow):
             let allChips = chipRow.chips as! [ContentListItem.StatChipItem]
@@ -636,10 +636,10 @@ struct ContentListView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(Color(.systemBackground))
-                        .cornerRadius(12)
+                        .cornerRadius(AppTokens.cardCornerRadius)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
+                                .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
                         )
                     }
                 }

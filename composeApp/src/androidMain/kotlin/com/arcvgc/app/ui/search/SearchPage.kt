@@ -44,6 +44,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.FormatSorter
+import com.arcvgc.app.ui.tokens.AppTokens.SearchButtonCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.SecondaryIconAlpha
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -102,7 +104,7 @@ fun SearchPage(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(SearchButtonCornerRadius))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                             .padding(vertical = 14.dp),
                         contentAlignment = Alignment.Center
@@ -193,7 +195,7 @@ fun SearchPage(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(SearchButtonCornerRadius))
                     .background(bgColor)
                     .clickable { viewModel.setUnratedOnly(!uiState.unratedOnly) }
                     .padding(horizontal = 16.dp, vertical = 14.dp),
@@ -477,10 +479,10 @@ private fun SearchOptionButton(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(SearchButtonCornerRadius))
             .background(
                 if (enabled) MaterialTheme.colorScheme.surfaceVariant
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = SecondaryIconAlpha)
             )
             .then(if (enabled) Modifier.clickable { onClick() } else Modifier)
             .padding(vertical = 14.dp),
@@ -489,7 +491,7 @@ private fun SearchOptionButton(
         Text(
             text = text,
             color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = SecondaryIconAlpha),
             fontSize = 14.sp
         )
     }
@@ -505,7 +507,7 @@ private fun DateOptionButton(
     Row(
         modifier = modifier
             .height(46.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(SearchButtonCornerRadius))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable { onClick() }
             .padding(start = 12.dp, end = if (onClear != null) 4.dp else 12.dp),

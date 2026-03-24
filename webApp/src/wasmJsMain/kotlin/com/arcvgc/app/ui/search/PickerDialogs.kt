@@ -49,6 +49,7 @@ import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.DialogWidth
 
 @Composable
 fun PokemonPickerDialog(
@@ -61,7 +62,7 @@ fun PokemonPickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp).height(600.dp)
+            modifier = Modifier.width(DialogWidth).height(600.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 var query by remember { mutableStateOf("") }
@@ -142,7 +143,7 @@ fun ItemPickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp).height(600.dp)
+            modifier = Modifier.width(DialogWidth).height(600.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 var query by remember { mutableStateOf("") }
@@ -252,7 +253,7 @@ fun TeraTypePickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp).height(600.dp)
+            modifier = Modifier.width(DialogWidth).height(600.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 var query by remember { mutableStateOf("") }
@@ -362,7 +363,7 @@ fun FormatPickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp)
+            modifier = Modifier.width(DialogWidth)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 var query by remember { mutableStateOf("") }
@@ -443,7 +444,7 @@ fun MinRatingPickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp)
+            modifier = Modifier.width(DialogWidth)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -489,7 +490,7 @@ fun MaxRatingPickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp)
+            modifier = Modifier.width(DialogWidth)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -535,7 +536,7 @@ fun SortOrderPickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp)
+            modifier = Modifier.width(DialogWidth)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -580,7 +581,7 @@ fun PlayerNamePickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp)
+            modifier = Modifier.width(DialogWidth)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(

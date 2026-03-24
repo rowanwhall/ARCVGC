@@ -7,6 +7,15 @@ globs:
 
 # Coding Conventions
 
+## Design Tokens
+
+When adding or modifying UI code, use `AppTokens` for shared dimension, typography, and alpha values instead of hardcoding. This keeps Android, Web, and iOS visually aligned.
+
+- **Kotlin (Android + Web)**: Import individual tokens directly — e.g., `import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius` — then use `CardCornerRadius` unqualified. Do **not** import the `AppTokens` object itself and qualify every usage.
+- **Swift (iOS)**: Use `AppTokens.cardCornerRadius`, `AppTokens.standardBorderWidth`, etc. from `iosApp/iosApp/AppTokens.swift` (Swift does not support member imports, so qualified access is expected).
+- When adding a new token, add it to both `AppTokens.kt` and `AppTokens.swift` with matching names (PascalCase in Kotlin, camelCase in Swift).
+- Only tokenize values that are reused across multiple files with the same purpose. One-off values stay inline.
+
 ## Compose (Android + Web)
 
 - **`modifier` parameter ordering**: `modifier: Modifier = Modifier` must be the **first optional parameter** — immediately after all required parameters, before any other optional parameters.

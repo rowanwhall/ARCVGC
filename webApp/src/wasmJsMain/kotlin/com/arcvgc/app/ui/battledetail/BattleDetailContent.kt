@@ -59,6 +59,13 @@ import com.arcvgc.app.ui.components.VsDivider
 import com.arcvgc.app.ui.mapper.ShowdownPasteFormatter
 import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.BattleDetailUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipVerticalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.SecondaryIconAlpha
+import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
+import com.arcvgc.app.ui.tokens.AppTokens.WinnerBorderWidth
 import com.arcvgc.app.ui.model.PlayerDetailUiModel
 import kotlinx.browser.window
 import kotlinx.coroutines.delay
@@ -197,11 +204,11 @@ private fun PlayerTeamHeader(
     ) {
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(PlayerChipCornerRadius))
                 .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(PlayerChipCornerRadius))
                 .clickable { onPlayerClick?.invoke(player.id, player.name) }
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .padding(horizontal = PlayerChipHorizontalPadding, vertical = PlayerChipVerticalPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -215,7 +222,7 @@ private fun PlayerTeamHeader(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = SecondaryIconAlpha)
             )
         }
         Spacer(Modifier.weight(1f))
@@ -233,7 +240,7 @@ private fun PlayerTeamHeader(
                 contentDescription = "Copy team",
                 modifier = Modifier.size(20.dp),
                 tint = if (showCopied) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                else MaterialTheme.colorScheme.onSurface.copy(alpha = SecondaryIconAlpha)
             )
         }
     }
@@ -254,8 +261,8 @@ private fun PlayerTeamSection(
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val winnerBorder = if (showWinnerHighlight && player.isWinner == true) {
-        if (isCompact) Modifier.border(2.dp, primaryColor)
-        else Modifier.border(2.dp, primaryColor, RoundedCornerShape(12.dp))
+        if (isCompact) Modifier.border(WinnerBorderWidth, primaryColor)
+        else Modifier.border(WinnerBorderWidth, primaryColor, RoundedCornerShape(CardCornerRadius))
     } else {
         Modifier
     }
@@ -316,7 +323,7 @@ private fun PlayerTeamSection(
                 modifier = Modifier
                     .width(containerWidth)
                     .then(winnerBorder)
-                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(CardCornerRadius))
                     .padding(innerPadding)
             ) {
                 PlayerTeamHeader(

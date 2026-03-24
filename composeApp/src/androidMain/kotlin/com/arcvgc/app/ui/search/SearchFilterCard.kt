@@ -38,6 +38,10 @@ import com.arcvgc.app.ui.components.PreviewAsyncImage
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.SearchFilterSlotUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonFontSize
+import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonHorizontalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonVerticalPadding
 
 @Composable
 fun SearchFilterCard(
@@ -151,15 +155,15 @@ private fun SmallFilterButton(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(SmallFilterButtonCornerRadius))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .padding(horizontal = SmallFilterButtonHorizontalPadding, vertical = SmallFilterButtonVerticalPadding),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            fontSize = SmallFilterButtonFontSize,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }

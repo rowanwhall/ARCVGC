@@ -120,7 +120,7 @@ struct SearchView: View {
                         }
                     }
                     .disabled(viewModel.state.unratedOnly)
-                    .opacity(viewModel.state.unratedOnly ? 0.5 : 1.0)
+                    .opacity(viewModel.state.unratedOnly ? AppTokens.secondaryIconAlpha : 1.0)
 
                     // Unrated Only toggle button
                     Button {
@@ -133,7 +133,7 @@ struct SearchView: View {
                             .padding(.vertical, 14)
                     }
                     .background(viewModel.state.unratedOnly ? Color.accentColor : Color(.systemGray5))
-                    .cornerRadius(8)
+                    .cornerRadius(AppTokens.searchButtonCornerRadius)
 
                     // Date range buttons
                     HStack(spacing: 8) {
@@ -166,7 +166,7 @@ struct SearchView: View {
                         activeSheet = .sortOrder
                     }
                     .disabled(viewModel.state.unratedOnly)
-                    .opacity(viewModel.state.unratedOnly ? 0.5 : 1.0)
+                    .opacity(viewModel.state.unratedOnly ? AppTokens.secondaryIconAlpha : 1.0)
 
                     // Search button
                     Button {
@@ -359,7 +359,7 @@ private struct SearchOptionButton: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(Color(.systemGray5))
-                .cornerRadius(8)
+                .cornerRadius(AppTokens.searchButtonCornerRadius)
         }
     }
 }
@@ -391,7 +391,7 @@ private struct DateOptionButton: View {
             .padding(.vertical, 11)
             .padding(.horizontal, 8)
             .background(Color(.systemGray5))
-            .cornerRadius(8)
+            .cornerRadius(AppTokens.searchButtonCornerRadius)
         }
     }
 }

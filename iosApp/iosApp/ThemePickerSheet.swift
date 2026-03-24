@@ -21,9 +21,9 @@ struct ThemePickerSheet: View {
                     dismiss()
                 } label: {
                     HStack {
-                        RoundedRectangle(cornerRadius: 6)
+                        RoundedRectangle(cornerRadius: AppTokens.colorSwatchCornerRadius)
                             .fill(theme.color)
-                            .frame(width: 24, height: 24)
+                            .frame(width: AppTokens.colorSwatchSize, height: AppTokens.colorSwatchSize)
                         Text(theme.name)
                             .foregroundColor(.primary)
                         Spacer()

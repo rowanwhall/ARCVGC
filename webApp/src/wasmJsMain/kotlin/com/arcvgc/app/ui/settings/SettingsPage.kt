@@ -42,6 +42,13 @@ import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.DarkModeOption
 import com.arcvgc.app.ui.model.SettingItem
+import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchSize
+import com.arcvgc.app.ui.tokens.AppTokens.DialogWidth
+import com.arcvgc.app.ui.tokens.AppTokens.SettingsRowHorizontalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.SettingsRowVerticalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.SettingsSubtitleFontSize
+import com.arcvgc.app.ui.tokens.AppTokens.SettingsTitleFontSize
 import kotlinx.browser.window
 
 @Composable
@@ -174,25 +181,25 @@ private fun ColorChoiceSettingRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SettingsRowHorizontalPadding, vertical = SettingsRowVerticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                fontSize = 16.sp,
+                fontSize = SettingsTitleFontSize,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = item.subtitle,
-                fontSize = 13.sp,
+                fontSize = SettingsSubtitleFontSize,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Box(
             modifier = Modifier
-                .size(24.dp)
-                .clip(RoundedCornerShape(6.dp))
+                .size(ColorSwatchSize)
+                .clip(RoundedCornerShape(ColorSwatchCornerRadius))
                 .background(Color(AppTheme.fromId(item.selectedThemeId).primaryColor))
         )
     }
@@ -208,7 +215,7 @@ private fun ThemePickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp)
+            modifier = Modifier.width(DialogWidth)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -229,8 +236,8 @@ private fun ThemePickerDialog(
                         trailingContent = {
                             Box(
                                 modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(RoundedCornerShape(6.dp))
+                                    .size(ColorSwatchSize)
+                                    .clip(RoundedCornerShape(ColorSwatchCornerRadius))
                                     .background(Color(theme.primaryColor))
                             )
                         },
@@ -253,18 +260,18 @@ private fun ToggleSettingRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SettingsRowHorizontalPadding, vertical = SettingsRowVerticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                fontSize = 16.sp,
+                fontSize = SettingsTitleFontSize,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = item.subtitle,
-                fontSize = 13.sp,
+                fontSize = SettingsSubtitleFontSize,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -285,18 +292,18 @@ private fun DarkModeChoiceSettingRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SettingsRowHorizontalPadding, vertical = SettingsRowVerticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                fontSize = 16.sp,
+                fontSize = SettingsTitleFontSize,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = item.subtitle,
-                fontSize = 13.sp,
+                fontSize = SettingsSubtitleFontSize,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -318,7 +325,7 @@ private fun DarkModePickerDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = Modifier.width(480.dp)
+            modifier = Modifier.width(DialogWidth)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -356,18 +363,18 @@ private fun ActionSettingRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SettingsRowHorizontalPadding, vertical = SettingsRowVerticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                fontSize = 16.sp,
+                fontSize = SettingsTitleFontSize,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = item.subtitle,
-                fontSize = 13.sp,
+                fontSize = SettingsSubtitleFontSize,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -384,18 +391,18 @@ private fun LinkSettingRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SettingsRowHorizontalPadding, vertical = SettingsRowVerticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                fontSize = 16.sp,
+                fontSize = SettingsTitleFontSize,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = item.subtitle,
-                fontSize = 13.sp,
+                fontSize = SettingsSubtitleFontSize,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

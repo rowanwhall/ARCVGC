@@ -35,6 +35,8 @@ import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.components.BattleCard
 import com.arcvgc.app.ui.components.FillPokemonAvatar
 import com.arcvgc.app.ui.model.ContentListItem
+import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
 
 @Composable
 internal fun ContentListItemRow(
@@ -58,7 +60,7 @@ internal fun ContentListItemRow(
                         if (isSelected) {
                             Modifier.background(
                                 MaterialTheme.colorScheme.primaryContainer,
-                                RoundedCornerShape(12.dp)
+                                RoundedCornerShape(CardCornerRadius)
                             )
                         } else {
                             Modifier
@@ -86,9 +88,9 @@ internal fun ContentListItemRow(
                     Surface(
                         onClick = { onHighlightBattleClick(button.battleId) },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(CardCornerRadius),
                         color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Row(
                             modifier = Modifier
@@ -124,9 +126,9 @@ internal fun ContentListItemRow(
             val isCompactGrid = LocalWindowSizeClass.current == WindowSizeClass.Compact
             val columns = if (isCompactGrid) 3 else item.pokemon.size.coerceAtMost(6)
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(CardCornerRadius),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -213,9 +215,9 @@ internal fun ContentListItemRow(
 @Composable
 internal fun StatChip(name: String, usagePercent: String?, imageUrl: String? = null) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(CardCornerRadius),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

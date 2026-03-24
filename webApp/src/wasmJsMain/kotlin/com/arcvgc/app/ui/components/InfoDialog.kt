@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.arcvgc.app.ui.model.InfoContent
+import com.arcvgc.app.ui.tokens.AppTokens.DialogWidth
 
 @Composable
 fun InfoDialog(
@@ -32,7 +33,7 @@ fun InfoDialog(
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 0.dp,
-            modifier = modifier.width(480.dp)
+            modifier = modifier.width(DialogWidth)
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Column(

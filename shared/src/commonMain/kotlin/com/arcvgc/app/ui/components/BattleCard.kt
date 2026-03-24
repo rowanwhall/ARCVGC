@@ -33,9 +33,9 @@ import com.arcvgc.app.shared.preview_item
 import com.arcvgc.app.shared.preview_tera
 import com.arcvgc.app.ui.model.BattleCardUiModel
 import com.arcvgc.app.ui.model.PlayerUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.WinnerBorderWidth
 import com.arcvgc.app.ui.model.PokemonSlotUiModel
-
-private val CardCornerRadius = 12.dp
 
 @Composable
 fun BattleCard(
@@ -109,7 +109,7 @@ private fun PlayerTeamSection(
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val winnerBorder = if (showWinnerHighlight && player.isWinner == true) {
-        Modifier.border(2.dp, primaryColor, RoundedCornerShape(CardCornerRadius))
+        Modifier.border(WinnerBorderWidth, primaryColor, RoundedCornerShape(CardCornerRadius))
     } else {
         Modifier
     }
@@ -177,9 +177,9 @@ private fun PokemonWithItem(
 
         if (pokemonSlot.item != null) {
             PreviewAsyncImage(
-                url = pokemonSlot.item?.imageUrl,
+                url = pokemonSlot.item.imageUrl,
                 previewDrawable = Res.drawable.preview_item,
-                contentDescription = pokemonSlot.item?.name,
+                contentDescription = pokemonSlot.item.name,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .size(itemSize)
@@ -188,9 +188,9 @@ private fun PokemonWithItem(
 
         if (pokemonSlot.teraType != null) {
             PreviewAsyncImage(
-                url = pokemonSlot.teraType?.imageUrl,
+                url = pokemonSlot.teraType.imageUrl,
                 previewDrawable = Res.drawable.preview_tera,
-                contentDescription = pokemonSlot.teraType?.name,
+                contentDescription = pokemonSlot.teraType.name,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset(x = -teraTypeInset, y = teraTypeInset)

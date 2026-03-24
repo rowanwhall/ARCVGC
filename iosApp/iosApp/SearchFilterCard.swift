@@ -62,10 +62,10 @@ struct SearchFilterCard: View {
         }
         .padding(12)
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .cornerRadius(AppTokens.cardCornerRadius)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(.opaqueSeparator), lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
+                .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
         )
     }
 }
@@ -77,12 +77,12 @@ private struct SmallFilterButton: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 12))
+                .font(.system(size: AppTokens.smallFilterButtonFontSize))
                 .foregroundColor(.secondary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, AppTokens.smallFilterButtonHorizontalPadding)
+                .padding(.vertical, AppTokens.smallFilterButtonVerticalPadding)
                 .background(Color(.systemGray5))
-                .cornerRadius(6)
+                .cornerRadius(AppTokens.smallFilterButtonCornerRadius)
         }
     }
 }

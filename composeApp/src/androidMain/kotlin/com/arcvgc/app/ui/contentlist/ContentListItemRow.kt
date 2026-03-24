@@ -29,6 +29,8 @@ import coil3.compose.AsyncImage
 import com.arcvgc.app.ui.components.BattleCard
 import com.arcvgc.app.ui.components.FillPokemonAvatar
 import com.arcvgc.app.ui.model.ContentListItem
+import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
 
 @Composable
 internal fun ContentListItemRow(
@@ -66,9 +68,9 @@ internal fun ContentListItemRow(
                     Surface(
                         onClick = { onHighlightBattleClick(button.battleId) },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(CardCornerRadius),
                         color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Row(
                             modifier = Modifier
@@ -102,9 +104,9 @@ internal fun ContentListItemRow(
         }
         is ContentListItem.PokemonGrid -> {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(CardCornerRadius),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -175,9 +177,9 @@ internal fun ContentListItemRow(
 @Composable
 internal fun StatChip(name: String, usagePercent: String?, imageUrl: String? = null) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(CardCornerRadius),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

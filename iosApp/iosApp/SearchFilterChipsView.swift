@@ -1,7 +1,7 @@
 import SwiftUI
 import Shared
 
-let filterChipHeight: CGFloat = 44
+let filterChipHeight: CGFloat = AppTokens.filterChipHeight
 
 struct SearchFilterChipsView: View {
     let filters: SearchFiltersData
@@ -17,7 +17,7 @@ struct SearchFilterChipsView: View {
                     .padding(.horizontal, 6)
                     .frame(height: filterChipHeight)
                     .background(Color(.systemGray5))
-                    .cornerRadius(4)
+                    .cornerRadius(AppTokens.filterChipCornerRadius)
             }
 
             ForEach(Array(filters.pokemonChips.enumerated()), id: \.offset) { _, chip in
@@ -67,7 +67,7 @@ struct SearchFilterChipsView: View {
                 .padding(.trailing, canRemove ? 0 : 4)
                 .frame(height: filterChipHeight)
                 .background(Color(.systemGray5))
-                .cornerRadius(4)
+                .cornerRadius(AppTokens.filterChipCornerRadius)
             }
 
             if let rating = filters.minimumRating {
@@ -86,7 +86,7 @@ struct SearchFilterChipsView: View {
                 .padding(.trailing, canRemove ? 0 : 6)
                 .frame(height: filterChipHeight)
                 .background(Color(.systemGray5))
-                .cornerRadius(4)
+                .cornerRadius(AppTokens.filterChipCornerRadius)
             }
 
             if let rating = filters.maximumRating {
@@ -105,7 +105,7 @@ struct SearchFilterChipsView: View {
                 .padding(.trailing, canRemove ? 0 : 6)
                 .frame(height: filterChipHeight)
                 .background(Color(.systemGray5))
-                .cornerRadius(4)
+                .cornerRadius(AppTokens.filterChipCornerRadius)
             }
 
             if filters.unratedOnly {
@@ -124,7 +124,7 @@ struct SearchFilterChipsView: View {
                 .padding(.trailing, canRemove ? 0 : 6)
                 .frame(height: filterChipHeight)
                 .background(Color(.systemGray5))
-                .cornerRadius(4)
+                .cornerRadius(AppTokens.filterChipCornerRadius)
             }
 
             if let name = filters.playerName {
@@ -143,7 +143,7 @@ struct SearchFilterChipsView: View {
                 .padding(.trailing, canRemove ? 0 : 6)
                 .frame(height: filterChipHeight)
                 .background(Color(.systemGray5))
-                .cornerRadius(4)
+                .cornerRadius(AppTokens.filterChipCornerRadius)
             }
 
             if filters.timeRangeStart != nil || filters.timeRangeEnd != nil {
@@ -166,7 +166,7 @@ struct SearchFilterChipsView: View {
                 .padding(.trailing, canRemove ? 0 : 6)
                 .frame(height: filterChipHeight)
                 .background(Color(.systemGray5))
-                .cornerRadius(4)
+                .cornerRadius(AppTokens.filterChipCornerRadius)
             }
 
         }

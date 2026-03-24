@@ -176,13 +176,13 @@ struct PlayerTeamDetailSection: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(Color(.secondaryLabel))
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, AppTokens.playerChipHorizontalPadding)
+                    .padding(.vertical, AppTokens.playerChipVerticalPadding)
                     .background(Color(.systemBackground))
-                    .cornerRadius(16)
+                    .cornerRadius(AppTokens.playerChipCornerRadius)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: AppTokens.playerChipCornerRadius)
+                            .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
                     )
                 }
                 .buttonStyle(.plain)

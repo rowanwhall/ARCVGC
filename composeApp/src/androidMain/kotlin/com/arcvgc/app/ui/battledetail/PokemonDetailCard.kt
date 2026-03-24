@@ -25,7 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import org.jetbrains.compose.resources.painterResource
@@ -49,6 +48,7 @@ import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonDetailUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import com.arcvgc.app.ui.model.TypeUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.MoveChipCornerRadius
 
 @Composable
 fun PokemonDetailCard(
@@ -169,7 +169,7 @@ fun PokemonDetailCard(
                         text = pokemon.abilityName,
                         style = TextStyle(
                             fontSize = 12.sp,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     )
                     pokemon.item?.let { item ->
@@ -177,14 +177,14 @@ fun PokemonDetailCard(
                             text = " · ",
                             style = TextStyle(
                                 fontSize = 12.sp,
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         )
                         Text(
                             text = item.name,
                             style = TextStyle(
                                 fontSize = 12.sp,
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         )
                     }
@@ -253,7 +253,7 @@ private fun MoveChip(moveName: String, modifier: Modifier = Modifier) {
         modifier = modifier
             .background(
                 color = MaterialTheme.colorScheme.surfaceContainer,
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(MoveChipCornerRadius)
             )
             .padding(vertical = 2.dp),
         contentAlignment = Alignment.Center

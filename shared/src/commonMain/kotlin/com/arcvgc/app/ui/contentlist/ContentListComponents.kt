@@ -36,6 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.FormatUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.FilterChipCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.SearchButtonCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
 
 data class PokemonNavTarget(
     val id: Int,
@@ -113,7 +117,7 @@ fun SortToggleButton(sortOrder: String, isLoading: Boolean = false, onClick: () 
     Row(
         modifier = Modifier
             .height(28.dp)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
+            .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(FilterChipCornerRadius))
             .then(if (isLoading) Modifier else Modifier.clickable(onClick = onClick))
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -150,9 +154,9 @@ fun PlayerListRow(
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(CardCornerRadius),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -182,7 +186,7 @@ fun FormatDropdown(
         Row(
             modifier = Modifier
                 .clickable { expanded = true }
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(SearchButtonCornerRadius))
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)

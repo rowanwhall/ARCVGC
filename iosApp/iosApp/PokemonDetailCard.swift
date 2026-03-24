@@ -109,7 +109,7 @@ struct PokemonDetailCard: View {
         .cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(.opaqueSeparator), lineWidth: 1)
+                .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
         )
         }
         .buttonStyle(PressableButtonStyle())
@@ -155,7 +155,7 @@ struct MoveChip: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
             .background(Color(.secondarySystemBackground))
-            .cornerRadius(4)
+            .cornerRadius(AppTokens.moveChipCornerRadius)
     }
 }
 

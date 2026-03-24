@@ -61,14 +61,20 @@ import com.arcvgc.app.ui.components.InfoButton
 import com.arcvgc.app.ui.components.InfoSheet
 import com.arcvgc.app.ui.components.VsDivider
 import com.arcvgc.app.ui.mapper.ShowdownPasteFormatter
-import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.BattleDetailUiModel
+import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PlayerDetailUiModel
 import com.arcvgc.app.ui.model.PokemonDetailUiModel
 import com.arcvgc.app.ui.model.SetMatchUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import com.arcvgc.app.ui.model.TypeUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipVerticalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.SecondaryIconAlpha
+import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
+import com.arcvgc.app.ui.tokens.AppTokens.WinnerBorderWidth
 import kotlinx.coroutines.delay
 
 @Composable
@@ -253,7 +259,7 @@ private fun PlayerTeamSection(
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val winnerBorder = if (showWinnerHighlight && player.isWinner == true) {
-        Modifier.border(2.dp, primaryColor)
+        Modifier.border(WinnerBorderWidth, primaryColor)
     } else {
         Modifier
     }
@@ -284,11 +290,11 @@ private fun PlayerTeamSection(
         ) {
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(PlayerChipCornerRadius))
                     .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                    .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(PlayerChipCornerRadius))
                     .clickable { onPlayerClick?.invoke(player.id, player.name) }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = PlayerChipHorizontalPadding, vertical = PlayerChipVerticalPadding),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -302,7 +308,7 @@ private fun PlayerTeamSection(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = SecondaryIconAlpha)
                 )
             }
             Spacer(Modifier.weight(1f))
@@ -320,7 +326,7 @@ private fun PlayerTeamSection(
                     contentDescription = "Copy team",
                     modifier = Modifier.size(20.dp),
                     tint = if (showCopied) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    else MaterialTheme.colorScheme.onSurface.copy(alpha = SecondaryIconAlpha)
                 )
             }
         }
