@@ -60,6 +60,7 @@ import com.arcvgc.app.ui.mapper.ShowdownPasteFormatter
 import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.BattleDetailUiModel
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.InfoButtonSize
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipVerticalPadding
@@ -113,6 +114,9 @@ fun BattleDetailContent(
                     } else {
                         "${battleDetail.formatName} \u2022 Unrated"
                     }
+                    if (battleDetail.rating == null) {
+                        Spacer(Modifier.size(InfoButtonSize))
+                    }
                     Text(
                         text = headerText,
                         style = MaterialTheme.typography.bodyMedium,
@@ -124,7 +128,6 @@ fun BattleDetailContent(
                 }
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val allGames = buildList {
@@ -132,15 +135,21 @@ fun BattleDetailContent(
                         battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
                     }.sortedBy { it.positionInSet ?: Int.MAX_VALUE }
 
-                    allGames.forEach { game ->
-                        val label = game.positionInSet?.let { "Game $it" } ?: "View Replay"
-                        if (game.isCurrent) {
-                            Button(onClick = { window.open(game.replayUrl, "_blank") }) {
-                                Text(label)
-                            }
-                        } else {
-                            OutlinedButton(onClick = { window.open(game.replayUrl, "_blank") }) {
-                                Text(label)
+                    Spacer(Modifier.size(InfoButtonSize))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        allGames.forEach { game ->
+                            val label = game.positionInSet?.let { "Game $it" } ?: "View Replay"
+                            if (game.isCurrent) {
+                                Button(onClick = { window.open(game.replayUrl, "_blank") }) {
+                                    Text(label)
+                                }
+                            } else {
+                                OutlinedButton(onClick = { window.open(game.replayUrl, "_blank") }) {
+                                    Text(label)
+                                }
                             }
                         }
                     }

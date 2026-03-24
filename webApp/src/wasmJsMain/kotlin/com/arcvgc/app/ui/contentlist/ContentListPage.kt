@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -34,6 +38,7 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,6 +82,7 @@ import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipVerticalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
+import kotlinx.coroutines.launch
 
 @Composable
 fun ContentListPage(
@@ -558,6 +564,7 @@ private fun ContentListContent(
     }
 
     val windowSizeClass = LocalWindowSizeClass.current
+    val scope = rememberCoroutineScope()
 
     val toolbarSpacing = if (hasToolbar) GradientToolbarHeight else 0.dp
     val topPadding = toolbarSpacing + when (header) {
@@ -567,7 +574,15 @@ private fun ContentListContent(
         else -> 16.dp
     }
 
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier.scrollable(
+            state = rememberScrollableState { delta ->
+                scope.launch { listState.scrollBy(-delta) }
+                delta
+            },
+            orientation = Orientation.Vertical
+        )
+    ) {
     Box(
         modifier = Modifier
             .widthIn(max = 900.dp)

@@ -69,6 +69,7 @@ import com.arcvgc.app.ui.model.PokemonDetailUiModel
 import com.arcvgc.app.ui.model.SetMatchUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import com.arcvgc.app.ui.model.TypeUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.InfoButtonSize
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipVerticalPadding
@@ -191,6 +192,9 @@ private fun BattleDetailBody(
                 } else {
                     "${battleDetail.formatName} \u2022 Unrated"
                 }
+                if (battleDetail.rating == null) {
+                    Spacer(Modifier.size(InfoButtonSize))
+                }
                 Text(
                     text = headerText,
                     style = MaterialTheme.typography.bodyMedium,
@@ -204,7 +208,7 @@ private fun BattleDetailBody(
 
             Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             val allGames = buildList {
@@ -212,15 +216,21 @@ private fun BattleDetailBody(
                 battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
             }.sortedBy { it.positionInSet ?: Int.MAX_VALUE }
 
-            allGames.forEach { game ->
-                val label = game.positionInSet?.let { "Game $it" } ?: "View Replay"
-                if (game.isCurrent) {
-                    Button(onClick = { onViewReplay(game.replayUrl) }) {
-                        Text(label)
-                    }
-                } else {
-                    OutlinedButton(onClick = { onViewReplay(game.replayUrl) }) {
-                        Text(label)
+            Spacer(Modifier.size(InfoButtonSize))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                allGames.forEach { game ->
+                    val label = game.positionInSet?.let { "Game $it" } ?: "View Replay"
+                    if (game.isCurrent) {
+                        Button(onClick = { onViewReplay(game.replayUrl) }) {
+                            Text(label)
+                        }
+                    } else {
+                        OutlinedButton(onClick = { onViewReplay(game.replayUrl) }) {
+                            Text(label)
+                        }
                     }
                 }
             }

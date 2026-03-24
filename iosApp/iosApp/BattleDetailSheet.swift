@@ -60,41 +60,44 @@ struct BattleDetailPage: View {
                                     .font(.subheadline)
                                     .foregroundColor(Color(.secondaryLabel))
                             } else {
+                                Color.clear.frame(width: AppTokens.infoButtonSize, height: AppTokens.infoButtonSize)
                                 Text("\(battleDetail.formatName) \u{2022} Unrated")
                                     .font(.subheadline)
                                     .foregroundColor(Color(.secondaryLabel))
 
                                 InfoButton { showUnratedInfo = true }
-                                    .padding(.leading, 8)
                             }
                         }
 
                         let setMatches = (battleDetail.setMatches as? [SetMatchUiModel]) ?? []
-                        HStack(spacing: 8) {
+                        HStack(spacing: 0) {
                             let currentPosition = battleDetail.positionInSet?.intValue
                             let allGames: [(position: Int?, url: String, isCurrent: Bool)] = (
                                 [(currentPosition, battleDetail.replayUrl, true)] +
                                 setMatches.map { ($0.positionInSet?.intValue, $0.replayUrl, false) }
                             ).sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
 
-                            ForEach(Array(allGames.enumerated()), id: \.offset) { _, game in
-                                let label = game.position.map { "Game \($0)" } ?? "View Replay"
-                                if game.isCurrent {
-                                    Button {
-                                        onViewReplay?(game.url)
-                                    } label: {
-                                        Text(label)
-                                            .font(.subheadline)
+                            Color.clear.frame(width: AppTokens.infoButtonSize, height: AppTokens.infoButtonSize)
+                            HStack(spacing: 8) {
+                                ForEach(Array(allGames.enumerated()), id: \.offset) { _, game in
+                                    let label = game.position.map { "Game \($0)" } ?? "View Replay"
+                                    if game.isCurrent {
+                                        Button {
+                                            onViewReplay?(game.url)
+                                        } label: {
+                                            Text(label)
+                                                .font(.subheadline)
+                                        }
+                                        .buttonStyle(.borderedProminent)
+                                    } else {
+                                        Button {
+                                            onViewReplay?(game.url)
+                                        } label: {
+                                            Text(label)
+                                                .font(.subheadline)
+                                        }
+                                        .buttonStyle(.bordered)
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                } else {
-                                    Button {
-                                        onViewReplay?(game.url)
-                                    } label: {
-                                        Text(label)
-                                            .font(.subheadline)
-                                    }
-                                    .buttonStyle(.bordered)
                                 }
                             }
 

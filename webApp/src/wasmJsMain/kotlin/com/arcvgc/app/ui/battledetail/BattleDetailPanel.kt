@@ -1,11 +1,7 @@
 package com.arcvgc.app.ui.battledetail
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -68,102 +64,51 @@ fun BattleDetailPanel(
         }
     }
 
-    if (showBackArrow) {
-        GradientToolbarScaffold(
-            modifier = modifier,
-            navigationIcon = {
-                IconButton(onClick = onClose) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            },
-            actions = {
-                IconButton(onClick = onToggleFavorite) {
-                    Icon(
-                        imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
-                        tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+    GradientToolbarScaffold(
+        modifier = modifier,
+        navigationIcon = {
+            IconButton(onClick = onClose) {
+                Icon(
+                    imageVector = if (showBackArrow) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Close,
+                    contentDescription = if (showBackArrow) "Back" else "Close"
+                )
             }
-        ) { topPadding ->
-            when {
-                state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize().padding(top = topPadding),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                state.error != null -> {
-                    ErrorView(
-                        onRetry = { viewModel.loadBattleDetail(battleId) },
-                        modifier = Modifier.fillMaxSize().padding(top = topPadding)
-                    )
-                }
-
-                displayDetail != null -> {
-                    BattleDetailContent(
-                        battleDetail = displayDetail,
-                        topPadding = topPadding,
-                        showWinnerHighlight = showWinnerHighlight,
-                        onPokemonClick = wrappedOnPokemonClick,
-                        onPlayerClick = wrappedOnPlayerClick
-                    )
-                }
+        },
+        actions = {
+            IconButton(onClick = onToggleFavorite) {
+                Icon(
+                    imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
+                    tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
-    } else {
-        Column(modifier = modifier) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onClose) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close"
-                    )
-                }
-                IconButton(onClick = onToggleFavorite) {
-                    Icon(
-                        imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
-                        tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+    ) { topPadding ->
+        when {
+            state.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(top = topPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
 
-            when {
-                state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
+            state.error != null -> {
+                ErrorView(
+                    onRetry = { viewModel.loadBattleDetail(battleId) },
+                    modifier = Modifier.fillMaxSize().padding(top = topPadding)
+                )
+            }
 
-                state.error != null -> {
-                    ErrorView(
-                        onRetry = { viewModel.loadBattleDetail(battleId) },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-
-                displayDetail != null -> {
-                    BattleDetailContent(
-                        battleDetail = displayDetail,
-                        showWinnerHighlight = showWinnerHighlight,
-                        onPokemonClick = wrappedOnPokemonClick,
-                        onPlayerClick = wrappedOnPlayerClick
-                    )
-                }
+            displayDetail != null -> {
+                BattleDetailContent(
+                    battleDetail = displayDetail,
+                    topPadding = topPadding,
+                    showWinnerHighlight = showWinnerHighlight,
+                    onPokemonClick = wrappedOnPokemonClick,
+                    onPlayerClick = wrappedOnPlayerClick
+                )
             }
         }
     }

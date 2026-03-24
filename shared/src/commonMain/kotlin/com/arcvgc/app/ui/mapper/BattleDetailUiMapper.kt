@@ -29,7 +29,8 @@ object BattleDetailUiMapper {
             replayUrl = matchDetail.replayUrl,
             positionInSet = matchDetail.positionInSet,
             setMatches = matchDetail.setMatches
-                .filter { it.id != matchDetail.id }
+                .filter { it.id != matchDetail.id && it.positionInSet != null }
+                .distinctBy { it.positionInSet }
                 .map { it.toUiModel() }
                 .sortedBy { it.positionInSet }
         )

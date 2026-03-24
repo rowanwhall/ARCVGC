@@ -8,6 +8,7 @@ struct InfoButton: View {
             Image(systemName: "info.circle")
                 .font(.system(size: 16))
                 .foregroundColor(Color(.secondaryLabel))
+                .frame(width: AppTokens.infoButtonSize, height: AppTokens.infoButtonSize)
         }
         .buttonStyle(.plain)
     }
