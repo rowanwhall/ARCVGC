@@ -61,8 +61,8 @@ import com.arcvgc.app.ui.battledetail.BattleDetailViewModel
 import com.arcvgc.app.ui.battledetail.ReplayOverlay
 import com.arcvgc.app.ui.components.EmptyView
 import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.components.GradientToolbar
 import com.arcvgc.app.ui.components.GradientToolbarHeight
-import com.arcvgc.app.ui.components.GradientToolbarScaffold
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.TypeIconRow
 import com.arcvgc.app.ui.components.TypeInfo
@@ -206,7 +206,7 @@ fun ContentListPage(
         )
 
         if (onBack != null) {
-            GradientToolbarScaffold(
+            GradientToolbar(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -255,9 +255,8 @@ fun ContentListPage(
                             )
                         }
                     }
-                },
-                consumeTopInsets = consumeTopInsets
-            ) { /* topPadding unused — ContentListContent computes its own */ }
+                }
+            )
         }
 
         val lastSelectedBattleId = rememberLastNonNull(selectedBattleId)

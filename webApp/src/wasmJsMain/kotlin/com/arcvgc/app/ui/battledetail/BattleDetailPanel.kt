@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -15,8 +16,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,9 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.components.GradientToolbarScaffold
 import com.arcvgc.app.ui.rememberViewModel
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun BattleDetailPanel(
     battleId: Int,
@@ -69,32 +68,57 @@ fun BattleDetailPanel(
         }
     }
 
-    Column(modifier = modifier) {
-        if (showBackArrow) {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+    if (showBackArrow) {
+        GradientToolbarScaffold(
+            modifier = modifier,
+            navigationIcon = {
+                IconButton(onClick = onClose) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+            },
+            actions = {
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
+                        tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        ) { topPadding ->
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(top = topPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
-                },
-                actions = {
-                    IconButton(onClick = onToggleFavorite) {
-                        Icon(
-                            imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (isFavorited) "Unfavorite" else "Favorite",
-                            tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        } else {
+                }
+
+                state.error != null -> {
+                    ErrorView(
+                        onRetry = { viewModel.loadBattleDetail(battleId) },
+                        modifier = Modifier.fillMaxSize().padding(top = topPadding)
+                    )
+                }
+
+                displayDetail != null -> {
+                    BattleDetailContent(
+                        battleDetail = displayDetail,
+                        topPadding = topPadding,
+                        showWinnerHighlight = showWinnerHighlight,
+                        onPokemonClick = wrappedOnPokemonClick,
+                        onPlayerClick = wrappedOnPlayerClick
+                    )
+                }
+            }
+        }
+    } else {
+        Column(modifier = modifier) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -114,32 +138,32 @@ fun BattleDetailPanel(
                     )
                 }
             }
-        }
 
-        when {
-            state.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
 
-            state.error != null -> {
-                ErrorView(
-                    onRetry = { viewModel.loadBattleDetail(battleId) },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+                state.error != null -> {
+                    ErrorView(
+                        onRetry = { viewModel.loadBattleDetail(battleId) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
-            displayDetail != null -> {
-                BattleDetailContent(
-                    battleDetail = displayDetail,
-                    showWinnerHighlight = showWinnerHighlight,
-                    onPokemonClick = wrappedOnPokemonClick,
-                    onPlayerClick = wrappedOnPlayerClick
-                )
+                displayDetail != null -> {
+                    BattleDetailContent(
+                        battleDetail = displayDetail,
+                        showWinnerHighlight = showWinnerHighlight,
+                        onPokemonClick = wrappedOnPokemonClick,
+                        onPlayerClick = wrappedOnPlayerClick
+                    )
+                }
             }
         }
     }

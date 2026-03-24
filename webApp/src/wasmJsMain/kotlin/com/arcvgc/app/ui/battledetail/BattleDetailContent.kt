@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.ui.LocalWindowSizeClass
@@ -71,6 +72,7 @@ private data class GameButton(val positionInSet: Int, val replayUrl: String, val
 fun BattleDetailContent(
     battleDetail: BattleDetailUiModel,
     modifier: Modifier = Modifier,
+    topPadding: Dp = 0.dp,
     showWinnerHighlight: Boolean = true,
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
     onPlayerClick: ((Int, String) -> Unit)? = null
@@ -87,7 +89,7 @@ fun BattleDetailContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(vertical = 16.dp),
+                .padding(top = topPadding + 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             var showUnratedInfo by remember { mutableStateOf(false) }

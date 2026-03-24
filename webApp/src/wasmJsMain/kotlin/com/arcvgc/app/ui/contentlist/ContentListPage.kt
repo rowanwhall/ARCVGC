@@ -30,10 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -64,6 +61,8 @@ import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
 import com.arcvgc.app.ui.components.TypeIconRow
 import com.arcvgc.app.ui.components.TypeInfo
+import com.arcvgc.app.ui.components.GradientToolbarHeight
+import com.arcvgc.app.ui.components.GradientToolbar
 import com.arcvgc.app.ui.BattleOverlayRequest
 import com.arcvgc.app.ui.LocalBattleOverlay
 import com.arcvgc.app.ui.rememberViewModel
@@ -74,7 +73,6 @@ import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContentListPage(
     modifier: Modifier = Modifier,
@@ -226,136 +224,153 @@ fun ContentListPage(
     ) {
         if (isCompact) {
             // Compact: full-width list, battle detail hoisted to MobileLayout via LocalBattleOverlay
-            Column(modifier = Modifier.fillMaxSize()) {
-                if (onBack != null) {
-                    ContentListToolbar(
-                        mode = mode,
-                        favoritePokemonIds = favoritePokemonIds,
-                        favoritePlayerNames = favoritePlayerNames,
-                        viewModel = viewModel,
-                        onBack = onBack
-                    )
-                }
-
-                ContentListContent(
-                    uiState = uiState,
-                    header = mode.toHeaderUiModel(),
-                    selectedBattleId = null,
-                    showWinnerHighlight = showWinnerHighlight,
-                    onRetry = viewModel::loadContent,
-                    onPaginate = viewModel::paginate,
-                    listState = listState,
-                    onItemClick = { item ->
-                        when (item) {
-                            is ContentListItem.Battle -> {
-                                if (battleOverlay != null) {
-                                    val battle = item.uiModel
-                                    battleOverlay(BattleOverlayRequest(
-                                        battleId = battle.id,
-                                        player1IsWinner = battle.player1.isWinner,
-                                        player2IsWinner = battle.player2.isWinner
-                                    ))
-                                } else {
-                                    selectedBattleId = item.uiModel.id
-                                }
+            ContentListContent(
+                uiState = uiState,
+                header = mode.toHeaderUiModel(),
+                hasToolbar = onBack != null,
+                selectedBattleId = null,
+                showWinnerHighlight = showWinnerHighlight,
+                onRetry = viewModel::loadContent,
+                onPaginate = viewModel::paginate,
+                listState = listState,
+                onItemClick = { item ->
+                    when (item) {
+                        is ContentListItem.Battle -> {
+                            if (battleOverlay != null) {
+                                val battle = item.uiModel
+                                battleOverlay(BattleOverlayRequest(
+                                    battleId = battle.id,
+                                    player1IsWinner = battle.player1.isWinner,
+                                    player2IsWinner = battle.player2.isWinner
+                                ))
+                            } else {
+                                selectedBattleId = item.uiModel.id
                             }
-                            is ContentListItem.Pokemon -> {
-                                val derivedFormatId = when (mode) {
-                                    is ContentListMode.Home -> viewModel.selectedFormatId.value
-                                    is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
-                                    is ContentListMode.Search -> mode.params.formatId
-                                    is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
-                                    is ContentListMode.Player -> viewModel.selectedFormatId.value
-                                    else -> null
-                                }
-                                navigateToPokemon(
-                                    item.id, item.name, item.imageUrl,
-                                    item.types.mapNotNull { it.imageUrl },
-                                    derivedFormatId
+                        }
+                        is ContentListItem.Pokemon -> {
+                            val derivedFormatId = when (mode) {
+                                is ContentListMode.Home -> viewModel.selectedFormatId.value
+                                is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
+                                is ContentListMode.Search -> mode.params.formatId
+                                is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                else -> null
+                            }
+                            navigateToPokemon(
+                                item.id, item.name, item.imageUrl,
+                                item.types.mapNotNull { it.imageUrl },
+                                derivedFormatId
+                            )
+                        }
+                        is ContentListItem.Player -> {
+                            val derivedFormatId = when (mode) {
+                                is ContentListMode.Home -> viewModel.selectedFormatId.value
+                                is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
+                                is ContentListMode.Search -> mode.params.formatId
+                                is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                else -> null
+                            }
+                            navigateToPlayer(item.id, item.name, derivedFormatId)
+                        }
+                        is ContentListItem.Section -> {}
+                        is ContentListItem.HighlightButtons -> {}
+                        is ContentListItem.PokemonGrid -> {}
+                        is ContentListItem.StatChipRow -> {}
+                        is ContentListItem.FormatSelector -> {}
+                        is ContentListItem.SearchField -> {}
+                    }
+                },
+                onHighlightBattleClick = { battleId ->
+                    if (battleOverlay != null) {
+                        battleOverlay(BattleOverlayRequest(battleId = battleId, player1IsWinner = null, player2IsWinner = null))
+                    } else {
+                        selectedBattleId = battleId
+                    }
+                },
+                onPokemonGridClick = { pokemon ->
+                    val derivedFormatId = when (mode) {
+                        is ContentListMode.Home -> viewModel.selectedFormatId.value
+                        is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
+                        is ContentListMode.Search -> mode.params.formatId
+                        is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                        is ContentListMode.Player -> viewModel.selectedFormatId.value
+                        else -> null
+                    }
+                    navigateToPokemon(pokemon.id, pokemon.name, pokemon.imageUrl, emptyList(), derivedFormatId)
+                },
+                searchParams = (mode as? ContentListMode.Search)?.params,
+                onSearchParamsChanged = onSearchParamsChanged,
+                sortOrder = when (mode) {
+                    is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> sortOrder
+                    else -> null
+                },
+                onToggleSortOrder = when (mode) {
+                    is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
+                    else -> null
+                },
+                formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) sortedFormats else emptyList(),
+                selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
+                onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
+                searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
+                onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
+                onSeeMore = {
+                    val fmtId = viewModel.selectedFormatId.value
+                    if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            if (onBack != null) {
+                GradientToolbar(
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    },
+                    actions = {
+                        if (mode is ContentListMode.Pokemon) {
+                            val pId = mode.pokemonId
+                            val isFav = pId in favoritePokemonIds
+                            IconButton(onClick = { viewModel.favoritesRepository.togglePokemonFavorite(pId) }) {
+                                Icon(
+                                    imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                    tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            is ContentListItem.Player -> {
-                                val derivedFormatId = when (mode) {
-                                    is ContentListMode.Home -> viewModel.selectedFormatId.value
-                                    is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
-                                    is ContentListMode.Search -> mode.params.formatId
-                                    is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
-                                    is ContentListMode.Player -> viewModel.selectedFormatId.value
-                                    else -> null
-                                }
-                                navigateToPlayer(item.id, item.name, derivedFormatId)
+                        }
+                        if (mode is ContentListMode.Player) {
+                            val pName = mode.playerName
+                            val isFav = pName in favoritePlayerNames
+                            IconButton(onClick = { viewModel.favoritesRepository.togglePlayerFavorite(pName) }) {
+                                Icon(
+                                    imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                    tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
-                            is ContentListItem.Section -> {}
-                            is ContentListItem.HighlightButtons -> {}
-                            is ContentListItem.PokemonGrid -> {}
-                            is ContentListItem.StatChipRow -> {}
-                            is ContentListItem.FormatSelector -> {}
-                            is ContentListItem.SearchField -> {}
                         }
-                    },
-                    onHighlightBattleClick = { battleId ->
-                        if (battleOverlay != null) {
-                            battleOverlay(BattleOverlayRequest(battleId = battleId, player1IsWinner = null, player2IsWinner = null))
-                        } else {
-                            selectedBattleId = battleId
-                        }
-                    },
-                    onPokemonGridClick = { pokemon ->
-                        val derivedFormatId = when (mode) {
-                            is ContentListMode.Home -> viewModel.selectedFormatId.value
-                            is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
-                            is ContentListMode.Search -> mode.params.formatId
-                            is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
-                            is ContentListMode.Player -> viewModel.selectedFormatId.value
-                            else -> null
-                        }
-                        navigateToPokemon(pokemon.id, pokemon.name, pokemon.imageUrl, emptyList(), derivedFormatId)
-                    },
-                    searchParams = (mode as? ContentListMode.Search)?.params,
-                    onSearchParamsChanged = onSearchParamsChanged,
-                    sortOrder = when (mode) {
-                        is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> sortOrder
-                        else -> null
-                    },
-                    onToggleSortOrder = when (mode) {
-                        is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
-                        else -> null
-                    },
-                    formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) sortedFormats else emptyList(),
-                    selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
-                    onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
-                    searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
-                    onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
-                    onSeeMore = {
-                        val fmtId = viewModel.selectedFormatId.value
-                        if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
-                    },
-                    modifier = Modifier.fillMaxSize()
+                    }
                 )
             }
         } else {
             // Expanded: master-detail Row layout
             Row(modifier = Modifier.fillMaxSize()) {
-                Column(
+                Box(
                     modifier = if (selectedBattleId != null) {
                         Modifier.weight(1f).fillMaxHeight()
                     } else {
                         Modifier.fillMaxSize()
                     }
                 ) {
-                    if (onBack != null) {
-                        ContentListToolbar(
-                            mode = mode,
-                            favoritePokemonIds = favoritePokemonIds,
-                            favoritePlayerNames = favoritePlayerNames,
-                            viewModel = viewModel,
-                            onBack = onBack
-                        )
-                    }
-
                     ContentListContent(
                         uiState = uiState,
                         header = mode.toHeaderUiModel(),
+                        hasToolbar = onBack != null,
                         selectedBattleId = selectedBattleId,
                         showWinnerHighlight = showWinnerHighlight,
                         listState = listState,
@@ -426,11 +441,48 @@ fun ContentListPage(
                         searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
                         onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
                         onSeeMore = {
-                        val fmtId = viewModel.selectedFormatId.value
-                        if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
-                    },
+                            val fmtId = viewModel.selectedFormatId.value
+                            if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
+
+                    if (onBack != null) {
+                        GradientToolbar(
+                            navigationIcon = {
+                                IconButton(onClick = onBack) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back"
+                                    )
+                                }
+                            },
+                            actions = {
+                                if (mode is ContentListMode.Pokemon) {
+                                    val pId = mode.pokemonId
+                                    val isFav = pId in favoritePokemonIds
+                                    IconButton(onClick = { viewModel.favoritesRepository.togglePokemonFavorite(pId) }) {
+                                        Icon(
+                                            imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                            contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                            tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                if (mode is ContentListMode.Player) {
+                                    val pName = mode.playerName
+                                    val isFav = pName in favoritePlayerNames
+                                    IconButton(onClick = { viewModel.favoritesRepository.togglePlayerFavorite(pName) }) {
+                                        Icon(
+                                            imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                            contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                            tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
 
                 selectedBattleId?.let { battleId ->
@@ -458,60 +510,12 @@ fun ContentListPage(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ContentListToolbar(
-    mode: ContentListMode,
-    favoritePokemonIds: Set<Int>,
-    favoritePlayerNames: Set<String>,
-    viewModel: ContentListViewModel,
-    onBack: () -> Unit
-) {
-    TopAppBar(
-        title = {},
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-        },
-        actions = {
-            if (mode is ContentListMode.Pokemon) {
-                val pId = mode.pokemonId
-                val isFav = pId in favoritePokemonIds
-                IconButton(onClick = { viewModel.favoritesRepository.togglePokemonFavorite(pId) }) {
-                    Icon(
-                        imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = if (isFav) "Unfavorite" else "Favorite",
-                        tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            if (mode is ContentListMode.Player) {
-                val pName = mode.playerName
-                val isFav = pName in favoritePlayerNames
-                IconButton(onClick = { viewModel.favoritesRepository.togglePlayerFavorite(pName) }) {
-                    Icon(
-                        imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = if (isFav) "Unfavorite" else "Favorite",
-                        tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    )
-}
-
 @Composable
 private fun ContentListContent(
     uiState: ContentListUiState,
     modifier: Modifier = Modifier,
     header: ContentListHeaderUiModel = ContentListHeaderUiModel.None,
+    hasToolbar: Boolean = false,
     selectedBattleId: Int? = null,
     showWinnerHighlight: Boolean = true,
     onRetry: () -> Unit,
@@ -548,7 +552,8 @@ private fun ContentListContent(
 
     val windowSizeClass = LocalWindowSizeClass.current
 
-    val topPadding = when (header) {
+    val toolbarSpacing = if (hasToolbar) GradientToolbarHeight else 0.dp
+    val topPadding = toolbarSpacing + when (header) {
         is ContentListHeaderUiModel.PokemonHero -> 4.dp
         is ContentListHeaderUiModel.PlayerHero -> 4.dp
         is ContentListHeaderUiModel.SearchFilters -> 8.dp

@@ -112,8 +112,7 @@ fun BattleDetailPage(
                     tint = if (isFavorited) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        },
-        consumeTopInsets = false
+        }
     ) { topPadding ->
         when {
             state.isLoading -> {

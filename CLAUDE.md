@@ -4,7 +4,7 @@ Kotlin Multiplatform (KMP) app for browsing Pokemon Showdown battle replays. Tar
 
 ## Tech Stack
 
-- **Kotlin** 2.3.0, **Compose Multiplatform** 1.10.0
+- **Kotlin** 2.3.0, **Compose Multiplatform** 1.10.0 (shared module has Compose deps for cross-platform UI components)
 - **Ktor** 3.4.0 (OkHttp on Android, Darwin on iOS, Js on Web)
 - **kotlinx-serialization** 1.10.0, **kotlinx-coroutines** 1.10.2
 - **Coil 3** for image loading (Android, Web); native `AsyncImage` (iOS)
@@ -16,7 +16,7 @@ Kotlin Multiplatform (KMP) app for browsing Pokemon Showdown battle replays. Tar
 ## Project Structure
 
 ```
-shared/src/commonMain/    — Shared Kotlin code (network, domain, data, UI models, mappers, ViewModel logic)
+shared/src/commonMain/    — Shared Kotlin code (network, domain, data, UI models, mappers, ViewModel logic, shared Compose components)
 shared/src/androidMain/   — Android HTTP engine (OkHttp), platform storage (SharedPreferences)
 shared/src/iosMain/       — iOS HTTP engine (Darwin), platform storage (NSUserDefaults)
 shared/src/wasmJsMain/    — Web HTTP engine (Js), platform storage (localStorage via @JsFun)
@@ -36,7 +36,7 @@ Network DTOs  →  Domain Models  →  UI Models  →  Screen
 
 - **Network layer** (`shared/.../network/`): `ApiService` with Ktor, DTO models, `ApiConstants` for base URL/endpoints, `CatalogLoader` (generic pagination), `SearchRequestMapper` (search request building)
 - **Domain layer** (`shared/.../domain/model/`): Pure Kotlin data classes — `MatchPreview`, `MatchDetail`, `PlayerDetail`, `PokemonListItem`, `SearchFilterSlot`, `AppConfig`, `Format`, etc.
-- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation), and `InfoContentProvider` (key-based registry for info dialog content); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
+- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation), `InfoContentProvider` (key-based registry for info dialog content), and shared Compose components (`shared/.../ui/components/` — e.g., `GradientToolbarScaffold`); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
 - **Data layer** (`shared/.../data/`): Shared business logic used by all platforms
   - `BattleRepository` (implements `BattleRepositoryApi`) — Match data (getMatches, searchMatches, getMatchDetail, getMatchesByIds, getPokemonProfile, getPlayerProfile, getPlayersByNames, getFormatDetail). Throws exceptions on error. Android wraps in `Result<T>` via a thin adapter; iOS uses directly via SKIE `async throws` bridge. `ContentListLogic` depends on the `BattleRepositoryApi` interface for testability.
   - `FavoritesRepository` — Favorites toggle/check with `StateFlow` state, delegates to `FavoritesStorage` (expect/actual)
@@ -94,6 +94,12 @@ cd iosApp && xcodebuild build -project iosApp.xcodeproj -scheme iosApp -destinat
 
 # Web — production build (output in webApp/build/dist/wasmJs/productionExecutable/)
 ./gradlew :webApp:wasmJsBrowserDistribution
+
+# Web — clean build (required when wasmJs caching causes runtime errors)
+# If you see "WebAssembly.instantiate(): Import ... function import requires a callable"
+# or similar LinkError at runtime, the browser/webpack is loading stale .wasm artifacts.
+# Fix: clean the webApp module before rebuilding.
+./gradlew :webApp:clean :webApp:wasmJsBrowserDevelopmentRun
 ```
 
 ## Detailed Documentation
