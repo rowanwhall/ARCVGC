@@ -89,7 +89,7 @@ fun BattleDetailContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(top = topPadding + 16.dp, bottom = 16.dp),
+                .padding(top = topPadding, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             var showUnratedInfo by remember { mutableStateOf(false) }
