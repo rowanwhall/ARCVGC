@@ -26,15 +26,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arcvgc.app.R
+import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.preview_item
+import com.arcvgc.app.shared.preview_tera
 import com.arcvgc.app.ui.model.BattleCardUiModel
-import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PlayerUiModel
 import com.arcvgc.app.ui.model.PokemonSlotUiModel
-import com.arcvgc.app.ui.model.TeraTypeUiModel
 
 private val CardCornerRadius = 12.dp
 
@@ -109,7 +108,6 @@ private fun PlayerTeamSection(
     showWinnerHighlight: Boolean = true
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
-    val outlineColor = MaterialTheme.colorScheme.outlineVariant
     val winnerBorder = if (showWinnerHighlight && player.isWinner == true) {
         Modifier.border(2.dp, primaryColor, RoundedCornerShape(CardCornerRadius))
     } else {
@@ -180,7 +178,7 @@ private fun PokemonWithItem(
         if (pokemonSlot.item != null) {
             PreviewAsyncImage(
                 url = pokemonSlot.item?.imageUrl,
-                previewDrawable = R.drawable.preview_item,
+                previewDrawable = Res.drawable.preview_item,
                 contentDescription = pokemonSlot.item?.name,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -191,7 +189,7 @@ private fun PokemonWithItem(
         if (pokemonSlot.teraType != null) {
             PreviewAsyncImage(
                 url = pokemonSlot.teraType?.imageUrl,
-                previewDrawable = R.drawable.preview_tera,
+                previewDrawable = Res.drawable.preview_tera,
                 contentDescription = pokemonSlot.teraType?.name,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -199,52 +197,5 @@ private fun PokemonWithItem(
                     .size(teraTypeSize)
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun BattleCardPreview() {
-    val samplePokemonSlot = PokemonSlotUiModel(
-        name = "Flutter Mane",
-        imageUrl = null,
-        item = ItemUiModel(
-            id = 0,
-            name = "Booster Energy",
-            imageUrl = null
-        ),
-        teraType = TeraTypeUiModel(
-            id = 1,
-            name = "Normal",
-            imageUrl = null
-        )
-    )
-
-    val samplePlayer1 = PlayerUiModel(
-        name = "Player1",
-        isWinner = true,
-        team = List(6) { samplePokemonSlot }
-    )
-
-    val samplePlayer2 = PlayerUiModel(
-        name = "Opponent",
-        isWinner = false,
-        team = List(6) { samplePokemonSlot }
-    )
-
-    val sampleUiModel = BattleCardUiModel(
-        id = 1,
-        player1 = samplePlayer1,
-        player2 = samplePlayer2,
-        formatName = "VGC 2026 Reg H",
-        rating = "1542",
-        formattedTime = "Feb 8, 5:03 PM"
-    )
-
-    MaterialTheme {
-        BattleCard(
-            uiModel = sampleUiModel,
-            modifier = Modifier.padding(16.dp)
-        )
     }
 }

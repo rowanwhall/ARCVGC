@@ -28,7 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,7 +38,9 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.arcvgc.app.R
+import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.preview_item
+import com.arcvgc.app.shared.preview_tera
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.PreviewAsyncImage
 import com.arcvgc.app.ui.components.TypeIconRow
@@ -106,7 +108,7 @@ fun PokemonDetailCard(
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
                             )
                             Image(
-                                painter = painterResource(R.drawable.preview_item),
+                                painter = painterResource(Res.drawable.preview_item),
                                 contentDescription = pokemon.item?.name,
                                 modifier = Modifier.size(28.dp),
                                 contentScale = ContentScale.Fit
@@ -233,7 +235,7 @@ fun PokemonDetailCard(
             if (pokemon.teraType != null) {
                 PreviewAsyncImage(
                     url = pokemon.teraType?.imageUrl,
-                    previewDrawable = R.drawable.preview_tera,
+                    previewDrawable = Res.drawable.preview_tera,
                     contentDescription = pokemon.teraType?.name,
                     modifier = Modifier
                         .align(Alignment.TopEnd)

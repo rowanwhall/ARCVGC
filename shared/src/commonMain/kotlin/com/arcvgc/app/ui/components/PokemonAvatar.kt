@@ -12,12 +12,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.request.ImageRequest
-import coil3.request.crossfade
+import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.preview_pokemon
 
 @Composable
 fun PokemonAvatar(
@@ -27,24 +24,17 @@ fun PokemonAvatar(
     spriteSize: Dp,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalPlatformContext.current
-
     Box(
         modifier = modifier.size(spriteSize),
         contentAlignment = Alignment.Center
     ) {
         PokeballCircle(modifier = Modifier.size(circleSize))
-        imageUrl?.let { url ->
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(url)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = contentDescription,
-                modifier = Modifier.size(spriteSize),
-                contentScale = ContentScale.Fit
-            )
-        }
+        PreviewAsyncImage(
+            url = imageUrl,
+            previewDrawable = Res.drawable.preview_pokemon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(spriteSize)
+        )
     }
 }
 
@@ -55,29 +45,22 @@ fun FillPokemonAvatar(
     modifier: Modifier = Modifier,
     circleFraction: Float = 0.7f
 ) {
-    val context = LocalPlatformContext.current
-
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
         PokeballCircle(modifier = Modifier.fillMaxSize(circleFraction))
-        imageUrl?.let { url ->
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(url)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = contentDescription,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
-        }
+        PreviewAsyncImage(
+            url = imageUrl,
+            previewDrawable = Res.drawable.preview_pokemon,
+            contentDescription = contentDescription,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
 @Composable
-private fun PokeballCircle(modifier: Modifier = Modifier) {
+internal fun PokeballCircle(modifier: Modifier = Modifier) {
     val themeColor = MaterialTheme.colorScheme.primary
 
     Canvas(modifier = modifier) {

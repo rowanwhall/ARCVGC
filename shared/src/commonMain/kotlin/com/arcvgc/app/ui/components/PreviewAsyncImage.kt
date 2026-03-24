@@ -1,19 +1,19 @@
 package com.arcvgc.app.ui.components
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.res.painterResource
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
 /**
- * Renders a local drawable in Compose preview mode, or an [AsyncImage] at runtime.
+ * Renders a Compose Resource drawable in preview mode, or an [AsyncImage] at runtime.
  *
  * In preview mode the [previewDrawable] is always shown (regardless of [url]).
  * At runtime, the network image is loaded when [url] is non-null; nothing is
@@ -22,7 +22,7 @@ import coil3.request.crossfade
 @Composable
 fun PreviewAsyncImage(
     url: String?,
-    @DrawableRes previewDrawable: Int,
+    previewDrawable: DrawableResource,
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit

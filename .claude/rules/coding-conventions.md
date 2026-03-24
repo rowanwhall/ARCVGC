@@ -11,13 +11,14 @@ globs:
 
 - **`modifier` parameter ordering**: `modifier: Modifier = Modifier` must be the **first optional parameter** — immediately after all required parameters, before any other optional parameters.
 - **Previews required**: All `@Composable` functions (Android) must include `@Preview` blocks. Use `PreviewAsyncImage` for any image that loads from a URL at runtime:
-  - `PreviewAsyncImage(url, previewDrawable = R.drawable.preview_xxx, contentDescription, modifier)` — shows the drawable in `@Preview` mode (`LocalInspectionMode`), `AsyncImage` at runtime. Located in `composeApp/.../ui/components/PreviewAsyncImage.kt`.
+  - `PreviewAsyncImage(url, previewDrawable = Res.drawable.preview_xxx, contentDescription, modifier)` — shows the Compose Resource drawable in `@Preview` mode (`LocalInspectionMode`), `AsyncImage` at runtime. Located in `shared/.../ui/components/PreviewAsyncImage.kt`. Takes `DrawableResource` (from Compose Resources), not Android `@DrawableRes Int`.
+  - Preview drawables are in `shared/src/commonMain/composeResources/drawable/`. Import via `com.arcvgc.app.shared.Res` and `com.arcvgc.app.shared.preview_*`.
   - Available preview assets: `preview_pokemon`, `preview_item`, `preview_tera`, `preview_type_1`, `preview_type_2`
 - **Gradient toolbar**: All Android and Web pages with a back-navigation toolbar must use the gradient toolbar components from `shared/.../ui/components/GradientToolbarScaffold.kt` instead of `Scaffold` + `TopAppBar`. Two composables are available:
   - **`GradientToolbarScaffold`** (wrapper pattern): Wraps content with a solid background + gradient toolbar overlay. Content goes in the lambda and receives `topPadding: Dp` — apply it *inside* the scrollable container. Used by `BattleDetailScreen`/`BattleDetailPanel`.
   - **`GradientToolbar`** (overlay pattern): Just the gradient + TopAppBar, no background or content slot. Render as a sibling *after* content in a `Box` so it draws on top. Content must compute its own toolbar spacing using `GradientToolbarHeight`. Used by `ContentListPage`.
   - On Android, pass `statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()` to `GradientToolbarScaffold` for full-screen pages; on web, use the default (`0.dp`).
-- Auto-sizing text: Android uses custom `AutoSizeText` composable (Compose Multiplatform 1.10.0 lacks `TextDefaults.AutoSize`)
+- Auto-sizing text: Shared `AutoSizeText` composable in `shared/.../ui/components/AutoSizeText.kt` (Compose Multiplatform 1.10.0 lacks `TextDefaults.AutoSize`). Android `@Preview` in `composeApp/.../ui/components/SharedComponentPreviews.kt`.
 
 ## SwiftUI (iOS)
 
@@ -33,6 +34,9 @@ globs:
 - Network mappers are extension functions (`Dto.toDomain()`); UI mappers are singleton objects (`UiMapper.map()` / `UiMapper.mapList()`)
 - Display names computed via properties (e.g., `Ability.displayName` converts camelCase to Title Case)
 - Package: `com.arcvgc.app`
+- **Shared Compose components** (`shared/.../ui/components/`): `PreviewAsyncImage`, `PokemonAvatar`/`FillPokemonAvatar`/`PokeballCircle`, `TypeIconRow`/`TypeInfo`, `SimplePokemonRow`, `BattleCard`, `VsDivider`, `EmptyView`, `ErrorView`, `InfoButton`, `AutoSizeText`, `GradientToolbarScaffold`/`GradientToolbar`. Android files in `composeApp/.../ui/components/` contain only `@Preview` wrappers for these (`SharedComponentPreviews.kt` for most, `BattleCardPreview.kt` for BattleCard). When adding a new shared component, place the composable in `shared/.../ui/components/` and add a `@Preview`-only file in `composeApp/.../ui/components/` (use a distinct filename to avoid JVM class name collisions with the shared module).
+- **Shared content list components** (`shared/.../ui/contentlist/`): `SectionHeader`, `SortToggleButton`, `PlayerListRow`, `FormatDropdown`, `PokemonNavTarget`, `PlayerNavTarget`, `PAGINATION_THRESHOLD`, `findBattle()`. Platform-specific content list components (e.g., `PokemonListRow`) remain in `composeApp/` and `webApp/`.
+- **Compose Resources**: Preview drawable PNGs in `shared/src/commonMain/composeResources/drawable/`. Generated `Res` class is public at `com.arcvgc.app.shared.Res`. Import accessors via `com.arcvgc.app.shared.preview_*`.
 
 ## DI Patterns
 
@@ -74,7 +78,7 @@ globs:
 
 ## ContentListItem Rendering
 
-`ContentListPage` / `ContentListView` renders items heterogeneously via sealed class dispatch — `ContentListItem.Battle` -> `BattleCard`/`BattleCardView`, `ContentListItem.Pokemon` -> `PokemonListRow`/`SimplePokemonRow`, `ContentListItem.Player` -> `PlayerListRow`/player `HStack`. iOS uses SKIE `onEnum(of:)` for pattern matching.
+`ContentListPage` / `ContentListView` renders items heterogeneously via sealed class dispatch — `ContentListItem.Battle` -> shared `BattleCard` (Android/Web) / `BattleCardView` (iOS), `ContentListItem.Pokemon` -> `PokemonListRow` / `SimplePokemonRow`, `ContentListItem.Player` -> shared `PlayerListRow` (Android/Web) / player `HStack` (iOS). iOS uses SKIE `onEnum(of:)` for pattern matching.
 
 ## Deep Linking
 

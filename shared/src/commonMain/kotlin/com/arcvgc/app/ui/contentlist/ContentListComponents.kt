@@ -34,14 +34,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arcvgc.app.ui.components.PokemonAvatar
-import com.arcvgc.app.ui.components.TypeIconRow
-import com.arcvgc.app.ui.components.TypeInfo
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.FormatUiModel
-import com.arcvgc.app.ui.model.TypeUiModel
 
-internal data class PokemonNavTarget(
+data class PokemonNavTarget(
     val id: Int,
     val name: String,
     val imageUrl: String?,
@@ -49,13 +45,11 @@ internal data class PokemonNavTarget(
     val formatId: Int? = null
 )
 
-internal data class PlayerNavTarget(val id: Int, val name: String, val formatId: Int? = null)
+data class PlayerNavTarget(val id: Int, val name: String, val formatId: Int? = null)
 
-internal const val PAGINATION_THRESHOLD = 5
+const val PAGINATION_THRESHOLD = 5
 
-internal val DETAIL_PANEL_MAX_WIDTH = 960.dp
-
-internal fun List<ContentListItem>.findBattle(battleId: Int): ContentListItem.Battle? {
+fun List<ContentListItem>.findBattle(battleId: Int): ContentListItem.Battle? {
     for (item in this) {
         if (item is ContentListItem.Battle && item.uiModel.id == battleId) return item
         if (item is ContentListItem.Section) {
@@ -67,7 +61,7 @@ internal fun List<ContentListItem>.findBattle(battleId: Int): ContentListItem.Ba
 }
 
 @Composable
-internal fun SectionHeader(
+fun SectionHeader(
     title: String,
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
@@ -115,7 +109,7 @@ internal fun SectionHeader(
 }
 
 @Composable
-internal fun SortToggleButton(sortOrder: String, isLoading: Boolean = false, onClick: () -> Unit) {
+fun SortToggleButton(sortOrder: String, isLoading: Boolean = false, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .height(28.dp)
@@ -148,57 +142,7 @@ internal fun SortToggleButton(sortOrder: String, isLoading: Boolean = false, onC
 }
 
 @Composable
-internal fun PokemonListRow(
-    name: String,
-    imageUrl: String?,
-    types: List<TypeUiModel>,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    usagePercent: String? = null
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            PokemonAvatar(
-                imageUrl = imageUrl,
-                contentDescription = name,
-                circleSize = 40.dp,
-                spriteSize = 56.dp
-            )
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-                if (usagePercent != null) {
-                    Text(
-                        text = usagePercent,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            TypeIconRow(
-                types = types.map { TypeInfo(it.name, it.imageUrl) }
-            )
-        }
-    }
-}
-
-@Composable
-internal fun PlayerListRow(
+fun PlayerListRow(
     name: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -225,7 +169,7 @@ internal fun PlayerListRow(
 }
 
 @Composable
-internal fun FormatDropdown(
+fun FormatDropdown(
     formats: List<FormatUiModel>,
     selectedFormatId: Int,
     onFormatSelected: (Int) -> Unit,

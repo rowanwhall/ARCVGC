@@ -7,7 +7,7 @@ Kotlin Multiplatform (KMP) app for browsing Pokemon Showdown battle replays. Tar
 - **Kotlin** 2.3.0, **Compose Multiplatform** 1.10.0 (shared module has Compose deps for cross-platform UI components)
 - **Ktor** 3.4.0 (OkHttp on Android, Darwin on iOS, Js on Web)
 - **kotlinx-serialization** 1.10.0, **kotlinx-coroutines** 1.10.2
-- **Coil 3** for image loading (Android, Web); native `AsyncImage` (iOS)
+- **Coil 3** for image loading (shared module for Android/Web components; native `AsyncImage` on iOS)
 - **Hilt** 2.59.1 for Android DI
 - **Sentry KMP** 0.24.0 for crash reporting (Android/iOS via KMP SDK, Web via JS Browser SDK + `@JsFun` bridge)
 - **SKIE** 0.10.9 for Kotlin/Swift sealed class interop
@@ -36,7 +36,7 @@ Network DTOs  →  Domain Models  →  UI Models  →  Screen
 
 - **Network layer** (`shared/.../network/`): `ApiService` with Ktor, DTO models, `ApiConstants` for base URL/endpoints, `CatalogLoader` (generic pagination), `SearchRequestMapper` (search request building)
 - **Domain layer** (`shared/.../domain/model/`): Pure Kotlin data classes — `MatchPreview`, `MatchDetail`, `PlayerDetail`, `PokemonListItem`, `SearchFilterSlot`, `AppConfig`, `Format`, etc.
-- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation), `InfoContentProvider` (key-based registry for info dialog content), and shared Compose components (`shared/.../ui/components/` — e.g., `GradientToolbarScaffold`); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
+- **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation), `InfoContentProvider` (key-based registry for info dialog content), and shared Compose components (`shared/.../ui/components/` — `PreviewAsyncImage`, `PokemonAvatar`/`FillPokemonAvatar`, `TypeIconRow`, `SimplePokemonRow`, `BattleCard`, `VsDivider`, `EmptyView`, `ErrorView`, `InfoButton`, `AutoSizeText`, `GradientToolbarScaffold`; `shared/.../ui/contentlist/` — `SectionHeader`, `SortToggleButton`, `PlayerListRow`, `FormatDropdown`, `PokemonNavTarget`, `PlayerNavTarget`); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
 - **Data layer** (`shared/.../data/`): Shared business logic used by all platforms
   - `BattleRepository` (implements `BattleRepositoryApi`) — Match data (getMatches, searchMatches, getMatchDetail, getMatchesByIds, getPokemonProfile, getPlayerProfile, getPlayersByNames, getFormatDetail). Throws exceptions on error. Android wraps in `Result<T>` via a thin adapter; iOS uses directly via SKIE `async throws` bridge. `ContentListLogic` depends on the `BattleRepositoryApi` interface for testability.
   - `FavoritesRepository` — Favorites toggle/check with `StateFlow` state, delegates to `FavoritesStorage` (expect/actual)

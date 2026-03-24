@@ -28,7 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arcvgc.app.R
+import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.preview_item
+import com.arcvgc.app.shared.preview_tera
 import com.arcvgc.app.domain.model.SearchFilterRestrictions
 import com.arcvgc.app.ui.components.AutoSizeText
 import com.arcvgc.app.ui.components.PokemonAvatar
@@ -90,7 +92,7 @@ fun SearchFilterCard(
                     if (item != null && (isPreview || item.imageUrl != null)) {
                         PreviewAsyncImage(
                             url = item.imageUrl,
-                            previewDrawable = R.drawable.preview_item,
+                            previewDrawable = Res.drawable.preview_item,
                             contentDescription = item.name,
                             modifier = Modifier
                                 .size(32.dp)
@@ -110,7 +112,7 @@ fun SearchFilterCard(
                     if (teraType != null && (isPreview || teraType.imageUrl != null)) {
                         PreviewAsyncImage(
                             url = teraType.imageUrl,
-                            previewDrawable = R.drawable.preview_tera,
+                            previewDrawable = Res.drawable.preview_tera,
                             contentDescription = teraType.name,
                             modifier = Modifier
                                 .size(32.dp)
