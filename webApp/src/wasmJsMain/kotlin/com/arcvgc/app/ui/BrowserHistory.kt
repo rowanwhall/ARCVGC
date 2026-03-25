@@ -23,3 +23,7 @@ internal external fun getLocationPathname(): String
 @OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
 @JsFun("() => { return window.location.pathname + window.location.search; }")
 internal external fun getLocationPathAndSearch(): String
+
+@OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+@JsFun("() => { return window.matchMedia('(pointer: fine)').matches; }")
+internal external fun hasFinePointer(): Boolean

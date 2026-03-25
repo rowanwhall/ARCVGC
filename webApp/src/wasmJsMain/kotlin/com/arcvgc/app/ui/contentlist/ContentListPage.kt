@@ -69,6 +69,7 @@ import com.arcvgc.app.ui.components.TypeInfo
 import com.arcvgc.app.ui.components.GradientToolbarHeight
 import com.arcvgc.app.ui.components.GradientToolbar
 import com.arcvgc.app.ui.BattleOverlayRequest
+import com.arcvgc.app.ui.hasFinePointer
 import com.arcvgc.app.ui.LocalBattleOverlay
 import com.arcvgc.app.ui.rememberViewModel
 import com.arcvgc.app.domain.model.SearchParams
@@ -575,10 +576,11 @@ private fun ContentListContent(
     }
 
     // Forward scroll-wheel events from the empty gutters to the LazyColumn on desktop.
-    // Expanded-only: on mobile/compact, this steals fling velocity from the LazyColumn.
+    // Gated on pointer type: touch devices (even in landscape/expanded) lose fling scrolling
+    // when an outer scrollable intercepts drag events.
     Box(
         modifier = modifier.then(
-            if (windowSizeClass == WindowSizeClass.Expanded) {
+            if (windowSizeClass == WindowSizeClass.Expanded && hasFinePointer()) {
                 Modifier.scrollable(
                     state = rememberScrollableState { delta ->
                         scope.launch { listState.scrollBy(-delta) }
