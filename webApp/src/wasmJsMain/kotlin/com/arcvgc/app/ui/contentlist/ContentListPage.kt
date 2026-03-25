@@ -574,13 +574,21 @@ private fun ContentListContent(
         else -> 16.dp
     }
 
+    // Forward scroll-wheel events from the empty gutters to the LazyColumn on desktop.
+    // Expanded-only: on mobile/compact, this steals fling velocity from the LazyColumn.
     Box(
-        modifier = modifier.scrollable(
-            state = rememberScrollableState { delta ->
-                scope.launch { listState.scrollBy(-delta) }
-                delta
-            },
-            orientation = Orientation.Vertical
+        modifier = modifier.then(
+            if (windowSizeClass == WindowSizeClass.Expanded) {
+                Modifier.scrollable(
+                    state = rememberScrollableState { delta ->
+                        scope.launch { listState.scrollBy(-delta) }
+                        delta
+                    },
+                    orientation = Orientation.Vertical
+                )
+            } else {
+                Modifier
+            }
         )
     ) {
     Box(
