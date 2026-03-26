@@ -181,17 +181,19 @@ class ContentListLogic(
                     loadPokemonPage1(m)
                 } else {
                     val (items, pagination) = fetchContent()
+                    println("DEBUG_PAGINATE: loadContent page=${pagination.page}, hasNext=${pagination.hasNext}, items=${items.size}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             items = items,
                             error = null,
                             currentPage = pagination.page,
-                            canPaginate = pagination.page < pagination.totalPages
+                            canPaginate = pagination.hasNext
                         )
                     }
                 }
             } catch (e: Exception) {
+                println("DEBUG_PAGINATE: loadContent ERROR — ${e::class.simpleName}: ${e.message}")
                 _uiState.update {
                     it.copy(isLoading = false, error = e.message ?: "Unknown error")
                 }
@@ -239,7 +241,7 @@ class ContentListLogic(
                 loadingSections = emptySet(),
                 error = null,
                 currentPage = result.pagination.page,
-                canPaginate = result.pagination.page < result.pagination.totalPages
+                canPaginate = result.pagination.hasNext
             )
         }
     }
@@ -255,7 +257,7 @@ class ContentListLogic(
                         items = items,
                         error = null,
                         currentPage = pagination.page,
-                        canPaginate = pagination.page < pagination.totalPages
+                        canPaginate = pagination.hasNext
                     )
                 }
             } catch (e: Exception) {
@@ -268,13 +270,16 @@ class ContentListLogic(
 
     fun paginate() {
         val currentState = _uiState.value
+        println("DEBUG_PAGINATE: called — isPaginating=${currentState.isPaginating}, canPaginate=${currentState.canPaginate}, loadingSections=${currentState.loadingSections}, currentPage=${currentState.currentPage}")
         if (currentState.isPaginating || !currentState.canPaginate || currentState.loadingSections.isNotEmpty()) return
 
         val nextPage = currentState.currentPage + 1
+        println("DEBUG_PAGINATE: fetching page $nextPage")
         scope.launch {
             try {
                 _uiState.update { it.copy(isPaginating = true) }
                 val (items, pagination) = fetchContent(page = nextPage)
+                println("DEBUG_PAGINATE: page $nextPage returned ${items.size} items, pagination=$pagination")
                 _uiState.update {
                     val existingKeys = buildSet {
                         it.items.forEach { item ->
@@ -285,14 +290,16 @@ class ContentListLogic(
                         }
                     }
                     val newItems = items.filter { item -> item.listKey !in existingKeys }
+                    println("DEBUG_PAGINATE: existingKeys=${existingKeys.size}, newItems=${newItems.size} (filtered from ${items.size}), totalAfter=${it.items.size + newItems.size}")
                     it.copy(
                         isPaginating = false,
                         items = it.items + newItems,
                         currentPage = pagination.page,
-                        canPaginate = pagination.page < pagination.totalPages
+                        canPaginate = pagination.hasNext
                     )
                 }
             } catch (e: Exception) {
+                println("DEBUG_PAGINATE: ERROR on page $nextPage — ${e::class.simpleName}: ${e.message}")
                 _uiState.update { it.copy(isPaginating = false) }
             }
         }
@@ -325,7 +332,7 @@ class ContentListLogic(
                         items = items,
                         loadingSections = emptySet(),
                         currentPage = pagination.page,
-                        canPaginate = pagination.page < pagination.totalPages
+                        canPaginate = pagination.hasNext
                     )
                 }
             } catch (e: Exception) {
@@ -345,7 +352,7 @@ class ContentListLogic(
                         items = items,
                         loadingSections = emptySet(),
                         currentPage = pagination.page,
-                        canPaginate = pagination.page < pagination.totalPages
+                        canPaginate = pagination.hasNext
                     )
                 }
             } catch (e: Exception) {
@@ -418,7 +425,7 @@ class ContentListLogic(
                     add(ContentListItem.Section("Today's Top Battles", battleItems))
                 }
             }
-            sections to (battlesData?.pagination ?: Pagination(1, 0, 0, 1))
+            sections to (battlesData?.pagination ?: Pagination(1, 0, false))
         } else {
             val nowSeconds = currentTimeMillis() / 1000
             val result = repository.searchMatches(
@@ -435,29 +442,29 @@ class ContentListLogic(
             FavoriteContentType.Battles -> {
                 val ids = favoritesRepository.favoriteBattleIds.value.toList()
                 if (ids.isEmpty()) {
-                    emptyList<ContentListItem>() to Pagination(1, 0, 0, 1)
+                    emptyList<ContentListItem>() to Pagination(1, 0, false)
                 } else {
                     val battles = repository.getMatchesByIds(ids)
-                    ContentListItemMapper.fromBattles(battles) to Pagination(1, battles.size, battles.size, 1)
+                    ContentListItemMapper.fromBattles(battles) to Pagination(1, battles.size, false)
                 }
             }
             FavoriteContentType.Pokemon -> {
                 val ids = favoritesRepository.favoritePokemonIds.value.toList()
                 val catalog = pokemonCatalogState?.value?.items ?: pokemonCatalogItems
                 if (ids.isEmpty()) {
-                    emptyList<ContentListItem>() to Pagination(1, 0, 0, 1)
+                    emptyList<ContentListItem>() to Pagination(1, 0, false)
                 } else {
                     val items = ContentListItemMapper.fromPokemonCatalog(ids, catalog)
-                    items to Pagination(1, items.size, items.size, 1)
+                    items to Pagination(1, items.size, false)
                 }
             }
             FavoriteContentType.Players -> {
                 val names = favoritesRepository.favoritePlayerNames.value.toList()
                 if (names.isEmpty()) {
-                    emptyList<ContentListItem>() to Pagination(1, 0, 0, 1)
+                    emptyList<ContentListItem>() to Pagination(1, 0, false)
                 } else {
                     val players = repository.getPlayersByNames(names)
-                    ContentListItemMapper.fromPlayers(players) to Pagination(1, players.size, players.size, 1)
+                    ContentListItemMapper.fromPlayers(players) to Pagination(1, players.size, false)
                 }
             }
         }
@@ -547,7 +554,7 @@ class ContentListLogic(
                     add(ContentListItem.Section("", allTopPokemonItems))
                 }
             }
-            items to Pagination(1, allTopPokemonItems.size, allTopPokemonItems.size, 1)
+            items to Pagination(1, allTopPokemonItems.size, false)
         }
         is ContentListMode.Player -> if (page == 1) coroutineScope {
             val profileDeferred = async { runCatching { repository.getPlayerProfile(m.playerId) } }
@@ -557,7 +564,8 @@ class ContentListLogic(
                     formatId = _selectedFormatId.value,
                     orderBy = _sortOrder.value,
                     page = page,
-                    playerName = m.playerName
+                    playerName = m.playerName,
+                    playerId = m.playerId
                 )
             }
 
@@ -600,7 +608,8 @@ class ContentListLogic(
                 formatId = _selectedFormatId.value,
                 orderBy = _sortOrder.value,
                 page = page,
-                playerName = (mode as ContentListMode.Player).playerName
+                playerName = (mode as ContentListMode.Player).playerName,
+                playerId = (mode as ContentListMode.Player).playerId
             )
             ContentListItemMapper.fromBattles(result.battles) to result.pagination
         }

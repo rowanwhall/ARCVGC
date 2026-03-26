@@ -11,6 +11,7 @@ data class PokemonProfile(
     val matchCount: Int = 0,
     val teamCount: Int = 0,
     val matchPercent: Double = 0.0,
+    val teamPercent: Double = 0.0,
     val topItems: List<TopStatItem> = emptyList(),
     val topTeraTypes: List<TopStatTeraType> = emptyList(),
     val topMoves: List<TopStatMove> = emptyList(),

@@ -120,7 +120,7 @@ class ContentListLogicTest {
     fun homeMode_loadsAfterConfigAvailable() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.formatDetailResult = testFormatDetail()
 
@@ -249,7 +249,7 @@ class ContentListLogicTest {
         )
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.playersByNamesResult = listOf(testPlayerListItem(name = "TestPlayer"))
 
@@ -276,7 +276,7 @@ class ContentListLogicTest {
     fun pokemonMode_page1_hasFormatSelectorAndBattlesSection() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
 
         val logic = createLogic(ContentListMode.Pokemon(
@@ -297,7 +297,7 @@ class ContentListLogicTest {
     fun pokemonMode_page1_withProfile_hasStatSections() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.pokemonProfileResult = PokemonProfile(
             id = 25,
@@ -336,7 +336,7 @@ class ContentListLogicTest {
     fun pokemonMode_page1_emptyProfile_showsOnlyFormatSelector() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = emptyList(),
-            pagination = Pagination(1, 10, 0, 1)
+            pagination = Pagination(1, 10, false)
         )
 
         val logic = createLogic(ContentListMode.Pokemon(
@@ -356,7 +356,7 @@ class ContentListLogicTest {
     fun pokemonMode_progressiveLoading_showsProfileWhileBattlesLoad() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.searchMatchesDelayMs = 5000
         fakeRepo.pokemonProfileResult = PokemonProfile(
@@ -402,7 +402,7 @@ class ContentListLogicTest {
     fun pokemonMode_progressiveLoading_skipsIntermediateWhenBattlesFinishFirst() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.pokemonProfileDelayMs = 5000
         fakeRepo.pokemonProfileResult = PokemonProfile(
@@ -443,7 +443,7 @@ class ContentListLogicTest {
     fun playerMode_page1_hasProfileSectionsAndBattles() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.playerProfileResult = PlayerProfile(
             id = 1,
@@ -478,7 +478,7 @@ class ContentListLogicTest {
     fun playerMode_page1_noHighlightsWhenMatchesNull() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.playerProfileResult = PlayerProfile(
             id = 1,
@@ -512,7 +512,7 @@ class ContentListLogicTest {
     fun playerMode_page1_showsEmptyBattlesSectionWhenNoBattles() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = emptyList(),
-            pagination = Pagination(1, 0, 0, 1)
+            pagination = Pagination(1, 0, false)
         )
         fakeRepo.playerProfileResult = PlayerProfile(
             id = 1,
@@ -549,7 +549,7 @@ class ContentListLogicTest {
     fun loadContent_setsLoadingThenSuccess() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.formatDetailResult = testFormatDetail()
 
@@ -583,7 +583,7 @@ class ContentListLogicTest {
     fun refresh_setsRefreshingThenSuccess() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
 
         val logic = createLogic(ContentListMode.Pokemon(
@@ -607,7 +607,7 @@ class ContentListLogicTest {
     fun paginate_appendsItems() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 20, 2)
+            pagination = Pagination(1, 10, true)
         )
         fakeRepo.formatDetailResult = testFormatDetail()
 
@@ -623,7 +623,7 @@ class ContentListLogicTest {
         val battle2 = testBattle.copy(id = 2)
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(battle2),
-            pagination = Pagination(2, 10, 20, 2)
+            pagination = Pagination(2, 10, false)
         )
 
         logic.paginate()
@@ -642,7 +642,7 @@ class ContentListLogicTest {
         // Page 1: battle inside a Section (e.g., Home "Today's Top Battles")
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 20, 2)
+            pagination = Pagination(1, 10, true)
         )
         fakeRepo.formatDetailResult = testFormatDetail()
 
@@ -655,7 +655,7 @@ class ContentListLogicTest {
         // Page 2 returns the SAME battle (pagination overlap)
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(2, 10, 20, 2)
+            pagination = Pagination(2, 10, false)
         )
 
         val page1ItemCount = logic.uiState.value.items.size
@@ -670,7 +670,7 @@ class ContentListLogicTest {
     fun paginate_refusesWhenAlreadyPaginating() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 20, 2)
+            pagination = Pagination(1, 10, true)
         )
         fakeRepo.formatDetailResult = testFormatDetail()
 
@@ -682,7 +682,7 @@ class ContentListLogicTest {
         // We test the guard by calling paginate when canPaginate=false
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = emptyList(),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
 
         // Call loadContent to set canPaginate=false
@@ -700,7 +700,7 @@ class ContentListLogicTest {
     fun paginate_refusesWhenLoadingSections() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 20, 2)
+            pagination = Pagination(1, 10, true)
         )
 
         val logic = createLogic(ContentListMode.Pokemon(
@@ -723,7 +723,7 @@ class ContentListLogicTest {
     fun toggleSortOrder_flipsBetweenTimeAndRating() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
 
         val logic = createLogic(ContentListMode.Pokemon(
@@ -750,7 +750,7 @@ class ContentListLogicTest {
     fun toggleSortOrder_reloadsPage1() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 20, 2)
+            pagination = Pagination(1, 10, true)
         )
 
         val logic = createLogic(ContentListMode.Pokemon(
@@ -776,7 +776,7 @@ class ContentListLogicTest {
     fun selectFormat_updatesFormatAndReloads() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
 
         val logic = createLogic(ContentListMode.Pokemon(
@@ -801,7 +801,7 @@ class ContentListLogicTest {
     fun selectFormat_noOpWhenSameFormat() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
 
         val logic = createLogic(ContentListMode.Pokemon(
@@ -831,7 +831,7 @@ class ContentListLogicTest {
     fun homeMode_page1_topPokemonSectionHasSeeMoreAction() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.formatDetailResult = testFormatDetail()
 
@@ -849,7 +849,7 @@ class ContentListLogicTest {
     fun homeMode_page1_topPokemonUsagePercent() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.formatDetailResult = testFormatDetail(teamCount = 1000, pokemonCount = 500)
 
@@ -868,7 +868,7 @@ class ContentListLogicTest {
     fun homeMode_formatDetailFails_omitsTopPokemonSection() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.formatDetailError = Exception("Format error")
 
@@ -921,7 +921,7 @@ class ContentListLogicTest {
     fun homeMode_selectFormat_reloadsWithCorrectSections() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.formatDetailResult = testFormatDetail()
 
@@ -944,7 +944,7 @@ class ContentListLogicTest {
     fun homeMode_todaysTopBattles_hasNoSortToggle() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
         fakeRepo.formatDetailResult = testFormatDetail()
 
@@ -1104,7 +1104,7 @@ class ContentListLogicTest {
         )
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
-            pagination = Pagination(1, 10, 1, 1)
+            pagination = Pagination(1, 10, false)
         )
 
         val logic = createLogic(ContentListMode.Search(params1))

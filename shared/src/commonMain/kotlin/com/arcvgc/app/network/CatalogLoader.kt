@@ -25,14 +25,14 @@ suspend fun <TDomain, TUi> loadFullCatalog(
 ): CatalogResult<TUi> {
     val allItems = mutableListOf<TUi>()
     var page = 1
-    var totalPages = 1
+    var hasMore = true
 
-    while (page <= totalPages) {
+    while (hasMore) {
         when (val result = fetch(50, page)) {
             is NetworkResult.Success -> {
                 val (items, pagination) = result.data
                 allItems.addAll(map(items))
-                totalPages = pagination.totalPages
+                hasMore = pagination.hasNext
                 page++
             }
             is NetworkResult.Error -> {

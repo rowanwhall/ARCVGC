@@ -64,7 +64,9 @@ fun MatchPreviewDto.toDomain(): MatchPreview {
         rating = rating,
         isPrivate = private,
         format = format.toDomain(),
-        players = players.mapNotNull { it.toDomain() }
+        players = players.mapNotNull { it.toDomain() },
+        setId = setId,
+        positionInSet = positionInSet
     )
 }
 
@@ -72,8 +74,7 @@ fun PaginationDto.toDomain(): Pagination {
     return Pagination(
         page = page,
         itemsPerPage = itemsPerPage,
-        totalItems = totalItems,
-        totalPages = totalPages
+        hasNext = hasNext
     )
 }
 

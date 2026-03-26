@@ -14,6 +14,5 @@ data class MatchesResponseDto(
 data class PaginationDto(
     val page: Int,
     @SerialName("items_per_page") val itemsPerPage: Int,
-    @SerialName("total_items") val totalItems: Int,
-    @SerialName("total_pages") val totalPages: Int
+    @SerialName("has_next") val hasNext: Boolean
 )

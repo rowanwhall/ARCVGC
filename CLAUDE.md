@@ -35,7 +35,7 @@ Network DTOs  →  Domain Models  →  UI Models  →  Screen
 ```
 
 - **Network layer** (`shared/.../network/`): `ApiService` with Ktor, DTO models, `ApiConstants` for base URL/endpoints, `CatalogLoader` (generic pagination), `SearchRequestMapper` (search request building)
-- **Domain layer** (`shared/.../domain/model/`): Pure Kotlin data classes — `MatchPreview`, `MatchDetail`, `PlayerDetail`, `PokemonListItem`, `SearchFilterSlot`, `AppConfig`, `Format`, etc.
+- **Domain layer** (`shared/.../domain/model/`): Pure Kotlin data classes — `MatchPreview`, `MatchDetail`, `PlayerDetail`, `PokemonListItem`, `SearchFilterSlot`, `AppConfig`, `Format`, `MatchSet`, `SetDetail`, `SetMatchInfo`, `SetPlayer`, `SetPlayerDetail`, etc.
 - **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation), `InfoContentProvider` (key-based registry for info dialog content), design tokens (`shared/.../ui/tokens/AppTokens.kt` — shared dimension, typography, and alpha constants used by Android and Web; iOS mirrors in `iosApp/iosApp/AppTokens.swift`), and shared Compose components (`shared/.../ui/components/` — `PreviewAsyncImage`, `PokemonAvatar`/`FillPokemonAvatar`, `TypeIconRow`, `SimplePokemonRow`, `BattleCard`, `VsDivider`, `EmptyView`, `ErrorView`, `InfoButton`, `AutoSizeText`, `GradientToolbarScaffold`; `shared/.../ui/contentlist/` — `SectionHeader`, `SortToggleButton`, `PlayerListRow`, `FormatDropdown`, `PokemonNavTarget`, `PlayerNavTarget`); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
 - **Data layer** (`shared/.../data/`): Shared business logic used by all platforms
   - `BattleRepository` (implements `BattleRepositoryApi`) — Match data (getMatches, searchMatches, getMatchDetail, getMatchesByIds, getPokemonProfile, getPlayerProfile, getPlayersByNames, getFormatDetail). Throws exceptions on error. Android wraps in `Result<T>` via a thin adapter; iOS uses directly via SKIE `async throws` bridge. `ContentListLogic` depends on the `BattleRepositoryApi` interface for testability.
@@ -54,18 +54,21 @@ Base URL: `https://arcvgc.com`
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/v0/config/` | App config (default format, min versions, catalog version) |
-| `GET /api/v0/matches/?limit=50&page=1` | Paginated battle list |
-| `GET /api/v0/matches/{id}` | Battle detail |
-| `GET /api/v0/pokemon/?exclude_illegal=true&limit=50&page=N` | Pokemon catalog |
-| `GET /api/v0/pokemon/{id}?format_id=N` | Pokemon profile (stats, top teammates/items/moves/abilities/tera types) |
-| `GET /api/v0/items/?limit=50&page=N` | Item catalog |
-| `GET /api/v0/types/tera?limit=50&page=N` | Tera type catalog |
-| `GET /api/v0/formats?limit=50&page=N` | Format catalog |
-| `GET /api/v0/formats/{id}?top_pokemon_count=N` | Format detail with top usage Pokemon |
-| `POST /api/v0/matches/search` | Search matches (body: `SearchRequestDto`) |
+| `GET /api/v1/config/` | App config (default format, min versions, catalog version) |
+| `GET /api/v1/matches/?limit=50&page=1` | Paginated battle list (supports `order_by`, `rated_only`, `format_id`) |
+| `GET /api/v1/matches/{id}` | Battle detail |
+| `GET /api/v1/pokemon/?exclude_illegal=true&limit=50&page=N` | Pokemon catalog |
+| `GET /api/v1/pokemon/{id}?format_id=N` | Pokemon profile (stats, top teammates/items/moves/abilities/tera types) |
+| `GET /api/v1/items/?limit=50&page=N` | Item catalog |
+| `GET /api/v1/types/tera?limit=50&page=N` | Tera type catalog |
+| `GET /api/v1/formats?limit=50&page=N` | Format catalog |
+| `GET /api/v1/formats/{id}?top_pokemon_count=N` | Format detail with top usage Pokemon |
+| `GET /api/v1/players/{id}?format_id=N` | Player profile (optionally scoped to format) |
+| `GET /api/v1/sets/?limit=20&page=1` | Paginated set (Bo3) list (supports `order_by`, `complete_only`, `rated_only`, `format_id`) |
+| `GET /api/v1/sets/{id}` | Set detail with player teams |
+| `POST /api/v1/matches/search` | Search matches (body: `SearchRequestDto` — supports `ability_id`, `player_id`, `set_id`, `team1`/`team2`) |
 
-All catalog endpoints return `{ success, data, pagination }` using `PaginationDto`. Constants in `shared/.../network/ApiConstants.kt`.
+All catalog endpoints return `{ success, data, pagination }` using `PaginationDto` (`page`, `items_per_page`, `has_next`). Constants in `shared/.../network/ApiConstants.kt`.
 
 ## Key Screens
 

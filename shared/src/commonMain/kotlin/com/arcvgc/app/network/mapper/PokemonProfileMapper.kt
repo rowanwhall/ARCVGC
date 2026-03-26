@@ -26,6 +26,7 @@ fun PokemonProfileDto.toDomain(): PokemonProfile {
         matchCount = matchCount,
         teamCount = teamCount,
         matchPercent = matchPercent,
+        teamPercent = teamPercent,
         topItems = topItems.orEmpty().map { it.toDomain() },
         topTeraTypes = topTeraTypes.orEmpty().map { it.toDomain() },
         topMoves = topMoves.orEmpty().map { it.toDomain() },

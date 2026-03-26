@@ -11,5 +11,7 @@ data class MatchPreviewDto(
     val rating: Int?,
     val private: Boolean,
     val format: FormatDto,
-    val players: List<PlayerPreviewDto>
+    val players: List<PlayerPreviewDto>,
+    @SerialName("set_id") val setId: String? = null,
+    @SerialName("position_in_set") val positionInSet: Int? = null
 )

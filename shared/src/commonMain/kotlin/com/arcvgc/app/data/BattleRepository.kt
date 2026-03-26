@@ -36,19 +36,33 @@ interface BattleRepositoryApi {
         page: Int = 1,
         timeRangeStart: Long? = null,
         timeRangeEnd: Long? = null,
-        playerName: String? = null
+        playerName: String? = null,
+        playerId: Int? = null
+    ): MatchesResult
+    suspend fun getMatches(
+        limit: Int = 10,
+        page: Int = 1,
+        orderBy: String? = null,
+        ratedOnly: Boolean? = null,
+        formatId: Int? = null
     ): MatchesResult
     suspend fun getFormatDetail(formatId: Int, topPokemonCount: Int? = null): FormatDetail
     suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel>
-    suspend fun getPlayerProfile(id: Int): PlayerProfile
+    suspend fun getPlayerProfile(id: Int, formatId: Int? = null): PlayerProfile
     suspend fun getPokemonProfile(id: Int, formatId: Int? = null): PokemonProfile
     suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem>
 }
 
 class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi {
 
-    suspend fun getMatches(limit: Int = DEFAULT_PAGE_SIZE, page: Int = 1): MatchesResult {
-        return when (val result = apiService.getMatches(limit, page)) {
+    override suspend fun getMatches(
+        limit: Int,
+        page: Int,
+        orderBy: String?,
+        ratedOnly: Boolean?,
+        formatId: Int?
+    ): MatchesResult {
+        return when (val result = apiService.getMatches(limit, page, orderBy, ratedOnly, formatId)) {
             is NetworkResult.Success -> {
                 val (matches, pagination) = result.data
                 MatchesResult(BattleCardUiMapper.mapList(matches), pagination)
@@ -91,7 +105,8 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
         page: Int,
         timeRangeStart: Long?,
         timeRangeEnd: Long?,
-        playerName: String?
+        playerName: String?,
+        playerId: Int?
     ): MatchesResult {
         val request = buildSearchRequest(
             filters = filters,
@@ -104,7 +119,8 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
             page = page,
             timeRangeStart = timeRangeStart,
             timeRangeEnd = timeRangeEnd,
-            playerName = playerName
+            playerName = playerName,
+            playerId = playerId
         )
         return when (val result = apiService.searchMatches(request)) {
             is NetworkResult.Success -> {
@@ -178,8 +194,8 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
         }
     }
 
-    override suspend fun getPlayerProfile(id: Int): PlayerProfile {
-        return when (val result = apiService.getPlayerById(id)) {
+    override suspend fun getPlayerProfile(id: Int, formatId: Int?): PlayerProfile {
+        return when (val result = apiService.getPlayerById(id, formatId)) {
             is NetworkResult.Success -> result.data
             is NetworkResult.Error -> {
                 val error = Exception(result.message)

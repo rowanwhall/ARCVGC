@@ -22,6 +22,7 @@ data class PokemonProfileDto(
     @SerialName("match_count") val matchCount: Int = 0,
     @SerialName("team_count") val teamCount: Int = 0,
     @SerialName("match_percent") val matchPercent: Double = 0.0,
+    @SerialName("team_percent") val teamPercent: Double = 0.0,
     @SerialName("top_items") val topItems: List<TopItemDto>? = null,
     @SerialName("top_tera_types") val topTeraTypes: List<TopTeraTypeDto>? = null,
     @SerialName("top_moves") val topMoves: List<TopMoveDto>? = null,

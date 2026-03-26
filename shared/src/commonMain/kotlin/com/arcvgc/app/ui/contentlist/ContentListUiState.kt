@@ -9,6 +9,6 @@ data class ContentListUiState(
     val isRefreshing: Boolean = false,
     val isPaginating: Boolean = false,
     val currentPage: Int = 1,
-    val canPaginate: Boolean = true,
+    val canPaginate: Boolean = false,
     val loadingSections: Set<String> = emptySet()
 )

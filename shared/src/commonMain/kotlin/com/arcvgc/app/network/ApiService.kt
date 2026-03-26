@@ -7,8 +7,10 @@ import com.arcvgc.app.domain.model.Format
 import com.arcvgc.app.domain.model.FormatDetail
 import com.arcvgc.app.domain.model.MatchDetail
 import com.arcvgc.app.domain.model.MatchPreview
+import com.arcvgc.app.domain.model.MatchSet
 import com.arcvgc.app.domain.model.NetworkResult
 import com.arcvgc.app.domain.model.Pagination
+import com.arcvgc.app.domain.model.SetDetail
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonListItem
@@ -25,6 +27,8 @@ import com.arcvgc.app.network.model.PlayerListResponseDto
 import com.arcvgc.app.network.model.PlayerProfileResponseDto
 import com.arcvgc.app.network.model.PokemonDetailResponseDto
 import com.arcvgc.app.network.model.PokemonListResponseDto
+import com.arcvgc.app.network.model.SetDetailResponseDto
+import com.arcvgc.app.network.model.SetListResponseDto
 import com.arcvgc.app.network.model.TeraTypeListResponseDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -53,13 +57,19 @@ class ApiService {
 
     suspend fun getMatches(
         limit: Int = 50,
-        page: Int = 1
+        page: Int = 1,
+        orderBy: String? = null,
+        ratedOnly: Boolean? = null,
+        formatId: Int? = null
     ): NetworkResult<Pair<List<MatchPreview>, Pagination>> {
         return try {
             val response: MatchesResponseDto = client
                 .get("${ApiConstants.BASE_URL}${ApiConstants.MATCHES_ENDPOINT}") {
                     parameter("limit", limit)
                     parameter("page", page)
+                    orderBy?.let { parameter("order_by", it) }
+                    ratedOnly?.let { parameter("rated_only", it) }
+                    formatId?.let { parameter("format_id", it) }
                 }
                 .body()
 
@@ -257,10 +267,12 @@ class ApiService {
         }
     }
 
-    suspend fun getPlayerById(id: Int): NetworkResult<PlayerProfile> {
+    suspend fun getPlayerById(id: Int, formatId: Int? = null): NetworkResult<PlayerProfile> {
         return try {
             val response: PlayerProfileResponseDto = client
-                .get("${ApiConstants.BASE_URL}${ApiConstants.PLAYERS_ENDPOINT}$id")
+                .get("${ApiConstants.BASE_URL}${ApiConstants.PLAYERS_ENDPOINT}$id") {
+                    formatId?.let { parameter("format_id", it) }
+                }
                 .body()
 
             if (response.success) {
@@ -307,6 +319,56 @@ class ApiService {
                 )
             } else {
                 NetworkResult.Error("API returned success=false")
+            }
+        } catch (e: Exception) {
+            captureException(e)
+            NetworkResult.Error(e.message ?: "Unknown error", e)
+        }
+    }
+
+    suspend fun getSets(
+        limit: Int = 20,
+        page: Int = 1,
+        orderBy: String? = null,
+        completeOnly: Boolean? = null,
+        ratedOnly: Boolean? = null,
+        formatId: Int? = null
+    ): NetworkResult<Pair<List<MatchSet>, Pagination>> {
+        return try {
+            val response: SetListResponseDto = client
+                .get("${ApiConstants.BASE_URL}${ApiConstants.SETS_ENDPOINT}") {
+                    parameter("limit", limit)
+                    parameter("page", page)
+                    orderBy?.let { parameter("order_by", it) }
+                    completeOnly?.let { parameter("complete_only", it) }
+                    ratedOnly?.let { parameter("rated_only", it) }
+                    formatId?.let { parameter("format_id", it) }
+                }
+                .body()
+
+            if (response.success) {
+                NetworkResult.Success(
+                    response.data.map { it.toDomain() } to response.pagination.toDomain()
+                )
+            } else {
+                NetworkResult.Error("API returned success=false")
+            }
+        } catch (e: Exception) {
+            captureException(e)
+            NetworkResult.Error(e.message ?: "Unknown error", e)
+        }
+    }
+
+    suspend fun getSetDetail(setId: Int): NetworkResult<SetDetail> {
+        return try {
+            val response: SetDetailResponseDto = client
+                .get("${ApiConstants.BASE_URL}${ApiConstants.SETS_ENDPOINT}$setId")
+                .body()
+
+            if (response.success && response.data.isNotEmpty()) {
+                NetworkResult.Success(response.data.first().toDomain())
+            } else {
+                NetworkResult.Error("Set not found")
             }
         } catch (e: Exception) {
             captureException(e)

@@ -25,12 +25,24 @@ data class SearchRequestDto(
     val pokemon: List<SearchPokemonDto>,
     @SerialName("order_by") val orderBy: String = "time",
     @SerialName("time_range") val timeRange: TimeRangeDto? = null,
-    @SerialName("player_name") val playerName: String? = null
+    @SerialName("player_name") val playerName: String? = null,
+    @SerialName("player_id") val playerId: Int? = null,
+    @SerialName("set_id") val setId: Int? = null,
+    val team1: SearchTeamDto? = null,
+    val team2: SearchTeamDto? = null
 )
 
 @Serializable
 data class SearchPokemonDto(
     val id: Int,
     @SerialName("item_id") val itemId: Int? = null,
-    @SerialName("tera_type_id") val teraTypeId: Int? = null
+    @SerialName("tera_type_id") val teraTypeId: Int? = null,
+    @SerialName("ability_id") val abilityId: Int? = null
+)
+
+@Serializable
+data class SearchTeamDto(
+    @SerialName("player_id") val playerId: Int? = null,
+    @SerialName("is_winner") val isWinner: Boolean? = null,
+    val pokemon: List<SearchPokemonDto>? = null
 )

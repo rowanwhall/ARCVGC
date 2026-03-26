@@ -15,7 +15,13 @@ import javax.inject.Singleton
 private const val DEFAULT_PAGE_SIZE = 10
 
 interface BattleRepository {
-    suspend fun getMatches(limit: Int = DEFAULT_PAGE_SIZE, page: Int = 1): Result<Pair<List<BattleCardUiModel>, Pagination>>
+    suspend fun getMatches(
+        limit: Int = DEFAULT_PAGE_SIZE,
+        page: Int = 1,
+        orderBy: String? = null,
+        ratedOnly: Boolean? = null,
+        formatId: Int? = null
+    ): Result<Pair<List<BattleCardUiModel>, Pagination>>
     suspend fun getMatchDetail(id: Int): Result<BattleDetailUiModel>
     suspend fun searchMatches(
         filters: List<SearchFilterSlot>,
@@ -28,11 +34,12 @@ interface BattleRepository {
         page: Int = 1,
         timeRangeStart: Long? = null,
         timeRangeEnd: Long? = null,
-        playerName: String? = null
+        playerName: String? = null,
+        playerId: Int? = null
     ): Result<Pair<List<BattleCardUiModel>, Pagination>>
     suspend fun getMatchesByIds(ids: List<Int>): Result<List<BattleCardUiModel>>
     suspend fun getPokemonProfile(id: Int, formatId: Int? = null): Result<PokemonProfile>
-    suspend fun getPlayerProfile(id: Int): Result<PlayerProfile>
+    suspend fun getPlayerProfile(id: Int, formatId: Int? = null): Result<PlayerProfile>
     suspend fun getPlayersByNames(names: List<String>): Result<List<PlayerListItem>>
 }
 
@@ -43,9 +50,15 @@ class BattleRepositoryImpl @Inject constructor(
 
     internal val shared = SharedBattleRepository(apiService)
 
-    override suspend fun getMatches(limit: Int, page: Int): Result<Pair<List<BattleCardUiModel>, Pagination>> {
+    override suspend fun getMatches(
+        limit: Int,
+        page: Int,
+        orderBy: String?,
+        ratedOnly: Boolean?,
+        formatId: Int?
+    ): Result<Pair<List<BattleCardUiModel>, Pagination>> {
         return try {
-            val result = shared.getMatches(limit, page)
+            val result = shared.getMatches(limit, page, orderBy, ratedOnly, formatId)
             Result.success(result.battles to result.pagination)
         } catch (e: Exception) {
             Result.failure(e)
@@ -63,7 +76,8 @@ class BattleRepositoryImpl @Inject constructor(
         page: Int,
         timeRangeStart: Long?,
         timeRangeEnd: Long?,
-        playerName: String?
+        playerName: String?,
+        playerId: Int?
     ): Result<Pair<List<BattleCardUiModel>, Pagination>> {
         return try {
             val result = shared.searchMatches(
@@ -77,7 +91,8 @@ class BattleRepositoryImpl @Inject constructor(
                 page = page,
                 timeRangeStart = timeRangeStart,
                 timeRangeEnd = timeRangeEnd,
-                playerName = playerName
+                playerName = playerName,
+                playerId = playerId
             )
             Result.success(result.battles to result.pagination)
         } catch (e: Exception) {
@@ -109,9 +124,9 @@ class BattleRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPlayerProfile(id: Int): Result<PlayerProfile> {
+    override suspend fun getPlayerProfile(id: Int, formatId: Int?): Result<PlayerProfile> {
         return try {
-            Result.success(shared.getPlayerProfile(id))
+            Result.success(shared.getPlayerProfile(id, formatId))
         } catch (e: Exception) {
             Result.failure(e)
         }

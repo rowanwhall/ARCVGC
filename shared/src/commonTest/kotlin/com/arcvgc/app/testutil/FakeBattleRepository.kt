@@ -15,7 +15,7 @@ class FakeBattleRepository : BattleRepositoryApi {
 
     var searchMatchesResult: MatchesResult = MatchesResult(
         battles = emptyList(),
-        pagination = Pagination(page = 1, itemsPerPage = 10, totalItems = 0, totalPages = 1)
+        pagination = Pagination(page = 1, itemsPerPage = 10, hasNext = false)
     )
     var searchMatchesError: Exception? = null
 
@@ -47,6 +47,16 @@ class FakeBattleRepository : BattleRepositoryApi {
         val playerName: String?
     )
 
+    override suspend fun getMatches(
+        limit: Int,
+        page: Int,
+        orderBy: String?,
+        ratedOnly: Boolean?,
+        formatId: Int?
+    ): MatchesResult {
+        return searchMatchesResult
+    }
+
     override suspend fun searchMatches(
         filters: List<SearchFilterSlot>,
         formatId: Int,
@@ -58,7 +68,8 @@ class FakeBattleRepository : BattleRepositoryApi {
         page: Int,
         timeRangeStart: Long?,
         timeRangeEnd: Long?,
-        playerName: String?
+        playerName: String?,
+        playerId: Int?
     ): MatchesResult {
         searchMatchesCalls.add(SearchMatchesCall(filters, formatId, orderBy, page, playerName))
         if (searchMatchesDelayMs > 0) delay(searchMatchesDelayMs)
@@ -76,7 +87,7 @@ class FakeBattleRepository : BattleRepositoryApi {
         return matchesByIdsResult
     }
 
-    override suspend fun getPlayerProfile(id: Int): PlayerProfile {
+    override suspend fun getPlayerProfile(id: Int, formatId: Int?): PlayerProfile {
         playerProfileError?.let { throw it }
         return playerProfileResult ?: throw Exception("No player profile configured")
     }

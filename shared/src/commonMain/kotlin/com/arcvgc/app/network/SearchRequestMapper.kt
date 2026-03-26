@@ -17,7 +17,8 @@ fun buildSearchRequest(
     page: Int,
     timeRangeStart: Long? = null,
     timeRangeEnd: Long? = null,
-    playerName: String? = null
+    playerName: String? = null,
+    playerId: Int? = null
 ): SearchRequestDto {
     val ratingDto = if (minimumRating != null || maximumRating != null || unratedOnly) {
         RatingDto(
@@ -43,10 +44,12 @@ fun buildSearchRequest(
             SearchPokemonDto(
                 id = it.pokemonId,
                 itemId = it.itemId,
-                teraTypeId = it.teraTypeId
+                teraTypeId = it.teraTypeId,
+                abilityId = it.abilityId
             )
         },
         timeRange = timeRangeDto,
-        playerName = resolvedPlayerName
+        playerName = resolvedPlayerName,
+        playerId = playerId
     )
 }
