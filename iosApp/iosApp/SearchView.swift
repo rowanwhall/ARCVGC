@@ -2,9 +2,9 @@ import SwiftUI
 import Shared
 
 enum SearchSheet: Identifiable {
-    case pokemon
-    case item(slotIndex: Int)
-    case teraType(slotIndex: Int)
+    case pokemon(team: Int)
+    case item(team: Int, slotIndex: Int)
+    case teraType(team: Int, slotIndex: Int)
     case format
     case playerName
     case minRating
@@ -15,9 +15,9 @@ enum SearchSheet: Identifiable {
 
     var id: String {
         switch self {
-        case .pokemon: return "pokemon"
-        case .item(let i): return "item_\(i)"
-        case .teraType(let i): return "tera_\(i)"
+        case .pokemon(let t): return "pokemon_t\(t)"
+        case .item(let t, let i): return "item_t\(t)_\(i)"
+        case .teraType(let t, let i): return "tera_t\(t)_\(i)"
         case .format: return "format"
         case .playerName: return "playerName"
         case .minRating: return "minRating"
@@ -53,6 +53,7 @@ struct SearchView: View {
 
     private var searchEnabled: Bool {
         !viewModel.state.filterSlots.isEmpty
+            || SearchStateReducer.shared.hasTeam2(state: viewModel.state)
             || viewModel.minRating != nil
             || viewModel.maxRating != nil
             || viewModel.state.unratedOnly
@@ -77,18 +78,69 @@ struct SearchView: View {
                         }
                     }
 
-                    ForEach(Array(viewModel.state.filterSlots.enumerated()), id: \.offset) { index, slot in
-                        SearchFilterCard(
-                            slot: slot,
-                            onRemove: { viewModel.removePokemon(at: index) },
-                            onItemTap: { activeSheet = .item(slotIndex: index) },
-                            onTeraTap: { activeSheet = .teraType(slotIndex: index) }
-                        )
+                    let isTeam2Mode = SearchStateReducer.shared.hasTeam2(state: viewModel.state)
+                    let team1Slots = viewModel.state.filterSlots
+                    let team2Slots = viewModel.state.team2FilterSlots
+
+                    if isTeam2Mode {
+                        // Two-team mode: side-by-side compact cards
+                        let maxRows = max(team1Slots.count, team2Slots.count)
+                        ForEach(Array(0..<maxRows), id: \.self) { rowIndex in
+                            HStack(spacing: 8) {
+                                if rowIndex < team1Slots.count {
+                                    SearchFilterCard(
+                                        slot: team1Slots[rowIndex],
+                                        onRemove: { viewModel.removePokemon(at: rowIndex) },
+                                        onItemTap: { activeSheet = .item(team: 1, slotIndex: rowIndex) },
+                                        onTeraTap: { activeSheet = .teraType(team: 1, slotIndex: rowIndex) },
+                                        compact: true
+                                    )
+                                } else {
+                                    Spacer().frame(maxWidth: .infinity)
+                                }
+                                if rowIndex < team2Slots.count {
+                                    SearchFilterCard(
+                                        slot: team2Slots[rowIndex],
+                                        onRemove: { viewModel.removeTeam2Pokemon(at: rowIndex) },
+                                        onItemTap: { activeSheet = .item(team: 2, slotIndex: rowIndex) },
+                                        onTeraTap: { activeSheet = .teraType(team: 2, slotIndex: rowIndex) },
+                                        compact: true
+                                    )
+                                } else {
+                                    Spacer().frame(maxWidth: .infinity)
+                                }
+                            }
+                            .id("team_row_\(rowIndex)_\(team1Slots.count)_\(team2Slots.count)")
+                        }
+                    } else {
+                        // Single-team mode: full-width cards
+                        ForEach(Array(team1Slots.enumerated()), id: \.offset) { index, slot in
+                            SearchFilterCard(
+                                slot: slot,
+                                onRemove: { viewModel.removePokemon(at: index) },
+                                onItemTap: { activeSheet = .item(team: 1, slotIndex: index) },
+                                onTeraTap: { activeSheet = .teraType(team: 1, slotIndex: index) }
+                            )
+                            .id("single_\(index)_\(team1Slots.count)")
+                        }
                     }
 
-                    if viewModel.state.canAddMore {
-                        SearchOptionButton(text: "Add Pokémon Filter") {
-                            activeSheet = .pokemon
+                    // Add buttons — unified for both modes
+                    HStack(spacing: 8) {
+                        if SearchStateReducer.shared.canAddMoreTeam1(state: viewModel.state) {
+                            let addText = isTeam2Mode ? "Add Pokémon"
+                                : (team1Slots.isEmpty ? "Add Pokémon Filter" : "Add Pokémon")
+                            SearchOptionButton(text: addText) { activeSheet = .pokemon(team: 1) }
+                        } else if isTeam2Mode {
+                            Spacer().frame(maxWidth: .infinity)
+                        }
+                        if isTeam2Mode || !team1Slots.isEmpty {
+                            if SearchStateReducer.shared.canAddMoreTeam2(state: viewModel.state) {
+                                let text = isTeam2Mode ? "Add Opposing" : "Add Opposing Pokémon"
+                                SearchOptionButton(text: text) { activeSheet = .pokemon(team: 2) }
+                            } else if isTeam2Mode {
+                                Spacer().frame(maxWidth: .infinity)
+                            }
                         }
                     }
 
@@ -170,17 +222,23 @@ struct SearchView: View {
 
                     // Search button
                     Button {
-                        let filters = viewModel.state.filterSlots.map { slot in
-                            SearchFilterSlot(
-                                pokemonId: slot.pokemonId,
-                                itemId: slot.item.map { KotlinInt(int: $0.id) },
-                                teraTypeId: slot.teraType.map { KotlinInt(int: $0.id) },
-                                pokemonName: slot.pokemonName,
-                                pokemonImageUrl: slot.pokemonImageUrl,
-                                itemName: slot.item?.name,
-                                teraTypeImageUrl: slot.teraType?.imageUrl
-                            )
+                        func mapSlots(_ slots: [SearchFilterSlotUiModel]) -> [SearchFilterSlot] {
+                            slots.map { slot in
+                                SearchFilterSlot(
+                                    pokemonId: slot.pokemonId,
+                                    itemId: slot.item.map { KotlinInt(int: $0.id) },
+                                    teraTypeId: slot.teraType.map { KotlinInt(int: $0.id) },
+                                    abilityId: nil,
+                                    pokemonName: slot.pokemonName,
+                                    pokemonImageUrl: slot.pokemonImageUrl,
+                                    itemName: slot.item?.name,
+                                    teraTypeImageUrl: slot.teraType?.imageUrl,
+                                    abilityName: nil
+                                )
+                            }
                         }
+                        let filters = mapSlots(viewModel.state.filterSlots)
+                        let team2Filters = mapSlots(viewModel.state.team2FilterSlots)
                         let resolvedFormatId = viewModel.state.selectedFormat?.id
                             ?? sortedFormatItems.first?.id
                             ?? 1
@@ -189,6 +247,7 @@ struct SearchView: View {
                         let resolvedOrderBy = viewModel.state.selectedOrderBy
                         searchParams = SearchParams(
                             filters: filters,
+                            team2Filters: team2Filters,
                             formatId: resolvedFormatId,
                             minimumRating: viewModel.state.unratedOnly ? nil : viewModel.minRating.map { KotlinInt(int: $0) },
                             maximumRating: viewModel.state.unratedOnly ? nil : viewModel.maxRating.map { KotlinInt(int: $0) },
@@ -249,32 +308,38 @@ struct SearchView: View {
             }
             .sheet(item: $activeSheet) { sheet in
                 switch sheet {
-                case .pokemon:
+                case .pokemon(let team):
+                    let excludeIds = team == 1
+                        ? Set(viewModel.state.filterSlots.map { $0.pokemonId })
+                        : Set(viewModel.state.team2FilterSlots.map { $0.pokemonId })
                     PokemonPickerSheet(
                         items: catalogStore.pokemonItems,
                         isLoading: catalogStore.pokemonLoading,
                         error: catalogStore.pokemonError,
-                        excludeIds: Set(viewModel.state.filterSlots.map { $0.pokemonId })
+                        excludeIds: excludeIds
                     ) { pokemon in
-                        viewModel.addPokemon(pokemon)
+                        if team == 1 { viewModel.addPokemon(pokemon) }
+                        else { viewModel.addTeam2Pokemon(pokemon) }
                     }
 
-                case .item(let slotIndex):
+                case .item(let team, let slotIndex):
                     ItemPickerSheet(
                         items: catalogStore.itemItems,
                         isLoading: catalogStore.itemLoading,
                         error: catalogStore.itemError
                     ) { item in
-                        viewModel.setItem(at: slotIndex, item: item)
+                        if team == 1 { viewModel.setItem(at: slotIndex, item: item) }
+                        else { viewModel.setTeam2Item(at: slotIndex, item: item) }
                     }
 
-                case .teraType(let slotIndex):
+                case .teraType(let team, let slotIndex):
                     TeraTypePickerSheet(
                         items: catalogStore.teraTypeItems,
                         isLoading: catalogStore.teraTypeLoading,
                         error: catalogStore.teraTypeError
                     ) { teraType in
-                        viewModel.setTeraType(at: slotIndex, teraType: teraType)
+                        if team == 1 { viewModel.setTeraType(at: slotIndex, teraType: teraType) }
+                        else { viewModel.setTeam2TeraType(at: slotIndex, teraType: teraType) }
                     }
 
                 case .format:

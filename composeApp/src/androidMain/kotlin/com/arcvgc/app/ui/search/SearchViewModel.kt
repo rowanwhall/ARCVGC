@@ -82,6 +82,22 @@ class SearchViewModel @Inject constructor(
         _uiState.update { SearchStateReducer.setTeraType(it, slotIndex, teraType) }
     }
 
+    fun addTeam2Pokemon(pokemon: PokemonPickerUiModel) {
+        _uiState.update { SearchStateReducer.addTeam2Pokemon(it, pokemon) }
+    }
+
+    fun removeTeam2Pokemon(index: Int) {
+        _uiState.update { SearchStateReducer.removeTeam2Pokemon(it, index) }
+    }
+
+    fun setTeam2Item(slotIndex: Int, item: ItemUiModel) {
+        _uiState.update { SearchStateReducer.setTeam2Item(it, slotIndex, item) }
+    }
+
+    fun setTeam2TeraType(slotIndex: Int, teraType: TeraTypeUiModel) {
+        _uiState.update { SearchStateReducer.setTeam2TeraType(it, slotIndex, teraType) }
+    }
+
     fun setFormat(format: FormatUiModel) {
         _uiState.update { SearchStateReducer.setFormat(it, format) }
     }

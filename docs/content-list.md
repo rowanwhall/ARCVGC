@@ -230,7 +230,7 @@ data class ContentListUiState(
 - Trigger: when user scrolls within 5 items of the list end (`PAGINATION_THRESHOLD = 5`)
 - Guards: `!isPaginating && canPaginate && loadingSections.isEmpty()`
 - New items appended with `distinctBy { listKey }` to prevent duplicates
-- `canPaginate` set from `pagination.page < pagination.totalPages`
+- `canPaginate` set from `pagination.hasNext`
 
 ## Home Mode Special Behavior
 

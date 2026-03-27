@@ -2,6 +2,7 @@ package com.arcvgc.app.domain.model
 
 data class SearchParams(
     val filters: List<SearchFilterSlot>,
+    val team2Filters: List<SearchFilterSlot> = emptyList(),
     val formatId: Int,
     val minimumRating: Int? = null,
     val maximumRating: Int? = null,
@@ -16,6 +17,7 @@ data class SearchParams(
 
     private val isValid: Boolean
         get() = filters.isNotEmpty()
+                || team2Filters.isNotEmpty()
                 || minimumRating != null
                 || maximumRating != null
                 || unratedOnly
@@ -25,8 +27,21 @@ data class SearchParams(
     fun canRemovePokemonAt(index: Int): Boolean =
         copy(filters = filters.filterIndexed { i, _ -> i != index }).isValid
 
-    fun removePokemonAt(index: Int): SearchParams =
-        copy(filters = filters.filterIndexed { i, _ -> i != index })
+    fun removePokemonAt(index: Int): SearchParams {
+        val newFilters = filters.filterIndexed { i, _ -> i != index }
+        // Promote team2 to team1 if team1 is now empty
+        return if (newFilters.isEmpty() && team2Filters.isNotEmpty()) {
+            copy(filters = team2Filters, team2Filters = emptyList())
+        } else {
+            copy(filters = newFilters)
+        }
+    }
+
+    fun canRemoveTeam2PokemonAt(index: Int): Boolean =
+        copy(team2Filters = team2Filters.filterIndexed { i, _ -> i != index }).isValid
+
+    fun removeTeam2PokemonAt(index: Int): SearchParams =
+        copy(team2Filters = team2Filters.filterIndexed { i, _ -> i != index })
 
     fun canRemoveMinRating(): Boolean =
         copy(minimumRating = null).isValid

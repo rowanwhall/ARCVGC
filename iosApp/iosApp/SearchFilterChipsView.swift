@@ -20,54 +20,36 @@ struct SearchFilterChipsView: View {
                     .cornerRadius(AppTokens.filterChipCornerRadius)
             }
 
-            ForEach(Array(filters.pokemonChips.enumerated()), id: \.offset) { _, chip in
-                let label = {
-                    var text = chip.name
-                    if let itemName = chip.itemName { text += " @ \(itemName)" }
-                    return text
-                }()
-                let canRemove = searchParams?.canRemovePokemonAt(index: Int32(chip.index)) ?? false
-                HStack(spacing: 2) {
-                    if let url = chip.teraTypeImageUrl {
-                        AsyncImage(url: URL(string: url)) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            default:
-                                Color.clear
-                            }
-                        }
-                        .frame(width: 27, height: 27)
-                    }
-                    if let url = chip.imageUrl {
-                        AsyncImage(url: URL(string: url)) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            default:
-                                Color.clear
-                            }
-                        }
-                        .frame(width: 40, height: 40)
-                    }
-                    Text(label)
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(.label))
-                    if canRemove, let params = searchParams, let callback = onSearchParamsChanged {
-                        FilterChipCloseButton {
+            ForEach(Array(filters.team1Chips.enumerated()), id: \.offset) { _, chip in
+                PokemonFilterChipView(
+                    chip: chip,
+                    canRemove: searchParams?.canRemovePokemonAt(index: Int32(chip.index)) ?? false,
+                    onRemove: {
+                        if let params = searchParams, let callback = onSearchParamsChanged {
                             callback(params.removePokemonAt(index: Int32(chip.index)))
                         }
                     }
+                )
+            }
+
+            if !filters.team2Chips.isEmpty {
+                Text("vs")
+                    .font(.system(size: 24))
+                    .italic()
+                    .foregroundColor(Color(.secondaryLabel))
+                    .frame(height: filterChipHeight)
+
+                ForEach(Array(filters.team2Chips.enumerated()), id: \.offset) { _, chip in
+                    PokemonFilterChipView(
+                        chip: chip,
+                        canRemove: searchParams?.canRemoveTeam2PokemonAt(index: Int32(chip.index)) ?? false,
+                        onRemove: {
+                            if let params = searchParams, let callback = onSearchParamsChanged {
+                                callback(params.removeTeam2PokemonAt(index: Int32(chip.index)))
+                            }
+                        }
+                    )
                 }
-                .padding(.leading, 4)
-                .padding(.trailing, canRemove ? 0 : 4)
-                .frame(height: filterChipHeight)
-                .background(Color(.systemGray5))
-                .cornerRadius(AppTokens.filterChipCornerRadius)
             }
 
             if let rating = filters.minimumRating {
@@ -170,6 +152,55 @@ struct SearchFilterChipsView: View {
             }
 
         }
+    }
+}
+
+private struct PokemonFilterChipView: View {
+    let chip: SearchFilterChipData
+    let canRemove: Bool
+    let onRemove: () -> Void
+
+    var body: some View {
+        let label = {
+            var text = chip.name
+            if let itemName = chip.itemName { text += " @ \(itemName)" }
+            return text
+        }()
+        HStack(spacing: 2) {
+            if let url = chip.teraTypeImageUrl {
+                AsyncImage(url: URL(string: url)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fit)
+                    default:
+                        Color.clear
+                    }
+                }
+                .frame(width: 27, height: 27)
+            }
+            if let url = chip.imageUrl {
+                AsyncImage(url: URL(string: url)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fit)
+                    default:
+                        Color.clear
+                    }
+                }
+                .frame(width: 40, height: 40)
+            }
+            Text(label)
+                .font(.system(size: 14))
+                .foregroundColor(Color(.label))
+            if canRemove {
+                FilterChipCloseButton(action: onRemove)
+            }
+        }
+        .padding(.leading, 4)
+        .padding(.trailing, canRemove ? 0 : 4)
+        .frame(height: filterChipHeight)
+        .background(Color(.systemGray5))
+        .cornerRadius(AppTokens.filterChipCornerRadius)
     }
 }
 

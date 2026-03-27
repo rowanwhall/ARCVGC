@@ -12,7 +12,7 @@ object SearchStateReducer {
     fun initialState(): SearchUiState = SearchUiState()
 
     fun addPokemon(state: SearchUiState, pokemon: PokemonPickerUiModel): SearchUiState {
-        if (!state.canAddMore) return state
+        if (!state.canAddMoreTeam1) return state
         return state.copy(
             filterSlots = state.filterSlots + SearchFilterSlotUiModel(
                 pokemonId = pokemon.id,
@@ -25,9 +25,13 @@ object SearchStateReducer {
     }
 
     fun removePokemon(state: SearchUiState, index: Int): SearchUiState {
-        return state.copy(
-            filterSlots = state.filterSlots.toMutableList().apply { removeAt(index) }
-        )
+        val newSlots = state.filterSlots.toMutableList().apply { removeAt(index) }
+        // If team1 is now empty, promote team2 into team1
+        return if (newSlots.isEmpty() && state.team2FilterSlots.isNotEmpty()) {
+            state.copy(filterSlots = state.team2FilterSlots, team2FilterSlots = emptyList())
+        } else {
+            state.copy(filterSlots = newSlots)
+        }
     }
 
     fun setItem(state: SearchUiState, slotIndex: Int, item: ItemUiModel): SearchUiState {
@@ -41,6 +45,41 @@ object SearchStateReducer {
     fun setTeraType(state: SearchUiState, slotIndex: Int, teraType: TeraTypeUiModel): SearchUiState {
         return state.copy(
             filterSlots = state.filterSlots.toMutableList().apply {
+                this[slotIndex] = this[slotIndex].copy(teraType = teraType)
+            }
+        )
+    }
+
+    fun addTeam2Pokemon(state: SearchUiState, pokemon: PokemonPickerUiModel): SearchUiState {
+        if (!state.canAddMoreTeam2) return state
+        return state.copy(
+            team2FilterSlots = state.team2FilterSlots + SearchFilterSlotUiModel(
+                pokemonId = pokemon.id,
+                pokemonName = pokemon.name,
+                pokemonImageUrl = pokemon.imageUrl,
+                item = null,
+                teraType = null
+            )
+        )
+    }
+
+    fun removeTeam2Pokemon(state: SearchUiState, index: Int): SearchUiState {
+        return state.copy(
+            team2FilterSlots = state.team2FilterSlots.toMutableList().apply { removeAt(index) }
+        )
+    }
+
+    fun setTeam2Item(state: SearchUiState, slotIndex: Int, item: ItemUiModel): SearchUiState {
+        return state.copy(
+            team2FilterSlots = state.team2FilterSlots.toMutableList().apply {
+                this[slotIndex] = this[slotIndex].copy(item = item)
+            }
+        )
+    }
+
+    fun setTeam2TeraType(state: SearchUiState, slotIndex: Int, teraType: TeraTypeUiModel): SearchUiState {
+        return state.copy(
+            team2FilterSlots = state.team2FilterSlots.toMutableList().apply {
                 this[slotIndex] = this[slotIndex].copy(teraType = teraType)
             }
         )
@@ -87,4 +126,11 @@ object SearchStateReducer {
     fun setOrderBy(state: SearchUiState, orderBy: String): SearchUiState {
         return state.copy(selectedOrderBy = orderBy)
     }
+
+    // Helper functions that duplicate SearchUiState computed properties.
+    // Kotlin data class computed `get()` properties don't bridge reliably to Swift via SKIE,
+    // so iOS calls these functions instead. Android/Web can use either.
+    fun hasTeam2(state: SearchUiState): Boolean = state.team2FilterSlots.isNotEmpty()
+    fun canAddMoreTeam1(state: SearchUiState): Boolean = state.filterSlots.size < 6
+    fun canAddMoreTeam2(state: SearchUiState): Boolean = state.team2FilterSlots.size < 6
 }

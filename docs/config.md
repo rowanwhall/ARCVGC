@@ -4,7 +4,7 @@ Remote config system fetched from the backend on app startup. Provides the defau
 
 ## API
 
-`GET /api/v0/config/` returns:
+`GET /api/v1/config/` returns:
 ```json
 {
   "success": true,

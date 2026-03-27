@@ -37,7 +37,8 @@ interface BattleRepositoryApi {
         timeRangeStart: Long? = null,
         timeRangeEnd: Long? = null,
         playerName: String? = null,
-        playerId: Int? = null
+        playerId: Int? = null,
+        team2Filters: List<SearchFilterSlot> = emptyList()
     ): MatchesResult
     suspend fun getMatches(
         limit: Int = 10,
@@ -106,7 +107,8 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
         timeRangeStart: Long?,
         timeRangeEnd: Long?,
         playerName: String?,
-        playerId: Int?
+        playerId: Int?,
+        team2Filters: List<SearchFilterSlot>
     ): MatchesResult {
         val request = buildSearchRequest(
             filters = filters,
@@ -120,7 +122,8 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
             timeRangeStart = timeRangeStart,
             timeRangeEnd = timeRangeEnd,
             playerName = playerName,
-            playerId = playerId
+            playerId = playerId,
+            team2Filters = team2Filters
         )
         return when (val result = apiService.searchMatches(request)) {
             is NetworkResult.Success -> {

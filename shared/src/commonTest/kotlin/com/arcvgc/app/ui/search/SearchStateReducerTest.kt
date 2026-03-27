@@ -24,7 +24,7 @@ class SearchStateReducerTest {
     @Test
     fun initialState_canAddMore() {
         val state = SearchStateReducer.initialState()
-        assertTrue(state.canAddMore)
+        assertTrue(state.canAddMoreTeam1)
     }
 
     @Test
@@ -69,7 +69,7 @@ class SearchStateReducerTest {
         var state = SearchStateReducer.initialState()
         repeat(6) { i -> state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = i, name = "Mon$i")) }
 
-        assertFalse(state.canAddMore)
+        assertFalse(state.canAddMoreTeam1)
         assertEquals(6, state.filterSlots.size)
 
         state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = 99, name = "Extra"))
@@ -96,10 +96,10 @@ class SearchStateReducerTest {
     fun removePokemon_restoresCanAddMore() {
         var state = SearchStateReducer.initialState()
         repeat(6) { i -> state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = i, name = "Mon$i")) }
-        assertFalse(state.canAddMore)
+        assertFalse(state.canAddMoreTeam1)
 
         state = SearchStateReducer.removePokemon(state, 0)
-        assertTrue(state.canAddMore)
+        assertTrue(state.canAddMoreTeam1)
     }
 
     // --- setItem ---
@@ -272,6 +272,87 @@ class SearchStateReducerTest {
         val state = SearchStateReducer.initialState()
         val result = SearchStateReducer.setOrderBy(state, "time")
         assertEquals("time", result.selectedOrderBy)
+    }
+
+    // --- Team 2 ---
+
+    @Test
+    fun addTeam2Pokemon_addsToTeam2FilterSlots() {
+        val state = SearchStateReducer.initialState()
+        val result = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 10, name = "Pikachu"))
+
+        assertEquals(1, result.team2FilterSlots.size)
+        assertEquals(10, result.team2FilterSlots[0].pokemonId)
+        assertTrue(result.filterSlots.isEmpty())
+    }
+
+    @Test
+    fun addTeam2Pokemon_maxSixSlots() {
+        var state = SearchStateReducer.initialState()
+        repeat(6) { i -> state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = i, name = "Mon$i")) }
+
+        assertFalse(state.canAddMoreTeam2)
+        assertEquals(6, state.team2FilterSlots.size)
+
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 99, name = "Extra"))
+        assertEquals(6, state.team2FilterSlots.size)
+    }
+
+    @Test
+    fun removeTeam2Pokemon_removesAtIndex() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 1, name = "Bulbasaur"))
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 4, name = "Charmander"))
+
+        state = SearchStateReducer.removeTeam2Pokemon(state, 0)
+
+        assertEquals(1, state.team2FilterSlots.size)
+        assertEquals("Charmander", state.team2FilterSlots[0].pokemonName)
+    }
+
+    @Test
+    fun setTeam2Item_updatesSlot() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 1, name = "Pikachu"))
+
+        val item = ItemUiModel(id = 5, name = "Choice Band", imageUrl = null)
+        state = SearchStateReducer.setTeam2Item(state, 0, item)
+
+        assertEquals(5, state.team2FilterSlots[0].item?.id)
+    }
+
+    @Test
+    fun setTeam2TeraType_updatesSlot() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 1, name = "Pikachu"))
+
+        val tera = TeraTypeUiModel(id = 3, name = "Water", imageUrl = null)
+        state = SearchStateReducer.setTeam2TeraType(state, 0, tera)
+
+        assertEquals(3, state.team2FilterSlots[0].teraType?.id)
+    }
+
+    @Test
+    fun hasTeam2_isTrueWhenTeam2HasSlots() {
+        var state = SearchStateReducer.initialState()
+        assertFalse(state.hasTeam2)
+
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 1, name = "Bulbasaur"))
+        assertTrue(state.hasTeam2)
+    }
+
+    @Test
+    fun removePokemon_promotesTeam2WhenTeam1Empty() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = 1, name = "Bulbasaur"))
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 4, name = "Charmander"))
+
+        state = SearchStateReducer.removePokemon(state, 0)
+
+        assertEquals(1, state.filterSlots.size)
+        assertEquals("Charmander", state.filterSlots[0].pokemonName)
+        assertTrue(state.team2FilterSlots.isEmpty())
+        assertFalse(state.hasTeam2)
     }
 
     // --- Helpers ---

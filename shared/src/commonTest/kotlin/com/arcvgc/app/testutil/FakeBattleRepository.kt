@@ -44,7 +44,8 @@ class FakeBattleRepository : BattleRepositoryApi {
         val formatId: Int,
         val orderBy: String,
         val page: Int,
-        val playerName: String?
+        val playerName: String?,
+        val team2Filters: List<SearchFilterSlot>
     )
 
     override suspend fun getMatches(
@@ -69,9 +70,10 @@ class FakeBattleRepository : BattleRepositoryApi {
         timeRangeStart: Long?,
         timeRangeEnd: Long?,
         playerName: String?,
-        playerId: Int?
+        playerId: Int?,
+        team2Filters: List<SearchFilterSlot>
     ): MatchesResult {
-        searchMatchesCalls.add(SearchMatchesCall(filters, formatId, orderBy, page, playerName))
+        searchMatchesCalls.add(SearchMatchesCall(filters, formatId, orderBy, page, playerName, team2Filters))
         if (searchMatchesDelayMs > 0) delay(searchMatchesDelayMs)
         searchMatchesError?.let { throw it }
         return searchMatchesResult

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -64,55 +65,37 @@ internal fun SearchFilterChips(
                 )
             }
         }
-        filters.pokemonChips.forEach { chip ->
-            val label = buildString {
-                append(chip.name)
-                chip.itemName?.let { append(" @ $it") }
-            }
-            val canRemove = searchParams?.canRemovePokemonAt(chip.index) == true
-            Row(
-                modifier = Modifier
-                    .height(FilterChipHeight)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(FilterChipCornerRadius)
-                    )
-                    .padding(start = 4.dp, end = if (canRemove) 0.dp else 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+        filters.team1Chips.forEach { chip ->
+            PokemonFilterChip(
+                chip = chip,
+                canRemove = searchParams?.canRemovePokemonAt(chip.index) == true,
+                onRemove = onSearchParamsChanged?.let { callback ->
+                    { callback(searchParams!!.removePokemonAt(chip.index)) }
+                },
+                context = context
+            )
+        }
+        if (filters.team2Chips.isNotEmpty()) {
+            Box(
+                modifier = Modifier.height(FilterChipHeight),
+                contentAlignment = Alignment.Center
             ) {
-                chip.teraTypeImageUrl?.let { url ->
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(url)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Tera type",
-                        modifier = Modifier.size(27.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-                chip.imageUrl?.let { url ->
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(url)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = chip.name,
-                        modifier = Modifier.size(40.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                }
                 Text(
-                    text = label,
+                    text = "vs",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp
+                    fontSize = 24.sp,
+                    fontStyle = FontStyle.Italic
                 )
-                if (canRemove && onSearchParamsChanged != null) {
-                    FilterChipCloseButton {
-                        onSearchParamsChanged(searchParams.removePokemonAt(chip.index))
-                    }
-                }
+            }
+            filters.team2Chips.forEach { chip ->
+                PokemonFilterChip(
+                    chip = chip,
+                    canRemove = searchParams?.canRemoveTeam2PokemonAt(chip.index) == true,
+                    onRemove = onSearchParamsChanged?.let { callback ->
+                        { callback(searchParams!!.removeTeam2PokemonAt(chip.index)) }
+                    },
+                    context = context
+                )
             }
         }
         filters.minimumRating?.let { rating ->
@@ -236,6 +219,61 @@ internal fun SearchFilterChips(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PokemonFilterChip(
+    chip: com.arcvgc.app.ui.model.PokemonChip,
+    canRemove: Boolean,
+    onRemove: (() -> Unit)?,
+    context: coil3.PlatformContext
+) {
+    val label = buildString {
+        append(chip.name)
+        chip.itemName?.let { append(" @ $it") }
+    }
+    Row(
+        modifier = Modifier
+            .height(FilterChipHeight)
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(FilterChipCornerRadius)
+            )
+            .padding(start = 4.dp, end = if (canRemove) 0.dp else 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        chip.teraTypeImageUrl?.let { url ->
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(url)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Tera type",
+                modifier = Modifier.size(27.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+        chip.imageUrl?.let { url ->
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(url)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = chip.name,
+                modifier = Modifier.size(40.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 14.sp
+        )
+        if (canRemove && onRemove != null) {
+            FilterChipCloseButton(onClick = onRemove)
         }
     }
 }

@@ -30,6 +30,22 @@ final class SearchViewModel: ObservableObject {
         state = SearchStateReducer.shared.setTeraType(state: state, slotIndex: Int32(slotIndex), teraType: teraType)
     }
 
+    func addTeam2Pokemon(_ pokemon: PokemonPickerUiModel) {
+        state = SearchStateReducer.shared.addTeam2Pokemon(state: state, pokemon: pokemon)
+    }
+
+    func removeTeam2Pokemon(at index: Int) {
+        state = SearchStateReducer.shared.removeTeam2Pokemon(state: state, index: Int32(index))
+    }
+
+    func setTeam2Item(at slotIndex: Int, item: ItemUiModel) {
+        state = SearchStateReducer.shared.setTeam2Item(state: state, slotIndex: Int32(slotIndex), item: item)
+    }
+
+    func setTeam2TeraType(at slotIndex: Int, teraType: TeraTypeUiModel) {
+        state = SearchStateReducer.shared.setTeam2TeraType(state: state, slotIndex: Int32(slotIndex), teraType: teraType)
+    }
+
     func setFormat(_ format: FormatUiModel) {
         state = SearchStateReducer.shared.setFormat(state: state, format: format)
     }

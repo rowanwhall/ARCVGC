@@ -34,7 +34,7 @@ Network DTOs  →  Domain Models  →  UI Models  →  Screen
   (Ktor)        (toDomain())      (toUiModel())   (Compose/SwiftUI)
 ```
 
-- **Network layer** (`shared/.../network/`): `ApiService` with Ktor, DTO models, `ApiConstants` for base URL/endpoints, `CatalogLoader` (generic pagination), `SearchRequestMapper` (search request building)
+- **Network layer** (`shared/.../network/`): `ApiService` with Ktor, DTO models, `ApiConstants` for base URL/endpoints, `CatalogLoader` (generic pagination), `SearchRequestMapper` (maps team1/team2 filters to `SearchTeamDto`; legacy top-level `pokemon` field is deprecated and sent empty)
 - **Domain layer** (`shared/.../domain/model/`): Pure Kotlin data classes — `MatchPreview`, `MatchDetail`, `PlayerDetail`, `PokemonListItem`, `SearchFilterSlot`, `AppConfig`, `Format`, `MatchSet`, `SetDetail`, `SetMatchInfo`, `SetPlayer`, `SetPlayerDetail`, etc.
 - **UI layer** (`shared/.../ui/`): Platform-agnostic UI models, mappers (including `TimeFormatter` for shared time formatting), `SearchStateReducer` (pure state reducer for search filter mutations), `ContentListLogic` (scope-injected shared ViewModel logic for content list — handles data fetching, pagination, sort/format toggling, favorites observation), `InfoContentProvider` (key-based registry for info dialog content), design tokens (`shared/.../ui/tokens/AppTokens.kt` — shared dimension, typography, and alpha constants used by Android and Web; iOS mirrors in `iosApp/iosApp/AppTokens.swift`), and shared Compose components (`shared/.../ui/components/` — `PreviewAsyncImage`, `PokemonAvatar`/`FillPokemonAvatar`, `TypeIconRow`, `SimplePokemonRow`, `BattleCard`, `VsDivider`, `EmptyView`, `ErrorView`, `InfoButton`, `AutoSizeText`, `GradientToolbarScaffold`; `shared/.../ui/contentlist/` — `SectionHeader`, `SortToggleButton`, `PlayerListRow`, `FormatDropdown`, `PokemonNavTarget`, `PlayerNavTarget`); platform-specific screens in `composeApp/`, `iosApp/`, `webApp/`
 - **Data layer** (`shared/.../data/`): Shared business logic used by all platforms
@@ -74,7 +74,7 @@ All catalog endpoints return `{ success, data, pagination }` using `PaginationDt
 
 - **ContentListPage** — Generic paginated list page for Home, Search results, per-Pokemon battles, Favorites sub-tabs. Sort toggle in Search/Pokemon/Player modes.
 - **BattleDetailScreen** — Full-screen battle detail page with format name + rating header (shows "Unrated" with info icon when null), "Game N" replay buttons with info icon, and team preview cards
-- **SearchPage** — Pokemon filter UI with format (pre-selected from config), rating, date, player name, sort order
+- **SearchPage** — Team-based Pokemon filter UI with team1/team2 support. Single-team mode shows full-width cards with inline Item/Tera buttons; two-team mode shows compact side-by-side cards with stacked sub-filter badge icons and a MoreVert dropdown menu. Includes format (pre-selected from config), rating, date, player name, sort order. Search results show "vs" divider between team1 and team2 Pokemon chips in the header
 - **FavoritesPage** — Three sub-tabs: Battles, Pokemon, Players
 - **SettingsPage** — Dark Mode, Theme Color, Winner Highlight, Clear Favorites, Invalidate Cache, Privacy Policy, Terms of Service
 - **ForceUpgradeOverlay** (Android) / **ForceUpgradeView** (iOS) — Blocks app when `minAppVersion > currentVersion`

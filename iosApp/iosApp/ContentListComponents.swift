@@ -42,7 +42,8 @@ struct SearchFilterChipData {
 }
 
 struct SearchFiltersData {
-    let pokemonChips: [SearchFilterChipData]
+    let team1Chips: [SearchFilterChipData]
+    let team2Chips: [SearchFilterChipData]
     let formatName: String?
     let minimumRating: Int32?
     let maximumRating: Int32?
@@ -75,7 +76,16 @@ enum ContentListHeader {
         case .topPokemon:
             self = .topPokemonHero
         case .search(let params):
-            let chips = params.filters.enumerated().map { index, slot in
+            let team1Chips = params.filters.enumerated().map { index, slot in
+                SearchFilterChipData(
+                    index: index,
+                    name: slot.pokemonName,
+                    imageUrl: slot.pokemonImageUrl,
+                    itemName: slot.itemName,
+                    teraTypeImageUrl: slot.teraTypeImageUrl
+                )
+            }
+            let team2Chips = params.team2Filters.enumerated().map { index, slot in
                 SearchFilterChipData(
                     index: index,
                     name: slot.pokemonName,
@@ -85,7 +95,8 @@ enum ContentListHeader {
                 )
             }
             self = .searchFilters(SearchFiltersData(
-                pokemonChips: chips,
+                team1Chips: team1Chips,
+                team2Chips: team2Chips,
                 formatName: params.formatName,
                 minimumRating: params.minimumRating.map { $0.int32Value > 0 ? $0.int32Value : nil } ?? nil,
                 maximumRating: params.maximumRating.map { $0.int32Value > 0 ? $0.int32Value : nil } ?? nil,

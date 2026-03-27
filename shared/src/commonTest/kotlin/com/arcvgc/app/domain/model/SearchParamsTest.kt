@@ -10,6 +10,7 @@ class SearchParamsTest {
 
     private fun baseParams(
         filters: List<SearchFilterSlot> = emptyList(),
+        team2Filters: List<SearchFilterSlot> = emptyList(),
         minimumRating: Int? = null,
         maximumRating: Int? = null,
         unratedOnly: Boolean = false,
@@ -18,6 +19,7 @@ class SearchParamsTest {
         timeRangeEnd: Long? = null
     ) = SearchParams(
         filters = filters,
+        team2Filters = team2Filters,
         formatId = 1,
         minimumRating = minimumRating,
         maximumRating = maximumRating,
@@ -129,5 +131,59 @@ class SearchParamsTest {
             timeRangeEnd = 2000L
         )
         assertTrue(params.canRemoveTimeRange())
+    }
+
+    // --- Team 2 ---
+
+    @Test
+    fun canRemovePokemonAt_singleFilterWithTeam2_true() {
+        val params = baseParams(
+            filters = listOf(testSearchFilterSlot(pokemonId = 1)),
+            team2Filters = listOf(testSearchFilterSlot(pokemonId = 2))
+        )
+        assertTrue(params.canRemovePokemonAt(0))
+    }
+
+    @Test
+    fun removePokemonAt_promotesTeam2WhenTeam1Empty() {
+        val team2Filter = testSearchFilterSlot(pokemonId = 2, pokemonName = "Charizard")
+        val params = baseParams(
+            filters = listOf(testSearchFilterSlot(pokemonId = 1)),
+            team2Filters = listOf(team2Filter)
+        )
+
+        val result = params.removePokemonAt(0)
+        assertEquals(listOf(team2Filter), result.filters)
+        assertTrue(result.team2Filters.isEmpty())
+    }
+
+    @Test
+    fun canRemoveTeam2PokemonAt_singleTeam2WithTeam1_true() {
+        val params = baseParams(
+            filters = listOf(testSearchFilterSlot(pokemonId = 1)),
+            team2Filters = listOf(testSearchFilterSlot(pokemonId = 2))
+        )
+        assertTrue(params.canRemoveTeam2PokemonAt(0))
+    }
+
+    @Test
+    fun canRemoveTeam2PokemonAt_singleTeam2NoOtherCriteria_false() {
+        val params = baseParams(
+            team2Filters = listOf(testSearchFilterSlot(pokemonId = 2))
+        )
+        assertFalse(params.canRemoveTeam2PokemonAt(0))
+    }
+
+    @Test
+    fun removeTeam2PokemonAt_removesFromTeam2() {
+        val filter1 = testSearchFilterSlot(pokemonId = 1)
+        val filter2 = testSearchFilterSlot(pokemonId = 2)
+        val params = baseParams(
+            filters = listOf(testSearchFilterSlot(pokemonId = 10)),
+            team2Filters = listOf(filter1, filter2)
+        )
+
+        val result = params.removeTeam2PokemonAt(0)
+        assertEquals(listOf(filter2), result.team2Filters)
     }
 }

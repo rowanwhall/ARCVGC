@@ -14,7 +14,16 @@ sealed class ContentListMode {
         is Home -> ContentListHeaderUiModel.HomeHero
         is Favorites -> ContentListHeaderUiModel.FavoritesHero
         is Search -> ContentListHeaderUiModel.SearchFilters(
-            pokemonChips = params.filters.mapIndexed { index, slot ->
+            team1Chips = params.filters.mapIndexed { index, slot ->
+                PokemonChip(
+                    index = index,
+                    name = slot.pokemonName,
+                    imageUrl = slot.pokemonImageUrl,
+                    itemName = slot.itemName,
+                    teraTypeImageUrl = slot.teraTypeImageUrl
+                )
+            },
+            team2Chips = params.team2Filters.mapIndexed { index, slot ->
                 PokemonChip(
                     index = index,
                     name = slot.pokemonName,

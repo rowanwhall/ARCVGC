@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -69,8 +71,11 @@ fun SearchPage(
         formatCatalog.copy(items = FormatSorter.sorted(formatCatalog.items, appConfig?.defaultFormat?.id))
     }
 
-    var showPokemonPicker by remember { mutableStateOf(false) }
+    // Team: 0=none, 1=team1, 2=team2
+    var pokemonPickerTeam by remember { mutableIntStateOf(0) }
+    var itemPickerTeam by remember { mutableIntStateOf(0) }
     var itemPickerSlotIndex by remember { mutableIntStateOf(-1) }
+    var teraPickerTeam by remember { mutableIntStateOf(0) }
     var teraPickerSlotIndex by remember { mutableIntStateOf(-1) }
     var showFormatPicker by remember { mutableStateOf(false) }
     var showMinRatingPicker by remember { mutableStateOf(false) }
@@ -127,24 +132,103 @@ fun SearchPage(
             }
         }
 
-        itemsIndexed(
-            items = uiState.filterSlots,
-            key = { index, slot -> "${slot.pokemonId}_$index" }
-        ) { index, slot ->
-            SearchFilterCard(
-                slot = slot,
-                onRemove = { viewModel.removePokemon(index) },
-                onItemClick = { itemPickerSlotIndex = index },
-                onTeraClick = { teraPickerSlotIndex = index }
-            )
-        }
-
-        if (uiState.canAddMore) {
+        if (uiState.hasTeam2) {
+            // Two-team mode: side-by-side cards
+            val maxRows = maxOf(uiState.filterSlots.size, uiState.team2FilterSlots.size)
+            items(maxRows, key = { "team_row_$it" }) { rowIndex ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Team 1 card
+                    if (rowIndex < uiState.filterSlots.size) {
+                        SearchFilterCard(
+                            slot = uiState.filterSlots[rowIndex],
+                            onRemove = { viewModel.removePokemon(rowIndex) },
+                            onItemClick = { itemPickerTeam = 1; itemPickerSlotIndex = rowIndex },
+                            onTeraClick = { teraPickerTeam = 1; teraPickerSlotIndex = rowIndex },
+                            compact = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                    // Team 2 card
+                    if (rowIndex < uiState.team2FilterSlots.size) {
+                        SearchFilterCard(
+                            slot = uiState.team2FilterSlots[rowIndex],
+                            onRemove = { viewModel.removeTeam2Pokemon(rowIndex) },
+                            onItemClick = { itemPickerTeam = 2; itemPickerSlotIndex = rowIndex },
+                            onTeraClick = { teraPickerTeam = 2; teraPickerSlotIndex = rowIndex },
+                            compact = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+            // Add buttons row
             item {
-                SearchOptionButton(
-                    text = "Add Pokémon Filter",
-                    onClick = { showPokemonPicker = true }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (uiState.canAddMoreTeam1) {
+                        SearchOptionButton(
+                            text = "Add Pokémon",
+                            onClick = { pokemonPickerTeam = 1 },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                    if (uiState.canAddMoreTeam2) {
+                        SearchOptionButton(
+                            text = "Add Opposing",
+                            onClick = { pokemonPickerTeam = 2 },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        } else {
+            // Single-team mode: full-width cards
+            itemsIndexed(
+                items = uiState.filterSlots,
+                key = { index, slot -> "${slot.pokemonId}_$index" }
+            ) { index, slot ->
+                SearchFilterCard(
+                    slot = slot,
+                    onRemove = { viewModel.removePokemon(index) },
+                    onItemClick = { itemPickerTeam = 1; itemPickerSlotIndex = index },
+                    onTeraClick = { teraPickerTeam = 1; teraPickerSlotIndex = index }
                 )
+            }
+            // Add buttons
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (uiState.canAddMoreTeam1) {
+                        val addText = if (uiState.filterSlots.isNotEmpty()) "Add Pokémon" else "Add Pokémon Filter"
+                        SearchOptionButton(
+                            text = addText,
+                            onClick = { pokemonPickerTeam = 1 },
+                            modifier = if (uiState.filterSlots.isNotEmpty()) Modifier.weight(1f) else Modifier.fillMaxWidth()
+                        )
+                    }
+                    if (uiState.filterSlots.isNotEmpty() && uiState.canAddMoreTeam2) {
+                        SearchOptionButton(
+                            text = "Add Opposing Pokémon",
+                            onClick = { pokemonPickerTeam = 2 },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
         }
 
@@ -253,6 +337,7 @@ fun SearchPage(
         // Search button
         item {
             val searchEnabled = uiState.filterSlots.isNotEmpty()
+                    || uiState.team2FilterSlots.isNotEmpty()
                     || uiState.selectedMinRating != null
                     || uiState.selectedMaxRating != null
                     || uiState.unratedOnly
@@ -261,7 +346,7 @@ fun SearchPage(
 
             Button(
                 onClick = {
-                    val filters = uiState.filterSlots.map { slot ->
+                    fun mapSlots(slots: List<com.arcvgc.app.ui.model.SearchFilterSlotUiModel>) = slots.map { slot ->
                         SearchFilterSlot(
                             pokemonId = slot.pokemonId,
                             itemId = slot.item?.id,
@@ -272,6 +357,8 @@ fun SearchPage(
                             teraTypeImageUrl = slot.teraType?.imageUrl
                         )
                     }
+                    val filters = mapSlots(uiState.filterSlots)
+                    val team2Filters = mapSlots(uiState.team2FilterSlots)
                     val resolvedFormatId = uiState.selectedFormat?.id
                         ?: sortedFormatCatalog.items.firstOrNull()?.id
                         ?: 1
@@ -281,6 +368,7 @@ fun SearchPage(
                     onSearch(
                         SearchParams(
                             filters = filters,
+                            team2Filters = team2Filters,
                             formatId = resolvedFormatId,
                             minimumRating = if (uiState.unratedOnly) null else uiState.selectedMinRating,
                             maximumRating = if (uiState.unratedOnly) null else uiState.selectedMaxRating,
@@ -302,15 +390,21 @@ fun SearchPage(
     }
 
     // Pokemon picker sheet
-    if (showPokemonPicker) {
+    if (pokemonPickerTeam > 0) {
+        val excludeIds = if (pokemonPickerTeam == 1) {
+            uiState.filterSlots.map { it.pokemonId }.toSet()
+        } else {
+            uiState.team2FilterSlots.map { it.pokemonId }.toSet()
+        }
         PokemonPickerSheet(
             catalogState = pokemonCatalog,
-            excludeIds = uiState.filterSlots.map { it.pokemonId }.toSet(),
+            excludeIds = excludeIds,
             onSelect = { pokemon ->
-                viewModel.addPokemon(pokemon)
-                showPokemonPicker = false
+                if (pokemonPickerTeam == 1) viewModel.addPokemon(pokemon)
+                else viewModel.addTeam2Pokemon(pokemon)
+                pokemonPickerTeam = 0
             },
-            onDismiss = { showPokemonPicker = false }
+            onDismiss = { pokemonPickerTeam = 0 }
         )
     }
 
@@ -319,10 +413,11 @@ fun SearchPage(
         ItemPickerSheet(
             catalogState = itemCatalog,
             onSelect = { item ->
-                viewModel.setItem(itemPickerSlotIndex, item)
-                itemPickerSlotIndex = -1
+                if (itemPickerTeam == 2) viewModel.setTeam2Item(itemPickerSlotIndex, item)
+                else viewModel.setItem(itemPickerSlotIndex, item)
+                itemPickerSlotIndex = -1; itemPickerTeam = 0
             },
-            onDismiss = { itemPickerSlotIndex = -1 }
+            onDismiss = { itemPickerSlotIndex = -1; itemPickerTeam = 0 }
         )
     }
 
@@ -331,10 +426,11 @@ fun SearchPage(
         TeraTypePickerSheet(
             catalogState = teraTypeCatalog,
             onSelect = { teraType ->
-                viewModel.setTeraType(teraPickerSlotIndex, teraType)
-                teraPickerSlotIndex = -1
+                if (teraPickerTeam == 2) viewModel.setTeam2TeraType(teraPickerSlotIndex, teraType)
+                else viewModel.setTeraType(teraPickerSlotIndex, teraType)
+                teraPickerSlotIndex = -1; teraPickerTeam = 0
             },
-            onDismiss = { teraPickerSlotIndex = -1 }
+            onDismiss = { teraPickerSlotIndex = -1; teraPickerTeam = 0 }
         )
     }
 

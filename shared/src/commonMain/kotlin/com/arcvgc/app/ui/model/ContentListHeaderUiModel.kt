@@ -8,7 +8,8 @@ sealed class ContentListHeaderUiModel {
     data class PokemonHero(val name: String, val imageUrl: String?, val typeImageUrls: List<String> = emptyList()) : ContentListHeaderUiModel()
     data class PlayerHero(val name: String) : ContentListHeaderUiModel()
     data class SearchFilters(
-        val pokemonChips: List<PokemonChip>,
+        val team1Chips: List<PokemonChip>,
+        val team2Chips: List<PokemonChip> = emptyList(),
         val formatName: String?,
         val minimumRating: Int?,
         val maximumRating: Int?,

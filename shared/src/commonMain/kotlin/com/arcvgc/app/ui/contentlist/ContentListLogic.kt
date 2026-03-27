@@ -181,7 +181,6 @@ class ContentListLogic(
                     loadPokemonPage1(m)
                 } else {
                     val (items, pagination) = fetchContent()
-                    println("DEBUG_PAGINATE: loadContent page=${pagination.page}, hasNext=${pagination.hasNext}, items=${items.size}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -193,7 +192,6 @@ class ContentListLogic(
                     }
                 }
             } catch (e: Exception) {
-                println("DEBUG_PAGINATE: loadContent ERROR — ${e::class.simpleName}: ${e.message}")
                 _uiState.update {
                     it.copy(isLoading = false, error = e.message ?: "Unknown error")
                 }
@@ -270,16 +268,13 @@ class ContentListLogic(
 
     fun paginate() {
         val currentState = _uiState.value
-        println("DEBUG_PAGINATE: called — isPaginating=${currentState.isPaginating}, canPaginate=${currentState.canPaginate}, loadingSections=${currentState.loadingSections}, currentPage=${currentState.currentPage}")
         if (currentState.isPaginating || !currentState.canPaginate || currentState.loadingSections.isNotEmpty()) return
 
         val nextPage = currentState.currentPage + 1
-        println("DEBUG_PAGINATE: fetching page $nextPage")
         scope.launch {
             try {
                 _uiState.update { it.copy(isPaginating = true) }
                 val (items, pagination) = fetchContent(page = nextPage)
-                println("DEBUG_PAGINATE: page $nextPage returned ${items.size} items, pagination=$pagination")
                 _uiState.update {
                     val existingKeys = buildSet {
                         it.items.forEach { item ->
@@ -290,7 +285,6 @@ class ContentListLogic(
                         }
                     }
                     val newItems = items.filter { item -> item.listKey !in existingKeys }
-                    println("DEBUG_PAGINATE: existingKeys=${existingKeys.size}, newItems=${newItems.size} (filtered from ${items.size}), totalAfter=${it.items.size + newItems.size}")
                     it.copy(
                         isPaginating = false,
                         items = it.items + newItems,
@@ -299,7 +293,6 @@ class ContentListLogic(
                     )
                 }
             } catch (e: Exception) {
-                println("DEBUG_PAGINATE: ERROR on page $nextPage — ${e::class.simpleName}: ${e.message}")
                 _uiState.update { it.copy(isPaginating = false) }
             }
         }
@@ -480,7 +473,8 @@ class ContentListLogic(
                     page = page,
                     timeRangeStart = m.params.timeRangeStart,
                     timeRangeEnd = m.params.timeRangeEnd,
-                    playerName = m.params.playerName
+                    playerName = m.params.playerName,
+                    team2Filters = m.params.team2Filters
                 )
             }
             val playerDeferred = m.params.playerName?.let { name ->
@@ -491,8 +485,9 @@ class ContentListLogic(
             val result = battlesDeferred.await()
             val battleItems = ContentListItemMapper.fromBattles(result.battles)
             if (page == 1) {
+                val allFilterIds = (m.params.filters + m.params.team2Filters).map { it.pokemonId }
                 val pinnedPokemon = ContentListItemMapper.fromPokemonCatalog(
-                    m.params.filters.map { it.pokemonId }, pokemonCatalogItems
+                    allFilterIds, pokemonCatalogItems
                 )
                 val pinnedPlayer = playerDeferred?.await()?.getOrNull()?.firstOrNull()?.let {
                     listOf(ContentListItem.Player(id = it.id, name = it.name))

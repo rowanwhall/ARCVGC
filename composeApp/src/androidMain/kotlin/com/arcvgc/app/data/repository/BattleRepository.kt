@@ -35,7 +35,8 @@ interface BattleRepository {
         timeRangeStart: Long? = null,
         timeRangeEnd: Long? = null,
         playerName: String? = null,
-        playerId: Int? = null
+        playerId: Int? = null,
+        team2Filters: List<SearchFilterSlot> = emptyList()
     ): Result<Pair<List<BattleCardUiModel>, Pagination>>
     suspend fun getMatchesByIds(ids: List<Int>): Result<List<BattleCardUiModel>>
     suspend fun getPokemonProfile(id: Int, formatId: Int? = null): Result<PokemonProfile>
@@ -77,7 +78,8 @@ class BattleRepositoryImpl @Inject constructor(
         timeRangeStart: Long?,
         timeRangeEnd: Long?,
         playerName: String?,
-        playerId: Int?
+        playerId: Int?,
+        team2Filters: List<SearchFilterSlot>
     ): Result<Pair<List<BattleCardUiModel>, Pagination>> {
         return try {
             val result = shared.searchMatches(
@@ -92,7 +94,8 @@ class BattleRepositoryImpl @Inject constructor(
                 timeRangeStart = timeRangeStart,
                 timeRangeEnd = timeRangeEnd,
                 playerName = playerName,
-                playerId = playerId
+                playerId = playerId,
+                team2Filters = team2Filters
             )
             Result.success(result.battles to result.pagination)
         } catch (e: Exception) {
