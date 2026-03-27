@@ -16,10 +16,6 @@ import com.arcvgc.app.ui.model.SearchUiState
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 class SearchViewModel(
     pokemonCatalogRepository: PokemonCatalogRepository,
@@ -29,27 +25,12 @@ class SearchViewModel(
     appConfigRepository: AppConfigRepository? = null
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SearchStateReducer.initialState())
-    val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+    private val logic = SearchLogic(
+        scope = viewModelScope,
+        appConfigFlow = appConfigRepository?.config
+    )
 
-    init {
-        appConfigRepository?.let { repo ->
-            viewModelScope.launch {
-                repo.config.filterNotNull().collect { config ->
-                    val format = config.defaultFormat
-                    _uiState.update {
-                        SearchStateReducer.setDefaultFormat(
-                            it,
-                            FormatUiModel(
-                                id = format.id,
-                                displayName = format.formattedName ?: format.name
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
+    val uiState: StateFlow<SearchUiState> = logic.uiState
 
     val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>> =
         pokemonCatalogRepository.state
@@ -66,63 +47,19 @@ class SearchViewModel(
     val appConfigState: StateFlow<AppConfig?> =
         appConfigRepository?.config ?: MutableStateFlow(null)
 
-    fun addPokemon(pokemon: PokemonPickerUiModel) {
-        _uiState.update { SearchStateReducer.addPokemon(it, pokemon) }
-    }
-
-    fun removePokemon(index: Int) {
-        _uiState.update { SearchStateReducer.removePokemon(it, index) }
-    }
-
-    fun setItem(slotIndex: Int, item: ItemUiModel) {
-        _uiState.update { SearchStateReducer.setItem(it, slotIndex, item) }
-    }
-
-    fun setTeraType(slotIndex: Int, teraType: TeraTypeUiModel) {
-        _uiState.update { SearchStateReducer.setTeraType(it, slotIndex, teraType) }
-    }
-
-    fun addTeam2Pokemon(pokemon: PokemonPickerUiModel) {
-        _uiState.update { SearchStateReducer.addTeam2Pokemon(it, pokemon) }
-    }
-
-    fun removeTeam2Pokemon(index: Int) {
-        _uiState.update { SearchStateReducer.removeTeam2Pokemon(it, index) }
-    }
-
-    fun setTeam2Item(slotIndex: Int, item: ItemUiModel) {
-        _uiState.update { SearchStateReducer.setTeam2Item(it, slotIndex, item) }
-    }
-
-    fun setTeam2TeraType(slotIndex: Int, teraType: TeraTypeUiModel) {
-        _uiState.update { SearchStateReducer.setTeam2TeraType(it, slotIndex, teraType) }
-    }
-
-    fun setFormat(format: FormatUiModel) {
-        _uiState.update { SearchStateReducer.setFormat(it, format) }
-    }
-
-    fun setMinRating(rating: Int?) {
-        _uiState.update { SearchStateReducer.setMinRating(it, rating) }
-    }
-
-    fun setMaxRating(rating: Int?) {
-        _uiState.update { SearchStateReducer.setMaxRating(it, rating) }
-    }
-
-    fun setUnratedOnly(value: Boolean) {
-        _uiState.update { SearchStateReducer.setUnratedOnly(it, value) }
-    }
-
-    fun setTimeRange(start: Long?, end: Long?) {
-        _uiState.update { SearchStateReducer.setTimeRange(it, start, end) }
-    }
-
-    fun setPlayerName(name: String) {
-        _uiState.update { SearchStateReducer.setPlayerName(it, name) }
-    }
-
-    fun setOrderBy(orderBy: String) {
-        _uiState.update { SearchStateReducer.setOrderBy(it, orderBy) }
-    }
+    fun addPokemon(pokemon: PokemonPickerUiModel) = logic.addPokemon(pokemon)
+    fun removePokemon(index: Int) = logic.removePokemon(index)
+    fun setItem(slotIndex: Int, item: ItemUiModel) = logic.setItem(slotIndex, item)
+    fun setTeraType(slotIndex: Int, teraType: TeraTypeUiModel) = logic.setTeraType(slotIndex, teraType)
+    fun addTeam2Pokemon(pokemon: PokemonPickerUiModel) = logic.addTeam2Pokemon(pokemon)
+    fun removeTeam2Pokemon(index: Int) = logic.removeTeam2Pokemon(index)
+    fun setTeam2Item(slotIndex: Int, item: ItemUiModel) = logic.setTeam2Item(slotIndex, item)
+    fun setTeam2TeraType(slotIndex: Int, teraType: TeraTypeUiModel) = logic.setTeam2TeraType(slotIndex, teraType)
+    fun setFormat(format: FormatUiModel) = logic.setFormat(format)
+    fun setMinRating(rating: Int?) = logic.setMinRating(rating)
+    fun setMaxRating(rating: Int?) = logic.setMaxRating(rating)
+    fun setUnratedOnly(value: Boolean) = logic.setUnratedOnly(value)
+    fun setTimeRange(start: Long?, end: Long?) = logic.setTimeRange(start, end)
+    fun setPlayerName(name: String) = logic.setPlayerName(name)
+    fun setOrderBy(orderBy: String) = logic.setOrderBy(orderBy)
 }

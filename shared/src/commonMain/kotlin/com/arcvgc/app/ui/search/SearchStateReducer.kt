@@ -126,11 +126,4 @@ object SearchStateReducer {
     fun setOrderBy(state: SearchUiState, orderBy: String): SearchUiState {
         return state.copy(selectedOrderBy = orderBy)
     }
-
-    // Helper functions that duplicate SearchUiState computed properties.
-    // Kotlin data class computed `get()` properties don't bridge reliably to Swift via SKIE,
-    // so iOS calls these functions instead. Android/Web can use either.
-    fun hasTeam2(state: SearchUiState): Boolean = state.team2FilterSlots.isNotEmpty()
-    fun canAddMoreTeam1(state: SearchUiState): Boolean = state.filterSlots.size < 6
-    fun canAddMoreTeam2(state: SearchUiState): Boolean = state.team2FilterSlots.size < 6
 }

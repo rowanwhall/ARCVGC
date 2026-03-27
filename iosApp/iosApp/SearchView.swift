@@ -30,7 +30,7 @@ enum SearchSheet: Identifiable {
 }
 
 struct SearchView: View {
-    @StateObject private var viewModel = SearchViewModel()
+    @StateObject private var viewModel: SearchViewModel
     @ObservedObject var catalogStore: CatalogStore
     @ObservedObject var appConfigStore: AppConfigStore
     @EnvironmentObject var container: DependencyContainer
@@ -38,6 +38,7 @@ struct SearchView: View {
     @State private var searchParams: SearchParams?
 
     init(catalogStore: CatalogStore, appConfigStore: AppConfigStore, initialSearchParams: SearchParams? = nil) {
+        self._viewModel = StateObject(wrappedValue: SearchViewModel(appConfigRepository: appConfigStore.repo))
         self._catalogStore = ObservedObject(wrappedValue: catalogStore)
         self._appConfigStore = ObservedObject(wrappedValue: appConfigStore)
         _searchParams = State(initialValue: initialSearchParams)
@@ -53,7 +54,7 @@ struct SearchView: View {
 
     private var searchEnabled: Bool {
         !viewModel.state.filterSlots.isEmpty
-            || SearchStateReducer.shared.hasTeam2(state: viewModel.state)
+            || viewModel.state.hasTeam2
             || viewModel.minRating != nil
             || viewModel.maxRating != nil
             || viewModel.state.unratedOnly
@@ -78,7 +79,7 @@ struct SearchView: View {
                         }
                     }
 
-                    let isTeam2Mode = SearchStateReducer.shared.hasTeam2(state: viewModel.state)
+                    let isTeam2Mode = viewModel.state.hasTeam2
                     let team1Slots = viewModel.state.filterSlots
                     let team2Slots = viewModel.state.team2FilterSlots
 
@@ -127,7 +128,7 @@ struct SearchView: View {
 
                     // Add buttons — unified for both modes
                     HStack(spacing: 8) {
-                        if SearchStateReducer.shared.canAddMoreTeam1(state: viewModel.state) {
+                        if viewModel.state.canAddMoreTeam1 {
                             let addText = isTeam2Mode ? "Add Pokémon"
                                 : (team1Slots.isEmpty ? "Add Pokémon Filter" : "Add Pokémon")
                             SearchOptionButton(text: addText) { activeSheet = .pokemon(team: 1) }
@@ -135,7 +136,7 @@ struct SearchView: View {
                             Spacer().frame(maxWidth: .infinity)
                         }
                         if isTeam2Mode || !team1Slots.isEmpty {
-                            if SearchStateReducer.shared.canAddMoreTeam2(state: viewModel.state) {
+                            if viewModel.state.canAddMoreTeam2 {
                                 let text = isTeam2Mode ? "Add Opposing" : "Add Opposing Pokémon"
                                 SearchOptionButton(text: text) { activeSheet = .pokemon(team: 2) }
                             } else if isTeam2Mode {
@@ -286,24 +287,6 @@ struct SearchView: View {
                             searchParams = newParams
                         }
                     )
-                }
-            }
-            .task {
-                if let config = appConfigStore.config {
-                    let format = config.defaultFormat
-                    viewModel.setDefaultFormat(FormatUiModel(
-                        id: format.id,
-                        displayName: format.formattedName ?? format.name
-                    ))
-                }
-            }
-            .onChange(of: appConfigStore.config) { _, config in
-                if let config = config {
-                    let format = config.defaultFormat
-                    viewModel.setDefaultFormat(FormatUiModel(
-                        id: format.id,
-                        displayName: format.formattedName ?? format.name
-                    ))
                 }
             }
             .sheet(item: $activeSheet) { sheet in
