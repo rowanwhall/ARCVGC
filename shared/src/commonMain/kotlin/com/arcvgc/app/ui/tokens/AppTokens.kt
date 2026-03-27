@@ -29,8 +29,8 @@ object AppTokens {
 
     // --- Filter & Search ---
     val FilterChipHeight = 44.dp
-    val SmallFilterButtonHorizontalPadding = 10.dp
-    val SmallFilterButtonVerticalPadding = 6.dp
+    val SmallFilterButtonHorizontalPadding = 6.dp
+    val SmallFilterButtonVerticalPadding = 4.dp
     val SmallFilterButtonFontSize = 12.sp
 
     // --- Player Chip ---

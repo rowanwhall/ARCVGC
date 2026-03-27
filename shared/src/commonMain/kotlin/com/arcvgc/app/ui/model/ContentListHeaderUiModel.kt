@@ -25,5 +25,7 @@ data class PokemonChip(
     val name: String,
     val imageUrl: String?,
     val itemName: String?,
-    val teraTypeImageUrl: String?
+    val itemImageUrl: String? = null,
+    val teraTypeImageUrl: String?,
+    val abilityName: String? = null
 )

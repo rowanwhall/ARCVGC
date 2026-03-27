@@ -42,8 +42,8 @@ Network DTOs  →  Domain Models  →  UI Models  →  Screen
   - `FavoritesRepository` — Favorites toggle/check with `StateFlow` state, delegates to `FavoritesStorage` (expect/actual)
   - `SettingsRepository` — App settings with `StateFlow` per setting + combined `settingItems` flow. Delegates to `SettingsStorage` (expect/actual)
   - `AppConfigRepository` — Remote config (default format, min app versions, catalog version). Caches to `AppConfigStorage` (expect/actual). Signals `catalogVersionChanged` when catalog cache needs clearing.
-  - `CatalogCache` + `CatalogCacheStorage` — TTL-based caching for catalog data (Pokemon, Items, Tera Types, Formats)
-  - `PokemonCatalogRepository`, `ItemCatalogRepository`, `TeraTypeCatalogRepository`, `FormatCatalogRepository` — Singleton repos with `StateFlow<CatalogState<T>>` and `reload()`
+  - `CatalogCache` + `CatalogCacheStorage` — TTL-based caching for catalog data (Pokemon, Items, Tera Types, Formats, Abilities)
+  - `PokemonCatalogRepository`, `ItemCatalogRepository`, `TeraTypeCatalogRepository`, `FormatCatalogRepository`, `AbilityCatalogRepository` — Singleton repos with `StateFlow<CatalogState<T>>` and `reload()`
   - `MatchesResult`, `CatalogState<T>` — Shared data classes
 - **Android repositories** (`composeApp/.../data/repository/`): Thin Hilt-injectable wrappers delegating to shared repos
 - Error handling uses `NetworkResult<T>` sealed class (`Success`/`Error`) at the API layer. Shared `BattleRepository` converts to thrown exceptions; shared `CatalogLoader` converts to `CatalogResult<T>`.
@@ -60,6 +60,7 @@ Base URL: `https://arcvgc.com`
 | `GET /api/v1/pokemon/?exclude_illegal=true&limit=50&page=N` | Pokemon catalog |
 | `GET /api/v1/pokemon/{id}?format_id=N` | Pokemon profile (stats, top teammates/items/moves/abilities/tera types) |
 | `GET /api/v1/items/?limit=50&page=N` | Item catalog |
+| `GET /api/v1/abilities/?limit=50&page=N` | Ability catalog |
 | `GET /api/v1/types/tera?limit=50&page=N` | Tera type catalog |
 | `GET /api/v1/formats?limit=50&page=N` | Format catalog |
 | `GET /api/v1/formats/{id}?top_pokemon_count=N` | Format detail with top usage Pokemon |

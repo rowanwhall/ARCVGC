@@ -232,6 +232,7 @@ fun WebApp() {
         DependencyContainer.itemCatalogRepository
         DependencyContainer.teraTypeCatalogRepository
         DependencyContainer.formatCatalogRepository
+        DependencyContainer.abilityCatalogRepository
         DependencyContainer.appConfigRepository
         Unit
     }
@@ -243,6 +244,7 @@ fun WebApp() {
             DependencyContainer.itemCatalogRepository.reload()
             DependencyContainer.teraTypeCatalogRepository.reload()
             DependencyContainer.formatCatalogRepository.reload()
+            DependencyContainer.abilityCatalogRepository.reload()
         }
     }
 

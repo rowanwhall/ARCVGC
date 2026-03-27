@@ -5,6 +5,7 @@ enum SearchSheet: Identifiable {
     case pokemon(team: Int)
     case item(team: Int, slotIndex: Int)
     case teraType(team: Int, slotIndex: Int)
+    case ability(team: Int, slotIndex: Int)
     case format
     case playerName
     case minRating
@@ -18,6 +19,7 @@ enum SearchSheet: Identifiable {
         case .pokemon(let t): return "pokemon_t\(t)"
         case .item(let t, let i): return "item_t\(t)_\(i)"
         case .teraType(let t, let i): return "tera_t\(t)_\(i)"
+        case .ability(let t, let i): return "ability_t\(t)_\(i)"
         case .format: return "format"
         case .playerName: return "playerName"
         case .minRating: return "minRating"
@@ -94,6 +96,7 @@ struct SearchView: View {
                                         onRemove: { viewModel.removePokemon(at: rowIndex) },
                                         onItemTap: { activeSheet = .item(team: 1, slotIndex: rowIndex) },
                                         onTeraTap: { activeSheet = .teraType(team: 1, slotIndex: rowIndex) },
+                                        onAbilityTap: { activeSheet = .ability(team: 1, slotIndex: rowIndex) },
                                         compact: true
                                     )
                                 } else {
@@ -105,6 +108,7 @@ struct SearchView: View {
                                         onRemove: { viewModel.removeTeam2Pokemon(at: rowIndex) },
                                         onItemTap: { activeSheet = .item(team: 2, slotIndex: rowIndex) },
                                         onTeraTap: { activeSheet = .teraType(team: 2, slotIndex: rowIndex) },
+                                        onAbilityTap: { activeSheet = .ability(team: 2, slotIndex: rowIndex) },
                                         compact: true
                                     )
                                 } else {
@@ -120,7 +124,8 @@ struct SearchView: View {
                                 slot: slot,
                                 onRemove: { viewModel.removePokemon(at: index) },
                                 onItemTap: { activeSheet = .item(team: 1, slotIndex: index) },
-                                onTeraTap: { activeSheet = .teraType(team: 1, slotIndex: index) }
+                                onTeraTap: { activeSheet = .teraType(team: 1, slotIndex: index) },
+                                onAbilityTap: { activeSheet = .ability(team: 1, slotIndex: index) }
                             )
                             .id("single_\(index)_\(team1Slots.count)")
                         }
@@ -229,12 +234,13 @@ struct SearchView: View {
                                     pokemonId: slot.pokemonId,
                                     itemId: slot.item.map { KotlinInt(int: $0.id) },
                                     teraTypeId: slot.teraType.map { KotlinInt(int: $0.id) },
-                                    abilityId: nil,
+                                    abilityId: slot.ability.map { KotlinInt(int: $0.id) },
                                     pokemonName: slot.pokemonName,
                                     pokemonImageUrl: slot.pokemonImageUrl,
                                     itemName: slot.item?.name,
+                                    itemImageUrl: slot.item?.imageUrl,
                                     teraTypeImageUrl: slot.teraType?.imageUrl,
-                                    abilityName: nil
+                                    abilityName: slot.ability?.name
                                 )
                             }
                         }
@@ -323,6 +329,16 @@ struct SearchView: View {
                     ) { teraType in
                         if team == 1 { viewModel.setTeraType(at: slotIndex, teraType: teraType) }
                         else { viewModel.setTeam2TeraType(at: slotIndex, teraType: teraType) }
+                    }
+
+                case .ability(let team, let slotIndex):
+                    AbilityPickerSheet(
+                        items: catalogStore.abilityItems,
+                        isLoading: catalogStore.abilityLoading,
+                        error: catalogStore.abilityError
+                    ) { ability in
+                        if team == 1 { viewModel.setAbility(at: slotIndex, ability: ability) }
+                        else { viewModel.setTeam2Ability(at: slotIndex, ability: ability) }
                     }
 
                 case .format:

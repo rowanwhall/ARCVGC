@@ -2,8 +2,6 @@ package com.arcvgc.app.ui.search
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,10 +46,6 @@ import com.arcvgc.app.ui.components.PreviewAsyncImage
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.SearchFilterSlotUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
-import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonCornerRadius
-import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonFontSize
-import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonHorizontalPadding
-import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonVerticalPadding
 
 @Composable
 fun SearchFilterCard(
@@ -59,6 +53,7 @@ fun SearchFilterCard(
     onRemove: () -> Unit,
     onItemClick: () -> Unit,
     onTeraClick: () -> Unit,
+    onAbilityClick: () -> Unit,
     modifier: Modifier = Modifier,
     compact: Boolean = false
 ) {
@@ -77,24 +72,14 @@ fun SearchFilterCard(
                 .padding(if (compact) 8.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (compact) {
-                // Compact mode: stacked avatar + sub-filter icons, MoreVert menu
-                CompactFilterContent(slot, isPreview, onItemClick, onTeraClick)
-                Spacer(modifier = Modifier.weight(1f))
-                CompactFilterMenu(
-                    slot = slot,
-                    onItemClick = onItemClick,
-                    onTeraClick = onTeraClick
-                )
-            } else {
-                // Full mode: avatar, name, inline Item/Tera buttons
-                PokemonAvatar(
-                    imageUrl = slot.pokemonImageUrl,
-                    contentDescription = slot.pokemonName,
-                    circleSize = 40.dp,
-                    spriteSize = 56.dp
-                )
-                Spacer(modifier = Modifier.width(12.dp))
+            PokemonAvatar(
+                imageUrl = slot.pokemonImageUrl,
+                contentDescription = slot.pokemonName,
+                circleSize = 32.dp,
+                spriteSize = 44.dp
+            )
+            if (!compact) {
+                Spacer(modifier = Modifier.width(8.dp))
                 AutoSizeText(
                     text = slot.pokemonName,
                     maxFontSize = 16.sp,
@@ -102,16 +87,17 @@ fun SearchFilterCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    InlineItemButton(slot, isPreview, onItemClick)
-                    InlineTeraButton(slot, isPreview, onTeraClick)
-                }
             }
-
-            // Remove button
+            FilterBadges(slot, isPreview)
+            if (compact) {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+            CompactFilterMenu(
+                slot = slot,
+                onItemClick = onItemClick,
+                onTeraClick = onTeraClick,
+                onAbilityClick = onAbilityClick
+            )
             IconButton(
                 onClick = onRemove,
                 modifier = Modifier.size(32.dp)
@@ -128,37 +114,28 @@ fun SearchFilterCard(
 }
 
 @Composable
-private fun CompactFilterContent(
+private fun FilterBadges(
     slot: SearchFilterSlotUiModel,
-    isPreview: Boolean,
-    onItemClick: () -> Unit,
-    onTeraClick: () -> Unit
+    isPreview: Boolean
 ) {
     val itemIcon = slot.item?.let { if (isPreview || it.imageUrl != null) it else null }
     val teraIcon = slot.teraType?.let { if (isPreview || it.imageUrl != null) it else null }
+    val hasAbility = slot.ability != null
 
-    val badgeCount = listOfNotNull(itemIcon, teraIcon).size
-    val avatarSize = 44.dp
+    val badgeCount = listOfNotNull(itemIcon, teraIcon).size + (if (hasAbility) 1 else 0)
+    if (badgeCount == 0) return
+
     val badgeSize = 24.dp
     val badgeOverlap = 8.dp
-    val badgeGap = 4.dp  // gap between avatar and first badge
-    val badgesWidth = if (badgeCount > 0) badgeGap + badgeSize + (badgeSize - badgeOverlap) * (badgeCount - 1) else 0.dp
-    val totalWidth = avatarSize + badgesWidth
+    val badgesWidth = badgeSize + (badgeSize - badgeOverlap) * (badgeCount - 1)
     val borderWidth = 1.dp
     val borderColor = MaterialTheme.colorScheme.outline
 
     Box(
-        modifier = Modifier.size(width = totalWidth, height = avatarSize),
+        modifier = Modifier.size(width = badgesWidth, height = badgeSize),
         contentAlignment = Alignment.CenterStart
     ) {
-        PokemonAvatar(
-            imageUrl = slot.pokemonImageUrl,
-            contentDescription = slot.pokemonName,
-            circleSize = 32.dp,
-            spriteSize = avatarSize
-        )
-
-        var offsetX = avatarSize + badgeGap
+        var offsetX = 0.dp
         if (itemIcon != null) {
             FilterBadge(
                 url = itemIcon.imageUrl,
@@ -176,6 +153,16 @@ private fun CompactFilterContent(
                 url = teraIcon.imageUrl,
                 previewDrawable = Res.drawable.preview_tera,
                 contentDescription = teraIcon.name,
+                badgeSize = badgeSize,
+                borderWidth = borderWidth,
+                borderColor = borderColor,
+                modifier = Modifier.offset(x = offsetX)
+            )
+            offsetX += badgeSize - badgeOverlap
+        }
+        if (hasAbility) {
+            AbilityBadge(
+                initials = abilityInitials(slot.ability!!.name),
                 badgeSize = badgeSize,
                 borderWidth = borderWidth,
                 borderColor = borderColor,
@@ -213,14 +200,39 @@ private fun FilterBadge(
 }
 
 @Composable
+private fun AbilityBadge(
+    initials: String,
+    badgeSize: Dp,
+    borderWidth: Dp,
+    borderColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(badgeSize)
+            .clip(RoundedCornerShape(badgeSize / 2))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(borderWidth, borderColor, RoundedCornerShape(badgeSize / 2)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initials,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
 private fun CompactFilterMenu(
     slot: SearchFilterSlotUiModel,
     onItemClick: () -> Unit,
-    onTeraClick: () -> Unit
+    onTeraClick: () -> Unit,
+    onAbilityClick: () -> Unit
 ) {
     val canItem = SearchFilterRestrictions.canFilterByItem(slot.pokemonName)
     val canTera = SearchFilterRestrictions.canFilterByTeraType(slot.pokemonName)
-    if (!canItem && !canTera) return
 
     var expanded by remember { mutableStateOf(false) }
 
@@ -254,79 +266,12 @@ private fun CompactFilterMenu(
                     onClick = { expanded = false; onTeraClick() }
                 )
             }
+            val abilityLabel = slot.ability?.name?.let { "Ability: $it" } ?: "Ability"
+            DropdownMenuItem(
+                text = { Text(abilityLabel) },
+                onClick = { expanded = false; onAbilityClick() }
+            )
         }
-    }
-}
-
-@Composable
-private fun InlineItemButton(
-    slot: SearchFilterSlotUiModel,
-    isPreview: Boolean,
-    onItemClick: () -> Unit
-) {
-    if (!SearchFilterRestrictions.canFilterByItem(slot.pokemonName)) return
-    val item = slot.item
-    if (item != null && (isPreview || item.imageUrl != null)) {
-        PreviewAsyncImage(
-            url = item.imageUrl,
-            previewDrawable = Res.drawable.preview_item,
-            contentDescription = item.name,
-            modifier = Modifier
-                .size(32.dp)
-                .clickable { onItemClick() }
-        )
-    } else {
-        SmallFilterButton(
-            label = item?.name ?: "Item",
-            onClick = onItemClick
-        )
-    }
-}
-
-@Composable
-private fun InlineTeraButton(
-    slot: SearchFilterSlotUiModel,
-    isPreview: Boolean,
-    onTeraClick: () -> Unit
-) {
-    if (!SearchFilterRestrictions.canFilterByTeraType(slot.pokemonName)) return
-    val teraType = slot.teraType
-    if (teraType != null && (isPreview || teraType.imageUrl != null)) {
-        PreviewAsyncImage(
-            url = teraType.imageUrl,
-            previewDrawable = Res.drawable.preview_tera,
-            contentDescription = teraType.name,
-            modifier = Modifier
-                .size(32.dp)
-                .clickable { onTeraClick() }
-        )
-    } else {
-        SmallFilterButton(
-            label = teraType?.name ?: "Tera",
-            onClick = onTeraClick
-        )
-    }
-}
-
-@Composable
-private fun SmallFilterButton(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(SmallFilterButtonCornerRadius))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable { onClick() }
-            .padding(horizontal = SmallFilterButtonHorizontalPadding, vertical = SmallFilterButtonVerticalPadding),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            fontSize = SmallFilterButtonFontSize,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
@@ -345,6 +290,7 @@ private fun SearchFilterCardPreview() {
             onRemove = {},
             onItemClick = {},
             onTeraClick = {},
+            onAbilityClick = {},
             modifier = Modifier.padding(8.dp)
         )
     }
@@ -365,6 +311,7 @@ private fun SearchFilterCardWithFiltersPreview() {
             onRemove = {},
             onItemClick = {},
             onTeraClick = {},
+            onAbilityClick = {},
             modifier = Modifier.padding(8.dp)
         )
     }
@@ -385,9 +332,9 @@ private fun SearchFilterCardCompactPreview() {
             onRemove = {},
             onItemClick = {},
             onTeraClick = {},
+            onAbilityClick = {},
             compact = true,
             modifier = Modifier.padding(8.dp)
         )
     }
 }
-

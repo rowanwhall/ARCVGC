@@ -1,6 +1,7 @@
 package com.arcvgc.app.ui.search
 
 import com.arcvgc.app.data.CatalogState
+import com.arcvgc.app.data.repository.AbilityCatalogRepository
 import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.ItemCatalogRepository
@@ -8,6 +9,7 @@ import com.arcvgc.app.data.repository.PokemonCatalogRepository
 import com.arcvgc.app.data.repository.TeraTypeCatalogRepository
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.Format
+import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -33,6 +35,7 @@ class SearchViewModelTest {
     private val itemCatalogRepo = FakeItemCatalogRepository()
     private val teraTypeCatalogRepo = FakeTeraTypeCatalogRepository()
     private val formatCatalogRepo = FakeFormatCatalogRepository()
+    private val abilityCatalogRepo = FakeAbilityCatalogRepository()
     private val appConfigRepo = FakeAppConfigRepository()
 
     @BeforeTest
@@ -51,6 +54,7 @@ class SearchViewModelTest {
             itemCatalogRepository = itemCatalogRepo,
             teraTypeCatalogRepository = teraTypeCatalogRepo,
             formatCatalogRepository = formatCatalogRepo,
+            abilityCatalogRepository = abilityCatalogRepo,
             appConfigRepository = appConfigRepo
         )
     }
@@ -88,6 +92,11 @@ class SearchViewModelTest {
 }
 
 // --- Fake Repositories ---
+
+private class FakeAbilityCatalogRepository : AbilityCatalogRepository {
+    override val state = MutableStateFlow(CatalogState<AbilityUiModel>())
+    override fun reload() {}
+}
 
 private class FakePokemonCatalogRepository : PokemonCatalogRepository {
     override val state = MutableStateFlow(CatalogState<PokemonPickerUiModel>())

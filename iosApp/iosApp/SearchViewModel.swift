@@ -71,6 +71,14 @@ final class SearchViewModel: ObservableObject {
         logic.setTeam2TeraType(slotIndex: Int32(slotIndex), teraType: teraType)
     }
 
+    func setAbility(at slotIndex: Int, ability: AbilityUiModel) {
+        logic.setAbility(slotIndex: Int32(slotIndex), ability: ability)
+    }
+
+    func setTeam2Ability(at slotIndex: Int, ability: AbilityUiModel) {
+        logic.setTeam2Ability(slotIndex: Int32(slotIndex), ability: ability)
+    }
+
     func setFormat(_ format: FormatUiModel) {
         logic.setFormat(format: format)
     }

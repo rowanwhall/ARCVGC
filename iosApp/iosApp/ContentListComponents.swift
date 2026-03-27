@@ -39,6 +39,8 @@ struct SearchFilterChipData {
     let imageUrl: String?
     let itemName: String?
     let teraTypeImageUrl: String?
+    let abilityName: String?
+    let itemImageUrl: String?
 }
 
 struct SearchFiltersData {
@@ -82,7 +84,9 @@ enum ContentListHeader {
                     name: slot.pokemonName,
                     imageUrl: slot.pokemonImageUrl,
                     itemName: slot.itemName,
-                    teraTypeImageUrl: slot.teraTypeImageUrl
+                    teraTypeImageUrl: slot.teraTypeImageUrl,
+                    abilityName: slot.abilityName,
+                    itemImageUrl: slot.itemImageUrl
                 )
             }
             let team2Chips = params.team2Filters.enumerated().map { index, slot in
@@ -91,7 +95,9 @@ enum ContentListHeader {
                     name: slot.pokemonName,
                     imageUrl: slot.pokemonImageUrl,
                     itemName: slot.itemName,
-                    teraTypeImageUrl: slot.teraTypeImageUrl
+                    teraTypeImageUrl: slot.teraTypeImageUrl,
+                    abilityName: slot.abilityName,
+                    itemImageUrl: slot.itemImageUrl
                 )
             }
             self = .searchFilters(SearchFiltersData(

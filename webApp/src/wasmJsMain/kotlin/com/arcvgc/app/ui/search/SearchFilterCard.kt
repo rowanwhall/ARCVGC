@@ -58,6 +58,7 @@ fun SearchFilterCard(
     onRemove: () -> Unit,
     onItemClick: () -> Unit,
     onTeraClick: () -> Unit,
+    onAbilityClick: () -> Unit,
     modifier: Modifier = Modifier,
     compact: Boolean = false
 ) {
@@ -70,17 +71,35 @@ fun SearchFilterCard(
         ),
         border = CardDefaults.outlinedCardBorder()
     ) {
-        val isCompactMobile = compact && LocalWindowSizeClass.current == WindowSizeClass.Compact
+        val isMobile = LocalWindowSizeClass.current == WindowSizeClass.Compact
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(if (isCompactMobile) 8.dp else 12.dp),
+                .padding(if (isMobile && compact) 8.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isCompactMobile) {
-                CompactFilterContent(slot, context)
-                Spacer(modifier = Modifier.weight(1f))
-                CompactFilterMenu(slot, onItemClick, onTeraClick)
+            if (isMobile) {
+                PokemonAvatar(
+                    imageUrl = slot.pokemonImageUrl,
+                    contentDescription = slot.pokemonName,
+                    circleSize = 32.dp,
+                    spriteSize = 44.dp
+                )
+                if (!compact) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    AutoSizeText(
+                        text = slot.pokemonName,
+                        maxFontSize = 16.sp,
+                        minFontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                FilterBadges(slot, context)
+                if (compact) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                CompactFilterMenu(slot, onItemClick, onTeraClick, onAbilityClick)
             } else {
                 PokemonAvatar(
                     imageUrl = slot.pokemonImageUrl,
@@ -102,6 +121,7 @@ fun SearchFilterCard(
                 ) {
                     InlineItemButton(slot, context, onItemClick)
                     InlineTeraButton(slot, context, onTeraClick)
+                    InlineAbilityButton(slot, onAbilityClick)
                 }
             }
 
@@ -121,34 +141,27 @@ fun SearchFilterCard(
 }
 
 @Composable
-private fun CompactFilterContent(
+private fun FilterBadges(
     slot: SearchFilterSlotUiModel,
     context: coil3.PlatformContext
 ) {
     val itemUrl = slot.item?.imageUrl
     val teraUrl = slot.teraType?.imageUrl
+    val hasAbility = slot.ability != null
 
-    val badgeCount = listOfNotNull(itemUrl, teraUrl).size
-    val avatarSize = 44.dp
+    val badgeCount = listOfNotNull(itemUrl, teraUrl).size + (if (hasAbility) 1 else 0)
+    if (badgeCount == 0) return
+
     val badgeSize = 24.dp
     val badgeOverlap = 8.dp
-    val badgeGap = 4.dp
-    val badgesWidth = if (badgeCount > 0) badgeGap + badgeSize + (badgeSize - badgeOverlap) * (badgeCount - 1) else 0.dp
-    val totalWidth = avatarSize + badgesWidth
+    val badgesWidth = badgeSize + (badgeSize - badgeOverlap) * (badgeCount - 1)
     val borderColor = MaterialTheme.colorScheme.outline
 
     Box(
-        modifier = Modifier.size(width = totalWidth, height = avatarSize),
+        modifier = Modifier.size(width = badgesWidth, height = badgeSize),
         contentAlignment = Alignment.CenterStart
     ) {
-        PokemonAvatar(
-            imageUrl = slot.pokemonImageUrl,
-            contentDescription = slot.pokemonName,
-            circleSize = 32.dp,
-            spriteSize = avatarSize
-        )
-
-        var offsetX = avatarSize + badgeGap
+        var offsetX = 0.dp
         if (itemUrl != null) {
             FilterBadge(url = itemUrl, contentDescription = slot.item?.name ?: "Item",
                 badgeSize = badgeSize, borderColor = borderColor, context = context,
@@ -159,6 +172,15 @@ private fun CompactFilterContent(
             FilterBadge(url = teraUrl, contentDescription = slot.teraType?.name ?: "Tera",
                 badgeSize = badgeSize, borderColor = borderColor, context = context,
                 modifier = Modifier.offset(x = offsetX))
+            offsetX += badgeSize - badgeOverlap
+        }
+        if (hasAbility) {
+            AbilityBadge(
+                name = slot.ability!!.name,
+                badgeSize = badgeSize,
+                borderColor = borderColor,
+                modifier = Modifier.offset(x = offsetX)
+            )
         }
     }
 }
@@ -193,11 +215,11 @@ private fun FilterBadge(
 private fun CompactFilterMenu(
     slot: SearchFilterSlotUiModel,
     onItemClick: () -> Unit,
-    onTeraClick: () -> Unit
+    onTeraClick: () -> Unit,
+    onAbilityClick: () -> Unit
 ) {
     val canItem = SearchFilterRestrictions.canFilterByItem(slot.pokemonName)
     val canTera = SearchFilterRestrictions.canFilterByTeraType(slot.pokemonName)
-    if (!canItem && !canTera) return
 
     var expanded by remember { mutableStateOf(false) }
 
@@ -231,6 +253,11 @@ private fun CompactFilterMenu(
                     onClick = { expanded = false; onTeraClick() }
                 )
             }
+            val abilityLabel = slot.ability?.name?.let { "Ability: $it" } ?: "Ability"
+            DropdownMenuItem(
+                text = { Text(abilityLabel) },
+                onClick = { expanded = false; onAbilityClick() }
+            )
         }
     }
 }
@@ -274,6 +301,58 @@ private fun InlineTeraButton(
         )
     } else {
         SmallFilterButton(label = teraType?.name ?: "Tera", onClick = onTeraClick)
+    }
+}
+
+@Composable
+private fun InlineAbilityButton(
+    slot: SearchFilterSlotUiModel,
+    onAbilityClick: () -> Unit
+) {
+    val ability = slot.ability
+    if (ability != null) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+                .clickable { onAbilityClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = abilityInitials(ability.name),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    } else {
+        SmallFilterButton(label = "Ability", onClick = onAbilityClick)
+    }
+}
+
+@Composable
+private fun AbilityBadge(
+    name: String,
+    badgeSize: Dp,
+    borderColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(badgeSize)
+            .clip(RoundedCornerShape(badgeSize / 2))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, borderColor, RoundedCornerShape(badgeSize / 2)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = abilityInitials(name),
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

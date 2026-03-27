@@ -13,6 +13,7 @@ object ApiConstants {
     const val FORMATS_ENDPOINT = "/api/v1/formats/"
     const val PLAYERS_ENDPOINT = "/api/v1/players/"
     const val CONFIG_ENDPOINT = "/api/v1/config/"
+    const val ABILITIES_ENDPOINT = "/api/v1/abilities/"
     const val SETS_ENDPOINT = "/api/v1/sets/"
 }
 

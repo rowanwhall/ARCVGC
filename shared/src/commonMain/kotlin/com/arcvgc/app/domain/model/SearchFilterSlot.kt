@@ -8,6 +8,7 @@ data class SearchFilterSlot(
     val pokemonName: String = "",
     val pokemonImageUrl: String? = null,
     val itemName: String? = null,
+    val itemImageUrl: String? = null,
     val teraTypeImageUrl: String? = null,
     val abilityName: String? = null
 )

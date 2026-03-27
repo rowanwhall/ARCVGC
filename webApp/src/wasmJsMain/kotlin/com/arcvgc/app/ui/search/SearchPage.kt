@@ -68,6 +68,7 @@ fun SearchPage(
             DependencyContainer.pokemonCatalogRepository,
             DependencyContainer.itemCatalogRepository,
             DependencyContainer.teraTypeCatalogRepository,
+            DependencyContainer.abilityCatalogRepository,
             DependencyContainer.formatCatalogRepository,
             DependencyContainer.appConfigRepository
         )
@@ -76,6 +77,7 @@ fun SearchPage(
     val pokemonCatalog by viewModel.pokemonCatalogState.collectAsState()
     val itemCatalog by viewModel.itemCatalogState.collectAsState()
     val teraTypeCatalog by viewModel.teraTypeCatalogState.collectAsState()
+    val abilityCatalog by viewModel.abilityCatalogState.collectAsState()
     val formatCatalog by viewModel.formatCatalogState.collectAsState()
     val appConfig by viewModel.appConfigState.collectAsState()
     val sortedFormatCatalog = remember(formatCatalog, appConfig) {
@@ -89,6 +91,8 @@ fun SearchPage(
     var itemPickerSlotIndex by remember { mutableIntStateOf(-1) }
     var teraPickerTeam by remember { mutableIntStateOf(0) }
     var teraPickerSlotIndex by remember { mutableIntStateOf(-1) }
+    var abilityPickerTeam by remember { mutableIntStateOf(0) }
+    var abilityPickerSlotIndex by remember { mutableIntStateOf(-1) }
     var showFormatPicker by remember { mutableStateOf(false) }
     var showMinRatingPicker by remember { mutableStateOf(false) }
     var showMaxRatingPicker by remember { mutableStateOf(false) }
@@ -159,6 +163,7 @@ fun SearchPage(
                             onRemove = { viewModel.removePokemon(rowIndex) },
                             onItemClick = { itemPickerTeam = 1; itemPickerSlotIndex = rowIndex },
                             onTeraClick = { teraPickerTeam = 1; teraPickerSlotIndex = rowIndex },
+                            onAbilityClick = { abilityPickerTeam = 1; abilityPickerSlotIndex = rowIndex },
                             compact = true,
                             modifier = Modifier.weight(1f)
                         )
@@ -171,6 +176,7 @@ fun SearchPage(
                             onRemove = { viewModel.removeTeam2Pokemon(rowIndex) },
                             onItemClick = { itemPickerTeam = 2; itemPickerSlotIndex = rowIndex },
                             onTeraClick = { teraPickerTeam = 2; teraPickerSlotIndex = rowIndex },
+                            onAbilityClick = { abilityPickerTeam = 2; abilityPickerSlotIndex = rowIndex },
                             compact = true,
                             modifier = Modifier.weight(1f)
                         )
@@ -213,7 +219,8 @@ fun SearchPage(
                     slot = slot,
                     onRemove = { viewModel.removePokemon(index) },
                     onItemClick = { itemPickerTeam = 1; itemPickerSlotIndex = index },
-                    onTeraClick = { teraPickerTeam = 1; teraPickerSlotIndex = index }
+                    onTeraClick = { teraPickerTeam = 1; teraPickerSlotIndex = index },
+                    onAbilityClick = { abilityPickerTeam = 1; abilityPickerSlotIndex = index }
                 )
             }
             item {
@@ -358,9 +365,12 @@ fun SearchPage(
                             pokemonId = slot.pokemonId,
                             itemId = slot.item?.id,
                             teraTypeId = slot.teraType?.id,
+                            abilityId = slot.ability?.id,
+                            abilityName = slot.ability?.name,
                             pokemonName = slot.pokemonName,
                             pokemonImageUrl = slot.pokemonImageUrl,
                             itemName = slot.item?.name,
+                            itemImageUrl = slot.item?.imageUrl,
                             teraTypeImageUrl = slot.teraType?.imageUrl
                         )
                     }
@@ -443,6 +453,18 @@ fun SearchPage(
                 teraPickerSlotIndex = -1; teraPickerTeam = 0
             },
             onDismiss = { teraPickerSlotIndex = -1; teraPickerTeam = 0 }
+        )
+    }
+
+    if (abilityPickerSlotIndex >= 0) {
+        AbilityPickerDialog(
+            catalogState = abilityCatalog,
+            onSelect = { ability ->
+                if (abilityPickerTeam == 2) viewModel.setTeam2Ability(abilityPickerSlotIndex, ability)
+                else viewModel.setAbility(abilityPickerSlotIndex, ability)
+                abilityPickerSlotIndex = -1; abilityPickerTeam = 0
+            },
+            onDismiss = { abilityPickerSlotIndex = -1; abilityPickerTeam = 0 }
         )
     }
 

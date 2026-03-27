@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.search
 
+import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -353,6 +354,42 @@ class SearchStateReducerTest {
         assertEquals("Charmander", state.filterSlots[0].pokemonName)
         assertTrue(state.team2FilterSlots.isEmpty())
         assertFalse(state.hasTeam2)
+    }
+
+    // --- Ability ---
+
+    @Test
+    fun setAbility_updatesSlot() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = 1, name = "Pikachu"))
+
+        val ability = AbilityUiModel(id = 10, name = "Static")
+        state = SearchStateReducer.setAbility(state, 0, ability)
+
+        assertEquals(10, state.filterSlots[0].ability?.id)
+        assertEquals("Static", state.filterSlots[0].ability?.name)
+    }
+
+    @Test
+    fun setAbility_doesNotAffectOtherSlots() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = 1, name = "Pikachu"))
+        state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = 2, name = "Charizard"))
+
+        state = SearchStateReducer.setAbility(state, 0, AbilityUiModel(id = 10, name = "Static"))
+
+        assertNull(state.filterSlots[1].ability)
+    }
+
+    @Test
+    fun setTeam2Ability_updatesSlot() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 1, name = "Pikachu"))
+
+        val ability = AbilityUiModel(id = 10, name = "Static")
+        state = SearchStateReducer.setTeam2Ability(state, 0, ability)
+
+        assertEquals(10, state.team2FilterSlots[0].ability?.id)
     }
 
     // --- Helpers ---

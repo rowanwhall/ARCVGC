@@ -20,7 +20,9 @@ sealed class ContentListMode {
                     name = slot.pokemonName,
                     imageUrl = slot.pokemonImageUrl,
                     itemName = slot.itemName,
-                    teraTypeImageUrl = slot.teraTypeImageUrl
+                    itemImageUrl = slot.itemImageUrl,
+                    teraTypeImageUrl = slot.teraTypeImageUrl,
+                    abilityName = slot.abilityName
                 )
             },
             team2Chips = params.team2Filters.mapIndexed { index, slot ->
@@ -29,7 +31,9 @@ sealed class ContentListMode {
                     name = slot.pokemonName,
                     imageUrl = slot.pokemonImageUrl,
                     itemName = slot.itemName,
-                    teraTypeImageUrl = slot.teraTypeImageUrl
+                    itemImageUrl = slot.itemImageUrl,
+                    teraTypeImageUrl = slot.teraTypeImageUrl,
+                    abilityName = slot.abilityName
                 )
             },
             formatName = params.formatName,

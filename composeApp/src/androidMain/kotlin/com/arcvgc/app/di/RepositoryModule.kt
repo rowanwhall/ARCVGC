@@ -1,5 +1,7 @@
 package com.arcvgc.app.di
 
+import com.arcvgc.app.data.repository.AbilityCatalogRepository
+import com.arcvgc.app.data.repository.AbilityCatalogRepositoryImpl
 import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.AppConfigRepositoryImpl
 import com.arcvgc.app.data.repository.BattleRepository
@@ -25,6 +27,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindAbilityCatalogRepository(impl: AbilityCatalogRepositoryImpl): AbilityCatalogRepository
 
     @Binds
     @Singleton

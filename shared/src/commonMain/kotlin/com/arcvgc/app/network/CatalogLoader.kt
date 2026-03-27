@@ -5,10 +5,12 @@ import com.arcvgc.app.data.CatalogCacheStorage
 import com.arcvgc.app.data.captureException
 import com.arcvgc.app.domain.model.NetworkResult
 import com.arcvgc.app.domain.model.Pagination
+import com.arcvgc.app.ui.mapper.AbilityUiMapper
 import com.arcvgc.app.ui.mapper.FormatUiMapper
 import com.arcvgc.app.ui.mapper.ItemUiMapper
 import com.arcvgc.app.ui.mapper.PokemonPickerUiMapper
 import com.arcvgc.app.ui.mapper.TeraTypeUiMapper
+import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -118,6 +120,25 @@ suspend fun loadFormatCatalog(
     )
     if (result.error == null && !result.items.isNullOrEmpty()) {
         CatalogCache.save(cacheStorage, "format_catalog", result.items, FormatUiModel.serializer())
+    }
+    result
+}
+
+suspend fun loadAbilityCatalog(
+    apiService: ApiService,
+    cacheStorage: CatalogCacheStorage
+): CatalogResult<AbilityUiModel> = safeCatalogLoad {
+    val cached = CatalogCache.load(
+        cacheStorage, "ability_catalog", CatalogCache.TTL_30_DAYS, AbilityUiModel.serializer()
+    )
+    if (cached != null) return@safeCatalogLoad CatalogResult(items = cached)
+
+    val result = loadFullCatalog(
+        fetch = { limit, page -> apiService.getAbilities(limit, page) },
+        map = { AbilityUiMapper.mapList(it) }
+    )
+    if (result.error == null && !result.items.isNullOrEmpty()) {
+        CatalogCache.save(cacheStorage, "ability_catalog", result.items, AbilityUiModel.serializer())
     }
     result
 }

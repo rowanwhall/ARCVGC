@@ -232,7 +232,7 @@ private fun PokemonFilterChip(
 ) {
     val label = buildString {
         append(chip.name)
-        chip.itemName?.let { append(" @ $it") }
+        chip.abilityName?.let { append(" - $it") }
     }
     Row(
         modifier = Modifier
@@ -245,17 +245,6 @@ private fun PokemonFilterChip(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        chip.teraTypeImageUrl?.let { url ->
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(url)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "Tera type",
-                modifier = Modifier.size(27.dp),
-                contentScale = ContentScale.Fit
-            )
-        }
         chip.imageUrl?.let { url ->
             AsyncImage(
                 model = ImageRequest.Builder(context)
@@ -272,6 +261,28 @@ private fun PokemonFilterChip(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
+        chip.itemImageUrl?.let { url ->
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(url)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Item",
+                modifier = Modifier.size(27.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+        chip.teraTypeImageUrl?.let { url ->
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(url)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Tera type",
+                modifier = Modifier.size(27.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
         if (canRemove && onRemove != null) {
             FilterChipCloseButton(onClick = onRemove)
         }

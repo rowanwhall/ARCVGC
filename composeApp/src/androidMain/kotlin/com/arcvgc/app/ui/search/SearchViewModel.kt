@@ -3,12 +3,14 @@ package com.arcvgc.app.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arcvgc.app.data.CatalogState
+import com.arcvgc.app.data.repository.AbilityCatalogRepository
 import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.ItemCatalogRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
 import com.arcvgc.app.data.repository.TeraTypeCatalogRepository
 import com.arcvgc.app.domain.model.AppConfig
+import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -24,6 +26,7 @@ class SearchViewModel @Inject constructor(
     itemCatalogRepository: ItemCatalogRepository,
     teraTypeCatalogRepository: TeraTypeCatalogRepository,
     formatCatalogRepository: FormatCatalogRepository,
+    abilityCatalogRepository: AbilityCatalogRepository,
     appConfigRepository: AppConfigRepository
 ) : ViewModel() {
 
@@ -46,6 +49,9 @@ class SearchViewModel @Inject constructor(
     val formatCatalogState: StateFlow<CatalogState<FormatUiModel>> =
         formatCatalogRepository.state
 
+    val abilityCatalogState: StateFlow<CatalogState<AbilityUiModel>> =
+        abilityCatalogRepository.state
+
     val appConfigState: StateFlow<AppConfig?> = appConfigRepository.config
 
     fun addPokemon(pokemon: PokemonPickerUiModel) = logic.addPokemon(pokemon)
@@ -55,6 +61,8 @@ class SearchViewModel @Inject constructor(
     fun addTeam2Pokemon(pokemon: PokemonPickerUiModel) = logic.addTeam2Pokemon(pokemon)
     fun removeTeam2Pokemon(index: Int) = logic.removeTeam2Pokemon(index)
     fun setTeam2Item(slotIndex: Int, item: ItemUiModel) = logic.setTeam2Item(slotIndex, item)
+    fun setAbility(slotIndex: Int, ability: AbilityUiModel) = logic.setAbility(slotIndex, ability)
+    fun setTeam2Ability(slotIndex: Int, ability: AbilityUiModel) = logic.setTeam2Ability(slotIndex, ability)
     fun setTeam2TeraType(slotIndex: Int, teraType: TeraTypeUiModel) = logic.setTeam2TeraType(slotIndex, teraType)
     fun setFormat(format: FormatUiModel) = logic.setFormat(format)
     fun setMinRating(rating: Int?) = logic.setMinRating(rating)

@@ -5,5 +5,6 @@ data class SearchFilterSlotUiModel(
     val pokemonName: String,
     val pokemonImageUrl: String?,
     val item: ItemUiModel?,
-    val teraType: TeraTypeUiModel?
+    val teraType: TeraTypeUiModel?,
+    val ability: AbilityUiModel? = null
 )

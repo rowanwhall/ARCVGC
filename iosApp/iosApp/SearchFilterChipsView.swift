@@ -163,21 +163,10 @@ private struct PokemonFilterChipView: View {
     var body: some View {
         let label = {
             var text = chip.name
-            if let itemName = chip.itemName { text += " @ \(itemName)" }
+            if let abilityName = chip.abilityName { text += " - \(abilityName)" }
             return text
         }()
         HStack(spacing: 2) {
-            if let url = chip.teraTypeImageUrl {
-                AsyncImage(url: URL(string: url)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable().aspectRatio(contentMode: .fit)
-                    default:
-                        Color.clear
-                    }
-                }
-                .frame(width: 27, height: 27)
-            }
             if let url = chip.imageUrl {
                 AsyncImage(url: URL(string: url)) { phase in
                     switch phase {
@@ -192,6 +181,28 @@ private struct PokemonFilterChipView: View {
             Text(label)
                 .font(.system(size: 14))
                 .foregroundColor(Color(.label))
+            if let url = chip.itemImageUrl {
+                AsyncImage(url: URL(string: url)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fit)
+                    default:
+                        Color.clear
+                    }
+                }
+                .frame(width: 27, height: 27)
+            }
+            if let url = chip.teraTypeImageUrl {
+                AsyncImage(url: URL(string: url)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fit)
+                    default:
+                        Color.clear
+                    }
+                }
+                .frame(width: 27, height: 27)
+            }
             if canRemove {
                 FilterChipCloseButton(action: onRemove)
             }

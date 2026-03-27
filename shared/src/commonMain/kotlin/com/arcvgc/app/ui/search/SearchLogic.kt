@@ -1,6 +1,7 @@
 package com.arcvgc.app.ui.search
 
 import com.arcvgc.app.domain.model.AppConfig
+import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -70,6 +71,14 @@ class SearchLogic(
 
     fun setTeam2TeraType(slotIndex: Int, teraType: TeraTypeUiModel) {
         _uiState.update { SearchStateReducer.setTeam2TeraType(it, slotIndex, teraType) }
+    }
+
+    fun setAbility(slotIndex: Int, ability: AbilityUiModel) {
+        _uiState.update { SearchStateReducer.setAbility(it, slotIndex, ability) }
+    }
+
+    fun setTeam2Ability(slotIndex: Int, ability: AbilityUiModel) {
+        _uiState.update { SearchStateReducer.setTeam2Ability(it, slotIndex, ability) }
     }
 
     fun setFormat(format: FormatUiModel) {

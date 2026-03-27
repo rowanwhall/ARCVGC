@@ -1,6 +1,7 @@
 package com.arcvgc.app.network
 
 import com.arcvgc.app.data.captureException
+import com.arcvgc.app.domain.model.Ability
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.DomainItem
 import com.arcvgc.app.domain.model.Format
@@ -17,6 +18,7 @@ import com.arcvgc.app.domain.model.PokemonListItem
 import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.TeraType
 import com.arcvgc.app.network.mapper.toDomain
+import com.arcvgc.app.network.model.AbilityListResponseDto
 import com.arcvgc.app.network.model.AppConfigResponseDto
 import com.arcvgc.app.network.model.FormatDetailResponseDto
 import com.arcvgc.app.network.model.FormatListResponseDto
@@ -119,6 +121,31 @@ class ApiService {
         return try {
             val response: ItemListResponseDto = client
                 .get("${ApiConstants.BASE_URL}${ApiConstants.ITEMS_ENDPOINT}") {
+                    parameter("limit", limit)
+                    parameter("page", page)
+                }
+                .body()
+
+            if (response.success) {
+                NetworkResult.Success(
+                    response.data.map { it.toDomain() } to response.pagination.toDomain()
+                )
+            } else {
+                NetworkResult.Error("API returned success=false")
+            }
+        } catch (e: Exception) {
+            captureException(e)
+            NetworkResult.Error(e.message ?: "Unknown error", e)
+        }
+    }
+
+    suspend fun getAbilities(
+        limit: Int = 50,
+        page: Int = 1
+    ): NetworkResult<Pair<List<Ability>, Pagination>> {
+        return try {
+            val response: AbilityListResponseDto = client
+                .get("${ApiConstants.BASE_URL}${ApiConstants.ABILITIES_ENDPOINT}") {
                     parameter("limit", limit)
                     parameter("page", page)
                 }

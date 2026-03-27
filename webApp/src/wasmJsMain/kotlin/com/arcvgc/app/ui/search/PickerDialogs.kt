@@ -45,6 +45,7 @@ import coil3.request.crossfade
 import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.ui.components.SimplePokemonRow
 import com.arcvgc.app.ui.components.TypeInfo
+import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -240,6 +241,84 @@ private fun ItemPickerRow(
             text = item.name,
             style = MaterialTheme.typography.bodyLarge
         )
+    }
+}
+
+@Composable
+fun AbilityPickerDialog(
+    catalogState: CatalogState<AbilityUiModel>,
+    onSelect: (AbilityUiModel) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            tonalElevation = 0.dp,
+            modifier = Modifier.width(DialogWidth).height(600.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                var query by remember { mutableStateOf("") }
+
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text("Search Abilities") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                when {
+                    catalogState.isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    catalogState.error != null -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = catalogState.error.orEmpty(),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                    else -> {
+                        val filtered = remember(catalogState.items, query) {
+                            if (query.isBlank()) catalogState.items
+                            else catalogState.items.filter {
+                                it.name.contains(query, ignoreCase = true)
+                            }
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(
+                                items = filtered,
+                                key = { it.name }
+                            ) { ability ->
+                                Text(
+                                    text = ability.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onSelect(ability) }
+                                        .padding(vertical = 12.dp, horizontal = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

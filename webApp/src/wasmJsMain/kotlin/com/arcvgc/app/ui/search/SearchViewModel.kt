@@ -7,8 +7,10 @@ import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FormatCatalogRepository
 import com.arcvgc.app.data.ItemCatalogRepository
 import com.arcvgc.app.data.PokemonCatalogRepository
+import com.arcvgc.app.data.AbilityCatalogRepository
 import com.arcvgc.app.data.TeraTypeCatalogRepository
 import com.arcvgc.app.domain.model.AppConfig
+import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -21,6 +23,7 @@ class SearchViewModel(
     pokemonCatalogRepository: PokemonCatalogRepository,
     itemCatalogRepository: ItemCatalogRepository,
     teraTypeCatalogRepository: TeraTypeCatalogRepository,
+    abilityCatalogRepository: AbilityCatalogRepository,
     formatCatalogRepository: FormatCatalogRepository,
     appConfigRepository: AppConfigRepository? = null
 ) : ViewModel() {
@@ -41,6 +44,9 @@ class SearchViewModel(
     val teraTypeCatalogState: StateFlow<CatalogState<TeraTypeUiModel>> =
         teraTypeCatalogRepository.state
 
+    val abilityCatalogState: StateFlow<CatalogState<AbilityUiModel>> =
+        abilityCatalogRepository.state
+
     val formatCatalogState: StateFlow<CatalogState<FormatUiModel>> =
         formatCatalogRepository.state
 
@@ -55,6 +61,8 @@ class SearchViewModel(
     fun removeTeam2Pokemon(index: Int) = logic.removeTeam2Pokemon(index)
     fun setTeam2Item(slotIndex: Int, item: ItemUiModel) = logic.setTeam2Item(slotIndex, item)
     fun setTeam2TeraType(slotIndex: Int, teraType: TeraTypeUiModel) = logic.setTeam2TeraType(slotIndex, teraType)
+    fun setAbility(slotIndex: Int, ability: AbilityUiModel) = logic.setAbility(slotIndex, ability)
+    fun setTeam2Ability(slotIndex: Int, ability: AbilityUiModel) = logic.setTeam2Ability(slotIndex, ability)
     fun setFormat(format: FormatUiModel) = logic.setFormat(format)
     fun setMinRating(rating: Int?) = logic.setMinRating(rating)
     fun setMaxRating(rating: Int?) = logic.setMaxRating(rating)

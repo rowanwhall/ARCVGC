@@ -1,5 +1,6 @@
 package com.arcvgc.app.di
 
+import com.arcvgc.app.data.repository.AbilityCatalogRepository
 import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.ItemCatalogRepository
@@ -19,7 +20,8 @@ class CatalogInitializer @Inject constructor(
     private val pokemonCatalog: PokemonCatalogRepository,
     private val itemCatalog: ItemCatalogRepository,
     private val teraTypeCatalog: TeraTypeCatalogRepository,
-    private val formatCatalog: FormatCatalogRepository
+    private val formatCatalog: FormatCatalogRepository,
+    private val abilityCatalog: AbilityCatalogRepository
 ) {
     init {
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
@@ -30,6 +32,7 @@ class CatalogInitializer @Inject constructor(
                     itemCatalog.reload()
                     teraTypeCatalog.reload()
                     formatCatalog.reload()
+                    abilityCatalog.reload()
                 }
         }
     }

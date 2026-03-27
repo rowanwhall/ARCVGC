@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.search
 
+import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
@@ -81,6 +82,22 @@ object SearchStateReducer {
         return state.copy(
             team2FilterSlots = state.team2FilterSlots.toMutableList().apply {
                 this[slotIndex] = this[slotIndex].copy(teraType = teraType)
+            }
+        )
+    }
+
+    fun setAbility(state: SearchUiState, slotIndex: Int, ability: AbilityUiModel): SearchUiState {
+        return state.copy(
+            filterSlots = state.filterSlots.toMutableList().apply {
+                this[slotIndex] = this[slotIndex].copy(ability = ability)
+            }
+        )
+    }
+
+    fun setTeam2Ability(state: SearchUiState, slotIndex: Int, ability: AbilityUiModel): SearchUiState {
+        return state.copy(
+            team2FilterSlots = state.team2FilterSlots.toMutableList().apply {
+                this[slotIndex] = this[slotIndex].copy(ability = ability)
             }
         )
     }

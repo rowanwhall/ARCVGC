@@ -9,6 +9,7 @@ import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.FavoritesStorage
 import com.arcvgc.app.data.FormatCatalogRepository
 import com.arcvgc.app.data.ItemCatalogRepository
+import com.arcvgc.app.data.AbilityCatalogRepository
 import com.arcvgc.app.data.PokemonCatalogRepository
 import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.data.SettingsStorage
@@ -32,6 +33,7 @@ object DependencyContainer {
     val itemCatalogRepository: ItemCatalogRepository by lazy { ItemCatalogRepository(apiService, cacheStorage) }
     val teraTypeCatalogRepository: TeraTypeCatalogRepository by lazy { TeraTypeCatalogRepository(apiService, cacheStorage) }
     val appConfigRepository: AppConfigRepository by lazy { AppConfigRepository(apiService, AppConfigStorage(), cacheStorage) }
+    val abilityCatalogRepository: AbilityCatalogRepository by lazy { AbilityCatalogRepository(apiService, cacheStorage) }
     val formatCatalogRepository: FormatCatalogRepository by lazy {
         FormatCatalogRepository(apiService, cacheStorage)
     }

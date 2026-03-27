@@ -15,6 +15,10 @@ final class CatalogStore: ObservableObject {
     @Published private(set) var teraTypeItems: [TeraTypeUiModel] = []
     @Published private(set) var teraTypeError: String? = nil
 
+    @Published private(set) var abilityLoading = true
+    @Published private(set) var abilityItems: [AbilityUiModel] = []
+    @Published private(set) var abilityError: String? = nil
+
     @Published private(set) var formatLoading = true
     @Published private(set) var formatItems: [FormatUiModel] = []
     @Published private(set) var formatError: String? = nil
@@ -28,6 +32,7 @@ final class CatalogStore: ObservableObject {
         Task { await loadPokemonCatalog() }
         Task { await loadItemCatalog() }
         Task { await loadTeraTypeCatalog() }
+        Task { await loadAbilityCatalog() }
         Task { await loadFormatCatalog() }
     }
 
@@ -41,12 +46,16 @@ final class CatalogStore: ObservableObject {
         teraTypeLoading = true
         teraTypeItems = []
         teraTypeError = nil
+        abilityLoading = true
+        abilityItems = []
+        abilityError = nil
         formatLoading = true
         formatItems = []
         formatError = nil
         Task { await loadPokemonCatalog() }
         Task { await loadItemCatalog() }
         Task { await loadTeraTypeCatalog() }
+        Task { await loadAbilityCatalog() }
         Task { await loadFormatCatalog() }
     }
 
@@ -78,6 +87,16 @@ final class CatalogStore: ObservableObject {
             teraTypeError = "Failed to load tera types"
         }
         teraTypeLoading = false
+    }
+
+    private func loadAbilityCatalog() async {
+        if let result = try? await CatalogLoaderKt.loadAbilityCatalog(apiService: apiService, cacheStorage: cacheStorage),
+           let items = result.items as? [AbilityUiModel] {
+            abilityItems = items
+        } else {
+            abilityError = "Failed to load abilities"
+        }
+        abilityLoading = false
     }
 
     private func loadFormatCatalog() async {
