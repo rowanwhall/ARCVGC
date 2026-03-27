@@ -267,7 +267,7 @@ private fun PokemonFilterChip(
                     .data(url)
                     .crossfade(true)
                     .build(),
-                contentDescription = "Item",
+                contentDescription = chip.itemName ?: "Item",
                 modifier = Modifier.size(27.dp),
                 contentScale = ContentScale.Fit
             )

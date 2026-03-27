@@ -49,11 +49,11 @@ class SearchLogic(
         _uiState.update { SearchStateReducer.removePokemon(it, index) }
     }
 
-    fun setItem(slotIndex: Int, item: ItemUiModel) {
+    fun setItem(slotIndex: Int, item: ItemUiModel?) {
         _uiState.update { SearchStateReducer.setItem(it, slotIndex, item) }
     }
 
-    fun setTeraType(slotIndex: Int, teraType: TeraTypeUiModel) {
+    fun setTeraType(slotIndex: Int, teraType: TeraTypeUiModel?) {
         _uiState.update { SearchStateReducer.setTeraType(it, slotIndex, teraType) }
     }
 
@@ -65,28 +65,24 @@ class SearchLogic(
         _uiState.update { SearchStateReducer.removeTeam2Pokemon(it, index) }
     }
 
-    fun setTeam2Item(slotIndex: Int, item: ItemUiModel) {
+    fun setTeam2Item(slotIndex: Int, item: ItemUiModel?) {
         _uiState.update { SearchStateReducer.setTeam2Item(it, slotIndex, item) }
     }
 
-    fun setTeam2TeraType(slotIndex: Int, teraType: TeraTypeUiModel) {
+    fun setTeam2TeraType(slotIndex: Int, teraType: TeraTypeUiModel?) {
         _uiState.update { SearchStateReducer.setTeam2TeraType(it, slotIndex, teraType) }
     }
 
-    fun setAbility(slotIndex: Int, ability: AbilityUiModel) {
+    fun setAbility(slotIndex: Int, ability: AbilityUiModel?) {
         _uiState.update { SearchStateReducer.setAbility(it, slotIndex, ability) }
     }
 
-    fun setTeam2Ability(slotIndex: Int, ability: AbilityUiModel) {
+    fun setTeam2Ability(slotIndex: Int, ability: AbilityUiModel?) {
         _uiState.update { SearchStateReducer.setTeam2Ability(it, slotIndex, ability) }
     }
 
     fun setFormat(format: FormatUiModel) {
         _uiState.update { SearchStateReducer.setFormat(it, format) }
-    }
-
-    fun setDefaultFormat(format: FormatUiModel) {
-        _uiState.update { SearchStateReducer.setDefaultFormat(it, format) }
     }
 
     fun setMinRating(rating: Int?) {

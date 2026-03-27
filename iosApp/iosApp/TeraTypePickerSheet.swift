@@ -5,7 +5,7 @@ struct TeraTypePickerSheet: View {
     let items: [TeraTypeUiModel]
     let isLoading: Bool
     let error: String?
-    let onSelect: (TeraTypeUiModel) -> Void
+    let onSelect: (TeraTypeUiModel?) -> Void
 
     @State private var query = ""
     @FocusState private var isSearchFocused: Bool
@@ -27,12 +27,21 @@ struct TeraTypePickerSheet: View {
                         .foregroundColor(.red)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    List(Array(filtered.enumerated()), id: \.element.name) { _, teraType in
+                    List {
                         Button {
-                            onSelect(teraType)
+                            onSelect(nil)
                             dismiss()
                         } label: {
-                            TeraTypePickerRow(teraType: teraType)
+                            Text("None")
+                                .foregroundColor(Color(.secondaryLabel))
+                        }
+                        ForEach(Array(filtered.enumerated()), id: \.element.name) { _, teraType in
+                            Button {
+                                onSelect(teraType)
+                                dismiss()
+                            } label: {
+                                TeraTypePickerRow(teraType: teraType)
+                            }
                         }
                     }
                     .listStyle(.plain)

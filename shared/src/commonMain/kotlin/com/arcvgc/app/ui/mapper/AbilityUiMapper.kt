@@ -13,6 +13,6 @@ object AbilityUiMapper {
     }
 
     fun mapList(abilities: List<Ability>): List<AbilityUiModel> {
-        return abilities.map { map(it) }
+        return abilities.filter { it.name.isNotBlank() }.map { map(it) }
     }
 }

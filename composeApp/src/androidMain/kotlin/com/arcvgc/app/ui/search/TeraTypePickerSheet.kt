@@ -40,7 +40,7 @@ import com.arcvgc.app.ui.model.TeraTypeUiModel
 @Composable
 fun TeraTypePickerSheet(
     catalogState: CatalogState<TeraTypeUiModel>,
-    onSelect: (TeraTypeUiModel) -> Unit,
+    onSelect: (TeraTypeUiModel?) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -95,6 +95,21 @@ fun TeraTypePickerSheet(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onSelect(null) }
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "None",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         items(
                             items = filtered,
                             key = { it.name }

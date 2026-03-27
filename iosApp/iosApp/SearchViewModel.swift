@@ -47,11 +47,11 @@ final class SearchViewModel: ObservableObject {
         logic.removePokemon(index: Int32(index))
     }
 
-    func setItem(at slotIndex: Int, item: ItemUiModel) {
+    func setItem(at slotIndex: Int, item: ItemUiModel?) {
         logic.setItem(slotIndex: Int32(slotIndex), item: item)
     }
 
-    func setTeraType(at slotIndex: Int, teraType: TeraTypeUiModel) {
+    func setTeraType(at slotIndex: Int, teraType: TeraTypeUiModel?) {
         logic.setTeraType(slotIndex: Int32(slotIndex), teraType: teraType)
     }
 
@@ -63,19 +63,19 @@ final class SearchViewModel: ObservableObject {
         logic.removeTeam2Pokemon(index: Int32(index))
     }
 
-    func setTeam2Item(at slotIndex: Int, item: ItemUiModel) {
+    func setTeam2Item(at slotIndex: Int, item: ItemUiModel?) {
         logic.setTeam2Item(slotIndex: Int32(slotIndex), item: item)
     }
 
-    func setTeam2TeraType(at slotIndex: Int, teraType: TeraTypeUiModel) {
+    func setTeam2TeraType(at slotIndex: Int, teraType: TeraTypeUiModel?) {
         logic.setTeam2TeraType(slotIndex: Int32(slotIndex), teraType: teraType)
     }
 
-    func setAbility(at slotIndex: Int, ability: AbilityUiModel) {
+    func setAbility(at slotIndex: Int, ability: AbilityUiModel?) {
         logic.setAbility(slotIndex: Int32(slotIndex), ability: ability)
     }
 
-    func setTeam2Ability(at slotIndex: Int, ability: AbilityUiModel) {
+    func setTeam2Ability(at slotIndex: Int, ability: AbilityUiModel?) {
         logic.setTeam2Ability(slotIndex: Int32(slotIndex), ability: ability)
     }
 

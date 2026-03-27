@@ -5,7 +5,7 @@ struct ItemPickerSheet: View {
     let items: [ItemUiModel]
     let isLoading: Bool
     let error: String?
-    let onSelect: (ItemUiModel) -> Void
+    let onSelect: (ItemUiModel?) -> Void
 
     @State private var query = ""
     @FocusState private var isSearchFocused: Bool
@@ -27,12 +27,21 @@ struct ItemPickerSheet: View {
                         .foregroundColor(.red)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    List(Array(filtered.enumerated()), id: \.element.name) { _, item in
+                    List {
                         Button {
-                            onSelect(item)
+                            onSelect(nil)
                             dismiss()
                         } label: {
-                            ItemPickerRow(item: item)
+                            Text("None")
+                                .foregroundColor(Color(.secondaryLabel))
+                        }
+                        ForEach(Array(filtered.enumerated()), id: \.element.name) { _, item in
+                            Button {
+                                onSelect(item)
+                                dismiss()
+                            } label: {
+                                ItemPickerRow(item: item)
+                            }
                         }
                     }
                     .listStyle(.plain)

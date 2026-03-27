@@ -110,9 +110,7 @@ struct SearchFilterCard: View {
 }
 
 private func abilityInitials(_ name: String) -> String {
-    let cleaned = name.replacingOccurrences(of: "\\s*\\(.*?\\)", with: "", options: .regularExpression)
-    let words = cleaned.split(separator: " ").prefix(2)
-    return words.map { String($0.prefix(1)).uppercased() }.joined()
+    AbilityInitialsKt.abilityInitials(name: name)
 }
 
 #Preview("Empty Filters") {

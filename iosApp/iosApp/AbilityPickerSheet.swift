@@ -5,7 +5,7 @@ struct AbilityPickerSheet: View {
     let items: [AbilityUiModel]
     let isLoading: Bool
     let error: String?
-    let onSelect: (AbilityUiModel) -> Void
+    let onSelect: (AbilityUiModel?) -> Void
 
     @State private var query = ""
     @FocusState private var isSearchFocused: Bool
@@ -27,13 +27,22 @@ struct AbilityPickerSheet: View {
                         .foregroundColor(.red)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    List(Array(filtered.enumerated()), id: \.element.name) { _, ability in
+                    List {
                         Button {
-                            onSelect(ability)
+                            onSelect(nil)
                             dismiss()
                         } label: {
-                            Text(ability.name)
-                                .foregroundColor(.primary)
+                            Text("None")
+                                .foregroundColor(Color(.secondaryLabel))
+                        }
+                        ForEach(Array(filtered.enumerated()), id: \.element.name) { _, ability in
+                            Button {
+                                onSelect(ability)
+                                dismiss()
+                            } label: {
+                                Text(ability.name)
+                                    .foregroundColor(.primary)
+                            }
                         }
                     }
                     .listStyle(.plain)

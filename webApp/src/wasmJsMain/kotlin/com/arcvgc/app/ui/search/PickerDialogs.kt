@@ -137,7 +137,7 @@ fun PokemonPickerDialog(
 @Composable
 fun ItemPickerDialog(
     catalogState: CatalogState<ItemUiModel>,
-    onSelect: (ItemUiModel) -> Unit,
+    onSelect: (ItemUiModel?) -> Unit,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -191,6 +191,17 @@ fun ItemPickerDialog(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            item {
+                                Text(
+                                    text = "None",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onSelect(null) }
+                                        .padding(vertical = 8.dp, horizontal = 4.dp)
+                                )
+                            }
                             items(
                                 items = filtered,
                                 key = { it.name }
@@ -247,7 +258,7 @@ private fun ItemPickerRow(
 @Composable
 fun AbilityPickerDialog(
     catalogState: CatalogState<AbilityUiModel>,
-    onSelect: (AbilityUiModel) -> Unit,
+    onSelect: (AbilityUiModel?) -> Unit,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -301,6 +312,17 @@ fun AbilityPickerDialog(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            item {
+                                Text(
+                                    text = "None",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onSelect(null) }
+                                        .padding(vertical = 8.dp, horizontal = 4.dp)
+                                )
+                            }
                             items(
                                 items = filtered,
                                 key = { it.name }
@@ -311,7 +333,7 @@ fun AbilityPickerDialog(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { onSelect(ability) }
-                                        .padding(vertical = 12.dp, horizontal = 4.dp)
+                                        .padding(vertical = 8.dp, horizontal = 4.dp)
                                 )
                             }
                         }
@@ -325,7 +347,7 @@ fun AbilityPickerDialog(
 @Composable
 fun TeraTypePickerDialog(
     catalogState: CatalogState<TeraTypeUiModel>,
-    onSelect: (TeraTypeUiModel) -> Unit,
+    onSelect: (TeraTypeUiModel?) -> Unit,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -379,6 +401,17 @@ fun TeraTypePickerDialog(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            item {
+                                Text(
+                                    text = "None",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onSelect(null) }
+                                        .padding(vertical = 8.dp, horizontal = 4.dp)
+                                )
+                            }
                             items(
                                 items = filtered,
                                 key = { it.name }
@@ -498,7 +531,7 @@ fun FormatPickerDialog(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { onSelect(format) }
-                                        .padding(vertical = 12.dp, horizontal = 4.dp)
+                                        .padding(vertical = 8.dp, horizontal = 4.dp)
                                 )
                             }
                         }

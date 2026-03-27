@@ -35,7 +35,7 @@ object SearchStateReducer {
         }
     }
 
-    fun setItem(state: SearchUiState, slotIndex: Int, item: ItemUiModel): SearchUiState {
+    fun setItem(state: SearchUiState, slotIndex: Int, item: ItemUiModel?): SearchUiState {
         return state.copy(
             filterSlots = state.filterSlots.toMutableList().apply {
                 this[slotIndex] = this[slotIndex].copy(item = item)
@@ -43,7 +43,7 @@ object SearchStateReducer {
         )
     }
 
-    fun setTeraType(state: SearchUiState, slotIndex: Int, teraType: TeraTypeUiModel): SearchUiState {
+    fun setTeraType(state: SearchUiState, slotIndex: Int, teraType: TeraTypeUiModel?): SearchUiState {
         return state.copy(
             filterSlots = state.filterSlots.toMutableList().apply {
                 this[slotIndex] = this[slotIndex].copy(teraType = teraType)
@@ -70,7 +70,7 @@ object SearchStateReducer {
         )
     }
 
-    fun setTeam2Item(state: SearchUiState, slotIndex: Int, item: ItemUiModel): SearchUiState {
+    fun setTeam2Item(state: SearchUiState, slotIndex: Int, item: ItemUiModel?): SearchUiState {
         return state.copy(
             team2FilterSlots = state.team2FilterSlots.toMutableList().apply {
                 this[slotIndex] = this[slotIndex].copy(item = item)
@@ -78,7 +78,7 @@ object SearchStateReducer {
         )
     }
 
-    fun setTeam2TeraType(state: SearchUiState, slotIndex: Int, teraType: TeraTypeUiModel): SearchUiState {
+    fun setTeam2TeraType(state: SearchUiState, slotIndex: Int, teraType: TeraTypeUiModel?): SearchUiState {
         return state.copy(
             team2FilterSlots = state.team2FilterSlots.toMutableList().apply {
                 this[slotIndex] = this[slotIndex].copy(teraType = teraType)
@@ -86,7 +86,7 @@ object SearchStateReducer {
         )
     }
 
-    fun setAbility(state: SearchUiState, slotIndex: Int, ability: AbilityUiModel): SearchUiState {
+    fun setAbility(state: SearchUiState, slotIndex: Int, ability: AbilityUiModel?): SearchUiState {
         return state.copy(
             filterSlots = state.filterSlots.toMutableList().apply {
                 this[slotIndex] = this[slotIndex].copy(ability = ability)
@@ -94,7 +94,7 @@ object SearchStateReducer {
         )
     }
 
-    fun setTeam2Ability(state: SearchUiState, slotIndex: Int, ability: AbilityUiModel): SearchUiState {
+    fun setTeam2Ability(state: SearchUiState, slotIndex: Int, ability: AbilityUiModel?): SearchUiState {
         return state.copy(
             team2FilterSlots = state.team2FilterSlots.toMutableList().apply {
                 this[slotIndex] = this[slotIndex].copy(ability = ability)
