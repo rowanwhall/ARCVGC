@@ -70,7 +70,7 @@ This is a key behavioral detail: several modes compose a richer page 1 with sect
 ### Search mode
 - **Page 1**: Up to 3 sections —
   1. `Section("Pokemon", [...])` — pinned Pokemon from search filters (resolved from catalog)
-  2. `Section("Players", [...])` — pinned player (if `playerName` filter set, resolved via API)
+  2. `Section("Players", [...])` — matching players (if `playerName` filter set, fuzzy-matched via `searchPlayersByName`)
   3. `Section("Battles", [...])` — battle results
 - **Pages 2+**: bare `Battle` items (appended to flat list, no wrapping section)
 

@@ -7,6 +7,7 @@ import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.SearchFilterSlot
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.network.ApiService
 import com.arcvgc.app.network.buildSearchRequest
 import com.arcvgc.app.ui.mapper.BattleCardUiMapper
@@ -38,7 +39,8 @@ interface BattleRepositoryApi {
         timeRangeEnd: Long? = null,
         playerName: String? = null,
         playerId: Int? = null,
-        team2Filters: List<SearchFilterSlot> = emptyList()
+        team2Filters: List<SearchFilterSlot> = emptyList(),
+        winnerFilter: WinnerFilter = WinnerFilter.NONE
     ): MatchesResult
     suspend fun getMatches(
         limit: Int = 10,
@@ -52,6 +54,7 @@ interface BattleRepositoryApi {
     suspend fun getPlayerProfile(id: Int, formatId: Int? = null): PlayerProfile
     suspend fun getPokemonProfile(id: Int, formatId: Int? = null): PokemonProfile
     suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem>
+    suspend fun searchPlayersByName(name: String): List<PlayerListItem>
 }
 
 class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi {
@@ -108,7 +111,8 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
         timeRangeEnd: Long?,
         playerName: String?,
         playerId: Int?,
-        team2Filters: List<SearchFilterSlot>
+        team2Filters: List<SearchFilterSlot>,
+        winnerFilter: WinnerFilter
     ): MatchesResult {
         val request = buildSearchRequest(
             filters = filters,
@@ -123,7 +127,8 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
             timeRangeEnd = timeRangeEnd,
             playerName = playerName,
             playerId = playerId,
-            team2Filters = team2Filters
+            team2Filters = team2Filters,
+            winnerFilter = winnerFilter
         )
         return when (val result = apiService.searchMatches(request)) {
             is NetworkResult.Success -> {
@@ -218,6 +223,13 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
                     }
                 }
             }.awaitAll().filterNotNull()
+        }
+    }
+
+    override suspend fun searchPlayersByName(name: String): List<PlayerListItem> {
+        return when (val result = apiService.getPlayersByName(name)) {
+            is NetworkResult.Success -> result.data
+            is NetworkResult.Error -> emptyList()
         }
     }
 }

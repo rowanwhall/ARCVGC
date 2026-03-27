@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.search
 
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
@@ -390,6 +391,104 @@ class SearchStateReducerTest {
         state = SearchStateReducer.setTeam2Ability(state, 0, ability)
 
         assertEquals(10, state.team2FilterSlots[0].ability?.id)
+    }
+
+    // --- Winner Filter ---
+
+    @Test
+    fun initialState_winnerFilterIsNone() {
+        val state = SearchStateReducer.initialState()
+        assertEquals(WinnerFilter.NONE, state.winnerFilter)
+    }
+
+    @Test
+    fun setWinnerFilter_team1_setsTeam1() {
+        val state = SearchStateReducer.initialState()
+        val result = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM1)
+        assertEquals(WinnerFilter.TEAM1, result.winnerFilter)
+    }
+
+    @Test
+    fun setWinnerFilter_team2_setsTeam2() {
+        val state = SearchStateReducer.initialState()
+        val result = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM2)
+        assertEquals(WinnerFilter.TEAM2, result.winnerFilter)
+    }
+
+    @Test
+    fun setWinnerFilter_sameValueTogglesOff() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM1)
+        state = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM1)
+        assertEquals(WinnerFilter.NONE, state.winnerFilter)
+    }
+
+    @Test
+    fun setWinnerFilter_switchesFromTeam1ToTeam2() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM1)
+        state = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM2)
+        assertEquals(WinnerFilter.TEAM2, state.winnerFilter)
+    }
+
+    @Test
+    fun removePokemon_promotesTeam2_keepsTeam1Winner() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = 1, name = "Bulbasaur"))
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 4, name = "Charmander"))
+        state = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM1)
+
+        state = SearchStateReducer.removePokemon(state, 0)
+
+        assertEquals(WinnerFilter.TEAM1, state.winnerFilter)
+    }
+
+    @Test
+    fun removePokemon_promotesTeam2_clearsTeam2Winner() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = 1, name = "Bulbasaur"))
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 4, name = "Charmander"))
+        state = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM2)
+
+        state = SearchStateReducer.removePokemon(state, 0)
+
+        assertEquals(WinnerFilter.NONE, state.winnerFilter)
+    }
+
+    @Test
+    fun removeTeam2Pokemon_lastPokemon_clearsTeam2Winner() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = 1, name = "Bulbasaur"))
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 4, name = "Charmander"))
+        state = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM2)
+
+        state = SearchStateReducer.removeTeam2Pokemon(state, 0)
+
+        assertEquals(WinnerFilter.NONE, state.winnerFilter)
+    }
+
+    @Test
+    fun removeTeam2Pokemon_lastPokemon_keepsTeam1Winner() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addPokemon(state, testPokemonPicker(id = 1, name = "Bulbasaur"))
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 4, name = "Charmander"))
+        state = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM1)
+
+        state = SearchStateReducer.removeTeam2Pokemon(state, 0)
+
+        assertEquals(WinnerFilter.TEAM1, state.winnerFilter)
+    }
+
+    @Test
+    fun removeTeam2Pokemon_notLast_keepsTeam2Winner() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 1, name = "Bulbasaur"))
+        state = SearchStateReducer.addTeam2Pokemon(state, testPokemonPicker(id = 4, name = "Charmander"))
+        state = SearchStateReducer.setWinnerFilter(state, WinnerFilter.TEAM2)
+
+        state = SearchStateReducer.removeTeam2Pokemon(state, 0)
+
+        assertEquals(WinnerFilter.TEAM2, state.winnerFilter)
     }
 
     // --- Helpers ---

@@ -24,6 +24,7 @@ struct SearchFilterChipsView: View {
                 PokemonFilterChipView(
                     chip: chip,
                     canRemove: searchParams?.canRemovePokemonAt(index: Int32(chip.index)) ?? false,
+                    isWinner: filters.winnerFilter == .team1,
                     onRemove: {
                         if let params = searchParams, let callback = onSearchParamsChanged {
                             callback(params.removePokemonAt(index: Int32(chip.index)))
@@ -43,6 +44,7 @@ struct SearchFilterChipsView: View {
                     PokemonFilterChipView(
                         chip: chip,
                         canRemove: searchParams?.canRemoveTeam2PokemonAt(index: Int32(chip.index)) ?? false,
+                        isWinner: filters.winnerFilter == .team2,
                         onRemove: {
                             if let params = searchParams, let callback = onSearchParamsChanged {
                                 callback(params.removeTeam2PokemonAt(index: Int32(chip.index)))
@@ -158,6 +160,7 @@ struct SearchFilterChipsView: View {
 private struct PokemonFilterChipView: View {
     let chip: SearchFilterChipData
     let canRemove: Bool
+    var isWinner: Bool = false
     let onRemove: () -> Void
 
     var body: some View {
@@ -212,6 +215,12 @@ private struct PokemonFilterChipView: View {
         .frame(height: filterChipHeight)
         .background(Color(.systemGray5))
         .cornerRadius(AppTokens.filterChipCornerRadius)
+        .overlay(
+            isWinner
+                ? RoundedRectangle(cornerRadius: AppTokens.filterChipCornerRadius)
+                    .stroke(Color.accentColor, lineWidth: AppTokens.winnerBorderWidth)
+                : nil
+        )
     }
 }
 

@@ -1,6 +1,7 @@
 package com.arcvgc.app.ui.search
 
 import com.arcvgc.app.domain.model.AppConfig
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
@@ -107,5 +108,9 @@ class SearchLogic(
 
     fun setOrderBy(orderBy: String) {
         _uiState.update { SearchStateReducer.setOrderBy(it, orderBy) }
+    }
+
+    fun setWinnerFilter(filter: WinnerFilter) {
+        _uiState.update { SearchStateReducer.setWinnerFilter(it, filter) }
     }
 }

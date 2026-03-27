@@ -86,6 +86,19 @@ struct SearchView: View {
                     let team2Slots = viewModel.state.team2FilterSlots
 
                     if isTeam2Mode {
+                        // Winner filter buttons (compact: two side-by-side "Winner" buttons)
+                        HStack(spacing: 8) {
+                            WinnerToggleButton(
+                                text: "Winner",
+                                selected: viewModel.state.winnerFilter == .team1,
+                                action: { viewModel.setWinnerFilter(.team1) }
+                            )
+                            WinnerToggleButton(
+                                text: "Winner",
+                                selected: viewModel.state.winnerFilter == .team2,
+                                action: { viewModel.setWinnerFilter(.team2) }
+                            )
+                        }
                         // Two-team mode: side-by-side compact cards
                         let maxRows = max(team1Slots.count, team2Slots.count)
                         ForEach(Array(0..<maxRows), id: \.self) { rowIndex in
@@ -118,6 +131,14 @@ struct SearchView: View {
                             .id("team_row_\(rowIndex)_\(team1Slots.count)_\(team2Slots.count)")
                         }
                     } else {
+                        // Winner filter button (non-compact: "Wins Only", only when pokemon added)
+                        if !team1Slots.isEmpty {
+                            WinnerToggleButton(
+                                text: "Wins Only",
+                                selected: viewModel.state.winnerFilter == .team1,
+                                action: { viewModel.setWinnerFilter(.team1) }
+                            )
+                        }
                         // Single-team mode: full-width cards
                         ForEach(Array(team1Slots.enumerated()), id: \.offset) { index, slot in
                             SearchFilterCard(
@@ -263,7 +284,8 @@ struct SearchView: View {
                             timeRangeStart: viewModel.timeStart.map { KotlinLong(value: Int64($0.timeIntervalSince1970)) },
                             timeRangeEnd: viewModel.timeEnd.map { KotlinLong(value: Int64($0.timeIntervalSince1970)) },
                             playerName: viewModel.state.playerName.isEmpty ? nil : viewModel.state.playerName,
-                            formatName: resolvedFormatName
+                            formatName: resolvedFormatName,
+                            winnerFilter: viewModel.state.winnerFilter
                         )
                     } label: {
                         Text("Search")
@@ -457,6 +479,24 @@ private struct DateOptionButton: View {
             .background(Color(.systemGray5))
             .cornerRadius(AppTokens.searchButtonCornerRadius)
         }
+    }
+}
+
+private struct WinnerToggleButton: View {
+    let text: String
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(text)
+                .font(.system(size: 14))
+                .foregroundColor(selected ? .white : Color(.label))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+        }
+        .background(selected ? Color.accentColor : Color(.systemGray5))
+        .cornerRadius(AppTokens.searchButtonCornerRadius)
     }
 }
 

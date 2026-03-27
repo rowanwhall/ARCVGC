@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.search
 
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
@@ -29,7 +30,13 @@ object SearchStateReducer {
         val newSlots = state.filterSlots.toMutableList().apply { removeAt(index) }
         // If team1 is now empty, promote team2 into team1
         return if (newSlots.isEmpty() && state.team2FilterSlots.isNotEmpty()) {
-            state.copy(filterSlots = state.team2FilterSlots, team2FilterSlots = emptyList())
+            state.copy(
+                filterSlots = state.team2FilterSlots,
+                team2FilterSlots = emptyList(),
+                // Team2 winner doesn't transfer on promotion; team1 winner transfers
+                winnerFilter = if (state.winnerFilter == WinnerFilter.TEAM1) WinnerFilter.TEAM1
+                else WinnerFilter.NONE
+            )
         } else {
             state.copy(filterSlots = newSlots)
         }
@@ -65,8 +72,12 @@ object SearchStateReducer {
     }
 
     fun removeTeam2Pokemon(state: SearchUiState, index: Int): SearchUiState {
+        val newSlots = state.team2FilterSlots.toMutableList().apply { removeAt(index) }
         return state.copy(
-            team2FilterSlots = state.team2FilterSlots.toMutableList().apply { removeAt(index) }
+            team2FilterSlots = newSlots,
+            // Clear team2 winner when team2 becomes empty
+            winnerFilter = if (newSlots.isEmpty() && state.winnerFilter == WinnerFilter.TEAM2)
+                WinnerFilter.NONE else state.winnerFilter
         )
     }
 
@@ -142,5 +153,11 @@ object SearchStateReducer {
 
     fun setOrderBy(state: SearchUiState, orderBy: String): SearchUiState {
         return state.copy(selectedOrderBy = orderBy)
+    }
+
+    fun setWinnerFilter(state: SearchUiState, filter: WinnerFilter): SearchUiState {
+        return state.copy(
+            winnerFilter = if (filter == state.winnerFilter) WinnerFilter.NONE else filter
+        )
     }
 }

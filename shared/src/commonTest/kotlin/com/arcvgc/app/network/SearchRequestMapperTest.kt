@@ -1,8 +1,10 @@
 package com.arcvgc.app.network
 
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.testutil.testSearchFilterSlot
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -228,6 +230,70 @@ class SearchRequestMapperTest {
         assertEquals(1, result.team2?.pokemon?.size)
         assertEquals(150, result.team2?.pokemon?.get(0)?.id)
         assertEquals(10, result.team2?.pokemon?.get(0)?.itemId)
+    }
+
+    @Test
+    fun winnerFilterNone_noIsWinnerOnTeams() {
+        val result = buildSearchRequest(
+            filters = listOf(testSearchFilterSlot(pokemonId = 25)),
+            formatId = 1,
+            orderBy = "time",
+            limit = 50,
+            page = 1,
+            winnerFilter = WinnerFilter.NONE
+        )
+
+        assertNull(result.team1?.isWinner)
+        assertNull(result.team2)
+    }
+
+    @Test
+    fun winnerFilterTeam1_setsIsWinnerOnTeam1() {
+        val result = buildSearchRequest(
+            filters = listOf(testSearchFilterSlot(pokemonId = 25)),
+            formatId = 1,
+            orderBy = "time",
+            limit = 50,
+            page = 1,
+            winnerFilter = WinnerFilter.TEAM1
+        )
+
+        assertEquals(true, result.team1?.isWinner)
+        assertNull(result.team2)
+    }
+
+    @Test
+    fun winnerFilterTeam2_setsIsWinnerOnTeam2() {
+        val team1 = listOf(testSearchFilterSlot(pokemonId = 25))
+        val team2 = listOf(testSearchFilterSlot(pokemonId = 150))
+        val result = buildSearchRequest(
+            filters = team1,
+            formatId = 1,
+            orderBy = "time",
+            limit = 50,
+            page = 1,
+            team2Filters = team2,
+            winnerFilter = WinnerFilter.TEAM2
+        )
+
+        assertNull(result.team1?.isWinner)
+        assertEquals(true, result.team2?.isWinner)
+    }
+
+    @Test
+    fun winnerFilterTeam2_noTeam2Pokemon_createsTeam2WithIsWinner() {
+        val result = buildSearchRequest(
+            filters = listOf(testSearchFilterSlot(pokemonId = 25)),
+            formatId = 1,
+            orderBy = "time",
+            limit = 50,
+            page = 1,
+            winnerFilter = WinnerFilter.TEAM2
+        )
+
+        assertNotNull(result.team2)
+        assertEquals(true, result.team2?.isWinner)
+        assertNull(result.team2?.pokemon)
     }
 
     @Test

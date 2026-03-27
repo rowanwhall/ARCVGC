@@ -1,6 +1,7 @@
 package com.arcvgc.app.network
 
 import com.arcvgc.app.domain.model.SearchFilterSlot
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.network.model.RatingDto
 import com.arcvgc.app.network.model.SearchPokemonDto
 import com.arcvgc.app.network.model.SearchRequestDto
@@ -20,7 +21,8 @@ fun buildSearchRequest(
     timeRangeEnd: Long? = null,
     playerName: String? = null,
     playerId: Int? = null,
-    team2Filters: List<SearchFilterSlot> = emptyList()
+    team2Filters: List<SearchFilterSlot> = emptyList(),
+    winnerFilter: WinnerFilter = WinnerFilter.NONE
 ): SearchRequestDto {
     val ratingDto = if (minimumRating != null || maximumRating != null || unratedOnly) {
         RatingDto(
@@ -36,12 +38,21 @@ fun buildSearchRequest(
 
     val resolvedPlayerName = playerName?.takeIf { it.isNotBlank() }
 
-    val team1Dto = if (filters.isNotEmpty()) {
-        SearchTeamDto(pokemon = filters.map { it.toSearchPokemonDto() })
+    val team1IsWinner = if (winnerFilter == WinnerFilter.TEAM1) true else null
+    val team2IsWinner = if (winnerFilter == WinnerFilter.TEAM2) true else null
+
+    val team1Dto = if (filters.isNotEmpty() || team1IsWinner != null) {
+        SearchTeamDto(
+            pokemon = filters.map { it.toSearchPokemonDto() }.ifEmpty { null },
+            isWinner = team1IsWinner
+        )
     } else null
 
-    val team2Dto = if (team2Filters.isNotEmpty()) {
-        SearchTeamDto(pokemon = team2Filters.map { it.toSearchPokemonDto() })
+    val team2Dto = if (team2Filters.isNotEmpty() || team2IsWinner != null) {
+        SearchTeamDto(
+            pokemon = team2Filters.map { it.toSearchPokemonDto() }.ifEmpty { null },
+            isWinner = team2IsWinner
+        )
     } else null
 
     return SearchRequestDto(

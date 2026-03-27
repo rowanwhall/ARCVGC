@@ -42,7 +42,8 @@ sealed class ContentListMode {
             unratedOnly = params.unratedOnly,
             playerName = params.playerName,
             timeRangeStart = params.timeRangeStart,
-            timeRangeEnd = params.timeRangeEnd
+            timeRangeEnd = params.timeRangeEnd,
+            winnerFilter = params.winnerFilter
         )
         is Pokemon -> ContentListHeaderUiModel.PokemonHero(
             name, imageUrl, listOfNotNull(typeImageUrl1, typeImageUrl2)

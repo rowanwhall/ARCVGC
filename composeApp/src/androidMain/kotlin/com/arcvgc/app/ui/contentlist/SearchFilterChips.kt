@@ -1,6 +1,7 @@
 package com.arcvgc.app.ui.contentlist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -29,9 +30,11 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.tokens.AppTokens.FilterChipCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.FilterChipHeight
+import com.arcvgc.app.ui.tokens.AppTokens.WinnerBorderWidth
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -71,6 +74,7 @@ internal fun SearchFilterChips(
                 onRemove = onSearchParamsChanged?.let { callback ->
                     { callback(searchParams!!.removePokemonAt(chip.index)) }
                 },
+                isWinner = filters.winnerFilter == WinnerFilter.TEAM1,
                 context = context
             )
         }
@@ -93,6 +97,7 @@ internal fun SearchFilterChips(
                     onRemove = onSearchParamsChanged?.let { callback ->
                         { callback(searchParams!!.removeTeam2PokemonAt(chip.index)) }
                     },
+                    isWinner = filters.winnerFilter == WinnerFilter.TEAM2,
                     context = context
                 )
             }
@@ -228,18 +233,24 @@ private fun PokemonFilterChip(
     chip: com.arcvgc.app.ui.model.PokemonChip,
     canRemove: Boolean,
     onRemove: (() -> Unit)?,
+    isWinner: Boolean = false,
     context: coil3.PlatformContext
 ) {
     val label = buildString {
         append(chip.name)
         chip.abilityName?.let { append(" - $it") }
     }
+    val shape = RoundedCornerShape(FilterChipCornerRadius)
     Row(
         modifier = Modifier
             .height(FilterChipHeight)
             .background(
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(FilterChipCornerRadius)
+                shape = shape
+            )
+            .then(
+                if (isWinner) Modifier.border(WinnerBorderWidth, MaterialTheme.colorScheme.primary, shape)
+                else Modifier
             )
             .padding(start = 4.dp, end = if (canRemove) 0.dp else 4.dp),
         verticalAlignment = Alignment.CenterVertically,

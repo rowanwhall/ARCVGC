@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
 import com.arcvgc.app.ui.LocalWindowSizeClass
@@ -151,6 +152,26 @@ fun SearchPage(
         }
 
         if (uiState.hasTeam2) {
+            // Winner filter buttons (compact: two side-by-side "Winner" buttons)
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    WinnerToggleButton(
+                        text = "Winner",
+                        selected = uiState.winnerFilter == WinnerFilter.TEAM1,
+                        onClick = { viewModel.setWinnerFilter(WinnerFilter.TEAM1) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    WinnerToggleButton(
+                        text = "Winner",
+                        selected = uiState.winnerFilter == WinnerFilter.TEAM2,
+                        onClick = { viewModel.setWinnerFilter(WinnerFilter.TEAM2) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
             val maxRows = maxOf(uiState.filterSlots.size, uiState.team2FilterSlots.size)
             items(maxRows, key = { "team_row_$it" }) { rowIndex ->
                 Row(
@@ -211,6 +232,16 @@ fun SearchPage(
                 }
             }
         } else {
+            // Winner filter button (non-compact: "Wins Only", only when pokemon added)
+            if (uiState.filterSlots.isNotEmpty()) {
+                item {
+                    WinnerToggleButton(
+                        text = "Wins Only",
+                        selected = uiState.winnerFilter == WinnerFilter.TEAM1,
+                        onClick = { viewModel.setWinnerFilter(WinnerFilter.TEAM1) }
+                    )
+                }
+            }
             itemsIndexed(
                 items = uiState.filterSlots,
                 key = { index, slot -> "${slot.pokemonId}_$index" }
@@ -394,7 +425,8 @@ fun SearchPage(
                             timeRangeStart = uiState.timeRangeStart,
                             timeRangeEnd = uiState.timeRangeEnd,
                             playerName = uiState.playerName.ifBlank { null },
-                            formatName = resolvedFormatName
+                            formatName = resolvedFormatName,
+                            winnerFilter = uiState.winnerFilter
                         )
                     )
                 },
@@ -640,6 +672,34 @@ private fun SearchOptionButton(
             text = text,
             color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = SecondaryIconAlpha),
+            fontSize = 14.sp
+        )
+    }
+}
+
+@Composable
+private fun WinnerToggleButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val bgColor = if (selected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.surfaceVariant
+    val textColor = if (selected) MaterialTheme.colorScheme.onPrimary
+        else MaterialTheme.colorScheme.onSurfaceVariant
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(SearchButtonCornerRadius))
+            .background(bgColor)
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = textColor,
             fontSize = 14.sp
         )
     }

@@ -9,6 +9,7 @@ import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.SearchFilterSlot
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.BattleCardUiModel
 
 class FakeBattleRepository : BattleRepositoryApi {
@@ -71,7 +72,8 @@ class FakeBattleRepository : BattleRepositoryApi {
         timeRangeEnd: Long?,
         playerName: String?,
         playerId: Int?,
-        team2Filters: List<SearchFilterSlot>
+        team2Filters: List<SearchFilterSlot>,
+        winnerFilter: WinnerFilter
     ): MatchesResult {
         searchMatchesCalls.add(SearchMatchesCall(filters, formatId, orderBy, page, playerName, team2Filters))
         if (searchMatchesDelayMs > 0) delay(searchMatchesDelayMs)
@@ -101,6 +103,11 @@ class FakeBattleRepository : BattleRepositoryApi {
     }
 
     override suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem> {
+        playersByNamesError?.let { throw it }
+        return playersByNamesResult
+    }
+
+    override suspend fun searchPlayersByName(name: String): List<PlayerListItem> {
         playersByNamesError?.let { throw it }
         return playersByNamesResult
     }

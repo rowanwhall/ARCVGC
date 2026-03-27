@@ -53,6 +53,7 @@ struct SearchFiltersData {
     let playerName: String?
     let timeRangeStart: Int64?
     let timeRangeEnd: Int64?
+    let winnerFilter: WinnerFilter
 }
 
 enum ContentListHeader {
@@ -109,7 +110,8 @@ enum ContentListHeader {
                 unratedOnly: params.unratedOnly,
                 playerName: params.playerName,
                 timeRangeStart: params.timeRangeStart?.int64Value,
-                timeRangeEnd: params.timeRangeEnd?.int64Value
+                timeRangeEnd: params.timeRangeEnd?.int64Value,
+                winnerFilter: params.winnerFilter
             ))
         }
     }

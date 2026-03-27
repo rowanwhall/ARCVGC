@@ -109,4 +109,8 @@ final class SearchViewModel: ObservableObject {
     func setOrderBy(_ orderBy: String) {
         logic.setOrderBy(orderBy: orderBy)
     }
+
+    func setWinnerFilter(_ filter: WinnerFilter) {
+        logic.setWinnerFilter(filter: filter)
+    }
 }

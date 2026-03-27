@@ -474,11 +474,12 @@ class ContentListLogic(
                     timeRangeStart = m.params.timeRangeStart,
                     timeRangeEnd = m.params.timeRangeEnd,
                     playerName = m.params.playerName,
-                    team2Filters = m.params.team2Filters
+                    team2Filters = m.params.team2Filters,
+                    winnerFilter = m.params.winnerFilter
                 )
             }
             val playerDeferred = m.params.playerName?.let { name ->
-                if (page == 1) async { runCatching { repository.getPlayersByNames(listOf(name)) } }
+                if (page == 1) async { runCatching { repository.searchPlayersByName(name) } }
                 else null
             }
 
@@ -489,8 +490,8 @@ class ContentListLogic(
                 val pinnedPokemon = ContentListItemMapper.fromPokemonCatalog(
                     allFilterIds, pokemonCatalogItems
                 )
-                val pinnedPlayer = playerDeferred?.await()?.getOrNull()?.firstOrNull()?.let {
-                    listOf(ContentListItem.Player(id = it.id, name = it.name))
+                val pinnedPlayer = playerDeferred?.await()?.getOrNull()?.map {
+                    ContentListItem.Player(id = it.id, name = it.name)
                 } ?: emptyList()
                 val sections = buildList {
                     if (pinnedPokemon.isNotEmpty()) add(ContentListItem.Section("Pokémon", pinnedPokemon))

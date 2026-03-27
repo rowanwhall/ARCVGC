@@ -1,5 +1,7 @@
 package com.arcvgc.app.ui.model
 
+import com.arcvgc.app.domain.model.WinnerFilter
+
 sealed class ContentListHeaderUiModel {
     data object None : ContentListHeaderUiModel()
     data object HomeHero : ContentListHeaderUiModel()
@@ -16,7 +18,8 @@ sealed class ContentListHeaderUiModel {
         val unratedOnly: Boolean,
         val playerName: String?,
         val timeRangeStart: Long?,
-        val timeRangeEnd: Long?
+        val timeRangeEnd: Long?,
+        val winnerFilter: WinnerFilter = WinnerFilter.NONE
     ) : ContentListHeaderUiModel()
 }
 

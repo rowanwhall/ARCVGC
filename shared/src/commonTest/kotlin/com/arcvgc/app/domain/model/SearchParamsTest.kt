@@ -186,4 +186,61 @@ class SearchParamsTest {
         val result = params.removeTeam2PokemonAt(0)
         assertEquals(listOf(filter2), result.team2Filters)
     }
+
+    // --- Winner Filter ---
+
+    @Test
+    fun removePokemonAt_promotesTeam2_clearsTeam2Winner() {
+        val params = baseParams(
+            filters = listOf(testSearchFilterSlot(pokemonId = 1)),
+            team2Filters = listOf(testSearchFilterSlot(pokemonId = 2))
+        ).copy(winnerFilter = WinnerFilter.TEAM2)
+
+        val result = params.removePokemonAt(0)
+        assertEquals(WinnerFilter.NONE, result.winnerFilter)
+    }
+
+    @Test
+    fun removePokemonAt_promotesTeam2_keepsTeam1Winner() {
+        val params = baseParams(
+            filters = listOf(testSearchFilterSlot(pokemonId = 1)),
+            team2Filters = listOf(testSearchFilterSlot(pokemonId = 2))
+        ).copy(winnerFilter = WinnerFilter.TEAM1)
+
+        val result = params.removePokemonAt(0)
+        assertEquals(WinnerFilter.TEAM1, result.winnerFilter)
+    }
+
+    @Test
+    fun removeTeam2PokemonAt_lastPokemon_clearsTeam2Winner() {
+        val params = baseParams(
+            filters = listOf(testSearchFilterSlot(pokemonId = 1)),
+            team2Filters = listOf(testSearchFilterSlot(pokemonId = 2))
+        ).copy(winnerFilter = WinnerFilter.TEAM2)
+
+        val result = params.removeTeam2PokemonAt(0)
+        assertEquals(WinnerFilter.NONE, result.winnerFilter)
+    }
+
+    @Test
+    fun removeTeam2PokemonAt_lastPokemon_keepsTeam1Winner() {
+        val params = baseParams(
+            filters = listOf(testSearchFilterSlot(pokemonId = 1)),
+            team2Filters = listOf(testSearchFilterSlot(pokemonId = 2))
+        ).copy(winnerFilter = WinnerFilter.TEAM1)
+
+        val result = params.removeTeam2PokemonAt(0)
+        assertEquals(WinnerFilter.TEAM1, result.winnerFilter)
+    }
+
+    @Test
+    fun removeTeam2PokemonAt_notLast_keepsTeam2Winner() {
+        val params = baseParams(
+            filters = listOf(testSearchFilterSlot(pokemonId = 1)),
+            team2Filters = listOf(testSearchFilterSlot(pokemonId = 2), testSearchFilterSlot(pokemonId = 3))
+        ).copy(winnerFilter = WinnerFilter.TEAM2)
+
+        val result = params.removeTeam2PokemonAt(0)
+        assertEquals(WinnerFilter.TEAM2, result.winnerFilter)
+    }
 }
