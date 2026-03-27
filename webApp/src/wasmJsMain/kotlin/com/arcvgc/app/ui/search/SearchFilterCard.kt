@@ -42,6 +42,8 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.arcvgc.app.domain.model.SearchFilterRestrictions
+import com.arcvgc.app.ui.LocalWindowSizeClass
+import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.components.AutoSizeText
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.model.SearchFilterSlotUiModel
@@ -68,13 +70,14 @@ fun SearchFilterCard(
         ),
         border = CardDefaults.outlinedCardBorder()
     ) {
+        val isCompactMobile = compact && LocalWindowSizeClass.current == WindowSizeClass.Compact
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(if (compact) 8.dp else 12.dp),
+                .padding(if (isCompactMobile) 8.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (compact) {
+            if (isCompactMobile) {
                 CompactFilterContent(slot, context)
                 Spacer(modifier = Modifier.weight(1f))
                 CompactFilterMenu(slot, onItemClick, onTeraClick)
