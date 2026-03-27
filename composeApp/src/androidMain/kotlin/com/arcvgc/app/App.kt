@@ -415,7 +415,8 @@ fun App(deepLink: DeepLink? = null) {
                 lastDeepLinkReplayUrl?.let { url ->
                     ReplayOverlay(
                         replayUrl = url,
-                        onDismiss = { deepLinkReplayUrl = null }
+                        onDismiss = { deepLinkReplayUrl = null },
+                        statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                     )
                 }
             }

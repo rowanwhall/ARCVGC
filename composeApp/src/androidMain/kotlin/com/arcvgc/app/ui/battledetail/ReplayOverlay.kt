@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,7 +40,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 fun ReplayOverlay(
     replayUrl: String,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    statusBarPadding: Dp = 0.dp
 ) {
     BackHandler { onDismiss() }
 
@@ -47,6 +51,7 @@ fun ReplayOverlay(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
+            .padding(top = statusBarPadding)
     ) {
         TopAppBar(
             title = { Text("Replay") },

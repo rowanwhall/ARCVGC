@@ -72,9 +72,16 @@ Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` an
 - **Format threading**: When navigating to a Pokemon from battle detail, the battle's `formatId` is injected at the boundary (Android: inline in `ContentListPage`, iOS: `BattleDetailPage`, Web: `BattleDetailPanel`) by wrapping the `onPokemonClick` callback to append the format. The Pokemon content list then defaults to that format, with a format dropdown allowing the user to switch.
 
 ## Replay overlay
-- **Android**: Full-screen `Dialog` (`ReplayOverlay.kt`) with a `TopAppBar` (close X button) + WebView. Triggered by `replayUrl` state in `ContentListPage`.
+- **Android**: Full-screen `ReplayOverlay.kt` with a `TopAppBar` (close X button) + WebView. Triggered by `replayUrl` state in `ContentListPage` and `deepLinkReplayUrl` in `App.kt`.
 - **iOS**: `.fullScreenCover` presenting `ReplayOverlay.swift` with a `NavigationStack` + close X button + `WebView` (UIViewRepresentable). Triggered by `replayUrl` state in `ContentListView`.
 - **Web**: "View Replay" button opens the replay URL in a new browser tab via `window.open(url, "_blank")`.
+
+### Android status bar insets (`consumeTopInsets`)
+Android full-screen overlays that render outside the `Scaffold` (search results, deep link overlays) must handle status bar insets manually via `consumeTopInsets = true` on `ContentListPage`. This computes `statusBarHeight` from `WindowInsets.statusBars` and passes it down as a `statusBarPadding: Dp` parameter to child composables (`GradientToolbarScaffold`, `GradientToolbar`, `ReplayOverlay`). Pages inside the `Scaffold` (Home, Favorites) use `consumeTopInsets = false` because the `Scaffold` provides `innerPadding` which already includes status bar insets.
+
+Any new full-screen overlay composable rendered inside `ContentListPage` must accept and apply `statusBarHeight` to avoid the toolbar rendering under the status bar.
+
+**TODO**: Replace the manual `consumeTopInsets` / `statusBarPadding` plumbing with proper Compose `WindowInsets` consumption. The `Scaffold` should consume top insets so that child composables see `WindowInsets(0)` automatically, eliminating the need to thread `statusBarPadding` through every layer.
 
 ## Replay buttons and set matches
 - The battle detail page always shows "Game N" buttons (even for single-game matches). The current game uses a filled `Button`; other games in a set use `OutlinedButton`.

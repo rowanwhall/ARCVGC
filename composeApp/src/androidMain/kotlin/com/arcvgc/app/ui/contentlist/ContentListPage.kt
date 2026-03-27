@@ -335,7 +335,8 @@ fun ContentListPage(
             lastReplayUrl?.let { url ->
                 ReplayOverlay(
                     replayUrl = url,
-                    onDismiss = { replayUrl = null }
+                    onDismiss = { replayUrl = null },
+                    statusBarPadding = statusBarHeight
                 )
             }
         }
