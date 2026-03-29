@@ -20,7 +20,7 @@ struct FormatPickerSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 if isLoading {
-                    ProgressView()
+                    LoadingIndicator()
                         .padding(.vertical, 24)
                 } else if let error = error {
                     Text(error)

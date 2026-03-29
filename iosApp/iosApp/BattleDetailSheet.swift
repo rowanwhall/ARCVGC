@@ -34,7 +34,7 @@ struct BattleDetailPage: View {
     var body: some View {
         Group {
             if viewModel.state.isLoading || (viewModel.state.battleDetail == nil && viewModel.state.error == nil) {
-                ProgressView()
+                LoadingIndicator()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if viewModel.state.error != nil {
                 ErrorView {

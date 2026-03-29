@@ -8,7 +8,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.GradientToolbarScaffold
 import com.arcvgc.app.ui.rememberViewModel
 
@@ -90,7 +90,7 @@ fun BattleDetailPanel(
                     modifier = Modifier.fillMaxSize().padding(top = topPadding),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             }
 

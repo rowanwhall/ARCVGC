@@ -67,6 +67,7 @@ import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.components.EmptyView
 import com.arcvgc.app.ui.components.ErrorView
+import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
 import com.arcvgc.app.ui.components.TypeIconRow
@@ -739,7 +740,7 @@ private fun ContentListContent(
                             .fillParentMaxHeight(0.5f),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        LoadingIndicator()
                     }
                 }
             }

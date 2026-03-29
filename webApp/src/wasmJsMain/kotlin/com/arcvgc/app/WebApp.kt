@@ -61,6 +61,7 @@ import coil3.memory.MemoryCache
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import com.arcvgc.app.data.SettingsRepository as SharedSettingsRepository
+import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.BattleOverlayRequest
@@ -90,7 +91,6 @@ import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.DarkModeOption
 import com.arcvgc.app.ui.search.SearchPage
 import com.arcvgc.app.ui.settings.SettingsPage
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
 
 private val RedColorScheme = lightColorScheme(
@@ -470,7 +470,7 @@ fun WebApp() {
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        LoadingIndicator()
                     }
                 } else {
                     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {

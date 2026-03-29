@@ -214,7 +214,7 @@ struct ContentListView: View {
 
                     let hasContent = (viewModel.state.items as! [ContentListItem]).contains { $0.isContentItem }
                     if viewModel.state.isLoading {
-                        ProgressView()
+                        LoadingIndicator()
                             .frame(maxWidth: .infinity)
                             .frame(height: geometry.size.height * 0.6)
                     } else if viewModel.state.error != nil, !hasContent {

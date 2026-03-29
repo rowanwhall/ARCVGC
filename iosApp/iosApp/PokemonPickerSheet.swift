@@ -22,7 +22,7 @@ struct PokemonPickerSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 if isLoading {
-                    ProgressView()
+                    LoadingIndicator()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let error = error {
                     Text(error)
