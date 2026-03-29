@@ -56,12 +56,12 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 This is a key behavioral detail: several modes compose a richer page 1 with sections, while pages 2+ append bare battle items.
 
 ### Home mode
-- **Page 1**: Up to 3 items — format detail + battles fetched in parallel via `getFormatDetail(formatId, topPokemonCount=6)` + `searchMatches(...)`. Format detail errors are silently swallowed; page still shows battles.
+- **Page 1**: Up to 3 items — format detail + battles fetched in parallel via `getFormatDetail(formatId, topPokemonCount=6)` + `getBestPreviousDay(formatId)` (server-cached endpoint, returns flat list without pagination). Format detail errors are silently swallowed; page still shows battles. Pagination (`hasNext`) is inferred from result size (>= 10 implies more pages). `currentPage` is set to `battlesCount / 10` so that page 2+ pagination aligns with `searchMatches`'s default limit of 10 (e.g., 50 battles → `currentPage=5`, next page requests page 6). Deduplication in `paginate()` handles any overlap when the count is not evenly divisible.
   1. `FormatSelector` — format dropdown (same as Pokemon/Player modes), fed from app config default format
   2. `Section("Top Pokémon", [PokemonGrid([...])])` — 3-column grid of top usage Pokemon with usage %. Has `SectionAction.SeeMore` trailing action (renders "See More" + chevron button in section header). Only shown if format detail succeeds and has Pokemon.
   3. `Section("Today's Top Battles", [...])` — battle results sorted by rating from last 24 hours. No sort toggle.
   Both sections are omitted if their data is empty. If both API calls fail, the error state shows. If one fails, that section is omitted.
-- **Pages 2+**: bare `Battle` items
+- **Pages 2+**: bare `Battle` items via `searchMatches` (last 24h, rating sort, limit=10)
 - **Format change**: reloads all sections (`loadingSections = {"format_selector", "Top Pokémon", "Today's Top Battles"}`)
 
 ### Favorites mode
@@ -237,7 +237,7 @@ data class ContentListUiState(
 Home mode waits for app config before loading (needs default format ID):
 1. If config already available, syncs `_selectedFormatId` and loads immediately
 2. Otherwise, shows loading state and waits for `appConfigRepository.config` to emit non-null, then syncs format ID
-3. Fetches format detail (top 6 Pokemon) and battles (last 24h, sorted by rating) in parallel using the selected format
+3. Fetches format detail (top 6 Pokemon) and battles (via `getBestPreviousDay` cached endpoint) in parallel using the selected format. Page 2+ uses `searchMatches` with last-24h time range and rating sort.
 4. Format selector allows changing the format, which reloads both sections
 
 ## Key File Locations

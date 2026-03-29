@@ -14,6 +14,9 @@ import com.arcvgc.app.ui.model.BattleCardUiModel
 
 class FakeBattleRepository : BattleRepositoryApi {
 
+    var bestPreviousDayResult: List<BattleCardUiModel> = emptyList()
+    var bestPreviousDayError: Exception? = null
+
     var searchMatchesResult: MatchesResult = MatchesResult(
         battles = emptyList(),
         pagination = Pagination(page = 1, itemsPerPage = 10, hasNext = false)
@@ -48,6 +51,11 @@ class FakeBattleRepository : BattleRepositoryApi {
         val playerName: String?,
         val team2Filters: List<SearchFilterSlot>
     )
+
+    override suspend fun getBestPreviousDay(formatId: Int): List<BattleCardUiModel> {
+        bestPreviousDayError?.let { throw it }
+        return bestPreviousDayResult
+    }
 
     override suspend fun getMatches(
         limit: Int,

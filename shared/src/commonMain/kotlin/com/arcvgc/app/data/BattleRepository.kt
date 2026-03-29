@@ -42,6 +42,7 @@ interface BattleRepositoryApi {
         team2Filters: List<SearchFilterSlot> = emptyList(),
         winnerFilter: WinnerFilter = WinnerFilter.NONE
     ): MatchesResult
+    suspend fun getBestPreviousDay(formatId: Int): List<BattleCardUiModel>
     suspend fun getMatches(
         limit: Int = 10,
         page: Int = 1,
@@ -58,6 +59,17 @@ interface BattleRepositoryApi {
 }
 
 class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi {
+
+    override suspend fun getBestPreviousDay(formatId: Int): List<BattleCardUiModel> {
+        return when (val result = apiService.getBestPreviousDay(formatId)) {
+            is NetworkResult.Success -> BattleCardUiMapper.mapList(result.data)
+            is NetworkResult.Error -> {
+                val error = Exception(result.message)
+                captureException(error)
+                throw error
+            }
+        }
+    }
 
     override suspend fun getMatches(
         limit: Int,

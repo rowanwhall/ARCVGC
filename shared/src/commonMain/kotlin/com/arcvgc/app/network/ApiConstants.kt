@@ -15,6 +15,7 @@ object ApiConstants {
     const val CONFIG_ENDPOINT = "/api/v1/config/"
     const val ABILITIES_ENDPOINT = "/api/v1/abilities/"
     const val SETS_ENDPOINT = "/api/v1/sets/"
+    const val BEST_PREVIOUS_DAY_ENDPOINT = "/api/v1/matches/best_previous_day"
 }
 
 expect fun getPlatformBaseUrl(): String

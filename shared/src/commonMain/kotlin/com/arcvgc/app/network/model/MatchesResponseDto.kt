@@ -11,6 +11,12 @@ data class MatchesResponseDto(
 )
 
 @Serializable
+data class BestMatchesResponseDto(
+    val success: Boolean,
+    val data: List<MatchPreviewDto>
+)
+
+@Serializable
 data class PaginationDto(
     val page: Int,
     @SerialName("items_per_page") val itemsPerPage: Int,

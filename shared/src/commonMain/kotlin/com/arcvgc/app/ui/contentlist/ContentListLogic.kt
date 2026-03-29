@@ -372,20 +372,10 @@ class ContentListLogic(
     private suspend fun fetchContent(page: Int = 1): Pair<List<ContentListItem>, Pagination> = when (val m = mode) {
         is ContentListMode.Home -> if (page == 1) coroutineScope {
             val formatId = _selectedFormatId.value
-            val nowSeconds = currentTimeMillis() / 1000
 
             val formatDeferred = async { runCatching { repository.getFormatDetail(formatId, topPokemonCount = 6) } }
             val battlesDeferred = async {
-                runCatching {
-                    repository.searchMatches(
-                        filters = emptyList(),
-                        formatId = formatId,
-                        orderBy = "rating",
-                        page = page,
-                        timeRangeStart = nowSeconds - 86400,
-                        timeRangeEnd = nowSeconds
-                    )
-                }
+                runCatching { repository.getBestPreviousDay(formatId) }
             }
 
             val formatResult = formatDeferred.await()
@@ -396,8 +386,8 @@ class ContentListLogic(
             }
 
             val formatDetail = formatResult.getOrNull()
-            val battlesData = battlesResult.getOrNull()
-            val battleItems = battlesData?.let { ContentListItemMapper.fromBattles(it.battles) }.orEmpty()
+            val battles = battlesResult.getOrNull().orEmpty()
+            val battleItems = ContentListItemMapper.fromBattles(battles)
 
             val sections = buildList {
                 add(ContentListItem.FormatSelector)
@@ -418,7 +408,14 @@ class ContentListLogic(
                     add(ContentListItem.Section("Today's Top Battles", battleItems))
                 }
             }
-            sections to (battlesData?.pagination ?: Pagination(1, 0, false))
+            // best_previous_day returns N items without pagination metadata.
+            // Page 2+ uses searchMatches with limit=pageSize. We set currentPage
+            // to N/pageSize so that paginate() requests page (N/pageSize + 1),
+            // skipping past the items already returned. Deduplication in paginate()
+            // handles any overlap when N is not evenly divisible by pageSize.
+            val pageSize = 10
+            val hasNext = battles.size >= pageSize
+            sections to Pagination(battles.size / pageSize, battles.size, hasNext)
         } else {
             val nowSeconds = currentTimeMillis() / 1000
             val result = repository.searchMatches(

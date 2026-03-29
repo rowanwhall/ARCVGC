@@ -118,10 +118,7 @@ class ContentListLogicTest {
 
     @Test
     fun homeMode_loadsAfterConfigAvailable() {
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, false)
-        )
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
         fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
@@ -547,10 +544,7 @@ class ContentListLogicTest {
 
     @Test
     fun loadContent_setsLoadingThenSuccess() {
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, false)
-        )
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
         fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
@@ -567,7 +561,7 @@ class ContentListLogicTest {
 
     @Test
     fun loadContent_setsErrorOnFailure() {
-        fakeRepo.searchMatchesError = Exception("Network error")
+        fakeRepo.bestPreviousDayError = Exception("Network error")
         fakeRepo.formatDetailError = Exception("Network error")
 
         val logic = createLogic(ContentListMode.Home)
@@ -605,10 +599,8 @@ class ContentListLogicTest {
 
     @Test
     fun paginate_appendsItems() {
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, true)
-        )
+        // 10+ battles so hasNext is inferred as true
+        fakeRepo.bestPreviousDayResult = (1..10).map { testBattle.copy(id = it) }
         fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
@@ -619,8 +611,8 @@ class ContentListLogicTest {
         assertEquals(1, logic.uiState.value.currentPage)
         val page1ItemCount = logic.uiState.value.items.size
 
-        // Set up page 2 response with a different battle
-        val battle2 = testBattle.copy(id = 2)
+        // Set up page 2 response with a different battle (id outside page 1 range)
+        val battle2 = testBattle.copy(id = 99)
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(battle2),
             pagination = Pagination(2, 10, false)
@@ -638,12 +630,39 @@ class ContentListLogicTest {
     }
 
     @Test
+    fun homeMode_paginate_callsSearchMatchesWithCorrectPage() {
+        // best_previous_day returns 50 items. Page 2+ should call searchMatches
+        // starting at page 6 (50/10 + 1) to skip past items already shown.
+        fakeRepo.bestPreviousDayResult = (1..50).map { testBattle.copy(id = it) }
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        assertTrue(logic.uiState.value.canPaginate)
+        assertEquals(5, logic.uiState.value.currentPage) // 50 / 10
+
+        fakeRepo.searchMatchesCalls.clear()
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle.copy(id = 99)),
+            pagination = Pagination(6, 10, false)
+        )
+
+        logic.paginate()
+        testScope.advanceUntilIdle()
+
+        assertEquals(1, fakeRepo.searchMatchesCalls.size)
+        val call = fakeRepo.searchMatchesCalls.first()
+        assertEquals(6, call.page)
+        assertEquals("rating", call.orderBy)
+        assertEquals(6, logic.uiState.value.currentPage)
+    }
+
+    @Test
     fun paginate_deduplicatesBattlesInSectionChildren() {
         // Page 1: battle inside a Section (e.g., Home "Today's Top Battles")
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, true)
-        )
+        fakeRepo.bestPreviousDayResult = (1..10).map { testBattle.copy(id = it) }
         fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
@@ -668,24 +687,16 @@ class ContentListLogicTest {
 
     @Test
     fun paginate_refusesWhenAlreadyPaginating() {
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, true)
-        )
+        fakeRepo.bestPreviousDayResult = (1..10).map { testBattle.copy(id = it) }
         fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
         logic.initialize()
         testScope.advanceUntilIdle()
 
-        // Manually set isPaginating (simulating in-flight pagination)
-        // We test the guard by calling paginate when canPaginate=false
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = emptyList(),
-            pagination = Pagination(1, 10, false)
-        )
+        // Reload with empty results to set canPaginate=false
+        fakeRepo.bestPreviousDayResult = emptyList()
 
-        // Call loadContent to set canPaginate=false
         logic.loadContent()
         testScope.advanceUntilIdle()
 
@@ -829,10 +840,7 @@ class ContentListLogicTest {
 
     @Test
     fun homeMode_page1_topPokemonSectionHasSeeMoreAction() {
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, false)
-        )
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
         fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
@@ -847,10 +855,7 @@ class ContentListLogicTest {
 
     @Test
     fun homeMode_page1_topPokemonUsagePercent() {
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, false)
-        )
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
         fakeRepo.formatDetailResult = testFormatDetail(teamCount = 1000, pokemonCount = 500)
 
         val logic = createLogic(ContentListMode.Home)
@@ -866,10 +871,7 @@ class ContentListLogicTest {
 
     @Test
     fun homeMode_formatDetailFails_omitsTopPokemonSection() {
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, false)
-        )
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
         fakeRepo.formatDetailError = Exception("Format error")
 
         val logic = createLogic(ContentListMode.Home)
@@ -887,7 +889,7 @@ class ContentListLogicTest {
 
     @Test
     fun homeMode_battlesFails_omitsTopBattlesSection() {
-        fakeRepo.searchMatchesError = Exception("Battles error")
+        fakeRepo.bestPreviousDayError = Exception("Battles error")
         fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
@@ -905,7 +907,7 @@ class ContentListLogicTest {
 
     @Test
     fun homeMode_bothFail_showsError() {
-        fakeRepo.searchMatchesError = Exception("Both failed")
+        fakeRepo.bestPreviousDayError = Exception("Both failed")
         fakeRepo.formatDetailError = Exception("Both failed")
 
         val logic = createLogic(ContentListMode.Home)
@@ -919,33 +921,26 @@ class ContentListLogicTest {
 
     @Test
     fun homeMode_selectFormat_reloadsWithCorrectSections() {
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, false)
-        )
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
         fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)
         logic.initialize()
         testScope.advanceUntilIdle()
 
-        fakeRepo.searchMatchesCalls.clear()
-
         logic.selectFormat(42)
         testScope.advanceUntilIdle()
 
         assertEquals(42, logic.selectedFormatId.value)
-        assertTrue(fakeRepo.searchMatchesCalls.isNotEmpty())
-        assertEquals(42, fakeRepo.searchMatchesCalls.last().formatId)
+        // Home page 1 uses getBestPreviousDay, not searchMatches
         assertTrue(logic.uiState.value.loadingSections.isEmpty())
+        // Verify content reloaded (still has sections)
+        assertTrue(logic.uiState.value.items.isNotEmpty())
     }
 
     @Test
     fun homeMode_todaysTopBattles_hasNoSortToggle() {
-        fakeRepo.searchMatchesResult = MatchesResult(
-            battles = listOf(testBattle),
-            pagination = Pagination(1, 10, false)
-        )
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
         fakeRepo.formatDetailResult = testFormatDetail()
 
         val logic = createLogic(ContentListMode.Home)

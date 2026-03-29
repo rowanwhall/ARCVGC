@@ -24,6 +24,7 @@ import com.arcvgc.app.network.model.FormatDetailResponseDto
 import com.arcvgc.app.network.model.FormatListResponseDto
 import com.arcvgc.app.network.model.ItemListResponseDto
 import com.arcvgc.app.network.model.MatchDetailResponseDto
+import com.arcvgc.app.network.model.BestMatchesResponseDto
 import com.arcvgc.app.network.model.MatchesResponseDto
 import com.arcvgc.app.network.model.PlayerListResponseDto
 import com.arcvgc.app.network.model.PlayerProfileResponseDto
@@ -249,6 +250,25 @@ class ApiService {
                 NetworkResult.Success(
                     response.data.toDomain() to response.pagination.toDomain()
                 )
+            } else {
+                NetworkResult.Error("API returned success=false")
+            }
+        } catch (e: Exception) {
+            captureException(e)
+            NetworkResult.Error(e.message ?: "Unknown error", e)
+        }
+    }
+
+    suspend fun getBestPreviousDay(formatId: Int): NetworkResult<List<MatchPreview>> {
+        return try {
+            val response: BestMatchesResponseDto = client
+                .get("${ApiConstants.BASE_URL}${ApiConstants.BEST_PREVIOUS_DAY_ENDPOINT}") {
+                    parameter("format_id", formatId)
+                }
+                .body()
+
+            if (response.success) {
+                NetworkResult.Success(response.data.toDomain())
             } else {
                 NetworkResult.Error("API returned success=false")
             }
