@@ -97,6 +97,6 @@ fun MatchDetailDto.toDomain(): MatchDetail {
         players = players.map { it.toDomain() },
         setId = setId,
         positionInSet = positionInSet,
-        setMatches = setMatches?.map { it.toDomain() }.orEmpty()
+        setMatches = if (setId != null) setMatches?.map { it.toDomain() }.orEmpty() else emptyList()
     )
 }

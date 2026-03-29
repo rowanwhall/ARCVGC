@@ -387,6 +387,40 @@ class MatchDetailMapperTest {
         assertEquals(0, result.setMatches.size)
     }
 
+    @Test
+    fun matchDetailDto_withNullSetId_ignoresSetMatches() {
+        val pokemon = PokemonDetailDto(
+            id = 25, name = "Pikachu", pokedexNumber = 25, tier = "OU",
+            ability = AbilityDto(id = 1, name = "Static"),
+            item = null, moves = emptyList(), types = emptyList(),
+            baseSpecies = null, teraType = null, imageUrl = null
+        )
+        val player = PlayerDetailDto(id = 1, name = "Ash", winner = true, team = listOf(pokemon))
+        val format = FormatDto(id = 1, name = "gen9vgc2026regibo3", formattedName = null)
+
+        val dto = MatchDetailDto(
+            id = 100,
+            showdownId = "gen9vgc2026regibo3-12345",
+            uploadTime = "2024-01-15T10:30:00Z",
+            rating = null,
+            private = false,
+            format = format,
+            players = listOf(player),
+            setId = null,
+            positionInSet = 1,
+            setMatches = listOf(
+                SetMatchDto(id = 99, showdownId = "gen9vgc2026regibo3-111", positionInSet = 1),
+                SetMatchDto(id = 100, showdownId = "gen9vgc2026regibo3-222", positionInSet = 1),
+                SetMatchDto(id = 101, showdownId = "gen9vgc2026regibo3-333", positionInSet = 2)
+            )
+        )
+
+        val result = dto.toDomain()
+
+        assertNull(result.setId)
+        assertEquals(0, result.setMatches.size)
+    }
+
     // endregion
 
     // region SetMatchDto.toDomain()
