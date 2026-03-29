@@ -140,19 +140,7 @@ struct ContentListView: View {
                         .padding(.bottom, 8)
                     }
 
-                    if case .favoritesHero = header {
-                        VStack(spacing: 4) {
-                            Image(systemName: "heart.fill")
-                                .font(.system(size: 40))
-                                .foregroundColor(Color(.label))
-                            Text("Favorites")
-                                .font(.system(size: 20, weight: .semibold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 24)
-                        .padding(.bottom, 8)
-                    }
+                    // TODO: Replace with branded favorites asset when ready
 
                     if case .pokemonHero(let name, let imageUrl, let typeImageUrls) = header {
                         VStack(spacing: 0) {

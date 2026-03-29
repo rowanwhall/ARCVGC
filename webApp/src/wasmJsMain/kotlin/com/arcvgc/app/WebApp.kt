@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -52,7 +54,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -62,6 +66,11 @@ import coil3.memory.MemoryCache
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import com.arcvgc.app.data.SettingsRepository as SharedSettingsRepository
+import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.logo
+import com.arcvgc.app.shared.orbitron_bold
+import org.jetbrains.compose.resources.Font
+import org.jetbrains.compose.resources.painterResource
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.SearchParams
@@ -557,7 +566,26 @@ private fun DesktopLayout(
 
     Row(modifier = Modifier.fillMaxSize()) {
         NavigationRail(
-            modifier = Modifier.fillMaxHeight().shadow(elevation = 8.dp)
+            modifier = Modifier.fillMaxHeight().shadow(elevation = 8.dp),
+            header = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    Image(
+                        painter = painterResource(Res.drawable.logo),
+                        contentDescription = "ARC",
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Text(
+                        text = "ARC",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontFamily = FontFamily(Font(Res.font.orbitron_bold)),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
         ) {
             tabs.forEachIndexed { index, tab ->
                 val isSelected = selectedTab == index

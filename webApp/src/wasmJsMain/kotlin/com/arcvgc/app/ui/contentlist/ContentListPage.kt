@@ -652,27 +652,7 @@ private fun ContentListContent(
                 }
             }
             is ContentListHeaderUiModel.FavoritesHero -> {
-                item(key = "favorites_hero") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 24.dp, bottom = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = "Favorites",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-                            text = "Favorites",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
+                // TODO: Replace with branded favorites asset when ready
             }
             is ContentListHeaderUiModel.SearchFilters -> {
                 item(key = "search_filters") {
