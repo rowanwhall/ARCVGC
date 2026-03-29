@@ -26,9 +26,9 @@ Sealed class defining the six modes. Each mode maps to a header via `toHeaderUiM
 Sealed class with seven variants controlling what renders above the list:
 
 - **`None`** — no header
-- **`HomeHero`** — "ARC" title
-- **`TopPokemonHero`** — "Top Pokemon" title (same style as HomeHero, separate type for planned redesign)
-- **`FavoritesHero`** — heart icon + "Favorites" subtitle
+- **`HomeHero`** — Logo + "ARC" branding text in Orbitron font
+- **`TopPokemonHero`** — "Top Pokemon" title (separate type for planned redesign)
+- **`FavoritesHero`** — Currently blank (TODO: branded asset pending from artist)
 - **`SearchFilters`** — flow row of removable filter chips (Pokemon with items/tera, format, rating range, unrated, player name, date range). Each chip type has `canRemove*()` / `remove*()` methods on `SearchParams` controlling removability.
 - **`PokemonHero`** — large Pokemon avatar (158dp circle / 227dp sprite) + name (headlineMedium/20pt) + type icons (24dp)
 - **`PlayerHero`** — player name in rounded pill background

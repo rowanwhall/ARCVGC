@@ -51,14 +51,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.shared.Res
 import com.arcvgc.app.shared.logo
-import com.arcvgc.app.shared.orbitron_bold
-import org.jetbrains.compose.resources.Font
 import org.jetbrains.compose.resources.painterResource
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.appendBattleParam
@@ -88,7 +85,9 @@ import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.BrandFontFamily
 import com.arcvgc.app.ui.tokens.AppTokens.ContentListItemSpacing
+import com.arcvgc.app.ui.tokens.AppTokens.HeroLogoHeight
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipVerticalPadding
@@ -632,12 +631,12 @@ private fun ContentListContent(
                         Image(
                             painter = painterResource(Res.drawable.logo),
                             contentDescription = "ARC",
-                            modifier = Modifier.height(96.dp)
+                            modifier = Modifier.height(HeroLogoHeight)
                         )
                         Text(
                             text = "ARC",
                             fontSize = 24.sp,
-                            fontFamily = FontFamily(Font(Res.font.orbitron_bold)),
+                            fontFamily = BrandFontFamily,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )

@@ -129,7 +129,7 @@ private fun PlayerTeamSection(
         Text(
             text = player.name,
             fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.SemiBold,
             color = when {
                 isWinner -> primaryColor
                 isLoser -> MaterialTheme.colorScheme.onSurfaceVariant

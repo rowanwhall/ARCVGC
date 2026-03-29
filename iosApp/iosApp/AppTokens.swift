@@ -33,6 +33,12 @@ enum AppTokens {
     // Content List
     static let contentListItemSpacing: CGFloat = 12
 
+    // Hero / Branding
+    static let heroLogoHeight: CGFloat = 96
+
+    // Separators
+    static let bulletSeparator = "\u{2022}"
+
     // Alpha
     static let secondaryIconAlpha: Double = 0.5
 }

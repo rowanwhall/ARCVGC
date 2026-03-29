@@ -10,7 +10,7 @@ struct LoadingIndicator: View {
         Image(frameNames[frameIndex])
             .resizable()
             .scaledToFit()
-            .frame(height: 96)
+            .frame(height: AppTokens.heroLogoHeight)
             .onAppear {
                 animateFrames()
             }

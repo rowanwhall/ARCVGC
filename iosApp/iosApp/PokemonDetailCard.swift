@@ -55,7 +55,7 @@ struct PokemonDetailCard: View {
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                     if let item = pokemon.item {
-                        Text(" · ")
+                        Text(" \(AppTokens.bulletSeparator) ")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                         Text(item.name)

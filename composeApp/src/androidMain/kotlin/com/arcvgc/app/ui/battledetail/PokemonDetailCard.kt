@@ -48,6 +48,7 @@ import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonDetailUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import com.arcvgc.app.ui.model.TypeUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.BulletSeparator
 import com.arcvgc.app.ui.tokens.AppTokens.MoveChipCornerRadius
 
 @Composable
@@ -174,7 +175,7 @@ fun PokemonDetailCard(
                     )
                     pokemon.item?.let { item ->
                         Text(
-                            text = " · ",
+                            text = " $BulletSeparator ",
                             style = TextStyle(
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

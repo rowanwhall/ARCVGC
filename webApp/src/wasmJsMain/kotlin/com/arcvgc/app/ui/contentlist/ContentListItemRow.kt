@@ -159,6 +159,7 @@ internal fun ContentListItemRow(
                                         Text(
                                             text = pokemon.name,
                                             style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.onSurface,
                                             maxLines = 1,
                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -235,6 +236,7 @@ internal fun StatChip(name: String, usagePercent: String?, imageUrl: String? = n
                 Text(
                     text = name,
                     style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
                 )

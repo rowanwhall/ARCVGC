@@ -59,6 +59,7 @@ import com.arcvgc.app.ui.components.VsDivider
 import com.arcvgc.app.ui.mapper.ShowdownPasteFormatter
 import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.BattleDetailUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.BulletSeparator
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.InfoButtonSize
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
@@ -110,9 +111,9 @@ fun BattleDetailContent(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val headerText = if (battleDetail.rating != null) {
-                        "${battleDetail.formatName} \u2022 ${battleDetail.rating}"
+                        "${battleDetail.formatName} $BulletSeparator ${battleDetail.rating}"
                     } else {
-                        "${battleDetail.formatName} \u2022 Unrated"
+                        "${battleDetail.formatName} $BulletSeparator Unrated"
                     }
                     if (battleDetail.rating == null) {
                         Spacer(Modifier.size(InfoButtonSize))

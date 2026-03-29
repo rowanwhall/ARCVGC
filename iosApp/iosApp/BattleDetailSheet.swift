@@ -56,12 +56,12 @@ struct BattleDetailPage: View {
                     VStack(spacing: 16) {
                         HStack(spacing: 0) {
                             if let rating = battleDetail.rating?.intValue {
-                                Text("\(battleDetail.formatName) \u{2022} \(String(rating))")
+                                Text("\(battleDetail.formatName) \(AppTokens.bulletSeparator) \(String(rating))")
                                     .font(.subheadline)
                                     .foregroundColor(Color(.secondaryLabel))
                             } else {
                                 Color.clear.frame(width: AppTokens.infoButtonSize, height: AppTokens.infoButtonSize)
-                                Text("\(battleDetail.formatName) \u{2022} Unrated")
+                                Text("\(battleDetail.formatName) \(AppTokens.bulletSeparator) Unrated")
                                     .font(.subheadline)
                                     .foregroundColor(Color(.secondaryLabel))
 

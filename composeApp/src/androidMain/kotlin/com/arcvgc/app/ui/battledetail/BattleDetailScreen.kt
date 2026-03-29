@@ -69,6 +69,7 @@ import com.arcvgc.app.ui.model.PokemonDetailUiModel
 import com.arcvgc.app.ui.model.SetMatchUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import com.arcvgc.app.ui.model.TypeUiModel
+import com.arcvgc.app.ui.tokens.AppTokens.BulletSeparator
 import com.arcvgc.app.ui.tokens.AppTokens.InfoButtonSize
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
@@ -188,9 +189,9 @@ private fun BattleDetailBody(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val headerText = if (battleDetail.rating != null) {
-                    "${battleDetail.formatName} \u2022 ${battleDetail.rating}"
+                    "${battleDetail.formatName} $BulletSeparator ${battleDetail.rating}"
                 } else {
-                    "${battleDetail.formatName} \u2022 Unrated"
+                    "${battleDetail.formatName} $BulletSeparator Unrated"
                 }
                 if (battleDetail.rating == null) {
                     Spacer(Modifier.size(InfoButtonSize))

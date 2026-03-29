@@ -121,7 +121,7 @@ struct ContentListView: View {
                             Image("Logo")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 96)
+                                .frame(height: AppTokens.heroLogoHeight)
                             Text("ARC")
                                 .font(.custom("Orbitron-Regular", size: 24, relativeTo: .title))
                                 .fontWeight(.semibold)
@@ -572,6 +572,7 @@ struct ContentListView: View {
                                     FillPokemonAvatar(imageUrl: pokemon.imageUrl)
                                     Text(pokemon.name)
                                         .font(.caption2)
+                                        .fontWeight(.medium)
                                         .foregroundColor(Color(.label))
                                         .lineLimit(1)
                                         .truncationMode(.tail)
@@ -616,6 +617,7 @@ struct ContentListView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(chip.name)
                                     .font(.subheadline)
+                                    .fontWeight(.medium)
                                     .foregroundColor(Color(.label))
                                     .lineLimit(1)
                                 if let pct = chip.usagePercent {

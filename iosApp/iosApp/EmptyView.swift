@@ -6,7 +6,7 @@ struct BattleEmptyView: View {
             Image("Error")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 96)
+                .frame(height: AppTokens.heroLogoHeight)
 
             Text("There's nothing here")
                 .font(.body)

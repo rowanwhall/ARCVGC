@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.arcvgc.app.ui.tokens.AppTokens.HeroLogoHeight
 import com.arcvgc.app.shared.Res
 import com.arcvgc.app.shared.loading_frame_0
 import com.arcvgc.app.shared.loading_frame_1
@@ -43,6 +44,6 @@ fun LoadingIndicator(
     Image(
         painter = painterResource(frames[frameIndex]),
         contentDescription = "Loading",
-        modifier = modifier.height(96.dp)
+        modifier = modifier.height(HeroLogoHeight)
     )
 }

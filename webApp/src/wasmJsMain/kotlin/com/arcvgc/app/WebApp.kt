@@ -54,7 +54,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -66,10 +65,9 @@ import coil3.memory.MemoryCache
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import com.arcvgc.app.data.SettingsRepository as SharedSettingsRepository
+import com.arcvgc.app.ui.tokens.AppTokens.BrandFontFamily
 import com.arcvgc.app.shared.Res
 import com.arcvgc.app.shared.logo
-import com.arcvgc.app.shared.orbitron_bold
-import org.jetbrains.compose.resources.Font
 import org.jetbrains.compose.resources.painterResource
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.di.DependencyContainer
@@ -580,7 +578,7 @@ private fun DesktopLayout(
                     Text(
                         text = "ARC",
                         style = MaterialTheme.typography.titleMedium,
-                        fontFamily = FontFamily(Font(Res.font.orbitron_bold)),
+                        fontFamily = BrandFontFamily,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )

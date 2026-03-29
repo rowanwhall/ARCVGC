@@ -15,6 +15,15 @@ When adding or modifying UI code, use `AppTokens` for shared dimension, typograp
 - **Swift (iOS)**: Use `AppTokens.cardCornerRadius`, `AppTokens.standardBorderWidth`, etc. from `iosApp/iosApp/AppTokens.swift` (Swift does not support member imports, so qualified access is expected).
 - When adding a new token, add it to both `AppTokens.kt` and `AppTokens.swift` with matching names (PascalCase in Kotlin, camelCase in Swift).
 - Only tokenize values that are reused across multiple files with the same purpose. One-off values stay inline.
+- **`BrandFontFamily`** is a `@Composable` getter (not a plain `val`) because Compose Resources `Font()` requires a composable context. Use it like any other token but only from `@Composable` functions.
+
+## Branding Font (Orbitron)
+
+The app uses **Orbitron** (variable weight, OFL license) as its brand font for "ARC" text.
+
+- **Kotlin (Android + Web)**: Bundled as a Compose Resource at `shared/src/commonMain/composeResources/font/orbitron_bold.ttf`. Access via `AppTokens.BrandFontFamily`.
+- **Swift (iOS)**: Bundled at `iosApp/iosApp/Fonts/Orbitron-Bold.ttf`, registered in `Info.plist` as `Orbitron-Bold.ttf` (note: `PBXFileSystemSynchronizedRootGroup` flattens the `Fonts/` subdirectory in the app bundle, so the plist path omits the folder). Use `.custom("Orbitron-Regular", size:)` with `.fontWeight()` modifier for weight variations.
+- **Web font weight**: Browser font rendering is thinner than native. Use `FontWeight.SemiBold` on web where Android/iOS use `FontWeight.Medium` to achieve visual parity.
 
 ## Compose (Android + Web)
 

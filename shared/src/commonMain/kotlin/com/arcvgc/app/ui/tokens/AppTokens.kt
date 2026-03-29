@@ -1,7 +1,12 @@
 package com.arcvgc.app.ui.tokens
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.orbitron_bold
+import org.jetbrains.compose.resources.Font
 
 /**
  * Shared design tokens for Android and Web.
@@ -48,6 +53,14 @@ object AppTokens {
 
     // --- Dialog (Web) ---
     val DialogWidth = 480.dp
+
+    // --- Hero / Branding ---
+    val HeroLogoHeight = 96.dp
+    val BrandFontFamily: FontFamily
+        @Composable get() = FontFamily(Font(Res.font.orbitron_bold))
+
+    // --- Separators ---
+    const val BulletSeparator = "\u2022"
 
     // --- Alpha ---
     val SecondaryIconAlpha = 0.5f

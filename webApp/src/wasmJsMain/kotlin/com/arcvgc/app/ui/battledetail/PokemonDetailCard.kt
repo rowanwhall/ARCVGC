@@ -35,6 +35,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.TypeIconRow
+import com.arcvgc.app.ui.tokens.AppTokens.BulletSeparator
 import com.arcvgc.app.ui.tokens.AppTokens.MoveChipCornerRadius
 import com.arcvgc.app.ui.components.TypeInfo
 import com.arcvgc.app.ui.model.PokemonDetailUiModel
@@ -133,7 +134,7 @@ fun PokemonDetailCard(
                     )
                     pokemon.item?.let { item ->
                         Text(
-                            text = " · ",
+                            text = " $BulletSeparator ",
                             style = TextStyle(
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

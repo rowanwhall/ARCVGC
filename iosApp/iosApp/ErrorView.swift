@@ -8,7 +8,7 @@ struct ErrorView: View {
             Image("Error")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 96)
+                .frame(height: AppTokens.heroLogoHeight)
 
             Text("Oops! We ran into a problem, please try again")
                 .font(.body)

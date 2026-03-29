@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.arcvgc.app.ui.tokens.AppTokens.HeroLogoHeight
 import com.arcvgc.app.shared.Res
 import com.arcvgc.app.shared.error
 import org.jetbrains.compose.resources.painterResource
@@ -34,7 +35,7 @@ fun ErrorView(
             Image(
                 painter = painterResource(Res.drawable.error),
                 contentDescription = null,
-                modifier = Modifier.height(96.dp)
+                modifier = Modifier.height(HeroLogoHeight)
             )
             Text(
                 text = "Oops! We ran into a problem, please try again",
