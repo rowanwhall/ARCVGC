@@ -118,8 +118,10 @@ struct ContentListView: View {
                 LazyVStack(spacing: AppTokens.contentListItemSpacing) {
                     if case .homeHero = header {
                         VStack(spacing: 0) {
-                            Text("ARC")
-                                .font(.system(size: 34, weight: .bold))
+                            Image("Logo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 96)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 16)

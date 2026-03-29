@@ -1,7 +1,9 @@
 package com.arcvgc.app.ui.contentlist
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +53,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.logo
+import org.jetbrains.compose.resources.painterResource
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.appendBattleParam
 import com.arcvgc.app.domain.model.encodeSearchPath
@@ -619,10 +624,10 @@ private fun ContentListContent(
                             .padding(top = 24.dp, bottom = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = "ARC",
-                            style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Bold
+                        Image(
+                            painter = painterResource(Res.drawable.logo),
+                            contentDescription = "ARC",
+                            modifier = Modifier.height(96.dp)
                         )
                     }
                 }
