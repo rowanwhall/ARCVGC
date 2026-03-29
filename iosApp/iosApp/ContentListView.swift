@@ -122,11 +122,14 @@ struct ContentListView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(height: 96)
+                            Text("ARC")
+                                .font(.custom("Orbitron-Regular", size: 24, relativeTo: .title))
+                                .fontWeight(.semibold)
+                                .foregroundColor(Color(.label))
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 16)
                         .padding(.top, 24)
-                        .padding(.bottom, 8)
                     }
 
                     if case .topPokemonHero = header {

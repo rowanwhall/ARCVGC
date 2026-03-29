@@ -6,6 +6,27 @@ struct iOSApp: App {
     @StateObject private var container = DependencyContainer()
 
     init() {
+        // DEBUG: Font registration
+        for family in UIFont.familyNames.sorted() {
+            let names = UIFont.fontNames(forFamilyName: family)
+            if family.lowercased().contains("orbit") || names.contains(where: { $0.lowercased().contains("orbit") }) {
+                print("DEBUG FONT: family='\(family)' names=\(names)")
+            }
+        }
+        // Try common name variations
+        for name in ["Orbitron", "Orbitron-Regular", "Orbitron-Bold", "OrbitronRegular", "OrbitronBold"] {
+            let found = UIFont(name: name, size: 12) != nil
+            print("DEBUG FONT: UIFont(name: '\(name)') -> \(found)")
+        }
+        // Check bundle
+        print("DEBUG FONT: file in bundle = \(Bundle.main.path(forResource: "Orbitron-Bold", ofType: "ttf") ?? "NOT FOUND")")
+        // Check Info.plist UIAppFonts
+        if let fonts = Bundle.main.object(forInfoDictionaryKey: "UIAppFonts") as? [String] {
+            print("DEBUG FONT: UIAppFonts = \(fonts)")
+        } else {
+            print("DEBUG FONT: UIAppFonts NOT SET in Info.plist")
+        }
+
         SentryInit_iosKt.initializeSentry()
 
         URLCache.shared = URLCache(

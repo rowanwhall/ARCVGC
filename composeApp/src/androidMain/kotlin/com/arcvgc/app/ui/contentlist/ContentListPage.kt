@@ -54,11 +54,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.shared.Res
 import com.arcvgc.app.shared.logo
+import com.arcvgc.app.shared.orbitron_bold
+import org.jetbrains.compose.resources.Font
 import org.jetbrains.compose.resources.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -487,13 +490,20 @@ private fun ContentListContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
-                                .padding(top = 24.dp, bottom = 8.dp),
+                                .padding(top = 24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Image(
                                 painter = painterResource(Res.drawable.logo),
                                 contentDescription = "ARC",
                                 modifier = Modifier.height(96.dp)
+                            )
+                            Text(
+                                text = "ARC",
+                                fontSize = 24.sp,
+                                fontFamily = FontFamily(Font(Res.font.orbitron_bold)),
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
