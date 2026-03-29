@@ -4,7 +4,7 @@ import Shared
 struct ContentListView: View {
     @StateObject private var viewModel: ContentListViewModel
     @State private var selectedBattleId: Int32? = nil
-    @State private var replayUrl: String? = nil
+    @State private var replayNavState: ReplayNavState? = nil
     @State private var pokemonNavTarget: PokemonNavTarget? = nil
     @State private var playerNavTarget: PlayerNavTarget? = nil
     @State private var topPokemonFormatId: Int32? = nil
@@ -104,8 +104,8 @@ struct ContentListView: View {
             showWinnerHighlight: settingsStore.showWinnerHighlight,
             shareUrl: ShareUrlBuilderKt.shareBattleUrl(battleId: battleId),
             appConfigStore: appConfigStore,
-            onViewReplay: { url in
-                replayUrl = url
+            onViewReplay: { navState in
+                replayNavState = navState
             }
         )
     }
@@ -362,11 +362,11 @@ struct ContentListView: View {
             }
         }
         .fullScreenCover(isPresented: Binding(
-            get: { replayUrl != nil },
-            set: { if !$0 { replayUrl = nil } }
+            get: { replayNavState != nil },
+            set: { if !$0 { replayNavState = nil } }
         )) {
-            if let url = replayUrl {
-                ReplayOverlay(replayUrl: url, onDismiss: { replayUrl = nil })
+            if let navState = replayNavState {
+                ReplayOverlay(navState: navState, onDismiss: { replayNavState = nil })
             }
         }
         .navigationDestination(isPresented: Binding(

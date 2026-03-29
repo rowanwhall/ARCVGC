@@ -8,7 +8,7 @@ struct BattleDetailPage: View {
     @Environment(\.themeColor) private var themeColor
     var onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil
     var onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil
-    var onViewReplay: ((String) -> Void)? = nil
+    var onViewReplay: ((ReplayNavState) -> Void)? = nil
     @State private var showReplayInfo = false
     @State private var showUnratedInfo = false
 
@@ -18,7 +18,7 @@ struct BattleDetailPage: View {
     private let showWinnerHighlight: Bool
     private let shareUrl: String?
 
-    init(viewModel: BattleDetailViewModel, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil, onViewReplay: ((String) -> Void)? = nil) {
+    init(viewModel: BattleDetailViewModel, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil, onViewReplay: ((ReplayNavState) -> Void)? = nil) {
         self.viewModel = viewModel
         self.battleId = battleId
         self.player1IsWinner = player1IsWinner
@@ -83,7 +83,7 @@ struct BattleDetailPage: View {
                                     let label = game.position.map { "Game \($0)" } ?? "View Replay"
                                     if game.isCurrent {
                                         Button {
-                                            onViewReplay?(game.url)
+                                            onViewReplay?(battleDetail.toReplayNavState(tappedUrl: game.url))
                                         } label: {
                                             Text(label)
                                                 .font(.subheadline)
@@ -91,7 +91,7 @@ struct BattleDetailPage: View {
                                         .buttonStyle(.borderedProminent)
                                     } else {
                                         Button {
-                                            onViewReplay?(game.url)
+                                            onViewReplay?(battleDetail.toReplayNavState(tappedUrl: game.url))
                                         } label: {
                                             Text(label)
                                                 .font(.subheadline)
@@ -332,12 +332,12 @@ struct BattleDetailNavWrapper: View {
     var showWinnerHighlight: Bool = true
     var shareUrl: String? = nil
     var appConfigStore: AppConfigStore? = nil
-    var onViewReplay: ((String) -> Void)? = nil
+    var onViewReplay: ((ReplayNavState) -> Void)? = nil
 
     @State private var pokemonNavTarget: PokemonNavTarget? = nil
     @State private var playerNavTarget: PlayerNavTarget? = nil
 
-    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, settingsStore: SettingsStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, appConfigStore: AppConfigStore? = nil, onViewReplay: ((String) -> Void)? = nil) {
+    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, settingsStore: SettingsStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, appConfigStore: AppConfigStore? = nil, onViewReplay: ((ReplayNavState) -> Void)? = nil) {
         self.repository = repository
         self.battleId = battleId
         self.player1IsWinner = player1IsWinner

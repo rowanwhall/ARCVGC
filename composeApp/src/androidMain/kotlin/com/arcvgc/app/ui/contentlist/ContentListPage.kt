@@ -74,6 +74,7 @@ import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.TypeIconRow
 import com.arcvgc.app.ui.components.TypeInfo
 import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.ui.model.ReplayNavState
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
@@ -126,7 +127,7 @@ fun ContentListPage(
     }
     val selectedFormatId by viewModel.selectedFormatId.collectAsStateWithLifecycle()
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }
-    var replayUrl by remember { mutableStateOf<String?>(null) }
+    var replayNavState by remember { mutableStateOf<ReplayNavState?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
     var topPokemonFormatId by remember { mutableStateOf<Int?>(null) }
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -321,7 +322,7 @@ fun ContentListPage(
                         }
                         context.startActivity(Intent.createChooser(sendIntent, null))
                     },
-                    onViewReplay = { url -> replayUrl = url },
+                    onViewReplay = { navState -> replayNavState = navState },
                     onPokemonClick = { id, name, imageUrl, typeImageUrls ->
                         val formatId = patchedState.battleDetail?.formatId
                         pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
@@ -335,16 +336,16 @@ fun ContentListPage(
             }
         }
 
-        val lastReplayUrl = rememberLastNonNull(replayUrl)
+        val lastReplayNavState = rememberLastNonNull(replayNavState)
         AnimatedVisibility(
-            visible = replayUrl != null,
+            visible = replayNavState != null,
             enter = slideInVertically { it },
             exit = slideOutVertically { it }
         ) {
-            lastReplayUrl?.let { url ->
+            lastReplayNavState?.let { navState ->
                 ReplayOverlay(
-                    replayUrl = url,
-                    onDismiss = { replayUrl = null },
+                    navState = navState,
+                    onDismiss = { replayNavState = null },
                     statusBarPadding = statusBarHeight
                 )
             }

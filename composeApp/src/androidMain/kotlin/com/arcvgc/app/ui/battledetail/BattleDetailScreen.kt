@@ -66,8 +66,10 @@ import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PlayerDetailUiModel
 import com.arcvgc.app.ui.model.PokemonDetailUiModel
+import com.arcvgc.app.ui.model.ReplayNavState
 import com.arcvgc.app.ui.model.SetMatchUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
+import com.arcvgc.app.ui.model.toReplayNavState
 import com.arcvgc.app.ui.model.TypeUiModel
 import com.arcvgc.app.ui.tokens.AppTokens.BulletSeparator
 import com.arcvgc.app.ui.tokens.AppTokens.InfoButtonSize
@@ -90,7 +92,7 @@ fun BattleDetailPage(
     showWinnerHighlight: Boolean = true,
     onToggleFavorite: () -> Unit = {},
     onShare: (() -> Unit)? = null,
-    onViewReplay: (String) -> Unit = {},
+    onViewReplay: (ReplayNavState) -> Unit = {},
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
     onPlayerClick: ((Int, String) -> Unit)? = null
 ) {
@@ -163,7 +165,7 @@ private fun BattleDetailBody(
     modifier: Modifier = Modifier,
     topPadding: Dp = 0.dp,
     showWinnerHighlight: Boolean = true,
-    onViewReplay: (String) -> Unit = {},
+    onViewReplay: (ReplayNavState) -> Unit = {},
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
     onPlayerClick: ((Int, String) -> Unit)? = null
 ) {
@@ -225,11 +227,11 @@ private fun BattleDetailBody(
                 allGames.forEach { game ->
                     val label = game.positionInSet?.let { "Game $it" } ?: "View Replay"
                     if (game.isCurrent) {
-                        Button(onClick = { onViewReplay(game.replayUrl) }) {
+                        Button(onClick = { onViewReplay(battleDetail.toReplayNavState(game.replayUrl)) }) {
                             Text(label)
                         }
                     } else {
-                        OutlinedButton(onClick = { onViewReplay(game.replayUrl) }) {
+                        OutlinedButton(onClick = { onViewReplay(battleDetail.toReplayNavState(game.replayUrl)) }) {
                             Text(label)
                         }
                     }

@@ -22,7 +22,7 @@ private struct ThemedContentView: View {
     @State private var selectedTab = 0
     @State private var deepLinkNavTarget: DeepLinkNavTarget?
     @State private var deepLinkBattleDetailId: Int32?
-    @State private var deepLinkReplayUrl: String?
+    @State private var deepLinkReplayNavState: ReplayNavState?
     @State private var deepLinkFavoritesSubTab: Int?
     @State private var deepLinkSearchParams: SearchParams?
 
@@ -80,8 +80,8 @@ private struct ThemedContentView: View {
                             favoritesStore: container.favoritesStore,
                             settingsStore: container.settingsStore,
                             appConfigStore: container.appConfigStore,
-                            onViewReplay: { url in
-                                deepLinkReplayUrl = url
+                            onViewReplay: { navState in
+                                deepLinkReplayNavState = navState
                             }
                         )
                     }
@@ -178,11 +178,11 @@ private struct ThemedContentView: View {
             }
         }
         .fullScreenCover(isPresented: Binding(
-            get: { deepLinkReplayUrl != nil },
-            set: { if !$0 { deepLinkReplayUrl = nil } }
+            get: { deepLinkReplayNavState != nil },
+            set: { if !$0 { deepLinkReplayNavState = nil } }
         )) {
-            if let url = deepLinkReplayUrl {
-                ReplayOverlay(replayUrl: url, onDismiss: { deepLinkReplayUrl = nil })
+            if let navState = deepLinkReplayNavState {
+                ReplayOverlay(navState: navState, onDismiss: { deepLinkReplayNavState = nil })
             }
         }
         .fullScreenCover(isPresented: Binding(

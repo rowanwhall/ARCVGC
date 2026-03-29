@@ -61,6 +61,7 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.battledetail.BattleDetailPage
 import com.arcvgc.app.ui.battledetail.BattleDetailViewModel
 import com.arcvgc.app.ui.battledetail.ReplayOverlay
+import com.arcvgc.app.ui.model.ReplayNavState
 import com.arcvgc.app.ui.components.ForceUpgradeOverlay
 import com.arcvgc.app.ui.contentlist.ContentListPage
 import com.arcvgc.app.ui.favorites.FavoritesPage
@@ -227,7 +228,7 @@ fun App(deepLink: DeepLink? = null) {
         var searchOverlayParams by remember { mutableStateOf<SearchParams?>(null) }
         var deepLinkOverlay by remember { mutableStateOf<ContentListMode?>(null) }
         var deepLinkBattleDetailId by remember { mutableStateOf<Int?>(null) }
-        var deepLinkReplayUrl by remember { mutableStateOf<String?>(null) }
+        var deepLinkReplayNavState by remember { mutableStateOf<ReplayNavState?>(null) }
         var deepLinkFavoritesType by remember { mutableStateOf<FavoriteContentType?>(null) }
         val tabs = Tab.entries
 
@@ -404,23 +405,23 @@ fun App(deepLink: DeepLink? = null) {
                         state = battleDetailState,
                         onBack = { deepLinkBattleDetailId = null },
                         onRetry = { battleDetailViewModel.loadBattleDetail(battleId) },
-                        onViewReplay = { url -> deepLinkReplayUrl = url },
+                        onViewReplay = { navState -> deepLinkReplayNavState = navState },
                         modifier = Modifier.fillMaxSize(),
                         statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                     )
                 }
             }
 
-            val lastDeepLinkReplayUrl = rememberLastNonNull(deepLinkReplayUrl)
+            val lastDeepLinkReplayNavState = rememberLastNonNull(deepLinkReplayNavState)
             AnimatedVisibility(
-                visible = deepLinkReplayUrl != null,
+                visible = deepLinkReplayNavState != null,
                 enter = slideInVertically { it },
                 exit = slideOutVertically { it }
             ) {
-                lastDeepLinkReplayUrl?.let { url ->
+                lastDeepLinkReplayNavState?.let { navState ->
                     ReplayOverlay(
-                        replayUrl = url,
-                        onDismiss = { deepLinkReplayUrl = null },
+                        navState = navState,
+                        onDismiss = { deepLinkReplayNavState = null },
                         statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                     )
                 }

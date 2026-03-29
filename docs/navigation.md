@@ -72,9 +72,10 @@ Each `ContentListPage` / `ContentListView` manages its own `pokemonNavTarget` an
 - **Format threading**: When navigating to a Pokemon from battle detail, the battle's `formatId` is injected at the boundary (Android: inline in `ContentListPage`, iOS: `BattleDetailPage`, Web: `BattleDetailPanel`) by wrapping the `onPokemonClick` callback to append the format. The Pokemon content list then defaults to that format, with a format dropdown allowing the user to switch.
 
 ## Replay overlay
-- **Android**: Full-screen `ReplayOverlay.kt` with a `TopAppBar` (close X button) + WebView. Triggered by `replayUrl` state in `ContentListPage` and `deepLinkReplayUrl` in `App.kt`.
-- **iOS**: `.fullScreenCover` presenting `ReplayOverlay.swift` with a `NavigationStack` + close X button + `WebView` (UIViewRepresentable). Triggered by `replayUrl` state in `ContentListView`.
+- **Android**: Full-screen `ReplayOverlay.kt` with WebView + bottom bar (prev/next game navigation + close X button). Triggered by `replayNavState: ReplayNavState?` state in `ContentListPage` and `deepLinkReplayNavState` in `App.kt`. Slides in vertically.
+- **iOS**: `.fullScreenCover` presenting `ReplayOverlay.swift` with WebView + bottom bar (same prev/next + close layout). Triggered by `replayNavState: ReplayNavState?` state in `ContentListView` and `deepLinkReplayNavState` in `ContentView`.
 - **Web**: "View Replay" button opens the replay URL in a new browser tab via `window.open(url, "_blank")`.
+- **Set navigation**: When a battle is part of a Bo3 set, the bottom bar shows `[ ◀ ] Game N of M [ ▶ ] [ ✕ ]` with prev/next arrows disabled at boundaries. For single-game battles, only the close button is shown. Navigation between games reloads the WebView in-place. The `ReplayNavState` (shared data class in `shared/.../ui/model/ReplayNavState.kt`) carries the full sorted game list + initial index; `BattleDetailUiModel.toReplayNavState(tappedUrl)` builds it from the battle detail data.
 
 ### Android status bar insets (`consumeTopInsets`)
 Android full-screen overlays that render outside the `Scaffold` (search results, deep link overlays) must handle status bar insets manually via `consumeTopInsets = true` on `ContentListPage`. This computes `statusBarHeight` from `WindowInsets.statusBars` and passes it down as a `statusBarPadding: Dp` parameter to child composables (`GradientToolbarScaffold`, `GradientToolbar`, `ReplayOverlay`). Pages inside the `Scaffold` (Home, Favorites) use `consumeTopInsets = false` because the `Scaffold` provides `innerPadding` which already includes status bar insets.
@@ -86,7 +87,7 @@ Any new full-screen overlay composable rendered inside `ContentListPage` must ac
 ## Replay buttons and set matches
 - The battle detail page always shows "Game N" buttons (even for single-game matches). The current game uses a filled `Button`; other games in a set use `OutlinedButton`.
 - An info icon next to the replay buttons opens an info dialog explaining replays and set matching (key: `"replay"` in `InfoContentProvider`).
-- Clicking any replay button opens the replay overlay (Android/iOS) or a new browser tab (web) with the corresponding replay URL (`https://replay.pokemonshowdown.com/{showdownId}`).
+- Clicking any replay button calls `onViewReplay(ReplayNavState)` — the callback passes the full sorted game list (via `BattleDetailUiModel.toReplayNavState(tappedUrl)`) so the overlay can navigate between games without dismissing. On web, the replay URL opens in a new browser tab instead.
 - Set match data is mapped in `BattleDetailUiMapper` — the current match is filtered out and remaining matches are sorted by position.
 
 ## Battle detail header
