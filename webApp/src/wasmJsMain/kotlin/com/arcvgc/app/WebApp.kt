@@ -20,7 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Home
+import com.arcvgc.app.ui.icons.BarChartIcon
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
@@ -201,7 +202,8 @@ private enum class Tab(
     val label: String,
     val icon: ImageVector
 ) {
-    Top("Top", Icons.Default.Star),
+    Home("Home", Icons.Default.Home),
+    Usage("Usage", BarChartIcon),
     Search("Search", Icons.Default.Search),
     Favorites("Favorites", Icons.Default.Favorite),
     Settings("Settings", Icons.Default.Settings)
@@ -324,7 +326,7 @@ fun WebApp() {
                             desktopNavStack = listOf(entry)
                         }
                         is DeepLinkResolver.ResolvedLink.Favorites -> {
-                            selectedTab = 2
+                            selectedTab = 3
                             deepLinkFavoritesSubTab = when (resolved.contentType) {
                                 FavoriteContentType.Battles -> 0
                                 FavoriteContentType.Pokemon -> 1
@@ -335,15 +337,13 @@ fun WebApp() {
                             searchOverlayParams = resolved.params
                         }
                         is DeepLinkResolver.ResolvedLink.SearchTab -> {
-                            selectedTab = 1
+                            selectedTab = 2
                         }
                         is DeepLinkResolver.ResolvedLink.SettingsTab -> {
-                            selectedTab = 3
+                            selectedTab = 4
                         }
                         is DeepLinkResolver.ResolvedLink.TopPokemon -> {
-                            val entry = NavEntry.TopPokemon(resolved.formatId)
-                            navStack = navStack + entry
-                            desktopNavStack = listOf(entry)
+                            selectedTab = 1
                         }
                     }
                     replaceHistoryStateWithPath(path)
@@ -447,7 +447,8 @@ fun WebApp() {
             deepLinkBattleId = null
             // Mirror tab URL in browser address bar
             val tabPath = when (tabs[index]) {
-                Tab.Top -> "/"
+                Tab.Home -> "/"
+                Tab.Usage -> "/top-pokemon"
                 Tab.Search -> "/search"
                 Tab.Favorites -> "/favorites/battles"
                 Tab.Settings -> "/settings"
@@ -634,12 +635,18 @@ private fun DesktopLayout(
             )
         } else {
             when (tabs[selectedTab]) {
-                Tab.Top -> ContentListPage(
+                Tab.Home -> ContentListPage(
                     modifier = contentModifier,
                     onPokemonClick = desktopPokemonClick,
                     onPlayerClick = desktopPlayerClick,
                     onTopPokemonClick = { formatId -> onPushDesktopEntry(NavEntry.TopPokemon(formatId)) },
                     initialBattleId = initialBattleId
+                )
+                Tab.Usage -> ContentListPage(
+                    mode = ContentListMode.TopPokemon(),
+                    modifier = contentModifier,
+                    onPokemonClick = desktopPokemonClick,
+                    onPlayerClick = desktopPlayerClick
                 )
                 Tab.Search -> SearchPage(modifier = contentModifier, onSearch = onSearch)
                 Tab.Favorites -> FavoritesPage(
@@ -741,11 +748,17 @@ private fun MobileLayout(
                 }
             ) { innerPadding ->
                 when (tabs[selectedTab]) {
-                    Tab.Top -> ContentListPage(
+                    Tab.Home -> ContentListPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding),
                         onPokemonClick = pokemonClick,
                         onPlayerClick = playerClick,
                         onTopPokemonClick = topPokemonClick
+                    )
+                    Tab.Usage -> ContentListPage(
+                        mode = ContentListMode.TopPokemon(),
+                        modifier = Modifier.fillMaxSize().padding(innerPadding),
+                        onPokemonClick = pokemonClick,
+                        onPlayerClick = playerClick
                     )
                     Tab.Search -> SearchPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding),

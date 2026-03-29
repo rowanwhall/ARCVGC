@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
@@ -638,6 +639,7 @@ private fun ContentListContent(
                                             }
                                         }
                                     } else null,
+                                    shape = RoundedCornerShape(CardCornerRadius),
                                     colors = OutlinedTextFieldDefaults.colors(
                                         unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                                     ),
@@ -724,6 +726,10 @@ private fun ContentListContent(
                                                     }
                                                 }
                                             } else null,
+                                            shape = RoundedCornerShape(CardCornerRadius),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                            ),
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .then(itemPadding)

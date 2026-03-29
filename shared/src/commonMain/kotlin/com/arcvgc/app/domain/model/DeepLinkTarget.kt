@@ -63,7 +63,7 @@ fun parseDeepLink(path: String): DeepLink? {
             DeepLinkTarget.SearchTab
         segments.size == 1 && segments[0] == "settings" ->
             DeepLinkTarget.SettingsTab
-        segments.size == 1 && segments[0] == "top-pokemon" ->
+        segments.size == 1 && (segments[0] == "top-pokemon" || segments[0] == "usage") ->
             DeepLinkTarget.TopPokemon(formatId = queryParams["f"]?.toIntOrNull())
         // Root path (/) or /?battle=X
         segments.size == 1 && segments[0].isEmpty() ->

@@ -16,7 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Home
+import com.arcvgc.app.ui.icons.BarChartIcon
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
@@ -181,7 +182,8 @@ private enum class Tab(
     val label: String,
     val icon: ImageVector
 ) {
-    Top("Top", Icons.Default.Star),
+    Home("Home", Icons.Default.Home),
+    Usage("Usage", BarChartIcon),
     Search("Search", Icons.Default.Search),
     Favorites("Favorites", Icons.Default.Favorite),
     Settings("Settings", Icons.Default.Settings)
@@ -261,22 +263,20 @@ fun App(deepLink: DeepLink? = null) {
                                 )
                             }
                             is DeepLinkResolver.ResolvedLink.Favorites -> {
-                                selectedTab = 2
+                                selectedTab = 3
                                 deepLinkFavoritesType = resolved.contentType
                             }
                             is DeepLinkResolver.ResolvedLink.Search -> {
                                 searchOverlayParams = resolved.params
                             }
                             is DeepLinkResolver.ResolvedLink.SearchTab -> {
-                                selectedTab = 1
+                                selectedTab = 2
                             }
                             is DeepLinkResolver.ResolvedLink.SettingsTab -> {
-                                selectedTab = 3
+                                selectedTab = 4
                             }
                             is DeepLinkResolver.ResolvedLink.TopPokemon -> {
-                                deepLinkOverlay = ContentListMode.TopPokemon(
-                                    formatId = resolved.formatId
-                                )
+                                selectedTab = 1
                             }
                             null -> {}
                         }
@@ -324,7 +324,12 @@ fun App(deepLink: DeepLink? = null) {
                     label = "tab_crossfade"
                 ) { tab ->
                     when (tabs[tab]) {
-                        Tab.Top -> ContentListPage(
+                        Tab.Home -> ContentListPage(
+                            modifier = Modifier.padding(innerPadding),
+                            consumeTopInsets = false
+                        )
+                        Tab.Usage -> ContentListPage(
+                            mode = ContentListMode.TopPokemon(),
                             modifier = Modifier.padding(innerPadding),
                             consumeTopInsets = false
                         )

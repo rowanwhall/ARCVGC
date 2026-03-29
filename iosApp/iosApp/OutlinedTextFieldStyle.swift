@@ -11,7 +11,7 @@ struct OutlinedTextFieldModifier: ViewModifier {
             .padding(.vertical, 10)
             .background(Color.clear)
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
                     .stroke(isFocused ? themeColor : Color(.opaqueSeparator), lineWidth: 1.5)
             )
             .foregroundColor(Color(.label))

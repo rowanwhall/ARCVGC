@@ -249,6 +249,20 @@ class DeepLinkTargetTest {
         assertNull((parsed.target as DeepLinkTarget.TopPokemon).formatId)
     }
 
+    @Test
+    fun parseUsagePathAlias() {
+        val result = parseDeepLink("/usage")!!
+        assertIs<DeepLinkTarget.TopPokemon>(result.target)
+        assertNull((result.target as DeepLinkTarget.TopPokemon).formatId)
+    }
+
+    @Test
+    fun parseUsagePathAliasWithFormat() {
+        val result = parseDeepLink("/usage?f=5")!!
+        assertIs<DeepLinkTarget.TopPokemon>(result.target)
+        assertEquals(5, (result.target as DeepLinkTarget.TopPokemon).formatId)
+    }
+
     // Tab deep links
 
     @Test

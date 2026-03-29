@@ -88,23 +88,37 @@ private struct ThemedContentView: View {
                 }
             }
             .tabItem {
-                Label("Top", systemImage: "star.fill")
+                Label("Home", systemImage: "house.fill")
             }
             .tag(0)
+
+            NavigationStack {
+                ContentListView(
+                    repository: container.battleRepository,
+                    mode: .topPokemon(),
+                    favoritesStore: container.favoritesStore,
+                    settingsStore: container.settingsStore,
+                    appConfigStore: container.appConfigStore
+                )
+            }
+            .tabItem {
+                Label("Usage", systemImage: "chart.bar.fill")
+            }
+            .tag(1)
 
             SearchView(catalogStore: container.catalogStore, appConfigStore: container.appConfigStore, initialSearchParams: deepLinkSearchParams)
                 .id(deepLinkSearchParams?.hashValue ?? 0)
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
-                .tag(1)
+                .tag(2)
 
             FavoritesView(initialSubTab: deepLinkFavoritesSubTab)
                 .id(deepLinkFavoritesSubTab ?? -1)
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")
                 }
-                .tag(2)
+                .tag(3)
 
             NavigationStack {
                 SettingsView(settingsStore: container.settingsStore, catalogStore: container.catalogStore, favoritesStore: container.favoritesStore)
@@ -112,7 +126,7 @@ private struct ThemedContentView: View {
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
-                .tag(3)
+                .tag(4)
         }
         .tint(settingsStore.themeColor)
         .environment(\.themeColor, settingsStore.themeColor)
@@ -150,17 +164,17 @@ private struct ThemedContentView: View {
                 selectedTab = 0
                 deepLinkNavTarget = .player(target)
             case .favorites(let subTab):
-                selectedTab = 2
+                selectedTab = 3
                 deepLinkFavoritesSubTab = subTab
             case .search(let params):
-                selectedTab = 1
+                selectedTab = 2
                 deepLinkSearchParams = params
             case .searchTab:
-                selectedTab = 1
+                selectedTab = 2
             case .settingsTab:
-                selectedTab = 3
+                selectedTab = 4
             case .topPokemon:
-                selectedTab = 0
+                selectedTab = 1
             }
         }
         .fullScreenCover(isPresented: Binding(

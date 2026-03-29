@@ -1,14 +1,14 @@
 # Navigation
 
 ## Android (`App.kt`)
-- Tab bar with Top, Search, Favorites, and Settings tabs, managed by `selectedTab` state
+- Tab bar with Home, Usage, Search, Favorites, and Settings tabs, managed by `selectedTab` state
 - `searchOverlayParams: SearchParams?` controls a full-screen `ContentListPage` overlay for search results (hides tab bar)
 - `onBack` on the search overlay sets `searchOverlayParams = null` to return to tabs
 - Pokemon/Player navigation is **not** handled in `App.kt` — each `ContentListPage` manages its own (see below)
 - `deepLinkBattleDetailId: Int?` renders a standalone `BattleDetailPage` overlay for battle deep links
 
 ## iOS (`ContentView.swift`, `SearchView.swift`)
-- `TabView` with Top, Search, Favorites, and Settings tabs, each with its own `NavigationStack`
+- `TabView` with Home, Usage, Search, Favorites, and Settings tabs, each with its own `NavigationStack`
 - Search results pushed via `navigationDestination(isPresented:)` bound to `searchParams` state
 - Pokemon pages pushed via `navigationDestination(isPresented:)` bound to `pokemonNavTarget` state in `ContentListView`
 - Player pages pushed via `navigationDestination(isPresented:)` bound to `playerNavTarget` state in `ContentListView`
@@ -124,14 +124,14 @@ All three platforms support deep links. Every page in the app is addressable via
 
 | Target | URL Pattern | Example |
 |---|---|---|
-| Home / Top | `/` | `arcvgc.com` |
+| Home | `/` | `arcvgc.com` |
 | Battle detail (legacy) | `/battle/{id}` | `arcvgc.com/battle/42` |
 | Pokemon battles | `/pokemon/{id}` | `arcvgc.com/pokemon/150` |
 | Player battles | `/player/{name}` | `arcvgc.com/player/Wolfe%20Glick` |
 | Favorites sub-tab | `/favorites/{type}` | `arcvgc.com/favorites/pokemon` |
 | Search tab | `/search` | `arcvgc.com/search` |
 | Search results | `/search?p=...&f=...&order=...` | see search params below |
-| Top Pokémon | `/top-pokemon` or `/top-pokemon?f={formatId}` | `arcvgc.com/top-pokemon?f=5` |
+| Usage (Top Pokémon) | `/top-pokemon` or `/usage` (with optional `?f={formatId}`) | `arcvgc.com/top-pokemon?f=5` |
 | Settings | `/settings` | `arcvgc.com/settings` |
 
 **Battle detail as query param:** Any root URL can have `?battle={id}` appended. On all mobile platforms (Android, iOS, mobile web), the `?battle=X` param navigates directly to battle detail, ignoring the root page context. On desktop web, the root page renders in the left pane and the battle detail in the right pane. Examples:

@@ -15,6 +15,7 @@ A Kotlin Multiplatform app for browsing [Pokémon Showdown](https://pokemonshowd
 ## Features
 
 - **Browse** — Paginated list of recent VGC battles with pull-to-refresh
+- **Usage** — Top Pokémon usage rankings by format
 - **Search** — Filter by up to 6 Pokémon (each with optional held item and tera type), format, minimum rating, and sort order
 - **Battle Detail** — Team preview with full Pokémon details (moves, abilities, items, EVs, tera type) and replay links
 - **Favorites** — Save battles, Pokémon, and players locally across three sub-tabs
