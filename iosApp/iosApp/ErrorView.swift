@@ -5,6 +5,11 @@ struct ErrorView: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            Image("Error")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 96)
+
             Text("Oops! We ran into a problem, please try again")
                 .font(.body)
                 .foregroundColor(.primary)

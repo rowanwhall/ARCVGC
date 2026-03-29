@@ -2,11 +2,18 @@ import SwiftUI
 
 struct BattleEmptyView: View {
     var body: some View {
-        Text("There's nothing here")
-            .font(.body)
-            .foregroundColor(.primary)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 32)
+        VStack(spacing: 16) {
+            Image("Error")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 96)
+
+            Text("There's nothing here")
+                .font(.body)
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+        }
     }
 }
 
