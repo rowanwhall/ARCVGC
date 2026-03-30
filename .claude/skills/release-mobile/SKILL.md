@@ -36,7 +36,3 @@ Run `./gradlew :composeApp:bundleRelease` and confirm success. Report the output
 Remind the user:
 - Archive and distribute the iOS app from Xcode (Product > Archive > Distribute App)
 - The `ITSAppUsesNonExemptEncryption` key in Info.plist should be set to `false` (standard HTTPS only) to avoid the "Missing Compliance" warning in App Store Connect
-
-## Step 5: Commit
-
-Ask the user if they'd like to commit the version bump changes.
