@@ -45,6 +45,7 @@ The app uses **Orbitron** (variable weight, OFL license) as its brand font for "
   - Available preview assets: `PreviewPokemon`, `PreviewItem`, `PreviewTera`, `PreviewType1`, `PreviewType2`
 - Auto-sizing text: iOS uses native `.minimumScaleFactor()`
 - Xcode project uses `PBXFileSystemSynchronizedRootGroup` — new Swift files are auto-discovered, no pbxproj edits needed
+- **iPad responsive layouts**: Use `@Environment(\.horizontalSizeClass)` to detect `.regular` (iPad) vs `.compact` (iPhone). Apply layout changes at the component level. Examples: `ContentListView` Pokemon grid (6 cols iPad / 3 cols iPhone), `PlayerTeamDetailSection` in `BattleDetailSheet` (centered grid iPad / horizontal carousel iPhone), `SearchFilterCard` (inline buttons iPad / context menu iPhone). Web uses analogous `LocalWindowSizeClass.current == WindowSizeClass.Compact/Expanded`.
 
 ## Shared Module Patterns
 

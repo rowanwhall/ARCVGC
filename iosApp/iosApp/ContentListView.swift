@@ -9,6 +9,7 @@ struct ContentListView: View {
     @State private var playerNavTarget: PlayerNavTarget? = nil
     @State private var topPokemonFormatId: Int32? = nil
     @FocusState private var isSearchFieldFocused: Bool
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @EnvironmentObject private var container: DependencyContainer
 
     private let repository: BattleRepository
@@ -552,9 +553,10 @@ struct ContentListView: View {
             }
         case .pokemonGrid(let gridItem):
             let allPokemon = gridItem.pokemon as! [ContentListItem.PokemonGridItem]
+            let columns = horizontalSizeClass == .regular ? max(min(allPokemon.count, 6), 1) : 3
             VStack(spacing: 8) {
-                ForEach(Array(stride(from: 0, to: allPokemon.count, by: 3).enumerated()), id: \.offset) { _, startIndex in
-                    let endIndex = min(startIndex + 3, allPokemon.count)
+                ForEach(Array(stride(from: 0, to: allPokemon.count, by: columns).enumerated()), id: \.offset) { _, startIndex in
+                    let endIndex = min(startIndex + columns, allPokemon.count)
                     let rowItems = Array(allPokemon[startIndex..<endIndex])
                     HStack(spacing: 8) {
                         ForEach(Array(rowItems.enumerated()), id: \.element.id) { _, pokemon in
@@ -587,7 +589,7 @@ struct ContentListView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        ForEach(0..<(3 - rowItems.count), id: \.self) { _ in
+                        ForEach(0..<(columns - rowItems.count), id: \.self) { _ in
                             Color.clear.frame(maxWidth: .infinity)
                         }
                     }

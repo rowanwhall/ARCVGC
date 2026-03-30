@@ -160,79 +160,65 @@ struct PlayerTeamDetailSection: View {
     var onPokemonClick: ((Int32, String, String?, [String]) -> Void)? = nil
     var onPlayerClick: ((Int32, String) -> Void)? = nil
     @Environment(\.themeColor) private var themeColor
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showCopied = false
+
+    private static let cardWidth: CGFloat = 280
+    private static let cardSpacing: CGFloat = 12
+    private static let innerPadding: CGFloat = 16
 
     private var effectiveIsWinner: Bool {
         showWinnerHighlight && (isWinnerOverride ?? player.isWinner)?.boolValue == true
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Button {
-                    onPlayerClick?(player.id, player.name)
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(player.name)
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Color(.label))
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(.secondaryLabel))
-                    }
-                    .padding(.horizontal, AppTokens.playerChipHorizontalPadding)
-                    .padding(.vertical, AppTokens.playerChipVerticalPadding)
-                    .background(Color(.systemBackground))
-                    .cornerRadius(AppTokens.playerChipCornerRadius)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppTokens.playerChipCornerRadius)
-                            .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
-                    )
+    private var playerHeader: some View {
+        HStack {
+            Button {
+                onPlayerClick?(player.id, player.name)
+            } label: {
+                HStack(spacing: 4) {
+                    Text(player.name)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Color(.label))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(.secondaryLabel))
                 }
-                .buttonStyle(.plain)
+                .padding(.horizontal, AppTokens.playerChipHorizontalPadding)
+                .padding(.vertical, AppTokens.playerChipVerticalPadding)
+                .background(Color(.systemBackground))
+                .cornerRadius(AppTokens.playerChipCornerRadius)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppTokens.playerChipCornerRadius)
+                        .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
+                )
+            }
+            .buttonStyle(.plain)
 
-                Spacer()
+            Spacer()
 
-                Button {
-                    let text = ShowdownPasteFormatter.shared.format(team: player.team)
-                    UIPasteboard.general.string = text
+            Button {
+                let text = ShowdownPasteFormatter.shared.format(team: player.team)
+                UIPasteboard.general.string = text
+                withAnimation {
+                    showCopied = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     withAnimation {
-                        showCopied = true
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        withAnimation {
-                            showCopied = false
-                        }
-                    }
-                } label: {
-                    Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 16))
-                        .foregroundColor(showCopied ? themeColor : Color(.secondaryLabel))
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 4)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(Array(player.team.enumerated()), id: \.offset) { _, pokemon in
-                        PokemonDetailCard(pokemon: pokemon, onPokemonClick: onPokemonClick)
-                            .frame(width: UIScreen.main.bounds.width * 0.7)
+                        showCopied = false
                     }
                 }
-                .padding(.horizontal, 16)
+            } label: {
+                Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                    .font(.system(size: 16))
+                    .foregroundColor(showCopied ? themeColor : Color(.secondaryLabel))
             }
-
-            Spacer().frame(height: 8)
+            .buttonStyle(.plain)
         }
-        .background(Color(.secondarySystemBackground))
-        .overlay(
-            effectiveIsWinner
-                ? RoundedRectangle(cornerRadius: 0).stroke(themeColor, lineWidth: 2)
-                : nil
-        )
-        .overlay(alignment: .bottom) {
+    }
+
+    private var copiedToast: some View {
+        Group {
             if showCopied {
                 Text("Team copied to clipboard")
                     .font(.system(size: 14, weight: .medium))
@@ -245,6 +231,85 @@ struct PlayerTeamDetailSection: View {
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
+    }
+
+    var body: some View {
+        if horizontalSizeClass == .regular {
+            expandedLayout
+        } else {
+            compactLayout
+        }
+    }
+
+    private var compactLayout: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            playerHeader
+                .padding(.horizontal, 16)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Self.cardSpacing) {
+                    ForEach(Array(player.team.enumerated()), id: \.offset) { _, pokemon in
+                        PokemonDetailCard(pokemon: pokemon, onPokemonClick: onPokemonClick)
+                            .frame(width: min(UIScreen.main.bounds.width * 0.7, 320))
+                    }
+                }
+                .padding(.horizontal, Self.innerPadding)
+            }
+        }
+        .padding(.vertical, 8)
+        .background(Color(.secondarySystemBackground))
+        .overlay(
+            effectiveIsWinner
+                ? RoundedRectangle(cornerRadius: 0).stroke(themeColor, lineWidth: 2)
+                : nil
+        )
+        .overlay(alignment: .bottom) { copiedToast }
+    }
+
+    private var expandedColumns: Int {
+        let availableWidth = UIScreen.main.bounds.width - Self.innerPadding * 4
+        let fitted = Int((availableWidth + Self.cardSpacing) / (Self.cardWidth + Self.cardSpacing))
+        return max(1, min(fitted, 3, player.team.count))
+    }
+
+    private var expandedLayout: some View {
+        let columns = expandedColumns
+        let gridWidth = Self.cardWidth * CGFloat(columns) + Self.cardSpacing * CGFloat(columns - 1)
+        let containerWidth = gridWidth + Self.innerPadding * 2
+        let rows = stride(from: 0, to: player.team.count, by: columns).map { startIndex in
+            Array(player.team[startIndex..<min(startIndex + columns, player.team.count)])
+        }
+
+        return VStack(alignment: .leading, spacing: 8) {
+            playerHeader
+
+            VStack(spacing: Self.cardSpacing) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                    HStack(spacing: Self.cardSpacing) {
+                        ForEach(Array(row.enumerated()), id: \.offset) { _, pokemon in
+                            PokemonDetailCard(pokemon: pokemon, onPokemonClick: onPokemonClick)
+                                .frame(width: Self.cardWidth)
+                        }
+                        if row.count < columns {
+                            ForEach(0..<(columns - row.count), id: \.self) { _ in
+                                Color.clear.frame(width: Self.cardWidth)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(Self.innerPadding)
+        .frame(width: containerWidth)
+        .frame(maxWidth: .infinity)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(AppTokens.cardCornerRadius)
+        .overlay(
+            effectiveIsWinner
+                ? RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius).stroke(themeColor, lineWidth: 2)
+                : nil
+        )
+        .overlay(alignment: .bottom) { copiedToast }
     }
 }
 

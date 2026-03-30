@@ -44,7 +44,7 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 | `Player(id, name)` | Player row (favorites, search pinned) | `"player_{id}"` |
 | `Section(header, items, trailingAction?)` | Grouping container with title and optional trailing action (e.g., `SectionAction.SeeMore` renders "See More" + chevron) | `"section_{header}"` |
 | `HighlightButtons(buttons)` | Player profile highlight cards (Top Rated / Latest Rated) | `"highlight_buttons"` |
-| `PokemonGrid(pokemon)` | 3-column grid of Pokemon (player profile "Favorite Pokemon", pokemon profile "Top Teammates") | `"pokemon_grid"` |
+| `PokemonGrid(pokemon)` | Grid of Pokemon (player profile "Favorite Pokemon", pokemon profile "Top Teammates"). 3 columns on iPhone/Android, up to 6 on iPad/desktop web | `"pokemon_grid"` |
 | `StatChipRow(chips)` | Horizontal scrolling row of chips with name+percent and optional image (mobile), FlowRow (desktop web). Used for Top Abilities, Items, Moves, Tera Types. | `"stat_chip_row"` |
 | `FormatSelector` | Format dropdown rendered as a list item (Home, TopPokemon, Pokemon, Player modes) | `"format_selector"` |
 | `SearchField(query)` | Text input for client-side filtering (TopPokemon mode) | `"search_field"` |

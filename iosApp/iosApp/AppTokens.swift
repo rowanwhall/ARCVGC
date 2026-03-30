@@ -20,6 +20,10 @@ enum AppTokens {
 
     // Filter & Search
     static let filterChipHeight: CGFloat = 44
+    static let smallFilterButtonCornerRadius: CGFloat = 6
+    static let smallFilterButtonHorizontalPadding: CGFloat = 6
+    static let smallFilterButtonVerticalPadding: CGFloat = 4
+    static let smallFilterButtonFontSize: CGFloat = 12
     // Player Chip
     static let playerChipHorizontalPadding: CGFloat = 12
     static let playerChipVerticalPadding: CGFloat = 6

@@ -9,7 +9,23 @@ struct SearchFilterCard: View {
     var onAbilityTap: () -> Void
     var compact: Bool = false
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var isExpanded: Bool {
+        horizontalSizeClass == .regular
+    }
+
     var body: some View {
+        if isExpanded {
+            expandedCard
+        } else {
+            compactCard
+        }
+    }
+
+    // MARK: - Compact (iPhone + two-team mode)
+
+    private var compactCard: some View {
         HStack(spacing: compact ? 4 : 8) {
             PokemonAvatar(imageUrl: slot.pokemonImageUrl, circleSize: 32, spriteSize: 44)
 
@@ -43,6 +59,42 @@ struct SearchFilterCard: View {
                 .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
         )
     }
+
+    // MARK: - Expanded (iPad single-team)
+
+    private var expandedCard: some View {
+        HStack(spacing: 12) {
+            PokemonAvatar(imageUrl: slot.pokemonImageUrl, circleSize: 40, spriteSize: 56)
+
+            Text(slot.pokemonName)
+                .font(.system(size: 16, weight: .bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 8) {
+                InlineItemButton(slot: slot, onTap: onItemTap)
+                InlineTeraButton(slot: slot, onTap: onTeraTap)
+                InlineAbilityButton(slot: slot, onTap: onAbilityTap)
+            }
+
+            Button { onRemove() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
+            .frame(width: 32, height: 32)
+        }
+        .padding(12)
+        .background(Color(.systemBackground))
+        .cornerRadius(AppTokens.cardCornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
+                .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
+        )
+    }
+
+    // MARK: - Compact helpers (badges + menu)
 
     @ViewBuilder
     private var badgesContent: some View {
@@ -106,6 +158,94 @@ struct SearchFilterCard: View {
                 .foregroundColor(.secondary)
                 .frame(width: 32, height: 32)
         }
+    }
+}
+
+// MARK: - Inline buttons (iPad expanded)
+
+private struct InlineItemButton: View {
+    let slot: SearchFilterSlotUiModel
+    var onTap: () -> Void
+
+    var body: some View {
+        if !SearchFilterRestrictions.shared.canFilterByItem(pokemonName: slot.pokemonName) {
+            EmptyView()
+        } else if let item = slot.item, let imageUrl = item.imageUrl, let url = URL(string: imageUrl) {
+            Button { onTap() } label: {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFit()
+                } placeholder: {
+                    Color.clear
+                }
+                .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+        } else {
+            SmallFilterButton(label: slot.item?.name ?? "Item", onTap: onTap)
+        }
+    }
+}
+
+private struct InlineTeraButton: View {
+    let slot: SearchFilterSlotUiModel
+    var onTap: () -> Void
+
+    var body: some View {
+        if !SearchFilterRestrictions.shared.canFilterByTeraType(pokemonName: slot.pokemonName) {
+            EmptyView()
+        } else if let teraType = slot.teraType, let imageUrl = teraType.imageUrl, let url = URL(string: imageUrl) {
+            Button { onTap() } label: {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFit()
+                } placeholder: {
+                    Color.clear
+                }
+                .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+        } else {
+            SmallFilterButton(label: slot.teraType?.name ?? "Tera", onTap: onTap)
+        }
+    }
+}
+
+private struct InlineAbilityButton: View {
+    let slot: SearchFilterSlotUiModel
+    var onTap: () -> Void
+
+    var body: some View {
+        if let ability = slot.ability {
+            Button { onTap() } label: {
+                Text(abilityInitials(ability.name))
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(Color(.secondaryLabel))
+                    .frame(width: 32, height: 32)
+                    .background(Color(.systemGray5))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color(.opaqueSeparator), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        } else {
+            SmallFilterButton(label: "Ability", onTap: onTap)
+        }
+    }
+}
+
+private struct SmallFilterButton: View {
+    let label: String
+    var onTap: () -> Void
+
+    var body: some View {
+        Button { onTap() } label: {
+            Text(label)
+                .font(.system(size: AppTokens.smallFilterButtonFontSize))
+                .foregroundColor(Color(.secondaryLabel))
+                .padding(.horizontal, AppTokens.smallFilterButtonHorizontalPadding)
+                .padding(.vertical, AppTokens.smallFilterButtonVerticalPadding)
+                .background(Color(.systemGray5))
+                .cornerRadius(AppTokens.smallFilterButtonCornerRadius)
+        }
+        .buttonStyle(.plain)
     }
 }
 
