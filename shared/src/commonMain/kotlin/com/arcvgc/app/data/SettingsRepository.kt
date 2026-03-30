@@ -113,7 +113,7 @@ class SettingsRepository(
         SettingItem.Action(
             key = KEY_CLEAR_CACHE,
             title = "Invalidate Cache",
-            subtitle = "Clears cached Pokémon, items, tera types, and formats. Use this if your search tab is missing options from one of those.",
+            subtitle = "Clears cached Pokémon, items, tera types, abilities, and formats. Use this if your search tab is missing options from one of those.",
             confirmationMessage = "Are you sure? This action is usually only done once a month and can use a lot of data."
         ),
         SettingItem.Link(

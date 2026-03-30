@@ -350,7 +350,116 @@ class DeepLinkTargetTest {
         assertNull(parseDeepLink("/settings/"))
     }
 
+    // Ability deep link tests
+
+    @Test
+    fun parseSearchWithAbilities() {
+        val result = parseDeepLink("/search?p=150,42&a=7,_&f=1&order=rating")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        val params = (result.target as DeepLinkTarget.Search).params
+        assertEquals(listOf(150, 42), params.pokemonIds)
+        assertEquals(listOf(7, null), params.abilityIds)
+    }
+
+    // Team 2 deep link tests
+
+    @Test
+    fun parseSearchWithTeam2() {
+        val result = parseDeepLink("/search?p=150&p2=25,143&f=1&order=rating")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        val params = (result.target as DeepLinkTarget.Search).params
+        assertEquals(listOf(150), params.pokemonIds)
+        assertEquals(listOf(25, 143), params.team2PokemonIds)
+    }
+
+    @Test
+    fun parseSearchWithTeam2SubFilters() {
+        val result = parseDeepLink("/search?p=150&p2=25&i2=5&t2=3&a2=12&f=1&order=rating")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        val params = (result.target as DeepLinkTarget.Search).params
+        assertEquals(listOf(25), params.team2PokemonIds)
+        assertEquals(listOf(5), params.team2ItemIds)
+        assertEquals(listOf(3), params.team2TeraTypeIds)
+        assertEquals(listOf(12), params.team2AbilityIds)
+    }
+
+    // Winner filter deep link tests
+
+    @Test
+    fun parseSearchWithWinnerFilterTeam1() {
+        val result = parseDeepLink("/search?p=150&f=1&order=rating&w=1")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        assertEquals(WinnerFilter.TEAM1, (result.target as DeepLinkTarget.Search).params.winnerFilter)
+    }
+
+    @Test
+    fun parseSearchWithWinnerFilterTeam2() {
+        val result = parseDeepLink("/search?p=150&p2=25&f=1&order=rating&w=2")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        assertEquals(WinnerFilter.TEAM2, (result.target as DeepLinkTarget.Search).params.winnerFilter)
+    }
+
+    @Test
+    fun parseSearchWithInvalidWinnerFilterDefaultsToNone() {
+        val result = parseDeepLink("/search?p=150&f=1&order=rating&w=3")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        assertEquals(WinnerFilter.NONE, (result.target as DeepLinkTarget.Search).params.winnerFilter)
+    }
+
+    @Test
+    fun parseSearchWithNoWinnerFilterDefaultsToNone() {
+        val result = parseDeepLink("/search?p=150&f=1&order=rating")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        assertEquals(WinnerFilter.NONE, (result.target as DeepLinkTarget.Search).params.winnerFilter)
+    }
+
+    // Backward compatibility
+
+    @Test
+    fun backwardCompatibilityOldUrlsStillParse() {
+        val result = parseDeepLink("/search?p=150,42&i=_,5&t=_,3&f=1&min=1500&order=rating")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        val params = (result.target as DeepLinkTarget.Search).params
+        assertEquals(listOf(150, 42), params.pokemonIds)
+        assertEquals(listOf(null, 5), params.itemIds)
+        assertEquals(listOf(null, 3), params.teraTypeIds)
+        assertTrue(params.abilityIds.isEmpty())
+        assertTrue(params.team2PokemonIds.isEmpty())
+        assertEquals(WinnerFilter.NONE, params.winnerFilter)
+    }
+
+    // Edge cases
+
+    @Test
+    fun parseSearchWithTeam2OnlyFallsToSearchTab() {
+        // team2 without team1 is invalid — p is required, so this falls through to SearchTab
+        val result = parseDeepLink("/search?p2=25&f=1&order=rating")!!
+        assertIs<DeepLinkTarget.SearchTab>(result.target)
+    }
+
     // Round-trip tests
+
+    @Test
+    fun encodeSearchPathRoundTripWinnerFilterTeam2() {
+        val original = SearchParams(
+            filters = listOf(
+                SearchFilterSlot(pokemonId = 150, pokemonName = "Mewtwo")
+            ),
+            team2Filters = listOf(
+                SearchFilterSlot(pokemonId = 25, pokemonName = "Pikachu")
+            ),
+            formatId = 1,
+            orderBy = "rating",
+            winnerFilter = WinnerFilter.TEAM2
+        )
+        val encoded = encodeSearchPath(original)
+        val parsed = parseDeepLink(encoded)!!
+        assertIs<DeepLinkTarget.Search>(parsed.target)
+        val params = (parsed.target as DeepLinkTarget.Search).params
+        assertEquals(WinnerFilter.TEAM2, params.winnerFilter)
+        assertEquals(listOf(150), params.pokemonIds)
+        assertEquals(listOf(25), params.team2PokemonIds)
+    }
 
     @Test
     fun encodeSearchPathRoundTrip() {
@@ -378,6 +487,38 @@ class DeepLinkTargetTest {
         assertNull(params.maximumRating)
         assertEquals("date", params.orderBy)
         assertEquals("Wolfe Glick", params.playerName)
+    }
+
+    @Test
+    fun encodeSearchPathRoundTripFull() {
+        val original = SearchParams(
+            filters = listOf(
+                SearchFilterSlot(pokemonId = 150, itemId = null, teraTypeId = 3, abilityId = 7, pokemonName = "Mewtwo"),
+                SearchFilterSlot(pokemonId = 42, itemId = 5, teraTypeId = null, abilityId = null, pokemonName = "Golbat")
+            ),
+            team2Filters = listOf(
+                SearchFilterSlot(pokemonId = 25, itemId = 10, teraTypeId = null, abilityId = 12, pokemonName = "Pikachu")
+            ),
+            formatId = 1,
+            minimumRating = 1500,
+            orderBy = "date",
+            winnerFilter = WinnerFilter.TEAM1
+        )
+        val encoded = encodeSearchPath(original)
+        val parsed = parseDeepLink(encoded)!!
+        assertIs<DeepLinkTarget.Search>(parsed.target)
+        val params = (parsed.target as DeepLinkTarget.Search).params
+        assertEquals(listOf(150, 42), params.pokemonIds)
+        assertEquals(listOf(null, 5), params.itemIds)
+        assertEquals(listOf(3, null), params.teraTypeIds)
+        assertEquals(listOf(7, null), params.abilityIds)
+        assertEquals(listOf(25), params.team2PokemonIds)
+        assertEquals(listOf(10), params.team2ItemIds)
+        assertTrue(params.team2TeraTypeIds.isEmpty()) // none non-null, so not encoded
+        assertEquals(listOf(12), params.team2AbilityIds)
+        assertEquals(WinnerFilter.TEAM1, params.winnerFilter)
+        assertEquals(1500, params.minimumRating)
+        assertEquals("date", params.orderBy)
     }
 
     @Test

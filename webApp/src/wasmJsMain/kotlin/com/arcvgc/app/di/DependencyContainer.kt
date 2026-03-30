@@ -24,7 +24,14 @@ object DependencyContainer {
             apiService = apiService,
             itemCatalogProvider = { itemCatalogRepository.state.value.items },
             teraTypeCatalogProvider = { teraTypeCatalogRepository.state.value.items },
-            formatCatalogProvider = { formatCatalogRepository.state.value.items }
+            formatCatalogProvider = { formatCatalogRepository.state.value.items },
+            abilityCatalogProvider = { abilityCatalogRepository.state.value.items },
+            catalogStateFlows = listOf(
+                itemCatalogRepository.state,
+                teraTypeCatalogRepository.state,
+                formatCatalogRepository.state,
+                abilityCatalogRepository.state
+            )
         )
     }
     val favoritesRepository: FavoritesRepository by lazy { FavoritesRepository(FavoritesStorage()) }

@@ -140,7 +140,7 @@ All three platforms support deep links. Every page in the app is addressable via
 - `/battle/42` — Legacy format, opens battle 42 directly
 - `/?battle=42` — Opens battle 42 directly
 
-**Search query parameters:** `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `f` (format ID), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping.
+**Search query parameters:** Team 1: `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `a` (ability IDs per slot). Team 2: `p2`, `i2`, `t2`, `a2` (same format). General: `f` (format ID), `w` (winner filter: `1`=team1, `2`=team2), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping. Team 2 and winner params are additive — old clients ignore unknown params gracefully.
 
 ### Shared module
 

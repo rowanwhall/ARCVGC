@@ -1,6 +1,7 @@
 package com.arcvgc.app.di
 
 import com.arcvgc.app.data.DeepLinkResolver
+import com.arcvgc.app.data.repository.AbilityCatalogRepository
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.ItemCatalogRepository
 import com.arcvgc.app.data.repository.TeraTypeCatalogRepository
@@ -25,11 +26,19 @@ object NetworkModule {
         apiService: ApiService,
         itemCatalogRepository: ItemCatalogRepository,
         teraTypeCatalogRepository: TeraTypeCatalogRepository,
-        formatCatalogRepository: FormatCatalogRepository
+        formatCatalogRepository: FormatCatalogRepository,
+        abilityCatalogRepository: AbilityCatalogRepository
     ): DeepLinkResolver = DeepLinkResolver(
         apiService = apiService,
         itemCatalogProvider = { itemCatalogRepository.state.value.items },
         teraTypeCatalogProvider = { teraTypeCatalogRepository.state.value.items },
-        formatCatalogProvider = { formatCatalogRepository.state.value.items }
+        formatCatalogProvider = { formatCatalogRepository.state.value.items },
+        abilityCatalogProvider = { abilityCatalogRepository.state.value.items },
+        catalogStateFlows = listOf(
+            itemCatalogRepository.state,
+            teraTypeCatalogRepository.state,
+            formatCatalogRepository.state,
+            abilityCatalogRepository.state
+        )
     )
 }

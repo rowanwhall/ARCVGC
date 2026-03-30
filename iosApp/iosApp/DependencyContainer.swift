@@ -40,7 +40,12 @@ final class DependencyContainer: ObservableObject {
             apiService: apiService,
             itemCatalogProvider: { catalog.itemItems },
             teraTypeCatalogProvider: { catalog.teraTypeItems },
-            formatCatalogProvider: { catalog.formatItems }
+            formatCatalogProvider: { catalog.formatItems },
+            abilityCatalogProvider: { catalog.abilityItems },
+            // Empty: iOS CatalogStore uses Swift @Published, not Kotlin StateFlow.
+            // Deep links on iOS arrive via .onOpenURL when the app is already running
+            // and catalogs are loaded, so waiting is unnecessary.
+            catalogStateFlows: []
         )
         self.settingsStore = SettingsStore(favoritesRepository: favoritesStore.repo)
     }

@@ -20,6 +20,12 @@ data class SearchQueryParams(
     val pokemonIds: List<Int>,
     val itemIds: List<Int?> = emptyList(),
     val teraTypeIds: List<Int?> = emptyList(),
+    val abilityIds: List<Int?> = emptyList(),
+    val team2PokemonIds: List<Int> = emptyList(),
+    val team2ItemIds: List<Int?> = emptyList(),
+    val team2TeraTypeIds: List<Int?> = emptyList(),
+    val team2AbilityIds: List<Int?> = emptyList(),
+    val winnerFilter: WinnerFilter = WinnerFilter.NONE,
     val formatId: Int,
     val minimumRating: Int? = null,
     val maximumRating: Int? = null,
@@ -82,12 +88,30 @@ private fun parseSearchQuery(params: Map<String, String>): DeepLinkTarget.Search
 
     val itemIds = params["i"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
     val teraTypeIds = params["t"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
+    val abilityIds = params["a"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
+
+    val team2PokemonIds = params["p2"]?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+    val team2ItemIds = params["i2"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
+    val team2TeraTypeIds = params["t2"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
+    val team2AbilityIds = params["a2"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
+
+    val winnerFilter = when (params["w"]) {
+        "1" -> WinnerFilter.TEAM1
+        "2" -> WinnerFilter.TEAM2
+        else -> WinnerFilter.NONE
+    }
 
     return DeepLinkTarget.Search(
         SearchQueryParams(
             pokemonIds = pokemonIds,
             itemIds = itemIds,
             teraTypeIds = teraTypeIds,
+            abilityIds = abilityIds,
+            team2PokemonIds = team2PokemonIds,
+            team2ItemIds = team2ItemIds,
+            team2TeraTypeIds = team2TeraTypeIds,
+            team2AbilityIds = team2AbilityIds,
+            winnerFilter = winnerFilter,
             formatId = formatId,
             minimumRating = params["min"]?.toIntOrNull(),
             maximumRating = params["max"]?.toIntOrNull(),
@@ -139,24 +163,47 @@ private fun decodePercent(value: String): String {
 fun encodeSearchPath(params: SearchParams): String {
     val parts = mutableListOf<String>()
 
+    // Team 1
     val pokemonIds = params.filters.joinToString(",") { it.pokemonId.toString() }
     parts.add("p=$pokemonIds")
 
-    val itemIds = params.filters.joinToString(",") { slot ->
-        slot.itemId?.toString() ?: "_"
-    }
     if (params.filters.any { it.itemId != null }) {
-        parts.add("i=$itemIds")
+        parts.add("i=${params.filters.joinToString(",") { it.itemId?.toString() ?: "_" }}")
     }
 
-    val teraTypeIds = params.filters.joinToString(",") { slot ->
-        slot.teraTypeId?.toString() ?: "_"
-    }
     if (params.filters.any { it.teraTypeId != null }) {
-        parts.add("t=$teraTypeIds")
+        parts.add("t=${params.filters.joinToString(",") { it.teraTypeId?.toString() ?: "_" }}")
+    }
+
+    if (params.filters.any { it.abilityId != null }) {
+        parts.add("a=${params.filters.joinToString(",") { it.abilityId?.toString() ?: "_" }}")
+    }
+
+    // Team 2
+    if (params.team2Filters.isNotEmpty()) {
+        parts.add("p2=${params.team2Filters.joinToString(",") { it.pokemonId.toString() }}")
+
+        if (params.team2Filters.any { it.itemId != null }) {
+            parts.add("i2=${params.team2Filters.joinToString(",") { it.itemId?.toString() ?: "_" }}")
+        }
+
+        if (params.team2Filters.any { it.teraTypeId != null }) {
+            parts.add("t2=${params.team2Filters.joinToString(",") { it.teraTypeId?.toString() ?: "_" }}")
+        }
+
+        if (params.team2Filters.any { it.abilityId != null }) {
+            parts.add("a2=${params.team2Filters.joinToString(",") { it.abilityId?.toString() ?: "_" }}")
+        }
     }
 
     parts.add("f=${params.formatId}")
+
+    // Winner filter
+    when (params.winnerFilter) {
+        WinnerFilter.TEAM1 -> parts.add("w=1")
+        WinnerFilter.TEAM2 -> parts.add("w=2")
+        WinnerFilter.NONE -> {} // omit
+    }
 
     params.minimumRating?.takeIf { it > 0 }?.let { parts.add("min=$it") }
     params.maximumRating?.takeIf { it > 0 }?.let { parts.add("max=$it") }
