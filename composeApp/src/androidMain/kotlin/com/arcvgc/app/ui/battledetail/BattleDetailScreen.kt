@@ -7,7 +7,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -71,7 +74,10 @@ import com.arcvgc.app.ui.model.SetMatchUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import com.arcvgc.app.ui.model.toReplayNavState
 import com.arcvgc.app.ui.model.TypeUiModel
+import com.arcvgc.app.ui.LocalWindowSizeClass
+import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.tokens.AppTokens.BulletSeparator
+import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.InfoButtonSize
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
@@ -156,6 +162,8 @@ fun BattleDetailPage(
         }
     }
 }
+
+private val CARD_WIDTH = 280.dp
 
 private data class GameButton(val positionInSet: Int?, val replayUrl: String, val isCurrent: Boolean)
 
@@ -263,23 +271,11 @@ private fun BattleDetailBody(
 }
 
 @Composable
-private fun PlayerTeamSection(
+private fun PlayerTeamHeader(
     player: PlayerDetailUiModel,
     modifier: Modifier = Modifier,
-    showWinnerHighlight: Boolean = true,
-    onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
     onPlayerClick: ((Int, String) -> Unit)? = null
 ) {
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val cardWidth = screenWidth * 0.7f
-
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val winnerBorder = if (showWinnerHighlight && player.isWinner == true) {
-        Modifier.border(WinnerBorderWidth, primaryColor)
-    } else {
-        Modifier
-    }
-
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     var showCopied by remember { mutableStateOf(false) }
@@ -291,79 +287,147 @@ private fun PlayerTeamSection(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(winnerBorder)
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(vertical = 8.dp)
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .clip(RoundedCornerShape(PlayerChipCornerRadius))
+                .background(MaterialTheme.colorScheme.surface)
+                .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(PlayerChipCornerRadius))
+                .clickable { onPlayerClick?.invoke(player.id, player.name) }
+                .padding(horizontal = PlayerChipHorizontalPadding, vertical = PlayerChipVerticalPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(PlayerChipCornerRadius))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(PlayerChipCornerRadius))
-                    .clickable { onPlayerClick?.invoke(player.id, player.name) }
-                    .padding(horizontal = PlayerChipHorizontalPadding, vertical = PlayerChipVerticalPadding),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = player.name,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = SecondaryIconAlpha)
-                )
-            }
-            Spacer(Modifier.weight(1f))
-            IconButton(
-                onClick = {
-                    val text = ShowdownPasteFormatter.format(player.team)
-                    clipboardManager.setText(AnnotatedString(text))
-                    showCopied = true
-                    Toast.makeText(context, "Team copied to clipboard", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    imageVector = if (showCopied) Icons.Default.Check else Icons.Outlined.ContentCopy,
-                    contentDescription = "Copy team",
-                    modifier = Modifier.size(20.dp),
-                    tint = if (showCopied) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = SecondaryIconAlpha)
-                )
-            }
+            Text(
+                text = player.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = SecondaryIconAlpha)
+            )
         }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
+        Spacer(Modifier.weight(1f))
+        IconButton(
+            onClick = {
+                val text = ShowdownPasteFormatter.format(player.team)
+                clipboardManager.setText(AnnotatedString(text))
+                showCopied = true
+                Toast.makeText(context, "Team copied to clipboard", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.size(36.dp)
         ) {
-            itemsIndexed(player.team) { _, pokemon ->
-                PokemonDetailCard(
-                    pokemon = pokemon,
-                    modifier = Modifier.width(cardWidth),
-                    onPokemonClick = onPokemonClick
+            Icon(
+                imageVector = if (showCopied) Icons.Default.Check else Icons.Outlined.ContentCopy,
+                contentDescription = "Copy team",
+                modifier = Modifier.size(20.dp),
+                tint = if (showCopied) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurface.copy(alpha = SecondaryIconAlpha)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PlayerTeamSection(
+    player: PlayerDetailUiModel,
+    modifier: Modifier = Modifier,
+    showWinnerHighlight: Boolean = true,
+    onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
+    onPlayerClick: ((Int, String) -> Unit)? = null
+) {
+    val isCompact = LocalWindowSizeClass.current == WindowSizeClass.Compact
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val winnerBorder = if (showWinnerHighlight && player.isWinner == true) {
+        if (isCompact) Modifier.border(WinnerBorderWidth, primaryColor)
+        else Modifier.border(WinnerBorderWidth, primaryColor, RoundedCornerShape(CardCornerRadius))
+    } else {
+        Modifier
+    }
+
+    if (isCompact) {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .then(winnerBorder)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .padding(vertical = 8.dp)
+        ) {
+            PlayerTeamHeader(
+                player = player,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                onPlayerClick = onPlayerClick
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                itemsIndexed(player.team) { _, pokemon ->
+                    PokemonDetailCard(
+                        pokemon = pokemon,
+                        modifier = Modifier.width(LocalConfiguration.current.screenWidthDp.dp * 0.7f),
+                        onPokemonClick = onPokemonClick
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    } else {
+        val cardSpacing = 12.dp
+        val innerPadding = 16.dp
+        BoxWithConstraints(
+            contentAlignment = Alignment.TopCenter,
+            modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)
+        ) {
+            val availableForCards = maxWidth - innerPadding * 2
+            val columns = ((availableForCards + cardSpacing) / (CARD_WIDTH + cardSpacing))
+                .toInt()
+                .coerceIn(1, player.team.size.coerceAtMost(3).coerceAtLeast(1))
+            val flowRowWidth = CARD_WIDTH * columns + cardSpacing * (columns - 1)
+            val containerWidth = flowRowWidth + innerPadding * 2
+
+            Column(
+                modifier = Modifier
+                    .width(containerWidth)
+                    .then(winnerBorder)
+                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(CardCornerRadius))
+                    .padding(innerPadding)
+            ) {
+                PlayerTeamHeader(
+                    player = player,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    onPlayerClick = onPlayerClick
                 )
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(cardSpacing),
+                    verticalArrangement = Arrangement.spacedBy(cardSpacing),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    player.team.forEach { pokemon ->
+                        PokemonDetailCard(
+                            pokemon = pokemon,
+                            modifier = Modifier.width(CARD_WIDTH),
+                            onPokemonClick = onPokemonClick
+                        )
+                    }
+                }
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

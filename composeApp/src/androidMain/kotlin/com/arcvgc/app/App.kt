@@ -10,6 +10,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -48,6 +49,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -71,6 +73,8 @@ import com.arcvgc.app.ui.model.DarkModeOption
 import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.search.SearchPage
 import com.arcvgc.app.ui.settings.SettingsPage
+import com.arcvgc.app.ui.LocalWindowSizeClass
+import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.settings.SettingsViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -224,6 +228,9 @@ fun App(deepLink: DeepLink? = null) {
     }
 
     MaterialTheme(colorScheme = colorSchemeForTheme(themeId, isDark)) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val windowSizeClass = if (maxWidth < 600.dp) WindowSizeClass.Compact else WindowSizeClass.Expanded
+        CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass) {
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
         var searchOverlayParams by remember { mutableStateOf<SearchParams?>(null) }
         var deepLinkOverlay by remember { mutableStateOf<ContentListMode?>(null) }
@@ -442,6 +449,8 @@ fun App(deepLink: DeepLink? = null) {
                     ForceUpgradeOverlay()
                 }
             }
+        }
+        }
         }
     }
 }

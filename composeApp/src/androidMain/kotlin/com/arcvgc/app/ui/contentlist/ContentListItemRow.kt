@@ -26,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.arcvgc.app.ui.LocalWindowSizeClass
+import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.components.BattleCard
 import com.arcvgc.app.ui.components.FillPokemonAvatar
 import com.arcvgc.app.ui.model.ContentListItem
@@ -103,6 +105,11 @@ internal fun ContentListItemRow(
             }
         }
         is ContentListItem.PokemonGrid -> {
+            val columns = if (LocalWindowSizeClass.current == WindowSizeClass.Compact) {
+                3
+            } else {
+                item.pokemon.size.coerceAtMost(6)
+            }
             Surface(
                 shape = RoundedCornerShape(CardCornerRadius),
                 color = MaterialTheme.colorScheme.surface,
@@ -113,7 +120,7 @@ internal fun ContentListItemRow(
                     modifier = Modifier.padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    item.pokemon.chunked(3).forEach { row ->
+                    item.pokemon.chunked(columns).forEach { row ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -151,7 +158,7 @@ internal fun ContentListItemRow(
                                     }
                                 }
                             }
-                            repeat(3 - row.size) {
+                            repeat(columns - row.size) {
                                 Box(modifier = Modifier.weight(1f))
                             }
                         }
