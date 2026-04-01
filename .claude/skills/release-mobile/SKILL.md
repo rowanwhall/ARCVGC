@@ -21,18 +21,27 @@ If `$ARGUMENTS` was provided, use it as the new version name. Otherwise, ask the
 
 The new version code is always the current version code + 1 (auto-incremented).
 
-## Step 2: Bump versions
+## Step 2: Generate release notes
+
+Find the commit where the current version was set by searching git history for the last change to `versionName` in `composeApp/build.gradle.kts`:
+
+```bash
+git log --oneline -S 'versionName' -- composeApp/build.gradle.kts | head -1
+```
+
+This gives the commit that bumped to the current version. List all commits since that commit, excluding non-user-facing changes (e.g., skill/tooling updates, doc-only changes). Summarize the user-facing changes as bullet-point release notes and present them to the user for review before proceeding.
+
+## Step 3: Bump versions
 
 Update both files:
 - `composeApp/build.gradle.kts`: set `versionCode` and `versionName`
 - `iosApp/Configuration/Config.xcconfig`: set `CURRENT_PROJECT_VERSION` and `MARKETING_VERSION`
 
-## Step 3: Build Android AAB
+## Step 4: Build Android AAB
 
 Run `./gradlew :composeApp:bundleRelease` and confirm success. Report the output path of the AAB.
 
-## Step 4: iOS instructions
+## Step 5: iOS instructions
 
 Remind the user:
 - Archive and distribute the iOS app from Xcode (Product > Archive > Distribute App)
-- The `ITSAppUsesNonExemptEncryption` key in Info.plist should be set to `false` (standard HTTPS only) to avoid the "Missing Compliance" warning in App Store Connect
