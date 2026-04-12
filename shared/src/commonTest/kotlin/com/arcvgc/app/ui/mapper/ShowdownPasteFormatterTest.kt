@@ -12,7 +12,7 @@ class ShowdownPasteFormatterTest {
     private fun pokemon(
         name: String = "Pikachu",
         item: ItemUiModel? = ItemUiModel(1, "Choice Scarf", null),
-        abilityName: String = "Static",
+        abilityName: String? = "Static",
         moves: List<String> = listOf("Thunderbolt", "Volt Switch", "Surf", "Protect"),
         teraType: TeraTypeUiModel? = TeraTypeUiModel(1, "Electric", null)
     ) = PokemonDetailUiModel(
@@ -100,6 +100,21 @@ class ShowdownPasteFormatterTest {
             Tera Type: Fire
             - Flamethrower
             - Air Slash
+        """.trimIndent()
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun closedTeamsheet_omitsAbilityAndMoves() {
+        val result = ShowdownPasteFormatter.format(listOf(pokemon(
+            abilityName = null,
+            item = null,
+            moves = emptyList(),
+            teraType = null
+        )))
+        val expected = """
+            Pikachu
+            Level: 50
         """.trimIndent()
         assertEquals(expected, result)
     }

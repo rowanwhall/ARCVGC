@@ -5,7 +5,7 @@ data class PokemonDetailUiModel(
     val name: String,
     val imageUrl: String?,
     val item: ItemUiModel?,
-    val abilityName: String,
+    val abilityName: String?,
     val moves: List<String>,
     val types: List<TypeUiModel>,
     val teraType: TeraTypeUiModel? = null

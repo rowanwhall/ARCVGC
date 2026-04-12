@@ -74,7 +74,7 @@ fun testPokemonDetail(
     name: String = "Pikachu",
     pokedexNumber: Int? = 25,
     tier: String = "OU",
-    ability: Ability = testAbility(),
+    ability: Ability? = testAbility(),
     item: DomainItem? = testDomainItem(),
     moves: List<Move> = listOf(
         testMove(1, "Thunderbolt"),

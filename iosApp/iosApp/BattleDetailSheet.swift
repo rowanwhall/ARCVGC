@@ -81,22 +81,28 @@ struct BattleDetailPage: View {
                             HStack(spacing: 8) {
                                 ForEach(Array(allGames.enumerated()), id: \.offset) { _, game in
                                     let label = game.position.map { "Game \($0)" } ?? "View Replay"
+                                    let buttonLabel = HStack(spacing: 4) {
+                                        Text(label)
+                                            .font(.subheadline)
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 10, weight: .semibold))
+                                    }
                                     if game.isCurrent {
                                         Button {
                                             onViewReplay?(battleDetail.toReplayNavState(tappedUrl: game.url))
                                         } label: {
-                                            Text(label)
-                                                .font(.subheadline)
+                                            buttonLabel
                                         }
                                         .buttonStyle(.borderedProminent)
+                                        .controlSize(.small)
                                     } else {
                                         Button {
                                             onViewReplay?(battleDetail.toReplayNavState(tappedUrl: game.url))
                                         } label: {
-                                            Text(label)
-                                                .font(.subheadline)
+                                            buttonLabel
                                         }
                                         .buttonStyle(.bordered)
+                                        .controlSize(.small)
                                     }
                                 }
                             }

@@ -104,6 +104,45 @@ class BattleDetailUiMapperTest {
     }
 
     @Test
+    fun nullAbilityMapsToNullAbilityName() {
+        val pokemon = testPokemonDetail(ability = null)
+        val detail = testMatchDetail(
+            players = listOf(
+                testPlayerDetail(team = listOf(pokemon)),
+                testPlayerDetail(id = 2, name = "PlayerTwo")
+            )
+        )
+
+        val result = BattleDetailUiMapper.map(detail)
+
+        assertNull(result.player1.team[0].abilityName)
+    }
+
+    @Test
+    fun closedTeamsheetPokemonMapsGracefully() {
+        val pokemon = testPokemonDetail(
+            ability = null,
+            item = null,
+            moves = emptyList(),
+            teraType = null
+        )
+        val detail = testMatchDetail(
+            players = listOf(
+                testPlayerDetail(team = listOf(pokemon)),
+                testPlayerDetail(id = 2, name = "PlayerTwo")
+            )
+        )
+
+        val result = BattleDetailUiMapper.map(detail)
+
+        val uiPokemon = result.player1.team[0]
+        assertNull(uiPokemon.abilityName)
+        assertNull(uiPokemon.item)
+        assertTrue(uiPokemon.moves.isEmpty())
+        assertNull(uiPokemon.teraType)
+    }
+
+    @Test
     fun zeroPlayersProducesTwoUnknownWithIdZero() {
         val detail = testMatchDetail(players = emptyList())
 

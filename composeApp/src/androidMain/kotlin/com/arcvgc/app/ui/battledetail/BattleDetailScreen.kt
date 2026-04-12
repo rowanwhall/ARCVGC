@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -234,14 +236,29 @@ private fun BattleDetailBody(
             ) {
                 allGames.forEach { game ->
                     val label = game.positionInSet?.let { "Game $it" } ?: "View Replay"
+                    val gamePadding = PaddingValues(horizontal = PlayerChipHorizontalPadding, vertical = ButtonDefaults.ContentPadding.calculateTopPadding())
+                    val gameLabel: @Composable RowScope.() -> Unit = {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(label)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                     if (game.isCurrent) {
-                        Button(onClick = { onViewReplay(battleDetail.toReplayNavState(game.replayUrl)) }) {
-                            Text(label)
-                        }
+                        Button(
+                            onClick = { onViewReplay(battleDetail.toReplayNavState(game.replayUrl)) },
+                            contentPadding = gamePadding,
+                            content = gameLabel
+                        )
                     } else {
-                        OutlinedButton(onClick = { onViewReplay(battleDetail.toReplayNavState(game.replayUrl)) }) {
-                            Text(label)
-                        }
+                        OutlinedButton(
+                            onClick = { onViewReplay(battleDetail.toReplayNavState(game.replayUrl)) },
+                            contentPadding = gamePadding,
+                            content = gameLabel
+                        )
                     }
                 }
             }

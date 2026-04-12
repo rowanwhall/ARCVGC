@@ -50,40 +50,47 @@ struct PokemonDetailCard: View {
                 Spacer().frame(height: 2)
 
                 // Ability · Item
-                HStack(spacing: 0) {
-                    Text(pokemon.abilityName)
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                    if let item = pokemon.item {
-                        Text(" \(AppTokens.bulletSeparator) ")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                        Text(item.name)
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
+                if pokemon.abilityName != nil || pokemon.item != nil {
+                    HStack(spacing: 0) {
+                        if let abilityName = pokemon.abilityName {
+                            Text(abilityName)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                        if let item = pokemon.item {
+                            if pokemon.abilityName != nil {
+                                Text(" \(AppTokens.bulletSeparator) ")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+                            Text(item.name)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    .lineLimit(1)
                 }
-                .lineLimit(1)
-
-                Spacer().frame(height: 6)
 
                 // Moves — full-width rows with centered text
                 let moves = Array(pokemon.moves.prefix(4))
-                VStack(spacing: 2) {
-                    HStack(spacing: 4) {
-                        if moves.count > 0 {
-                            MoveChip(moveName: moves[0])
+                if !moves.isEmpty {
+                    Spacer().frame(height: 6)
+                    VStack(spacing: 2) {
+                        HStack(spacing: 4) {
+                            if moves.count > 0 {
+                                MoveChip(moveName: moves[0])
+                            }
+                            if moves.count > 1 {
+                                MoveChip(moveName: moves[1])
+                            }
                         }
-                        if moves.count > 1 {
-                            MoveChip(moveName: moves[1])
-                        }
-                    }
-                    HStack(spacing: 4) {
-                        if moves.count > 2 {
-                            MoveChip(moveName: moves[2])
-                        }
-                        if moves.count > 3 {
-                            MoveChip(moveName: moves[3])
+                        HStack(spacing: 4) {
+                            if moves.count > 2 {
+                                MoveChip(moveName: moves[2])
+                            }
+                            if moves.count > 3 {
+                                MoveChip(moveName: moves[3])
+                            }
                         }
                     }
                 }
@@ -175,5 +182,24 @@ struct MoveChip: View {
     )
 
     PokemonDetailCard(pokemon: samplePokemon)
+        .padding()
+}
+
+#Preview("Closed Teamsheet") {
+    let closedPokemon = PokemonDetailUiModel(
+        id: 149,
+        name: "Dragonite",
+        imageUrl: nil,
+        item: nil,
+        abilityName: nil,
+        moves: [],
+        types: [
+            TypeUiModel(name: "Dragon", imageUrl: nil),
+            TypeUiModel(name: "Flying", imageUrl: nil)
+        ],
+        teraType: nil
+    )
+
+    PokemonDetailCard(pokemon: closedPokemon)
         .padding()
 }

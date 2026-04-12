@@ -5,7 +5,7 @@ data class PokemonDetail(
     val name: String,
     val pokedexNumber: Int?,
     val tier: String,
-    val ability: Ability,
+    val ability: Ability?,
     val item: DomainItem?,
     val moves: List<Move>,
     val types: List<PokemonType>,

@@ -59,7 +59,7 @@ fun PokemonDetailDto.toDomain(): PokemonDetail {
         name = name,
         pokedexNumber = pokedexNumber,
         tier = tier.orEmpty(),
-        ability = ability.toDomain(),
+        ability = ability?.toDomain(),
         item = item?.toDomainItem(),
         moves = moves.map { it.toDomain() },
         types = types.map { it.toDomain() },

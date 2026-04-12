@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
 import androidx.compose.foundation.layout.Box
@@ -38,6 +39,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -143,14 +145,29 @@ fun BattleDetailContent(
                     ) {
                         allGames.forEach { game ->
                             val label = game.positionInSet?.let { "Game $it" } ?: "View Replay"
+                            val gamePadding = PaddingValues(horizontal = PlayerChipHorizontalPadding, vertical = ButtonDefaults.ContentPadding.calculateTopPadding())
+                            val gameLabel: @Composable RowScope.() -> Unit = {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(label)
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                             if (game.isCurrent) {
-                                Button(onClick = { window.open(game.replayUrl, "_blank") }) {
-                                    Text(label)
-                                }
+                                Button(
+                                    onClick = { window.open(game.replayUrl, "_blank") },
+                                    contentPadding = gamePadding,
+                                    content = gameLabel
+                                )
                             } else {
-                                OutlinedButton(onClick = { window.open(game.replayUrl, "_blank") }) {
-                                    Text(label)
-                                }
+                                OutlinedButton(
+                                    onClick = { window.open(game.replayUrl, "_blank") },
+                                    contentPadding = gamePadding,
+                                    content = gameLabel
+                                )
                             }
                         }
                     }

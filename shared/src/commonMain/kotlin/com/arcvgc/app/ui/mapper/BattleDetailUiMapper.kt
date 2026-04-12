@@ -57,7 +57,7 @@ object BattleDetailUiMapper {
                     imageUrl = it.imageUrl
                 )
             },
-            abilityName = ability.displayName,
+            abilityName = ability?.displayName,
             moves = moves.map { it.displayName },
             types = types.map {
                 TypeUiModel(

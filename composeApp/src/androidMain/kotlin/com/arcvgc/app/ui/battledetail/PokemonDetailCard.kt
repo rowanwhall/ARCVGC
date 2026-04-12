@@ -162,63 +162,70 @@ fun PokemonDetailCard(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 // Ability · Item
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = pokemon.abilityName,
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    )
-                    pokemon.item?.let { item ->
-                        Text(
-                            text = " $BulletSeparator ",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (pokemon.abilityName != null || pokemon.item != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        pokemon.abilityName?.let { ability ->
+                            Text(
+                                text = ability,
+                                style = TextStyle(
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             )
-                        )
-                        Text(
-                            text = item.name,
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        }
+                        pokemon.item?.let { item ->
+                            if (pokemon.abilityName != null) {
+                                Text(
+                                    text = " $BulletSeparator ",
+                                    style = TextStyle(
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                )
+                            }
+                            Text(
+                                text = item.name,
+                                style = TextStyle(
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             )
-                        )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
-
                 // Moves — full-width rows with centered text
                 val moves = pokemon.moves.take(4)
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Row(
+                if (moves.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        moves.getOrNull(0)?.let {
-                            MoveChip(moveName = it, modifier = Modifier.weight(1f))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            moves.getOrNull(0)?.let {
+                                MoveChip(moveName = it, modifier = Modifier.weight(1f))
+                            }
+                            moves.getOrNull(1)?.let {
+                                MoveChip(moveName = it, modifier = Modifier.weight(1f))
+                            }
                         }
-                        moves.getOrNull(1)?.let {
-                            MoveChip(moveName = it, modifier = Modifier.weight(1f))
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        moves.getOrNull(2)?.let {
-                            MoveChip(moveName = it, modifier = Modifier.weight(1f))
-                        }
-                        moves.getOrNull(3)?.let {
-                            MoveChip(moveName = it, modifier = Modifier.weight(1f))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            moves.getOrNull(2)?.let {
+                                MoveChip(moveName = it, modifier = Modifier.weight(1f))
+                            }
+                            moves.getOrNull(3)?.let {
+                                MoveChip(moveName = it, modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
@@ -284,6 +291,29 @@ private fun PokemonDetailCardPreview() {
                     TypeUiModel("Flying", null)
                 ),
                 teraType = TeraTypeUiModel(id = 1, name = "Normal", imageUrl = null)
+            ),
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PokemonDetailCardClosedTeamsheetPreview() {
+    MaterialTheme {
+        PokemonDetailCard(
+            pokemon = PokemonDetailUiModel(
+                id = 149,
+                name = "Dragonite",
+                imageUrl = null,
+                item = null,
+                abilityName = null,
+                moves = emptyList(),
+                types = listOf(
+                    TypeUiModel("Dragon", null),
+                    TypeUiModel("Flying", null)
+                ),
+                teraType = null
             ),
             modifier = Modifier.padding(16.dp)
         )

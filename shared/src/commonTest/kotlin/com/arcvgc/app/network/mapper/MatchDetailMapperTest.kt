@@ -133,8 +133,10 @@ class MatchDetailMapperTest {
         assertEquals("Pikachu", result.name)
         assertEquals(25, result.pokedexNumber)
         assertEquals("OU", result.tier)
-        assertEquals(1, result.ability.id)
-        assertEquals("Intimidate", result.ability.name)
+        val resultAbility = result.ability
+        assertNotNull(resultAbility)
+        assertEquals(1, resultAbility.id)
+        assertEquals("Intimidate", resultAbility.name)
         val resultItem = result.item
         assertNotNull(resultItem)
         assertEquals(5, resultItem.id)
@@ -213,6 +215,54 @@ class MatchDetailMapperTest {
         val result = dto.toDomain()
 
         assertNull(result.baseSpecies)
+    }
+
+    @Test
+    fun pokemonDetailDto_withNullAbility_returnsNull() {
+        val dto = PokemonDetailDto(
+            id = 6,
+            name = "Charizard",
+            pokedexNumber = 6,
+            tier = "OU",
+            ability = null,
+            item = null,
+            moves = emptyList(),
+            types = emptyList(),
+            baseSpecies = null,
+            teraType = null,
+            imageUrl = null
+        )
+
+        val result = dto.toDomain()
+
+        assertNull(result.ability)
+    }
+
+    @Test
+    fun pokemonDetailDto_closedTeamsheet_mapsGracefully() {
+        val dto = PokemonDetailDto(
+            id = 6,
+            name = "Charizard",
+            pokedexNumber = 6,
+            tier = null,
+            ability = null,
+            item = null,
+            types = listOf(TypeDto(id = 10, name = "Fire", imageUrl = "https://example.com/fire.png")),
+            baseSpecies = null,
+            teraType = null,
+            imageUrl = "https://example.com/charizard.png"
+        )
+
+        val result = dto.toDomain()
+
+        assertEquals(6, result.id)
+        assertEquals("Charizard", result.name)
+        assertNull(result.ability)
+        assertNull(result.item)
+        assertEquals(0, result.moves.size)
+        assertEquals(1, result.types.size)
+        assertNull(result.teraType)
+        assertEquals("https://example.com/charizard.png", result.imageUrl)
     }
 
     @Test

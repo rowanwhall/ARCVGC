@@ -19,7 +19,9 @@ object ShowdownPasteFormatter {
             appendLine()
 
             // Ability
-            appendLine("Ability: ${pokemon.abilityName}")
+            if (pokemon.abilityName != null) {
+                appendLine("Ability: ${pokemon.abilityName}")
+            }
 
             // Level
             appendLine("Level: 50")
