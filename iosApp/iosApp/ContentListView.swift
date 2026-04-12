@@ -123,6 +123,7 @@ struct ContentListView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(height: AppTokens.heroLogoHeight)
+                                .ifSilhouette()
                             Text("ARC")
                                 .font(.custom("Orbitron-Regular", size: 24, relativeTo: .title))
                                 .fontWeight(.semibold)

@@ -2,6 +2,22 @@ import SwiftUI
 
 let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 
+// MARK: - Silhouette Modifier
+
+extension View {
+    /// When `useSilhouettes` is enabled, renders the view as a solid black shape.
+    @ViewBuilder
+    func ifSilhouette() -> some View {
+        if useSilhouettes {
+            self
+                .foregroundStyle(.black)
+                .colorMultiply(.black)
+        } else {
+            self
+        }
+    }
+}
+
 // MARK: - Theme Color Environment Key
 
 private struct ThemeColorKey: EnvironmentKey {
@@ -67,10 +83,17 @@ struct PokemonAvatar: View {
 
     var body: some View {
         ZStack {
-            PokeballCircle()
-                .frame(width: circleSize, height: circleSize)
+            if useSilhouettes {
+                Circle()
+                    .fill(Color(.systemGray5))
+                    .frame(width: circleSize, height: circleSize)
+            } else {
+                PokeballCircle()
+                    .frame(width: circleSize, height: circleSize)
+            }
             PreviewAsyncImage(url: imageUrl, previewAsset: "PreviewPokemon")
                 .frame(width: spriteSize, height: spriteSize)
+                .ifSilhouette()
         }
         .frame(width: spriteSize, height: spriteSize)
     }
@@ -86,10 +109,17 @@ struct FillPokemonAvatar: View {
             let circleSize = size * circleFraction
 
             ZStack {
-                PokeballCircle()
-                    .frame(width: circleSize, height: circleSize)
+                if useSilhouettes {
+                    Circle()
+                        .fill(Color(.systemGray5))
+                        .frame(width: circleSize, height: circleSize)
+                } else {
+                    PokeballCircle()
+                        .frame(width: circleSize, height: circleSize)
+                }
                 PreviewAsyncImage(url: imageUrl, previewAsset: "PreviewPokemon")
                     .frame(width: size, height: size)
+                    .ifSilhouette()
             }
             .frame(width: size, height: size)
         }

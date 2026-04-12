@@ -1,6 +1,11 @@
 import SwiftUI
 import Shared
 
+/// Set to `true` to replace all Pokémon sprites and the app logo with black
+/// silhouettes. Used when capturing App Store screenshots to avoid showing
+/// third-party character imagery.
+let useSilhouettes = false
+
 @main
 struct iOSApp: App {
     @StateObject private var container = DependencyContainer()
