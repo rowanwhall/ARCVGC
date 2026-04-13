@@ -94,12 +94,9 @@ struct ContentListView: View {
 
     @ViewBuilder
     private func battleDetailPageContent(battleId: Int32) -> some View {
-        let selectedBattle: BattleCardUiModel? = findBattle(in: viewModel.state.items, id: battleId)
         BattleDetailNavWrapper(
             repository: repository,
             battleId: battleId,
-            player1IsWinner: selectedBattle?.player1.isWinner,
-            player2IsWinner: selectedBattle?.player2.isWinner,
             favoritesStore: favoritesStore,
             settingsStore: settingsStore,
             showWinnerHighlight: settingsStore.showWinnerHighlight,

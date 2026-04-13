@@ -294,21 +294,11 @@ fun ContentListPage(
                     battleDetailViewModel.loadBattleDetail(battleId)
                 }
 
-                val selectedBattle = uiState.items.findBattle(battleId)
-                val patchedState = battleDetailState.battleDetail?.let { detail ->
-                    battleDetailState.copy(
-                        battleDetail = detail.copy(
-                            player1 = detail.player1.copy(isWinner = selectedBattle?.uiModel?.player1?.isWinner),
-                            player2 = detail.player2.copy(isWinner = selectedBattle?.uiModel?.player2?.isWinner)
-                        )
-                    )
-                } ?: battleDetailState
-
                 val context = LocalContext.current
                 val shareUrl = shareBattleUrl(battleId)
 
                 BattleDetailPage(
-                    state = patchedState,
+                    state = battleDetailState,
                     onBack = { selectedBattleId = null },
                     onRetry = { battleDetailViewModel.loadBattleDetail(battleId) },
                     statusBarPadding = statusBarHeight,
@@ -324,11 +314,11 @@ fun ContentListPage(
                     },
                     onViewReplay = { navState -> replayNavState = navState },
                     onPokemonClick = { id, name, imageUrl, typeImageUrls ->
-                        val formatId = patchedState.battleDetail?.formatId
+                        val formatId = battleDetailState.battleDetail?.formatId
                         pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
                     },
                     onPlayerClick = { id, name ->
-                        val formatId = patchedState.battleDetail?.formatId
+                        val formatId = battleDetailState.battleDetail?.formatId
                         playerNavTarget = PlayerNavTarget(id, name, formatId)
                     },
                     modifier = Modifier.fillMaxSize()

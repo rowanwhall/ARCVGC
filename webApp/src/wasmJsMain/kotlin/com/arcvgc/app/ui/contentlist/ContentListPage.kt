@@ -259,11 +259,7 @@ fun ContentListPage(
                         is ContentListItem.Battle -> {
                             if (battleOverlay != null) {
                                 val battle = item.uiModel
-                                battleOverlay(BattleOverlayRequest(
-                                    battleId = battle.id,
-                                    player1IsWinner = battle.player1.isWinner,
-                                    player2IsWinner = battle.player2.isWinner
-                                ))
+                                battleOverlay(BattleOverlayRequest(battleId = battle.id))
                             } else {
                                 selectedBattleId = item.uiModel.id
                             }
@@ -304,7 +300,7 @@ fun ContentListPage(
                 },
                 onHighlightBattleClick = { battleId ->
                     if (battleOverlay != null) {
-                        battleOverlay(BattleOverlayRequest(battleId = battleId, player1IsWinner = null, player2IsWinner = null))
+                        battleOverlay(BattleOverlayRequest(battleId = battleId))
                     } else {
                         selectedBattleId = battleId
                     }
@@ -509,15 +505,12 @@ fun ContentListPage(
                 }
 
                 selectedBattleId?.let { battleId ->
-                    val selectedBattle = uiState.items.findBattle(battleId)
                     VerticalDivider(modifier = Modifier.fillMaxHeight())
                     BattleDetailPanel(
                         battleId = battleId,
                         isFavorited = battleId in favoriteBattleIds,
                         onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
                         onClose = { selectedBattleId = null },
-                        player1IsWinner = selectedBattle?.uiModel?.player1?.isWinner,
-                        player2IsWinner = selectedBattle?.uiModel?.player2?.isWinner,
                         showWinnerHighlight = showWinnerHighlight,
                         onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
                             navigateToPokemon(id, name, imageUrl, typeImageUrls, formatId)

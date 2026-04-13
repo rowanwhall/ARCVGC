@@ -30,8 +30,6 @@ fun BattleDetailPanel(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
     showBackArrow: Boolean = false,
-    player1IsWinner: Boolean? = null,
-    player2IsWinner: Boolean? = null,
     showWinnerHighlight: Boolean = true,
     onPokemonClick: ((Int, String, String?, List<String>, Int?) -> Unit)? = null,
     onPlayerClick: ((Int, String, Int?) -> Unit)? = null
@@ -44,13 +42,7 @@ fun BattleDetailPanel(
     }
     val state by viewModel.state.collectAsState()
 
-    // Patch winner values from the list endpoint (detail endpoint doesn't return them)
-    val displayDetail = state.battleDetail?.let { detail ->
-        detail.copy(
-            player1 = detail.player1.copy(isWinner = player1IsWinner),
-            player2 = detail.player2.copy(isWinner = player2IsWinner)
-        )
-    }
+    val displayDetail = state.battleDetail
 
     val wrappedOnPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = onPokemonClick?.let { callback ->
         { id: Int, name: String, imageUrl: String?, typeImageUrls: List<String> ->

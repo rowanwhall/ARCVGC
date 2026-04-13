@@ -307,7 +307,7 @@ fun WebApp() {
                     deepLinkBattleId = linkBattleId
                     if (linkBattleId != null) {
                         navStack = listOf(NavEntry.BattleDetail(
-                            BattleOverlayRequest(linkBattleId, null, null)
+                            BattleOverlayRequest(linkBattleId)
                         ))
                     }
 
@@ -909,8 +909,6 @@ private fun NavEntryContent(
                 },
                 onClose = { onPopEntry() },
                 showBackArrow = true,
-                player1IsWinner = request.player1IsWinner,
-                player2IsWinner = request.player2IsWinner,
                 showWinnerHighlight = showWinnerHighlight,
                 onPokemonClick = onPokemonClick,
                 onPlayerClick = onPlayerClick,

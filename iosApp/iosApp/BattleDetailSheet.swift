@@ -13,16 +13,12 @@ struct BattleDetailPage: View {
     @State private var showUnratedInfo = false
 
     private let battleId: Int32
-    private let player1IsWinner: KotlinBoolean?
-    private let player2IsWinner: KotlinBoolean?
     private let showWinnerHighlight: Bool
     private let shareUrl: String?
 
-    init(viewModel: BattleDetailViewModel, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil, onViewReplay: ((ReplayNavState) -> Void)? = nil) {
+    init(viewModel: BattleDetailViewModel, battleId: Int32, favoritesStore: FavoritesStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, onPokemonClick: ((Int32, String, String?, [String], Int32?) -> Void)? = nil, onPlayerClick: ((Int32, String, Int32?) -> Void)? = nil, onViewReplay: ((ReplayNavState) -> Void)? = nil) {
         self.viewModel = viewModel
         self.battleId = battleId
-        self.player1IsWinner = player1IsWinner
-        self.player2IsWinner = player2IsWinner
         self.favoritesStore = favoritesStore
         self.showWinnerHighlight = showWinnerHighlight
         self.shareUrl = shareUrl
@@ -110,11 +106,11 @@ struct BattleDetailPage: View {
                             InfoButton { showReplayInfo = true }
                         }
 
-                        PlayerTeamDetailSection(player: battleDetail.player1, isWinnerOverride: player1IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
+                        PlayerTeamDetailSection(player: battleDetail.player1, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
 
                         VsDivider()
 
-                        PlayerTeamDetailSection(player: battleDetail.player2, isWinnerOverride: player2IsWinner, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
+                        PlayerTeamDetailSection(player: battleDetail.player2, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
                     }
                     .padding(.bottom, 16)
                 }
@@ -161,7 +157,6 @@ struct BattleDetailPage: View {
 
 struct PlayerTeamDetailSection: View {
     let player: PlayerDetailUiModel
-    var isWinnerOverride: KotlinBoolean? = nil
     var showWinnerHighlight: Bool = true
     var onPokemonClick: ((Int32, String, String?, [String]) -> Void)? = nil
     var onPlayerClick: ((Int32, String) -> Void)? = nil
@@ -174,7 +169,7 @@ struct PlayerTeamDetailSection: View {
     private static let innerPadding: CGFloat = 16
 
     private var effectiveIsWinner: Bool {
-        showWinnerHighlight && (isWinnerOverride ?? player.isWinner)?.boolValue == true
+        showWinnerHighlight && player.isWinner?.boolValue == true
     }
 
     private var playerHeader: some View {
@@ -396,8 +391,6 @@ struct BattleDetailNavWrapper: View {
     @StateObject private var viewModel: BattleDetailViewModel
     let repository: BattleRepository
     let battleId: Int32
-    var player1IsWinner: KotlinBoolean? = nil
-    var player2IsWinner: KotlinBoolean? = nil
     let favoritesStore: FavoritesStore
     let settingsStore: SettingsStore
     var showWinnerHighlight: Bool = true
@@ -408,11 +401,9 @@ struct BattleDetailNavWrapper: View {
     @State private var pokemonNavTarget: PokemonNavTarget? = nil
     @State private var playerNavTarget: PlayerNavTarget? = nil
 
-    init(repository: BattleRepository, battleId: Int32, player1IsWinner: KotlinBoolean? = nil, player2IsWinner: KotlinBoolean? = nil, favoritesStore: FavoritesStore, settingsStore: SettingsStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, appConfigStore: AppConfigStore? = nil, onViewReplay: ((ReplayNavState) -> Void)? = nil) {
+    init(repository: BattleRepository, battleId: Int32, favoritesStore: FavoritesStore, settingsStore: SettingsStore, showWinnerHighlight: Bool = true, shareUrl: String? = nil, appConfigStore: AppConfigStore? = nil, onViewReplay: ((ReplayNavState) -> Void)? = nil) {
         self.repository = repository
         self.battleId = battleId
-        self.player1IsWinner = player1IsWinner
-        self.player2IsWinner = player2IsWinner
         self.favoritesStore = favoritesStore
         self.settingsStore = settingsStore
         self.showWinnerHighlight = showWinnerHighlight
@@ -429,8 +420,6 @@ struct BattleDetailNavWrapper: View {
         BattleDetailPage(
             viewModel: viewModel,
             battleId: battleId,
-            player1IsWinner: player1IsWinner,
-            player2IsWinner: player2IsWinner,
             favoritesStore: favoritesStore,
             showWinnerHighlight: showWinnerHighlight,
             shareUrl: shareUrl,

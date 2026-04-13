@@ -231,16 +231,3 @@ struct FormatDropdown: View {
         }
     }
 }
-
-func findBattle(in items: [ContentListItem], id: Int32) -> BattleCardUiModel? {
-    for item in items {
-        if let battleItem = item as? ContentListItem.Battle, battleItem.uiModel.id == id {
-            return battleItem.uiModel
-        }
-        if let section = item as? ContentListItem.Section,
-           let found = findBattle(in: section.items as! [ContentListItem], id: id) {
-            return found
-        }
-    }
-    return nil
-}

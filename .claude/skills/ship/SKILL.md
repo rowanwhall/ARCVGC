@@ -40,3 +40,7 @@ Review the docs listed in CLAUDE.md's "Detailed Documentation" table and determi
 - `.claude/rules/` — Coding conventions, code quality rules
 
 Update any docs that are now stale. Do NOT update docs for changes that are purely internal refactors with no architectural or behavioral impact.
+
+## Step 5: Ready to commit
+
+After all reviews, fixes, and doc updates are complete, tell the user the changes are ready to commit. Do NOT create the commit — the user will handle committing themselves.
