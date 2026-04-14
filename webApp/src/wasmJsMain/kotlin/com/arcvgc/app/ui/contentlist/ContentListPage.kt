@@ -607,7 +607,7 @@ fun ContentListPage(
                                         }
                                     }
                                 },
-                                modifier = Modifier.widthIn(max = 900.dp).align(Alignment.TopCenter)
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
@@ -1017,11 +1017,15 @@ private fun ContentListContent(
                                     }
                                 }
                             } else {
-                                // Expanded, non-battle section: header and content share one grid
-                                // item. `SectionContentAlignedHeader` measures the content first
-                                // (respecting any natural-width behavior like
-                                // `ResponsivePokemonGridCard`'s layout escape) and sizes the header
-                                // to exactly that width. No content-type dispatch needed.
+                                // Expanded, non-battle section: header and content share one
+                                // full-span grid item. `SectionContentAlignedHeader` measures
+                                // content at its natural width and sizes the header to match,
+                                // so a trailing action (See More / Sort) lands at the content's
+                                // actual right edge — which can extend past the cell pack via
+                                // `ResponsivePokemonGridCard`'s layout escape. The item always
+                                // reports the grid's cell-pack width back up so the grid places
+                                // it at x=0, giving left-aligned content regardless of whether
+                                // content is narrower or wider than the cell pack.
                                 item(key = topItem.listKey, span = fullSpan) {
                                     SectionContentAlignedHeader(
                                         contentMeasureMaxWidth = expandedTopPokemonMaxWidth,
@@ -1278,27 +1282,31 @@ private fun CenteredItem(
  * content as a single full-span grid item, with the header's width matched to the
  * content's actual rendered width via `SubcomposeLayout`.
  *
- * Why the `contentMeasureMaxWidth` parameter: `LazyVerticalGrid` with
- * `GridCells.FixedSize(650)` passes `constraints.maxWidth = cellPackWidth` (e.g.
- * 1312dp for 2 columns) to full-span items. Measuring content with those constraints
- * loses information about the *true* drawn width: `ResponsivePokemonGridCard` uses a
- * `Modifier.layout` escape trick that re-measures its inner Row at a wider target
- * (the grid-box inner width, e.g. 1668dp) but reports back `min(cellPackWidth,
- * placeable.width)` so the grid's horizontal arrangement stays happy. That means
- * the card's reported width is clamped to the cell pack, even when it visibly draws
- * ~36dp past it. To recover the true drawn width for header alignment, we measure
- * content with `constraints.copy(maxWidth = contentMeasureMaxWidth)` — a loose upper
- * bound matching the grid-box inner width — so the card's `coerceAtMost` no longer
- * clamps, and fill-max-width content has a sensible finite bound too.
+ * Layout goals:
+ * - Content is left-aligned at x=0 of the grid's cell pack (same left edge as battle
+ *   cards), regardless of whether it's narrower or wider than the cell pack.
+ * - The header is sized to match the content's actual drawn width so a trailing
+ *   action (See More / Sort) lands at the content's right edge. For wide content
+ *   (e.g. `ResponsivePokemonGridCard`'s layout escape, which can draw past the cell
+ *   pack), the trailing action is pushed out into the grid's trailing gutter.
  *
- * Reported-vs-drawn-width split: the header and content placeables are measured and
- * placed at `contentWidth` (the true drawn width), but `layout()` reports the grid's
- * original `constraints.maxWidth` (cell pack) back up. `LazyVerticalGrid` sees a
- * cell-pack-sized item and places it at x=0 of the content area — the 36dp-ish
- * overflow from the placeables draws into the grid's otherwise-unused trailing space
- * to the right of the cell pack. See the "Web Desktop" section of
- * [`docs/content-list.md`](../../../../../../docs/content-list.md) for the full
- * layout model.
+ * Why `contentMeasureMaxWidth`: `LazyVerticalGrid` with `GridCells.FixedSize(650)`
+ * passes `constraints.maxWidth = cellPackWidth` to full-span items. Measuring with
+ * those constraints would clamp `ResponsivePokemonGridCard`'s reported width to the
+ * cell pack, even when it visibly draws ~36dp past it. We measure content with a
+ * looser upper bound (the grid-box inner width) so the card's `coerceAtMost` no
+ * longer clamps and we recover the true drawn width for header sizing.
+ *
+ * Why always report `constraints.maxWidth`: reporting a narrower width (when content
+ * is narrower than the cell pack) causes `LazyVerticalGrid` to center the full-span
+ * item within the cell-pack slot. Pinning the reported width to the grid's original
+ * max keeps placement at x=0. Placeables are placed at (0, y) and draw at their
+ * natural widths — narrow content sits at the left edge, wide content overflows into
+ * the grid's unused trailing gutter to the right of the cell pack.
+ *
+ * A vertical gap of [headerContentSpacing] separates the header from the content,
+ * matching the gap the grid's `verticalArrangement` provides between the Battles
+ * header and its cards.
  *
  * Not used for sections containing items with `requiresIndividualGridCells = true`
  * (e.g. battles) — those need individual grid cells and are emitted separately. Not
@@ -1308,7 +1316,8 @@ private fun CenteredItem(
 private fun SectionContentAlignedHeader(
     contentMeasureMaxWidth: Dp,
     header: (@Composable () -> Unit)?,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
+    headerContentSpacing: Dp = ContentListItemSpacing
 ) {
     SubcomposeLayout { constraints ->
         val looseMaxPx = contentMeasureMaxWidth.roundToPx()
@@ -1319,24 +1328,32 @@ private fun SectionContentAlignedHeader(
         val contentWidth = contentPlaceables.maxOfOrNull { it.width } ?: 0
         val contentHeight = contentPlaceables.sumOf { it.height }
 
+        // Fall back to the grid's cell-pack width when content is zero-width (e.g. an
+        // empty loading-Battles placeholder on the Pokemon/Player page's first render),
+        // otherwise the header would be measured at min=max=0 and render invisibly.
+        val headerWidthPx = if (contentWidth > 0) contentWidth else constraints.maxWidth
         val headerPlaceables = if (header != null) {
             subcompose("header") { header() }.map {
-                it.measure(constraints.copy(minWidth = contentWidth, maxWidth = contentWidth))
+                it.measure(constraints.copy(minWidth = headerWidthPx, maxWidth = headerWidthPx))
             }
         } else emptyList()
         val headerHeight = headerPlaceables.sumOf { it.height }
 
-        // Clamp the reported layout width to the grid's cell-pack max so the grid
-        // places this item at x=0 even if the inner content is wider. Placeables are
-        // still placed at their true width and draw into the grid's unused trailing
-        // space to the right of the cell pack.
-        val reportedWidth = contentWidth.coerceAtMost(constraints.maxWidth)
-        layout(reportedWidth, headerHeight + contentHeight) {
+        val spacingPx = if (headerPlaceables.isNotEmpty() && contentPlaceables.isNotEmpty()) {
+            headerContentSpacing.roundToPx()
+        } else 0
+
+        // Always report the grid's full cell-pack width so `LazyVerticalGrid` places
+        // this item at x=0 of the content area (reporting narrower would cause the
+        // grid to center the full-span item within its slot). Placeables place at
+        // their true widths and may draw beyond the reported box into the gutter.
+        layout(constraints.maxWidth, headerHeight + spacingPx + contentHeight) {
             var y = 0
             headerPlaceables.forEach { placeable ->
                 placeable.place(0, y)
                 y += placeable.height
             }
+            y += spacingPx
             contentPlaceables.forEach { placeable ->
                 placeable.place(0, y)
                 y += placeable.height

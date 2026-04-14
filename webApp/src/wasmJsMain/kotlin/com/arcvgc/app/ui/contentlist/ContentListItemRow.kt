@@ -206,8 +206,7 @@ internal fun ContentListItemRow(
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     item.chips.forEach { chip ->
                         StatChip(name = chip.name, usagePercent = chip.usagePercent, imageUrl = chip.imageUrl)
