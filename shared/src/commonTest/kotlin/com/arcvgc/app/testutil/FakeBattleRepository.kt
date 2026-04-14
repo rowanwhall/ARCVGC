@@ -42,6 +42,7 @@ class FakeBattleRepository : BattleRepositoryApi {
     var pokemonProfileDelayMs: Long = 0
 
     var searchMatchesCalls = mutableListOf<SearchMatchesCall>()
+    var getFormatDetailCalls = mutableListOf<GetFormatDetailCall>()
 
     data class SearchMatchesCall(
         val filters: List<SearchFilterSlot>,
@@ -50,6 +51,11 @@ class FakeBattleRepository : BattleRepositoryApi {
         val page: Int,
         val playerName: String?,
         val team2Filters: List<SearchFilterSlot>
+    )
+
+    data class GetFormatDetailCall(
+        val formatId: Int,
+        val topPokemonCount: Int?
     )
 
     override suspend fun getBestPreviousDay(formatId: Int): List<BattleCardUiModel> {
@@ -90,6 +96,7 @@ class FakeBattleRepository : BattleRepositoryApi {
     }
 
     override suspend fun getFormatDetail(formatId: Int, topPokemonCount: Int?): FormatDetail {
+        getFormatDetailCalls.add(GetFormatDetailCall(formatId, topPokemonCount))
         formatDetailError?.let { throw it }
         return formatDetailResult ?: throw Exception("No format detail configured")
     }

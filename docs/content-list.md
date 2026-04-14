@@ -56,13 +56,27 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 This is a key behavioral detail: several modes compose a richer page 1 with sections, while pages 2+ append bare battle items.
 
 ### Home mode
-- **Page 1**: Up to 3 items — format detail + battles fetched in parallel via `getFormatDetail(formatId, topPokemonCount=6)` + `getBestPreviousDay(formatId)` (server-cached endpoint, returns flat list without pagination). Format detail errors are silently swallowed; page still shows battles. Pagination (`hasNext`) is inferred from result size (>= 10 implies more pages). `currentPage` is set to `battlesCount / 10` so that page 2+ pagination aligns with `searchMatches`'s default limit of 10 (e.g., 50 battles → `currentPage=5`, next page requests page 6). Deduplication in `paginate()` handles any overlap when the count is not evenly divisible.
+- **Page 1**: Up to 3 items — format detail + battles fetched in parallel via `getFormatDetail(formatId, topPokemonCount=N)` + `getBestPreviousDay(formatId)` (server-cached endpoint, returns flat list without pagination). `N` defaults to 6 (mobile/Android/iOS) and is bumped up on desktop web — see "Responsive Top Pokémon row" below. Format detail errors are silently swallowed; page still shows battles. Pagination (`hasNext`) is inferred from result size (>= 10 implies more pages). `currentPage` is set to `battlesCount / 10` so that page 2+ pagination aligns with `searchMatches`'s default limit of 10 (e.g., 50 battles → `currentPage=5`, next page requests page 6). Deduplication in `paginate()` handles any overlap when the count is not evenly divisible.
   1. `FormatSelector` — format dropdown (same as Pokemon/Player modes), fed from app config default format
-  2. `Section("Top Pokémon", [PokemonGrid([...])])` — 3-column grid of top usage Pokemon with usage %. Has `SectionAction.SeeMore` trailing action (renders "See More" + chevron button in section header). Only shown if format detail succeeds and has Pokemon.
+  2. `Section("Top Pokémon", [PokemonGrid([...])])` — grid of top usage Pokemon with usage %. Mobile/iPhone/iPad/Android: 3-col card (iPhone/phone) or up to 6-col card (iPad/tablet). Desktop web: responsive single-row card — see "Responsive Top Pokémon row" below. Has `SectionAction.SeeMore` trailing action (renders "See More" + chevron button in section header). Only shown if format detail succeeds and has Pokemon.
   3. `Section("Today's Top Battles", [...])` — battle results sorted by rating from last 24 hours. No sort toggle.
   Both sections are omitted if their data is empty. If both API calls fail, the error state shows. If one fails, that section is omitted.
 - **Pages 2+**: bare `Battle` items via `searchMatches` (last 24h, rating sort, limit=10)
 - **Format change**: reloads all sections (`loadingSections = {"format_selector", "Top Pokémon", "Today's Top Battles"}`)
+
+#### Responsive Top Pokémon row (desktop web only)
+
+On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentListPage.kt`, the Home page's Top Pokémon section is rendered as a single horizontal row of Pokémon tiles that fills the available grid-box width, left-aligned, instead of the centered 900dp-capped card used on mobile/iPad.
+
+- **Fetch count**: `ContentListLogic.setTopPokemonFetchCount(count)` (Home mode only) targets the count that would fill the **pane-closed** viewport width, so when the user closes the battle detail pane, enough tiles are already cached to fill the wider row without a re-fetch. The count is computed from `maxWidth - gridOuterPadding - TOP_POKEMON_CARD_INNER_PADDING_TOTAL` via `computeTopPokemonTileCount()` and passed via `LaunchedEffect` from inside the expanded branch's `BoxWithConstraints`.
+- **Monotonic fetch-above-peak**: `setTopPokemonFetchCount` tracks `topPokemonFetchedCount` (the largest count actually fetched so far) separately from `topPokemonFetchCount` (the current target). Decrease-then-increase-below-peak does not re-fetch — the UI re-slices the already-loaded list. Only a count strictly greater than `topPokemonFetchedCount` triggers a network round-trip.
+- **Race with initial load**: `setTopPokemonFetchCount` awaits `_uiState.first { !it.isLoading }` before applying its state update, so the initial `loadContent()` coroutine (which may have captured the old `topPokemonFetchCount` at async-launch time) can't overwrite the re-fetch's replacement of the Top Pokémon section.
+- **Display count on pane toggle**: `ResponsivePokemonGridCard` (in `webApp/.../ui/contentlist/ContentListItemRow.kt`) receives an `availableWidth: Dp` parameter — the current grid-box width (shrinks when the detail pane opens). It uses that to derive the visible tile count and wraps invisible overflow tiles in `AnimatedVisibility(visible = false)` so they fade out during the 300ms pane animation. No network traffic on pane toggle.
+- **Escape the battle grid's cell-pack constraint**: the LazyVerticalGrid uses `GridCells.FixedSize(BATTLE_CARD_MAX_WIDTH)` so a `fullSpan` item's natural max width is `cellCount × 650 + (cellCount−1) × 12`, which leaves unused space on the right. `ResponsivePokemonGridCard` uses a `Modifier.layout` shim that re-measures its child with the parent-provided `availableWidth` (the true grid-box width) but **reports** the grid's original `constraints.maxWidth` as its layout size, so the grid's `Arrangement.Start` still places it at position 0 of the content area while the tiles draw out into the otherwise-unused trailing space.
+- **Hit-testing caveat**: Compose tests pointer events against the placeable's actual (wider) bounds, so tiles drawn beyond `reportedWidth` still receive clicks. This works today but is an implementation detail — if it ever breaks, the symptom would be rightmost tiles becoming unclickable while still visible.
+- **Player "Favorite Pokémon" and Pokemon "Top Teammates"** flow through the same `ResponsivePokemonGridCard` render path and reflow on pane toggle. They do *not* drive `setTopPokemonFetchCount` (that's Home-only) — they just display as many of the already-fetched Pokemon as fit.
+- **Tile constants**: `TOP_POKEMON_TILE_WIDTH = 140.dp`, `TOP_POKEMON_TILE_SPACING = 8.dp`, `TOP_POKEMON_MIN_TILES = 3`. The card wraps to its tile content (border follows the rightmost tile's edge).
+- **Mobile web / Android / iOS are unaffected** — they continue using the legacy 3/6-col `PokemonGrid` render in `ContentListItemRow.kt`'s existing branch.
 
 ### Favorites mode
 - Single page (no pagination): flat list of `Battle`, `Pokemon`, or `Player` items depending on `contentType`
@@ -192,7 +206,8 @@ class ContentListLogic(
     appConfigRepository: AppConfigRepository,
     mode: ContentListMode,
     pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
-    pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null  // for favorites Pokemon tab
+    pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null,  // for favorites Pokemon tab
+    initialTopPokemonFetchCount: Int = DEFAULT_TOP_POKEMON_COUNT  // Home mode only; 6 by default
 )
 ```
 
@@ -203,6 +218,7 @@ class ContentListLogic(
 - `selectFormat(formatId)` — format change + section reload
 - `toggleSortOrder()` — sort toggle + section reload
 - `updateSearchParams(params)` — reset state and reload with new search params
+- `setTopPokemonFetchCount(count)` — Home mode only. Sets the target count and, if it exceeds the last-fetched peak, re-fetches just the Top Pokémon section in place. See "Responsive Top Pokémon row" under Home mode above.
 
 **Scope injection pattern:**
 - **Android/Web**: pass `viewModelScope` (auto-cancelled on ViewModel clear)

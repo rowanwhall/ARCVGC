@@ -36,8 +36,15 @@ class ContentListLogic(
     private val appConfigRepository: AppConfigRepository,
     private var mode: ContentListMode,
     private val pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
-    private val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null
+    private val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null,
+    initialTopPokemonFetchCount: Int = DEFAULT_TOP_POKEMON_COUNT
 ) {
+    // Count the next fetch should request.
+    private var topPokemonFetchCount: Int = initialTopPokemonFetchCount
+    // Count most recently fetched from the backend. Tracked separately so that
+    // decrease-then-increase-below-peak (e.g., 6 → 14 → 10 → 12) doesn't re-fetch
+    // when we still have 14 cached on the screen.
+    private var topPokemonFetchedCount: Int = 0
     private val _uiState = MutableStateFlow(ContentListUiState())
     val uiState: StateFlow<ContentListUiState> = _uiState.asStateFlow()
 
@@ -312,6 +319,58 @@ class ContentListLogic(
         }
     }
 
+    /**
+     * Updates the Top Pokémon fetch count for Home mode. On increase, re-fetches the
+     * Top Pokémon section in-place (leaving battles and other sections untouched) so the
+     * wider row is populated before the user closes the battle detail pane. On decrease,
+     * just stores the new value — the UI re-slices the already-fetched list.
+     * No-op for modes other than Home.
+     */
+    fun setTopPokemonFetchCount(count: Int) {
+        if (mode !is ContentListMode.Home) return
+        topPokemonFetchCount = count
+        // Only re-fetch when the requested count exceeds what we've already fetched.
+        // Smaller/equal values don't need a network round-trip — the UI re-slices the
+        // already-loaded list to display what currently fits.
+        if (count <= topPokemonFetchedCount) return
+        scope.launch {
+            // Wait for any in-flight initial load to finish first. Otherwise the initial
+            // load — which captured topPokemonFetchCount at async-launch time — would
+            // complete after our re-fetch and overwrite our state update.
+            _uiState.first { !it.isLoading }
+            // Re-check after suspending: the initial load may have already fetched at
+            // or above `count`, or the target may have changed again meanwhile.
+            if (count <= topPokemonFetchedCount) return@launch
+            if (count != topPokemonFetchCount) return@launch
+            try {
+                _uiState.update { it.copy(loadingSections = it.loadingSections + "Top Pokémon") }
+                val formatDetail = repository.getFormatDetail(
+                    _selectedFormatId.value, topPokemonCount = count
+                )
+                topPokemonFetchedCount = count
+                val gridItems = formatDetail.topPokemon.map {
+                    ContentListItem.PokemonGridItem(
+                        it.id, it.name, it.imageUrl,
+                        formatUsagePercent(it.count, formatDetail.teamCount)
+                    )
+                }
+                _uiState.update { state ->
+                    val newItems = state.items.map { item ->
+                        if (item is ContentListItem.Section && item.header == "Top Pokémon") {
+                            item.copy(items = listOf(ContentListItem.PokemonGrid(gridItems)))
+                        } else item
+                    }
+                    state.copy(
+                        items = newItems,
+                        loadingSections = state.loadingSections - "Top Pokémon"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(loadingSections = it.loadingSections - "Top Pokémon") }
+            }
+        }
+    }
+
     fun selectFormat(formatId: Int) {
         if (_selectedFormatId.value == formatId) return
         _selectedFormatId.value = formatId
@@ -372,8 +431,9 @@ class ContentListLogic(
     private suspend fun fetchContent(page: Int = 1): Pair<List<ContentListItem>, Pagination> = when (val m = mode) {
         is ContentListMode.Home -> if (page == 1) coroutineScope {
             val formatId = _selectedFormatId.value
+            val fetchCount = topPokemonFetchCount
 
-            val formatDeferred = async { runCatching { repository.getFormatDetail(formatId, topPokemonCount = 6) } }
+            val formatDeferred = async { runCatching { repository.getFormatDetail(formatId, topPokemonCount = fetchCount) } }
             val battlesDeferred = async {
                 runCatching { repository.getBestPreviousDay(formatId) }
             }
@@ -386,6 +446,7 @@ class ContentListLogic(
             }
 
             val formatDetail = formatResult.getOrNull()
+            if (formatDetail != null) topPokemonFetchedCount = fetchCount
             val battles = battlesResult.getOrNull().orEmpty()
             val battleItems = ContentListItemMapper.fromBattles(battles)
 
@@ -651,5 +712,9 @@ class ContentListLogic(
         val intPart = hundredths / 100
         val decPart = (hundredths % 100).toString().padStart(2, '0')
         return "$intPart.$decPart%"
+    }
+
+    companion object {
+        const val DEFAULT_TOP_POKEMON_COUNT = 6
     }
 }

@@ -101,7 +101,8 @@ class ContentListLogicTest {
     private fun createLogic(
         mode: ContentListMode = ContentListMode.Home,
         pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
-        pokemonCatalogState: MutableStateFlow<CatalogState<PokemonPickerUiModel>>? = null
+        pokemonCatalogState: MutableStateFlow<CatalogState<PokemonPickerUiModel>>? = null,
+        initialTopPokemonFetchCount: Int = ContentListLogic.DEFAULT_TOP_POKEMON_COUNT
     ): ContentListLogic {
         return ContentListLogic(
             scope = testScope,
@@ -110,7 +111,8 @@ class ContentListLogicTest {
             appConfigRepository = appConfigRepo,
             mode = mode,
             pokemonCatalogItems = pokemonCatalogItems,
-            pokemonCatalogState = pokemonCatalogState
+            pokemonCatalogState = pokemonCatalogState,
+            initialTopPokemonFetchCount = initialTopPokemonFetchCount
         )
     }
 
@@ -951,6 +953,153 @@ class ContentListLogicTest {
             .filterIsInstance<ContentListItem.Section>()
             .first { it.header == "Today's Top Battles" }
         assertNull(battlesSection.trailingAction)
+    }
+
+    @Test
+    fun homeMode_defaultFetchCount_requestsSixTopPokemon() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        assertEquals(1, fakeRepo.getFormatDetailCalls.size)
+        assertEquals(ContentListLogic.DEFAULT_TOP_POKEMON_COUNT, fakeRepo.getFormatDetailCalls[0].topPokemonCount)
+    }
+
+    @Test
+    fun homeMode_customFetchCount_requestsRequestedTopPokemon() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home, initialTopPokemonFetchCount = 14)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        assertEquals(14, fakeRepo.getFormatDetailCalls[0].topPokemonCount)
+    }
+
+    @Test
+    fun homeMode_setTopPokemonFetchCount_increase_refetchesTopPokemonSectionOnly() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val initialBattlesSection = logic.uiState.value.items
+            .filterIsInstance<ContentListItem.Section>()
+            .first { it.header == "Today's Top Battles" }
+        val formatDetailCallsBefore = fakeRepo.getFormatDetailCalls.size
+
+        logic.setTopPokemonFetchCount(16)
+        testScope.advanceUntilIdle()
+
+        // Re-fetched format detail with the new count
+        assertEquals(formatDetailCallsBefore + 1, fakeRepo.getFormatDetailCalls.size)
+        assertEquals(16, fakeRepo.getFormatDetailCalls.last().topPokemonCount)
+        // Loading flag cleared
+        assertFalse("Top Pokémon" in logic.uiState.value.loadingSections)
+        // Battles section left untouched (same reference or at least same content)
+        val afterBattlesSection = logic.uiState.value.items
+            .filterIsInstance<ContentListItem.Section>()
+            .first { it.header == "Today's Top Battles" }
+        assertEquals(initialBattlesSection.items.size, afterBattlesSection.items.size)
+    }
+
+    @Test
+    fun homeMode_setTopPokemonFetchCount_sameValue_isNoOp() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val callsBefore = fakeRepo.getFormatDetailCalls.size
+        logic.setTopPokemonFetchCount(ContentListLogic.DEFAULT_TOP_POKEMON_COUNT)
+        testScope.advanceUntilIdle()
+
+        assertEquals(callsBefore, fakeRepo.getFormatDetailCalls.size)
+    }
+
+    @Test
+    fun homeMode_setTopPokemonFetchCount_decrease_doesNotRefetch() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home, initialTopPokemonFetchCount = 16)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val callsBefore = fakeRepo.getFormatDetailCalls.size
+        logic.setTopPokemonFetchCount(8)
+        testScope.advanceUntilIdle()
+
+        assertEquals(callsBefore, fakeRepo.getFormatDetailCalls.size)
+    }
+
+    @Test
+    fun nonHomeMode_setTopPokemonFetchCount_isNoOp() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val callsBefore = fakeRepo.getFormatDetailCalls.size
+        logic.setTopPokemonFetchCount(20)
+        testScope.advanceUntilIdle()
+
+        assertEquals(callsBefore, fakeRepo.getFormatDetailCalls.size)
+    }
+
+    @Test
+    fun homeMode_setTopPokemonFetchCount_refetchError_clearsLoadingSection() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        // Make the re-fetch fail.
+        fakeRepo.formatDetailError = Exception("Refetch failed")
+        logic.setTopPokemonFetchCount(16)
+        testScope.advanceUntilIdle()
+
+        assertFalse("Top Pokémon" in logic.uiState.value.loadingSections)
+        // Initial 6-pokemon section is still there (the failed refetch didn't replace it).
+        val section = logic.uiState.value.items
+            .filterIsInstance<ContentListItem.Section>()
+            .first { it.header == "Top Pokémon" }
+        val grid = section.items[0] as ContentListItem.PokemonGrid
+        assertTrue(grid.pokemon.isNotEmpty())
+    }
+
+    @Test
+    fun homeMode_setTopPokemonFetchCount_decreaseThenIncreaseBelowPeak_doesNotRefetch() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        // Start with an already-elevated fetched count of 14.
+        val logic = createLogic(ContentListMode.Home, initialTopPokemonFetchCount = 14)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val callsAfterInitialLoad = fakeRepo.getFormatDetailCalls.size
+
+        // Shrink the viewport → request 10 (below the 14 we already have).
+        logic.setTopPokemonFetchCount(10)
+        testScope.advanceUntilIdle()
+        assertEquals(callsAfterInitialLoad, fakeRepo.getFormatDetailCalls.size)
+
+        // Grow a bit → request 12 (still below the fetched peak of 14). No re-fetch.
+        logic.setTopPokemonFetchCount(12)
+        testScope.advanceUntilIdle()
+        assertEquals(callsAfterInitialLoad, fakeRepo.getFormatDetailCalls.size)
     }
 
     // --- TopPokemon mode ---

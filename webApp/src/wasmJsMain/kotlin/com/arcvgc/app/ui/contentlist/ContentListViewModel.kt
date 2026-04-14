@@ -56,4 +56,5 @@ class ContentListViewModel(
     fun selectFormat(formatId: Int) = logic.selectFormat(formatId)
     fun toggleSortOrder() = logic.toggleSortOrder()
     fun setSearchQuery(query: String) = logic.setSearchQuery(query)
+    fun setTopPokemonFetchCount(count: Int) = logic.setTopPokemonFetchCount(count)
 }

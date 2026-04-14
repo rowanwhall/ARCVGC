@@ -65,6 +65,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -458,169 +459,192 @@ fun ContentListPage(
                     .coerceIn(0.dp, DETAIL_PANEL_MAX_WIDTH)
                 val gridWidthWhenPaneOpen = (maxWidth - panePostWidth - 1.dp)
                     .coerceAtLeast(BATTLE_CARD_MAX_WIDTH)
-            Row(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = if (selectedBattleId != null) {
-                        Modifier.width(gridWidthWhenPaneOpen).fillMaxHeight()
-                    } else {
-                        Modifier.weight(1f).fillMaxHeight()
-                    }
-                ) {
-                    ContentListContent(
-                        uiState = uiState,
-                        header = mode.toHeaderUiModel(),
-                        hasToolbar = onBack != null,
-                        selectedBattleId = selectedBattleId,
-                        showWinnerHighlight = showWinnerHighlight,
-                        gridState = gridState,
-                        onRetry = viewModel::loadContent,
-                        onPaginate = viewModel::paginate,
-                        onItemClick = { item ->
-                            when (item) {
-                                is ContentListItem.Battle -> selectedBattleId = item.uiModel.id
-                                is ContentListItem.Pokemon -> {
-                                    val derivedFormatId = when (mode) {
-                                        is ContentListMode.Home -> viewModel.selectedFormatId.value
-                                        is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
-                                        is ContentListMode.Search -> mode.params.formatId
-                                        is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
-                                        is ContentListMode.Player -> viewModel.selectedFormatId.value
-                                        else -> null
-                                    }
-                                    navigateToPokemon(
-                                        item.id, item.name, item.imageUrl,
-                                        item.types.mapNotNull { it.imageUrl },
-                                        derivedFormatId
-                                    )
-                                }
-                                is ContentListItem.Player -> {
-                                    val derivedFormatId = when (mode) {
-                                        is ContentListMode.Home -> viewModel.selectedFormatId.value
-                                        is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
-                                        is ContentListMode.Search -> mode.params.formatId
-                                        is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
-                                        is ContentListMode.Player -> viewModel.selectedFormatId.value
-                                        else -> null
-                                    }
-                                    navigateToPlayer(item.id, item.name, derivedFormatId)
-                                }
-                                is ContentListItem.Section -> {}
-                                is ContentListItem.HighlightButtons -> {}
-                                is ContentListItem.PokemonGrid -> {}
-                                is ContentListItem.FormatSelector -> {}
-                                is ContentListItem.StatChipRow -> {}
-                                is ContentListItem.SearchField -> {}
-                            }
-                        },
-                        onHighlightBattleClick = { battleId -> selectedBattleId = battleId },
-                        onPokemonGridClick = { pokemon ->
-                            val derivedFormatId = when (mode) {
-                                is ContentListMode.Home -> viewModel.selectedFormatId.value
-                                is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
-                                is ContentListMode.Search -> mode.params.formatId
-                                is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
-                                is ContentListMode.Player -> viewModel.selectedFormatId.value
-                                else -> null
-                            }
-                            navigateToPokemon(pokemon.id, pokemon.name, pokemon.imageUrl, emptyList(), derivedFormatId)
-                        },
-                        searchParams = (mode as? ContentListMode.Search)?.params,
-                        onSearchParamsChanged = onSearchParamsChanged,
-                        sortOrder = when (mode) {
-                            is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> sortOrder
-                            else -> null
-                        },
-                        onToggleSortOrder = when (mode) {
-                            is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
-                            else -> null
-                        },
-                        formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) sortedFormats else emptyList(),
-                        selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
-                        onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
-                        searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
-                        onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
-                        onSeeMore = {
-                            val fmtId = viewModel.selectedFormatId.value
-                            if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
 
-                    if (onBack != null) {
-                        GradientToolbar(
-                            navigationIcon = {
-                                IconButton(onClick = onBack) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Back"
-                                    )
-                                }
-                            },
-                            actions = {
-                                if (mode is ContentListMode.Pokemon) {
-                                    val pId = mode.pokemonId
-                                    val isFav = pId in favoritePokemonIds
-                                    IconButton(onClick = { viewModel.favoritesRepository.togglePokemonFavorite(pId) }) {
-                                        Icon(
-                                            imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                            contentDescription = if (isFav) "Unfavorite" else "Favorite",
-                                            tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                if (mode is ContentListMode.Player) {
-                                    val pName = mode.playerName
-                                    val isFav = pName in favoritePlayerNames
-                                    IconButton(onClick = { viewModel.favoritesRepository.togglePlayerFavorite(pName) }) {
-                                        Icon(
-                                            imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                            contentDescription = if (isFav) "Unfavorite" else "Favorite",
-                                            tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            },
-                            modifier = Modifier.widthIn(max = 900.dp).align(Alignment.TopCenter)
-                        )
-                    }
+                // Top Pokémon row — escape the battle grid's FixedSize(650) cell-pack
+                // constraint so the row extends to the full grid box edge.
+                // Fetch capacity is based on the pane-closed viewport width so closing the
+                // pane has enough tiles ready without a re-fetch.
+                val gridOuterPadding = 32.dp  // LazyVerticalGrid horizontal padding 16.dp × 2
+                val topPokemonFetchMaxWidth =
+                    (maxWidth - gridOuterPadding - TOP_POKEMON_CARD_INNER_PADDING_TOTAL)
+                        .coerceAtLeast(0.dp)
+                val paneClosedTileCapacity = computeTopPokemonTileCount(topPokemonFetchMaxWidth)
+                // Only Home mode actually re-fetches on this call — Pokemon/Player modes'
+                // setTopPokemonFetchCount short-circuits on the non-Home guard. Running the
+                // effect for them is harmless.
+                LaunchedEffect(paneClosedTileCapacity) {
+                    viewModel.setTopPokemonFetchCount(paneClosedTileCapacity)
                 }
+                // Current display width — shrinks when the detail pane opens. Passed to
+                // ResponsivePokemonGridCard so it reflows its visible tile count.
+                val currentGridBoxWidth =
+                    if (selectedBattleId != null) gridWidthWhenPaneOpen else maxWidth
+                val topPokemonDisplayMaxWidth =
+                    (currentGridBoxWidth - gridOuterPadding).coerceAtLeast(0.dp)
+                Row(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = if (selectedBattleId != null) {
+                            Modifier.width(gridWidthWhenPaneOpen).fillMaxHeight()
+                        } else {
+                            Modifier.weight(1f).fillMaxHeight()
+                        }
+                    ) {
+                        ContentListContent(
+                            uiState = uiState,
+                            header = mode.toHeaderUiModel(),
+                            hasToolbar = onBack != null,
+                            selectedBattleId = selectedBattleId,
+                            showWinnerHighlight = showWinnerHighlight,
+                            gridState = gridState,
+                            onRetry = viewModel::loadContent,
+                            onPaginate = viewModel::paginate,
+                            onItemClick = { item ->
+                                when (item) {
+                                    is ContentListItem.Battle -> selectedBattleId = item.uiModel.id
+                                    is ContentListItem.Pokemon -> {
+                                        val derivedFormatId = when (mode) {
+                                            is ContentListMode.Home -> viewModel.selectedFormatId.value
+                                            is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
+                                            is ContentListMode.Search -> mode.params.formatId
+                                            is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                            is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                            else -> null
+                                        }
+                                        navigateToPokemon(
+                                            item.id, item.name, item.imageUrl,
+                                            item.types.mapNotNull { it.imageUrl },
+                                            derivedFormatId
+                                        )
+                                    }
+                                    is ContentListItem.Player -> {
+                                        val derivedFormatId = when (mode) {
+                                            is ContentListMode.Home -> viewModel.selectedFormatId.value
+                                            is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
+                                            is ContentListMode.Search -> mode.params.formatId
+                                            is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                            is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                            else -> null
+                                        }
+                                        navigateToPlayer(item.id, item.name, derivedFormatId)
+                                    }
+                                    is ContentListItem.Section -> {}
+                                    is ContentListItem.HighlightButtons -> {}
+                                    is ContentListItem.PokemonGrid -> {}
+                                    is ContentListItem.FormatSelector -> {}
+                                    is ContentListItem.StatChipRow -> {}
+                                    is ContentListItem.SearchField -> {}
+                                }
+                            },
+                            onHighlightBattleClick = { battleId -> selectedBattleId = battleId },
+                            onPokemonGridClick = { pokemon ->
+                                val derivedFormatId = when (mode) {
+                                    is ContentListMode.Home -> viewModel.selectedFormatId.value
+                                    is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
+                                    is ContentListMode.Search -> mode.params.formatId
+                                    is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                                    is ContentListMode.Player -> viewModel.selectedFormatId.value
+                                    else -> null
+                                }
+                                navigateToPokemon(pokemon.id, pokemon.name, pokemon.imageUrl, emptyList(), derivedFormatId)
+                            },
+                            searchParams = (mode as? ContentListMode.Search)?.params,
+                            onSearchParamsChanged = onSearchParamsChanged,
+                            sortOrder = when (mode) {
+                                is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> sortOrder
+                                else -> null
+                            },
+                            onToggleSortOrder = when (mode) {
+                                is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
+                                else -> null
+                            },
+                            formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) sortedFormats else emptyList(),
+                            selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
+                            onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
+                            searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
+                            onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
+                            onSeeMore = {
+                                val fmtId = viewModel.selectedFormatId.value
+                                if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
+                            },
+                            expandedTopPokemonMaxWidth = topPokemonDisplayMaxWidth,
+                            modifier = Modifier.fillMaxSize()
+                        )
 
-                // Remember the last non-null battle ID so content persists during exit animation
-                var lastBattleId by remember { mutableStateOf(selectedBattleId) }
-                if (selectedBattleId != null) lastBattleId = selectedBattleId
-
-                AnimatedVisibility(
-                    visibleState = detailPaneState,
-                    enter = slideInHorizontally(
-                        animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
-                        initialOffsetX = { fullWidth -> fullWidth }
-                    ),
-                    exit = slideOutHorizontally(
-                        animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
-                        targetOffsetX = { fullWidth -> fullWidth }
-                    )
-                ) {
-                    lastBattleId?.let { battleId ->
-                        Row(modifier = Modifier.fillMaxHeight()) {
-                            VerticalDivider(modifier = Modifier.fillMaxHeight())
-                            BattleDetailPanel(
-                                battleId = battleId,
-                                isFavorited = battleId in favoriteBattleIds,
-                                onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
-                                onClose = { selectedBattleId = null },
-                                showWinnerHighlight = showWinnerHighlight,
-                                onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                                    navigateToPokemon(id, name, imageUrl, typeImageUrls, formatId)
+                        if (onBack != null) {
+                            GradientToolbar(
+                                navigationIcon = {
+                                    IconButton(onClick = onBack) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back"
+                                        )
+                                    }
                                 },
-                                onPlayerClick = { id, name, formatId ->
-                                    navigateToPlayer(id, name, formatId)
+                                actions = {
+                                    if (mode is ContentListMode.Pokemon) {
+                                        val pId = mode.pokemonId
+                                        val isFav = pId in favoritePokemonIds
+                                        IconButton(onClick = { viewModel.favoritesRepository.togglePokemonFavorite(pId) }) {
+                                            Icon(
+                                                imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                                contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                                tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    if (mode is ContentListMode.Player) {
+                                        val pName = mode.playerName
+                                        val isFav = pName in favoritePlayerNames
+                                        IconButton(onClick = { viewModel.favoritesRepository.togglePlayerFavorite(pName) }) {
+                                            Icon(
+                                                imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                                contentDescription = if (isFav) "Unfavorite" else "Favorite",
+                                                tint = if (isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
                                 },
-                                modifier = Modifier.width(panePostWidth).fillMaxHeight()
+                                modifier = Modifier.widthIn(max = 900.dp).align(Alignment.TopCenter)
                             )
                         }
                     }
+
+                    // Remember the last non-null battle ID so content persists during exit animation
+                    var lastBattleId by remember { mutableStateOf(selectedBattleId) }
+                    if (selectedBattleId != null) lastBattleId = selectedBattleId
+
+                    AnimatedVisibility(
+                        visibleState = detailPaneState,
+                        enter = slideInHorizontally(
+                            animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
+                            initialOffsetX = { fullWidth -> fullWidth }
+                        ),
+                        exit = slideOutHorizontally(
+                            animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
+                            targetOffsetX = { fullWidth -> fullWidth }
+                        )
+                    ) {
+                        lastBattleId?.let { battleId ->
+                            Row(modifier = Modifier.fillMaxHeight()) {
+                                VerticalDivider(modifier = Modifier.fillMaxHeight())
+                                BattleDetailPanel(
+                                    battleId = battleId,
+                                    isFavorited = battleId in favoriteBattleIds,
+                                    onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
+                                    onClose = { selectedBattleId = null },
+                                    showWinnerHighlight = showWinnerHighlight,
+                                    onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
+                                        navigateToPokemon(id, name, imageUrl, typeImageUrls, formatId)
+                                    },
+                                    onPlayerClick = { id, name, formatId ->
+                                        navigateToPlayer(id, name, formatId)
+                                    },
+                                    modifier = Modifier.width(panePostWidth).fillMaxHeight()
+                                )
+                            }
+                        }
+                    }
                 }
-            }
             }
         }
     }
@@ -639,6 +663,7 @@ private fun ContentListContent(
     onItemClick: (ContentListItem) -> Unit,
     onHighlightBattleClick: (Int) -> Unit = {},
     onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit = {},
+    expandedTopPokemonMaxWidth: Dp = 0.dp,
     searchParams: SearchParams? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     sortOrder: String? = null,
@@ -958,10 +983,26 @@ private fun ContentListContent(
                                 }
                             } else {
                                 topItem.items.forEach { child ->
-                                    item(key = child.listKey, span = fullSpan) {
-                                        val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
-                                        CenteredItem(modifier = childModifier) {
-                                            ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                    val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
+                                    if (child is ContentListItem.PokemonGrid &&
+                                        windowSizeClass == WindowSizeClass.Expanded) {
+                                        // Full-span, left-aligned row that reflows on pane toggle.
+                                        // Skip CenteredItem so the card extends to the grid box's edge
+                                        // (bypassing the FixedSize(650) cell-pack constraint via
+                                        // Modifier.layout inside the card).
+                                        item(key = child.listKey, span = fullSpan) {
+                                            ResponsivePokemonGridCard(
+                                                pokemon = child.pokemon,
+                                                onPokemonClick = onPokemonGridClick,
+                                                availableWidth = expandedTopPokemonMaxWidth,
+                                                modifier = childModifier
+                                            )
+                                        }
+                                    } else {
+                                        item(key = child.listKey, span = fullSpan) {
+                                            CenteredItem(modifier = childModifier) {
+                                                ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                            }
                                         }
                                     }
                                 }
@@ -1162,7 +1203,21 @@ private fun CenteredItem(
 
 private val BATTLE_CARD_MAX_WIDTH = 650.dp
 private val BATTLE_GRID_SPACING = 12.dp
-private const val DETAIL_PANE_ANIM_DURATION_MS = 300
+internal const val DETAIL_PANE_ANIM_DURATION_MS = 300
+
+internal val TOP_POKEMON_TILE_WIDTH = 140.dp
+internal val TOP_POKEMON_TILE_SPACING = 8.dp
+internal const val TOP_POKEMON_MIN_TILES = 3
+// Outer padding of the Top Pokémon card (`cardInnerPadding × 2`), subtracted when
+// converting an available width into a tile-fit width. Kept in sync with
+// `ResponsivePokemonGridCard.cardInnerPadding`.
+internal val TOP_POKEMON_CARD_INNER_PADDING_TOTAL = 24.dp
+
+internal fun computeTopPokemonTileCount(availableWidth: Dp): Int {
+    val tile = (TOP_POKEMON_TILE_WIDTH + TOP_POKEMON_TILE_SPACING).value
+    val raw = ((availableWidth.value + TOP_POKEMON_TILE_SPACING.value) / tile).toInt()
+    return raw.coerceAtLeast(TOP_POKEMON_MIN_TILES)
+}
 
 // Placement spec for battle card reflow when the detail pane opens/closes.
 // Tweak this to play with animation feel — swap for spring(), tween() with different

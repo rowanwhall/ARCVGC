@@ -1,5 +1,9 @@
 package com.arcvgc.app.ui.contentlist
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +18,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -27,7 +32,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.arcvgc.app.ui.LocalWindowSizeClass
@@ -210,6 +218,101 @@ internal fun ContentListItemRow(
         is ContentListItem.Section -> {}
         is ContentListItem.FormatSelector -> {}
         is ContentListItem.SearchField -> {}
+    }
+}
+
+/**
+ * Desktop-web single-row Pokemon card used by Home "Top Pokémon", Player "Favorite Pokémon",
+ * and Pokemon "Top Teammates". Fills the grid's full-span width, left-aligned, and reflows
+ * tile count based on measured width — dropped tiles fade out, revealed tiles fade in.
+ * Receives all fetched Pokemon; shows only the first N that fit and hides the rest via
+ * AnimatedVisibility so the transition is smooth when the battle detail pane opens/closes.
+ */
+@Composable
+internal fun ResponsivePokemonGridCard(
+    pokemon: List<ContentListItem.PokemonGridItem>,
+    onPokemonClick: (ContentListItem.PokemonGridItem) -> Unit,
+    availableWidth: Dp,
+    modifier: Modifier = Modifier
+) {
+    // Computed from the parent-provided availableWidth (full grid-box width, not the
+    // battle grid's cell-packed fullSpan width). Subtract card padding (12.dp × 2).
+    val cardInnerPadding = 12.dp
+    val innerWidth = (availableWidth - cardInnerPadding * 2).coerceAtLeast(0.dp)
+    val fitCount = computeTopPokemonTileCount(innerWidth).coerceAtMost(pokemon.size)
+    // Escape the LazyVerticalGrid's FixedSize(650) cell-pack max width: re-measure
+    // the child with our larger target constraint, but *report* the grid's original
+    // maxWidth so the grid's horizontal arrangement still places us start-aligned at
+    // position 0 of the content area. The content draws beyond that reported width
+    // into the grid's otherwise-unused trailing space.
+    // Note on hit-testing: Compose tests pointer events against the placeable's
+    // actual (wider) bounds, so tiles drawn beyond `reportedWidth` still receive
+    // clicks. This works today but is an implementation detail — if it ever breaks,
+    // the symptom would be that the rightmost tiles become unclickable while still
+    // visible.
+    val escapeCellWidth = Modifier.layout { measurable, constraints ->
+        val targetMaxPx = availableWidth.roundToPx().coerceAtLeast(0)
+        val placeable = measurable.measure(
+            constraints.copy(minWidth = 0, maxWidth = targetMaxPx)
+        )
+        val reportedWidth = constraints.maxWidth.coerceAtMost(placeable.width)
+        layout(reportedWidth, placeable.height) {
+            placeable.place(0, 0)
+        }
+    }
+    Surface(
+        shape = RoundedCornerShape(CardCornerRadius),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier.then(escapeCellWidth)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(TOP_POKEMON_TILE_SPACING, Alignment.Start),
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier
+                .padding(cardInnerPadding)
+                .clipToBounds()
+        ) {
+            pokemon.forEachIndexed { index, item ->
+                AnimatedVisibility(
+                    visible = index < fitCount,
+                    enter = fadeIn(animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS)),
+                    exit = fadeOut(animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS))
+                ) {
+                    Surface(
+                        onClick = { onPokemonClick(item) },
+                        color = MaterialTheme.colorScheme.surface,
+                        modifier = Modifier.width(TOP_POKEMON_TILE_WIDTH)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            FillPokemonAvatar(
+                                imageUrl = item.imageUrl,
+                                contentDescription = item.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f)
+                            )
+                            Text(
+                                text = item.name,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                            item.usagePercent?.let { pct ->
+                                Text(
+                                    text = pct,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
