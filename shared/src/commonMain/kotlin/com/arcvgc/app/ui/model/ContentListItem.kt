@@ -5,8 +5,20 @@ sealed class ContentListItem {
     open val edgeToEdge: Boolean get() = false
     open val isContentItem: Boolean get() = true
 
+    /**
+     * Whether this item must be emitted as an individual cell in a cell-packed grid
+     * (e.g. web's `LazyVerticalGrid` with `GridCells.FixedSize`). Items that are
+     * `true` cannot be bundled with siblings into a single full-span grid slot
+     * because they rely on the grid's column layout for placement, animated reflow,
+     * and scroll-to-item behavior. Used by the web desktop layout to decide whether
+     * a section emits its content as individual grid items or as a single combined
+     * grid item whose width is measured from the content.
+     */
+    open val requiresIndividualGridCells: Boolean get() = false
+
     data class Battle(val uiModel: BattleCardUiModel) : ContentListItem() {
         override val listKey get() = "battle_${uiModel.id}"
+        override val requiresIndividualGridCells: Boolean get() = true
     }
 
     data class Pokemon(

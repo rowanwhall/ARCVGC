@@ -63,6 +63,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -273,7 +274,8 @@ fun ContentListPage(
             val index = computeBattleItemIndex(
                 mode.toHeaderUiModel(), uiState, battleId,
                 hasFormats = hasFormats,
-                hasSearchQuery = hasSearchQuery
+                hasSearchQuery = hasSearchQuery,
+                windowSizeClass = windowSizeClass
             )
             if (index != null) {
                 if (paneWasOpen) {
@@ -289,7 +291,8 @@ fun ContentListPage(
                 val index = computeBattleItemIndex(
                     mode.toHeaderUiModel(), uiState, closeBattleId,
                     hasFormats = hasFormats,
-                    hasSearchQuery = hasSearchQuery
+                    hasSearchQuery = hasSearchQuery,
+                    windowSizeClass = windowSizeClass
                 )
                 if (index != null) {
                     gridState.animateScrollToItem(index, scrollOffsetPx)
@@ -930,81 +933,133 @@ private fun ContentListContent(
                     when (topItem) {
                         is ContentListItem.Section -> {
                             val isLoadingSection = topItem.header in uiState.loadingSections
-                            if (topItem.header.isNotEmpty()) {
-                                item(key = topItem.listKey, span = fullSpan) {
-                                    CenteredItem {
-                                        SectionHeader(
-                                            title = topItem.header,
-                                            isLoading = isLoadingSection,
-                                            sortOrder = if (topItem.header == "Battles") sortOrder else null,
-                                            onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                            onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                            val needsIndividualCells = topItem.items.any { it.requiresIndividualGridCells }
+                            if (needsIndividualCells || windowSizeClass != WindowSizeClass.Expanded) {
+                                // Battle sections (or compact layouts): header is a separate
+                                // full-span grid item whose width comes from the grid's own
+                                // layout math. On expanded, `BoxWithConstraints.maxWidth` inside
+                                // a fullSpan item equals the cell-pack width (cols × 650 + gaps),
+                                // which is exactly the right edge of the rightmost battle card.
+                                // On compact, fall back to `CenteredItem` (900dp).
+                                if (topItem.header.isNotEmpty()) {
+                                    item(key = topItem.listKey, span = fullSpan) {
+                                        if (windowSizeClass == WindowSizeClass.Expanded) {
+                                            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                                                Box(modifier = Modifier.width(maxWidth)) {
+                                                    SectionHeader(
+                                                        title = topItem.header,
+                                                        isLoading = isLoadingSection,
+                                                        sortOrder = if (topItem.header == "Battles") sortOrder else null,
+                                                        onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
+                                                        onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                                                    )
+                                                }
+                                            }
+                                        } else {
+                                            CenteredItem {
+                                                SectionHeader(
+                                                    title = topItem.header,
+                                                    isLoading = isLoadingSection,
+                                                    sortOrder = if (topItem.header == "Battles") sortOrder else null,
+                                                    onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
+                                                    onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                if (topItem.items.isEmpty() && !isLoadingSection) {
+                                    item(key = "${topItem.listKey}_empty", span = fullSpan) {
+                                        CenteredItem {
+                                            EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
+                                        }
+                                    }
+                                }
+                                val loadingMod = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
+                                if (needsIndividualCells) {
+                                    items(
+                                        items = topItem.items.filterIsInstance<ContentListItem.Battle>(),
+                                        key = { it.listKey }
+                                    ) { battle ->
+                                        val isSelected = battle.uiModel.id == selectedBattleId
+                                        BattleCard(
+                                            uiModel = battle.uiModel,
+                                            showWinnerHighlight = showWinnerHighlight,
+                                            onClick = { onItemClick(battle) },
+                                            modifier = Modifier
+                                                .animateItem(
+                                                    placementSpec = BATTLE_GRID_PLACEMENT_SPEC
+                                                )
+                                                .widthIn(max = BATTLE_CARD_MAX_WIDTH)
+                                                .fillMaxWidth()
+                                                .then(loadingMod)
+                                                .then(
+                                                    if (isSelected) {
+                                                        Modifier.background(
+                                                            MaterialTheme.colorScheme.primaryContainer,
+                                                            RoundedCornerShape(CardCornerRadius)
+                                                        )
+                                                    } else {
+                                                        Modifier
+                                                    }
+                                                )
                                         )
                                     }
-                                }
-                            }
-                            if (topItem.items.isEmpty() && !isLoadingSection) {
-                                item(key = "${topItem.listKey}_empty", span = fullSpan) {
-                                    CenteredItem {
-                                        EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
-                                    }
-                                }
-                            }
-                            val isBattleSection = topItem.items.firstOrNull() is ContentListItem.Battle
-                            if (isBattleSection) {
-                                val loadingMod = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
-                                items(
-                                    items = topItem.items.filterIsInstance<ContentListItem.Battle>(),
-                                    key = { it.listKey }
-                                ) { battle ->
-                                    val isSelected = battle.uiModel.id == selectedBattleId
-                                    BattleCard(
-                                        uiModel = battle.uiModel,
-                                        showWinnerHighlight = showWinnerHighlight,
-                                        onClick = { onItemClick(battle) },
-                                        modifier = Modifier
-                                            .animateItem(
-                                                placementSpec = BATTLE_GRID_PLACEMENT_SPEC
-                                            )
-                                            .widthIn(max = BATTLE_CARD_MAX_WIDTH)
-                                            .fillMaxWidth()
-                                            .then(loadingMod)
-                                            .then(
-                                                if (isSelected) {
-                                                    Modifier.background(
-                                                        MaterialTheme.colorScheme.primaryContainer,
-                                                        RoundedCornerShape(CardCornerRadius)
-                                                    )
-                                                } else {
-                                                    Modifier
-                                                }
-                                            )
-                                    )
-                                }
-                            } else {
-                                topItem.items.forEach { child ->
-                                    val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
-                                    if (child is ContentListItem.PokemonGrid &&
-                                        windowSizeClass == WindowSizeClass.Expanded) {
-                                        // Full-span, left-aligned row that reflows on pane toggle.
-                                        // Skip CenteredItem so the card extends to the grid box's edge
-                                        // (bypassing the FixedSize(650) cell-pack constraint via
-                                        // Modifier.layout inside the card).
+                                } else {
+                                    // Compact-only: non-battle children rendered individually in a
+                                    // CenteredItem wrapper, matching the pre-existing compact layout.
+                                    topItem.items.forEach { child ->
                                         item(key = child.listKey, span = fullSpan) {
-                                            ResponsivePokemonGridCard(
-                                                pokemon = child.pokemon,
-                                                onPokemonClick = onPokemonGridClick,
-                                                availableWidth = expandedTopPokemonMaxWidth,
-                                                modifier = childModifier
-                                            )
-                                        }
-                                    } else {
-                                        item(key = child.listKey, span = fullSpan) {
-                                            CenteredItem(modifier = childModifier) {
+                                            CenteredItem(modifier = loadingMod) {
                                                 ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
                                             }
                                         }
                                     }
+                                }
+                            } else {
+                                // Expanded, non-battle section: header and content share one grid
+                                // item. `SectionContentAlignedHeader` measures the content first
+                                // (respecting any natural-width behavior like
+                                // `ResponsivePokemonGridCard`'s layout escape) and sizes the header
+                                // to exactly that width. No content-type dispatch needed.
+                                item(key = topItem.listKey, span = fullSpan) {
+                                    SectionContentAlignedHeader(
+                                        contentMeasureMaxWidth = expandedTopPokemonMaxWidth,
+                                        header = if (topItem.header.isNotEmpty()) {
+                                            {
+                                                SectionHeader(
+                                                    title = topItem.header,
+                                                    isLoading = isLoadingSection,
+                                                    sortOrder = if (topItem.header == "Battles") sortOrder else null,
+                                                    onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
+                                                    onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                                                )
+                                            }
+                                        } else null,
+                                        content = {
+                                            val loadingMod = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
+                                            if (topItem.items.isEmpty() && !isLoadingSection) {
+                                                EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
+                                            } else {
+                                                Column(
+                                                    modifier = loadingMod,
+                                                    verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing)
+                                                ) {
+                                                    topItem.items.forEach { child ->
+                                                        if (child is ContentListItem.PokemonGrid) {
+                                                            ResponsivePokemonGridCard(
+                                                                pokemon = child.pokemon,
+                                                                onPokemonClick = onPokemonGridClick,
+                                                                availableWidth = expandedTopPokemonMaxWidth
+                                                            )
+                                                        } else {
+                                                            ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -1130,13 +1185,21 @@ private fun ContentListContent(
 /**
  * Mirrors the item emission order of the LazyVerticalGrid builder to find the index
  * of the grid item for a given battle ID. Returns null if not found.
+ *
+ * Emission order is windowSizeClass-dependent:
+ * - Expanded non-battle sections are emitted as a SINGLE combined grid item
+ *   (`SectionContentAlignedHeader` wrapping header + all children).
+ * - Battle sections (or any section with `requiresIndividualGridCells = true`)
+ *   emit one header item followed by N individual child items.
+ * - Compact sections emit one header item followed by N individual child items.
  */
 private fun computeBattleItemIndex(
     header: ContentListHeaderUiModel,
     uiState: ContentListUiState,
     battleId: Int,
     hasFormats: Boolean,
-    hasSearchQuery: Boolean
+    hasSearchQuery: Boolean,
+    windowSizeClass: WindowSizeClass
 ): Int? {
     var index = 0
 
@@ -1157,13 +1220,22 @@ private fun computeBattleItemIndex(
                 when (topItem) {
                     is ContentListItem.Section -> {
                         val isLoadingSection = topItem.header in uiState.loadingSections
-                        if (topItem.header.isNotEmpty()) index++ // section header
-                        if (topItem.items.isEmpty() && !isLoadingSection) {
-                            index++ // empty view
-                            continue
-                        }
-                        for (child in topItem.items) {
-                            if (child is ContentListItem.Battle && child.uiModel.id == battleId) return index
+                        val needsIndividualCells = topItem.items.any { it.requiresIndividualGridCells }
+                        val splitEmission = needsIndividualCells || windowSizeClass != WindowSizeClass.Expanded
+                        if (splitEmission) {
+                            if (topItem.header.isNotEmpty()) index++ // section header
+                            if (topItem.items.isEmpty() && !isLoadingSection) {
+                                index++ // empty view
+                                continue
+                            }
+                            for (child in topItem.items) {
+                                if (child is ContentListItem.Battle && child.uiModel.id == battleId) return index
+                                index++
+                            }
+                        } else {
+                            // Expanded non-battle section: one combined grid item. Battles
+                            // cannot appear here (they'd trigger the split path via
+                            // `requiresIndividualGridCells`), so no battle ID match.
                             index++
                         }
                     }
@@ -1197,6 +1269,78 @@ private fun CenteredItem(
     ) {
         Box(modifier = Modifier.widthIn(max = CONTENT_MAX_WIDTH).fillMaxWidth().then(modifier)) {
             content()
+        }
+    }
+}
+
+/**
+ * Combined section item for the expanded grid layout: emits the section's header and
+ * content as a single full-span grid item, with the header's width matched to the
+ * content's actual rendered width via `SubcomposeLayout`.
+ *
+ * Why the `contentMeasureMaxWidth` parameter: `LazyVerticalGrid` with
+ * `GridCells.FixedSize(650)` passes `constraints.maxWidth = cellPackWidth` (e.g.
+ * 1312dp for 2 columns) to full-span items. Measuring content with those constraints
+ * loses information about the *true* drawn width: `ResponsivePokemonGridCard` uses a
+ * `Modifier.layout` escape trick that re-measures its inner Row at a wider target
+ * (the grid-box inner width, e.g. 1668dp) but reports back `min(cellPackWidth,
+ * placeable.width)` so the grid's horizontal arrangement stays happy. That means
+ * the card's reported width is clamped to the cell pack, even when it visibly draws
+ * ~36dp past it. To recover the true drawn width for header alignment, we measure
+ * content with `constraints.copy(maxWidth = contentMeasureMaxWidth)` — a loose upper
+ * bound matching the grid-box inner width — so the card's `coerceAtMost` no longer
+ * clamps, and fill-max-width content has a sensible finite bound too.
+ *
+ * Reported-vs-drawn-width split: the header and content placeables are measured and
+ * placed at `contentWidth` (the true drawn width), but `layout()` reports the grid's
+ * original `constraints.maxWidth` (cell pack) back up. `LazyVerticalGrid` sees a
+ * cell-pack-sized item and places it at x=0 of the content area — the 36dp-ish
+ * overflow from the placeables draws into the grid's otherwise-unused trailing space
+ * to the right of the cell pack. See the "Web Desktop" section of
+ * [`docs/content-list.md`](../../../../../../docs/content-list.md) for the full
+ * layout model.
+ *
+ * Not used for sections containing items with `requiresIndividualGridCells = true`
+ * (e.g. battles) — those need individual grid cells and are emitted separately. Not
+ * used on compact either — compact falls back to the legacy `CenteredItem` path.
+ */
+@Composable
+private fun SectionContentAlignedHeader(
+    contentMeasureMaxWidth: Dp,
+    header: (@Composable () -> Unit)?,
+    content: @Composable () -> Unit
+) {
+    SubcomposeLayout { constraints ->
+        val looseMaxPx = contentMeasureMaxWidth.roundToPx()
+            .coerceAtLeast(constraints.maxWidth)
+        val looseConstraints = constraints.copy(minWidth = 0, maxWidth = looseMaxPx)
+        val contentPlaceables = subcompose("content") { content() }
+            .map { it.measure(looseConstraints) }
+        val contentWidth = contentPlaceables.maxOfOrNull { it.width } ?: 0
+        val contentHeight = contentPlaceables.sumOf { it.height }
+
+        val headerPlaceables = if (header != null) {
+            subcompose("header") { header() }.map {
+                it.measure(constraints.copy(minWidth = contentWidth, maxWidth = contentWidth))
+            }
+        } else emptyList()
+        val headerHeight = headerPlaceables.sumOf { it.height }
+
+        // Clamp the reported layout width to the grid's cell-pack max so the grid
+        // places this item at x=0 even if the inner content is wider. Placeables are
+        // still placed at their true width and draw into the grid's unused trailing
+        // space to the right of the cell pack.
+        val reportedWidth = contentWidth.coerceAtMost(constraints.maxWidth)
+        layout(reportedWidth, headerHeight + contentHeight) {
+            var y = 0
+            headerPlaceables.forEach { placeable ->
+                placeable.place(0, y)
+                y += placeable.height
+            }
+            contentPlaceables.forEach { placeable ->
+                placeable.place(0, y)
+                y += placeable.height
+            }
         }
     }
 }
