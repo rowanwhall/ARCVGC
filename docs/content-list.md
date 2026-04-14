@@ -154,6 +154,25 @@ This is recursive — each child instance has its own independent state, creatin
 
 **Format threading**: When navigating to a Pokemon or Player from battle detail, the battle's `formatId` is injected at the boundary (Android: inline in `ContentListPage`, iOS: `BattleDetailPage`, Web: `BattleDetailPanel`) by wrapping the click callbacks to append the format. When navigating from search results, the search's format is passed. When navigating from another Pokemon/Player page, the current page's `selectedFormatId` is passed.
 
+### Web Desktop: Multi-Column Battle Grid & Scroll Restoration
+
+On desktop web (expanded size class), the content list uses a wider layout for battle cards:
+
+- **Non-battle items** (heroes, section headers, format selectors, stat chips, etc.) are centered with a `CONTENT_MAX_WIDTH` (900dp) cap via the `CenteredItem` wrapper composable.
+- **Battle cards** use available width, rendered in a multi-column grid. Column count is computed dynamically from `BATTLE_CARD_MIN_WIDTH` (420dp); individual cards are capped at `BATTLE_CARD_MAX_WIDTH` (600dp). Consecutive battle items (both inside sections and top-level pages 2+) are chunked into `Row` groups via `battleGridItems()`.
+- `computeBattleColumns()` accounts for 16dp horizontal padding on each side. On narrow screens the math yields 1 column, so the layout degrades gracefully.
+
+When the battle detail pane opens/closes, the list width changes and the grid reflows (e.g., 3 columns → 2 or vice versa). Scroll restoration keeps the user oriented:
+
+- **Pane opens** (null → battle selected): Saves the exact scroll position (item index + pixel offset) in wide-grid coordinates. Then scrolls instantly to the selected battle's row in the narrower grid via `computeBattleItemIndex()`.
+- **Pane switches** (battle A → battle B, pane stays open): Saves the *battle ID* (not pixel offset, since current position is in narrow-grid space). Scrolls to the new battle's row.
+- **Pane closes after switch**: Resolves the saved battle ID to its index in the *wide* grid via `computeBattleItemIndex()` and scrolls there (offset 0).
+- **Pane closes without switch**: Restores the exact saved position (index + pixel offset) from before the pane opened.
+
+`computeBattleItemIndex()` mirrors the LazyColumn's item emission order (headers, sections with grid chunking, top-level items) to compute the correct index for a given battle ID. It accepts `battleColumns` to account for the current grid layout, and `hasFormats`/`hasSearchQuery` flags to match conditional item emission.
+
+A `scrollGeneration` counter forces `LaunchedEffect` re-triggers when the same battle ID needs to scroll after both a pane switch and close.
+
 ## Toolbar & Favorite Buttons
 
 Pokemon and Player modes show a toolbar with back button + favorite heart:

@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -52,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.shared.Res
@@ -66,6 +69,7 @@ import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.replaceHistoryStateWithPath
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.model.FavoriteContentType
+import com.arcvgc.app.ui.components.BattleCard
 import com.arcvgc.app.ui.components.EmptyView
 import com.arcvgc.app.ui.components.ErrorView
 import com.arcvgc.app.ui.components.LoadingIndicator
@@ -238,6 +242,47 @@ fun ContentListPage(
     val isCompact = windowSizeClass == WindowSizeClass.Compact
     val battleOverlay = LocalBattleOverlay.current
 
+    // When the detail pane opens, save the current scroll position and scroll to the selected
+    // battle in the narrower grid. When it closes, restore the saved position exactly.
+    var scrollToBattleId by remember { mutableStateOf<Pair<Int, Int>?>(null) } // (battleId, generation)
+    var scrollGeneration by remember { mutableStateOf(0) }
+    var restoreExactPosition by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var restoreBattleId by remember { mutableStateOf<Int?>(null) }
+    var restoreScrollPosition by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var paneWasOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(selectedBattleId) {
+        if (isCompact) return@LaunchedEffect
+        val battleId = selectedBattleId
+        if (battleId != null) {
+            if (!paneWasOpen) {
+                // Pane opening — save exact position (wide-grid space, safe to restore)
+                restoreExactPosition = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+                restoreBattleId = null
+            } else {
+                // Pane switching — save the battle ID to resolve in wide-grid space at close time
+                restoreExactPosition = null
+                restoreBattleId = battleId
+            }
+            scrollGeneration++
+            scrollToBattleId = battleId to scrollGeneration
+            restoreScrollPosition = null
+            paneWasOpen = true
+        } else if (paneWasOpen) {
+            // Pane closing — restore exact position or resolve battle ID in wide grid
+            val closeBattleId = restoreBattleId
+            if (closeBattleId != null) {
+                scrollGeneration++
+                scrollToBattleId = closeBattleId to scrollGeneration
+            } else {
+                scrollToBattleId = null
+                restoreScrollPosition = restoreExactPosition
+            }
+            restoreExactPosition = null
+            restoreBattleId = null
+            paneWasOpen = false
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -391,6 +436,8 @@ fun ContentListPage(
                         hasToolbar = onBack != null,
                         selectedBattleId = selectedBattleId,
                         showWinnerHighlight = showWinnerHighlight,
+                        scrollToBattleId = scrollToBattleId,
+                        restoreScrollPosition = restoreScrollPosition,
                         listState = listState,
                         onRetry = viewModel::loadContent,
                         onPaginate = viewModel::paginate,
@@ -534,6 +581,8 @@ private fun ContentListContent(
     hasToolbar: Boolean = false,
     selectedBattleId: Int? = null,
     showWinnerHighlight: Boolean = true,
+    scrollToBattleId: Pair<Int, Int>? = null, // (battleId, generation) — generation forces re-trigger
+    restoreScrollPosition: Pair<Int, Int>? = null,
     onRetry: () -> Unit,
     onPaginate: () -> Unit,
     onItemClick: (ContentListItem) -> Unit,
@@ -595,12 +644,30 @@ private fun ContentListContent(
             }
         )
     ) {
-    Box(
-        modifier = Modifier
-            .widthIn(max = 900.dp)
-            .fillMaxHeight()
-            .align(Alignment.TopCenter)
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize()
     ) {
+    val availableWidth = maxWidth
+    val battleColumns = computeBattleColumns(availableWidth)
+
+    // On pane open: scroll to the selected battle's row in the narrower grid.
+    // On pane close: restore the exact scroll position from before the pane opened.
+    LaunchedEffect(scrollToBattleId) {
+        val (targetId, _) = scrollToBattleId ?: return@LaunchedEffect
+        val index = computeBattleItemIndex(
+            header, uiState, targetId, battleColumns,
+            hasFormats = formats.isNotEmpty() && onFormatSelected != null,
+            hasSearchQuery = onSearchQueryChanged != null
+        )
+        if (index != null) {
+            listState.scrollToItem(index)
+        }
+    }
+    LaunchedEffect(restoreScrollPosition) {
+        val (index, offset) = restoreScrollPosition ?: return@LaunchedEffect
+        listState.scrollToItem(index, offset)
+    }
+
     LazyColumn(
         state = listState,
         contentPadding = PaddingValues(
@@ -614,42 +681,40 @@ private fun ContentListContent(
             is ContentListHeaderUiModel.None -> {}
             is ContentListHeaderUiModel.HomeHero -> {
                 item(key = "home_hero") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Image(
-                            painter = painterResource(Res.drawable.logo),
-                            contentDescription = "ARC",
-                            modifier = Modifier.height(HeroLogoHeight)
-                        )
-                        Text(
-                            text = "ARC",
-                            fontSize = 24.sp,
-                            fontFamily = BrandFontFamily,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp).padding(top = 24.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(Res.drawable.logo),
+                                contentDescription = "ARC",
+                                modifier = Modifier.height(HeroLogoHeight)
+                            )
+                            Text(
+                                text = "ARC",
+                                fontSize = 24.sp,
+                                fontFamily = BrandFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             }
             is ContentListHeaderUiModel.TopPokemonHero -> {
                 item(key = "top_pokemon_hero") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 24.dp, bottom = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Top Pok\u00E9mon",
-                            style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp).padding(top = 24.dp, bottom = 8.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Top Pok\u00E9mon",
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -658,7 +723,7 @@ private fun ContentListContent(
             }
             is ContentListHeaderUiModel.SearchFilters -> {
                 item(key = "search_filters") {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
                         SearchFilterChips(
                             filters = h,
                             searchParams = searchParams,
@@ -669,46 +734,50 @@ private fun ContentListContent(
             }
             is ContentListHeaderUiModel.PokemonHero -> {
                 item(key = "pokemon_hero") {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        PokemonAvatar(
-                            imageUrl = h.imageUrl,
-                            contentDescription = h.name,
-                            circleSize = 132.dp,
-                            spriteSize = 184.dp
-                        )
-                        Text(
-                            text = h.name,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        if (h.typeImageUrls.isNotEmpty()) {
-                            TypeIconRow(
-                                types = h.typeImageUrls.map { TypeInfo("Type", it) },
-                                iconSize = 24.dp,
-                                modifier = Modifier.padding(top = 4.dp)
+                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            PokemonAvatar(
+                                imageUrl = h.imageUrl,
+                                contentDescription = h.name,
+                                circleSize = 132.dp,
+                                spriteSize = 184.dp
                             )
+                            Text(
+                                text = h.name,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            if (h.typeImageUrls.isNotEmpty()) {
+                                TypeIconRow(
+                                    types = h.typeImageUrls.map { TypeInfo("Type", it) },
+                                    iconSize = 24.dp,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
             is ContentListHeaderUiModel.PlayerHero -> {
                 item(key = "player_hero") {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = h.name,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier
-                                .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(PlayerChipCornerRadius))
-                                .padding(horizontal = PlayerChipHorizontalPadding, vertical = PlayerChipVerticalPadding)
-                        )
+                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = h.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier
+                                    .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(PlayerChipCornerRadius))
+                                    .padding(horizontal = PlayerChipHorizontalPadding, vertical = PlayerChipVerticalPadding)
+                            )
+                        }
                     }
                 }
             }
@@ -744,47 +813,49 @@ private fun ContentListContent(
                     if (topItem is ContentListItem.FormatSelector && formats.isNotEmpty() && onFormatSelected != null) {
                         val isLoadingFormat = "format_selector" in uiState.loadingSections
                         item(key = topItem.listKey) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                FormatDropdown(
-                                    formats = formats,
-                                    selectedFormatId = selectedFormatId,
-                                    onFormatSelected = onFormatSelected
-                                )
-                                if (isLoadingFormat) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.padding(start = 8.dp).size(16.dp),
-                                        strokeWidth = 2.dp
+                            CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    FormatDropdown(
+                                        formats = formats,
+                                        selectedFormatId = selectedFormatId,
+                                        onFormatSelected = onFormatSelected
                                     )
+                                    if (isLoadingFormat) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.padding(start = 8.dp).size(16.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                     if (topItem is ContentListItem.SearchField && onSearchQueryChanged != null) {
                         item(key = topItem.listKey) {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = onSearchQueryChanged,
-                                label = { Text("Search Pok\u00E9mon") },
-                                singleLine = true,
-                                trailingIcon = if (searchQuery.isNotEmpty()) {
-                                    {
-                                        IconButton(onClick = { onSearchQueryChanged("") }) {
-                                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = onSearchQueryChanged,
+                                    label = { Text("Search Pok\u00E9mon") },
+                                    singleLine = true,
+                                    trailingIcon = if (searchQuery.isNotEmpty()) {
+                                        {
+                                            IconButton(onClick = { onSearchQueryChanged("") }) {
+                                                Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                            }
                                         }
-                                    }
-                                } else null,
-                                shape = RoundedCornerShape(CardCornerRadius),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                                ),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                            )
+                                    } else null,
+                                    shape = RoundedCornerShape(CardCornerRadius),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
                     }
                 }
@@ -805,25 +876,47 @@ private fun ContentListContent(
                             val isLoadingSection = topItem.header in uiState.loadingSections
                             if (topItem.header.isNotEmpty()) {
                                 item(key = topItem.listKey) {
-                                    SectionHeader(
-                                        title = topItem.header,
-                                        isLoading = isLoadingSection,
-                                        sortOrder = if (topItem.header == "Battles") sortOrder else null,
-                                        onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                        onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
-                                        modifier = itemPadding
-                                    )
+                                    CenteredItem(modifier = itemPadding) {
+                                        SectionHeader(
+                                            title = topItem.header,
+                                            isLoading = isLoadingSection,
+                                            sortOrder = if (topItem.header == "Battles") sortOrder else null,
+                                            onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
+                                            onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                                        )
+                                    }
                                 }
                             }
                             if (topItem.items.isEmpty() && !isLoadingSection) {
                                 item(key = "${topItem.listKey}_empty") {
-                                    EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp).then(itemPadding))
+                                    CenteredItem(modifier = itemPadding) {
+                                        EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
+                                    }
                                 }
                             }
-                            items(items = topItem.items, key = { it.listKey }) { child ->
-                                val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
-                                Box(modifier = childModifier.then(if (!child.edgeToEdge) itemPadding else Modifier)) {
-                                    ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                            val isBattleSection = topItem.items.firstOrNull() is ContentListItem.Battle
+                            if (isBattleSection && battleColumns > 1) {
+                                val loadingMod = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
+                                battleGridItems(
+                                    battles = topItem.items.filterIsInstance<ContentListItem.Battle>(),
+                                    columns = battleColumns,
+                                    selectedBattleId = selectedBattleId,
+                                    showWinnerHighlight = showWinnerHighlight,
+                                    onItemClick = onItemClick,
+                                    extraModifier = loadingMod
+                                )
+                            } else {
+                                items(items = topItem.items, key = { it.listKey }) { child ->
+                                    val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
+                                    if (child is ContentListItem.Battle) {
+                                        Box(modifier = childModifier.then(itemPadding)) {
+                                            ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                        }
+                                    } else {
+                                        CenteredItem(modifier = childModifier.then(if (!child.edgeToEdge) itemPadding else Modifier)) {
+                                            ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -831,21 +924,23 @@ private fun ContentListContent(
                             if (formats.isNotEmpty() && onFormatSelected != null) {
                                 val isLoadingFormat = "format_selector" in uiState.loadingSections
                                 item(key = topItem.listKey) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().then(itemPadding),
-                                        horizontalArrangement = Arrangement.Center,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        FormatDropdown(
-                                            formats = formats,
-                                            selectedFormatId = selectedFormatId,
-                                            onFormatSelected = onFormatSelected
-                                        )
-                                        if (isLoadingFormat) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.padding(start = 8.dp).size(16.dp),
-                                                strokeWidth = 2.dp
+                                    CenteredItem(modifier = itemPadding) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            FormatDropdown(
+                                                formats = formats,
+                                                selectedFormatId = selectedFormatId,
+                                                onFormatSelected = onFormatSelected
                                             )
+                                            if (isLoadingFormat) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.padding(start = 8.dp).size(16.dp),
+                                                    strokeWidth = 2.dp
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -854,35 +949,50 @@ private fun ContentListContent(
                         is ContentListItem.SearchField -> {
                             if (onSearchQueryChanged != null) {
                                 item(key = topItem.listKey) {
-                                    OutlinedTextField(
-                                        value = searchQuery,
-                                        onValueChange = onSearchQueryChanged,
-                                        label = { Text("Search Pok\u00E9mon") },
-                                        singleLine = true,
-                                        trailingIcon = if (searchQuery.isNotEmpty()) {
-                                            {
-                                                IconButton(onClick = { onSearchQueryChanged("") }) {
-                                                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                    CenteredItem(modifier = itemPadding) {
+                                        OutlinedTextField(
+                                            value = searchQuery,
+                                            onValueChange = onSearchQueryChanged,
+                                            label = { Text("Search Pok\u00E9mon") },
+                                            singleLine = true,
+                                            trailingIcon = if (searchQuery.isNotEmpty()) {
+                                                {
+                                                    IconButton(onClick = { onSearchQueryChanged("") }) {
+                                                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                                    }
                                                 }
-                                            }
-                                        } else null,
-                                        shape = RoundedCornerShape(CardCornerRadius),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                                        ),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .then(itemPadding)
-                                    )
+                                            } else null,
+                                            shape = RoundedCornerShape(CardCornerRadius),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                            ),
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
                                 }
                             }
                         }
+                        is ContentListItem.Battle -> {
+                            // Top-level battles (pages 2+) — handled via battleGridItems below
+                        }
                         else -> item(key = topItem.listKey) {
-                            Box(modifier = if (!topItem.edgeToEdge) itemPadding else Modifier) {
+                            CenteredItem(modifier = if (!topItem.edgeToEdge) itemPadding else Modifier) {
                                 ContentListItemRow(topItem, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
                             }
                         }
                     }
+                }
+
+                // Render top-level battles (pages 2+) in grid
+                val topLevelBattles = uiState.items.filterIsInstance<ContentListItem.Battle>()
+                if (topLevelBattles.isNotEmpty()) {
+                    battleGridItems(
+                        battles = topLevelBattles,
+                        columns = battleColumns,
+                        selectedBattleId = selectedBattleId,
+                        showWinnerHighlight = showWinnerHighlight,
+                        onItemClick = onItemClick
+                    )
                 }
 
                 if (uiState.isPaginating) {
@@ -910,3 +1020,153 @@ private fun ContentListContent(
     }
 }
 
+/**
+ * Mirrors the item emission order of the LazyColumn builder to find the index
+ * of the row containing a given battle ID. Returns null if not found.
+ */
+private fun computeBattleItemIndex(
+    header: ContentListHeaderUiModel,
+    uiState: ContentListUiState,
+    battleId: Int,
+    battleColumns: Int,
+    hasFormats: Boolean,
+    hasSearchQuery: Boolean
+): Int? {
+    var index = 0
+
+    // Header item (all non-None/FavoritesHero headers emit one item)
+    when (header) {
+        is ContentListHeaderUiModel.None -> {}
+        is ContentListHeaderUiModel.FavoritesHero -> {} // TODO placeholder
+        else -> index++
+    }
+
+    // Content items
+    when {
+        uiState.isLoading -> return null
+        uiState.error != null && uiState.items.isEmpty() -> return null
+        uiState.items.none { it.isContentItem } -> return null
+        else -> {
+            for (topItem in uiState.items) {
+                when (topItem) {
+                    is ContentListItem.Section -> {
+                        val isLoadingSection = topItem.header in uiState.loadingSections
+                        if (topItem.header.isNotEmpty()) index++ // section header
+                        if (topItem.items.isEmpty() && !isLoadingSection) {
+                            index++ // empty view
+                            continue
+                        }
+                        val isBattleSection = topItem.items.firstOrNull() is ContentListItem.Battle
+                        if (isBattleSection && battleColumns > 1) {
+                            val battles = topItem.items.filterIsInstance<ContentListItem.Battle>()
+                            val chunked = battles.chunked(battleColumns)
+                            for (row in chunked) {
+                                if (row.any { it.uiModel.id == battleId }) return index
+                                index++
+                            }
+                        } else {
+                            for (child in topItem.items) {
+                                if (child is ContentListItem.Battle && child.uiModel.id == battleId) return index
+                                index++
+                            }
+                        }
+                    }
+                    is ContentListItem.FormatSelector -> { if (hasFormats) index++ }
+                    is ContentListItem.SearchField -> { if (hasSearchQuery) index++ }
+                    is ContentListItem.Battle -> {} // handled below
+                    else -> index++
+                }
+            }
+            // Top-level battles (pages 2+)
+            val topLevelBattles = uiState.items.filterIsInstance<ContentListItem.Battle>()
+            if (topLevelBattles.isNotEmpty()) {
+                val chunked = topLevelBattles.chunked(battleColumns)
+                for (row in chunked) {
+                    if (row.any { it.uiModel.id == battleId }) return index
+                    index++
+                }
+            }
+        }
+    }
+    return null
+}
+
+private val CONTENT_MAX_WIDTH = 900.dp
+
+@Composable
+private fun CenteredItem(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Box(modifier = Modifier.widthIn(max = CONTENT_MAX_WIDTH).fillMaxWidth().then(modifier)) {
+            content()
+        }
+    }
+}
+
+private val BATTLE_CARD_MIN_WIDTH = 420.dp
+private val BATTLE_CARD_MAX_WIDTH = 600.dp
+private val BATTLE_GRID_SPACING = 12.dp
+
+private fun computeBattleColumns(availableWidth: Dp): Int {
+    val usableWidth = availableWidth - 32.dp // 16dp padding each side
+    return ((usableWidth + BATTLE_GRID_SPACING) / (BATTLE_CARD_MIN_WIDTH + BATTLE_GRID_SPACING))
+        .toInt()
+        .coerceAtLeast(1)
+}
+
+private fun LazyListScope.battleGridItems(
+    battles: List<ContentListItem.Battle>,
+    columns: Int,
+    selectedBattleId: Int?,
+    showWinnerHighlight: Boolean,
+    onItemClick: (ContentListItem) -> Unit,
+    extraModifier: Modifier = Modifier
+) {
+    val chunked = battles.chunked(columns)
+    chunked.forEach { row ->
+        item(key = "battle_row_${row.first().listKey}") {
+            Row(
+                modifier = extraModifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(BATTLE_GRID_SPACING, Alignment.CenterHorizontally)
+            ) {
+                row.forEach { battle ->
+                    val isSelected = battle.uiModel.id == selectedBattleId
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        BattleCard(
+                            uiModel = battle.uiModel,
+                            showWinnerHighlight = showWinnerHighlight,
+                            onClick = { onItemClick(battle) },
+                            modifier = Modifier
+                                .widthIn(max = BATTLE_CARD_MAX_WIDTH)
+                                .fillMaxWidth()
+                                .then(
+                                    if (isSelected) {
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                            RoundedCornerShape(CardCornerRadius)
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                        )
+                    }
+                }
+                // Fill remaining slots so cards don't stretch on the last row
+                repeat(columns - row.size) {
+                    Box(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
