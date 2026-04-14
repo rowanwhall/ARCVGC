@@ -4,6 +4,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.ScrollbarStyle
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +41,18 @@ fun ThemedVerticalScrollbar(
 ) {
     VerticalScrollbar(
         adapter = rememberScrollbarAdapter(scrollState),
+        modifier = modifier,
+        style = scrollbarStyle
+    )
+}
+
+@Composable
+fun ThemedVerticalScrollbar(
+    gridState: LazyGridState,
+    modifier: Modifier = Modifier
+) {
+    VerticalScrollbar(
+        adapter = rememberScrollbarAdapter(gridState),
         modifier = modifier,
         style = scrollbarStyle
     )

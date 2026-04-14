@@ -1,5 +1,12 @@
 package com.arcvgc.app.ui.contentlist
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,16 +22,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import androidx.compose.material.icons.Icons
@@ -53,8 +63,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.shared.Res
@@ -146,8 +157,8 @@ fun ContentListPage(
     var pokemonNavTarget by remember(viewModel) { mutableStateOf<PokemonNavTarget?>(null) }
     var playerNavTarget by remember(viewModel) { mutableStateOf<PlayerNavTarget?>(null) }
     var topPokemonFormatId by remember { mutableStateOf<Int?>(null) }
-    val listState = remember(viewModel) {
-        LazyListState(
+    val gridState = remember(viewModel) {
+        LazyGridState(
             firstVisibleItemIndex = viewModel.savedScrollIndex,
             firstVisibleItemScrollOffset = viewModel.savedScrollOffset
         )
@@ -179,8 +190,8 @@ fun ContentListPage(
         }
         replaceHistoryStateWithPath(path)
     }
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+    LaunchedEffect(gridState) {
+        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
             .collect { (index, offset) ->
                 viewModel.savedScrollIndex = index
                 viewModel.savedScrollOffset = offset
@@ -242,43 +253,48 @@ fun ContentListPage(
     val isCompact = windowSizeClass == WindowSizeClass.Compact
     val battleOverlay = LocalBattleOverlay.current
 
-    // When the detail pane opens, save the current scroll position and scroll to the selected
-    // battle in the narrower grid. When it closes, restore the saved position exactly.
-    var scrollToBattleId by remember { mutableStateOf<Pair<Int, Int>?>(null) } // (battleId, generation)
-    var scrollGeneration by remember { mutableStateOf(0) }
-    var restoreExactPosition by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    var restoreBattleId by remember { mutableStateOf<Int?>(null) }
-    var restoreScrollPosition by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    // When the detail pane opens/closes, scroll to the target battle immediately.
+    // The grid Box width snaps to its narrow (post-animation) value in the same composition
+    // that sets selectedBattleId, so by the time this effect runs the grid is already in its
+    // final column count (typically 1-col). scrollToItem(N) therefore sticks without being
+    // clobbered to a row-start by the next measure pass.
+    val hasFormats = (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) && sortedFormats.isNotEmpty()
+    val hasSearchQuery = mode is ContentListMode.TopPokemon
+    var lastSelectedBattleId by remember { mutableStateOf<Int?>(null) }
     var paneWasOpen by remember { mutableStateOf(false) }
+    val detailPaneState = remember { MutableTransitionState(initialBattleId != null) }
+    val scrollOffsetPx = with(LocalDensity.current) { BATTLE_GRID_SPACING.roundToPx() }
     LaunchedEffect(selectedBattleId) {
         if (isCompact) return@LaunchedEffect
         val battleId = selectedBattleId
         if (battleId != null) {
-            if (!paneWasOpen) {
-                // Pane opening — save exact position (wide-grid space, safe to restore)
-                restoreExactPosition = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-                restoreBattleId = null
-            } else {
-                // Pane switching — save the battle ID to resolve in wide-grid space at close time
-                restoreExactPosition = null
-                restoreBattleId = battleId
+            lastSelectedBattleId = battleId
+            val index = computeBattleItemIndex(
+                mode.toHeaderUiModel(), uiState, battleId,
+                hasFormats = hasFormats,
+                hasSearchQuery = hasSearchQuery
+            )
+            if (index != null) {
+                if (paneWasOpen) {
+                    gridState.animateScrollToItem(index, scrollOffsetPx)
+                } else {
+                    gridState.scrollToItem(index, scrollOffsetPx)
+                }
             }
-            scrollGeneration++
-            scrollToBattleId = battleId to scrollGeneration
-            restoreScrollPosition = null
             paneWasOpen = true
         } else if (paneWasOpen) {
-            // Pane closing — restore exact position or resolve battle ID in wide grid
-            val closeBattleId = restoreBattleId
+            val closeBattleId = lastSelectedBattleId
             if (closeBattleId != null) {
-                scrollGeneration++
-                scrollToBattleId = closeBattleId to scrollGeneration
-            } else {
-                scrollToBattleId = null
-                restoreScrollPosition = restoreExactPosition
+                val index = computeBattleItemIndex(
+                    mode.toHeaderUiModel(), uiState, closeBattleId,
+                    hasFormats = hasFormats,
+                    hasSearchQuery = hasSearchQuery
+                )
+                if (index != null) {
+                    gridState.animateScrollToItem(index, scrollOffsetPx)
+                }
             }
-            restoreExactPosition = null
-            restoreBattleId = null
+            lastSelectedBattleId = null
             paneWasOpen = false
         }
     }
@@ -298,7 +314,7 @@ fun ContentListPage(
                 showWinnerHighlight = showWinnerHighlight,
                 onRetry = viewModel::loadContent,
                 onPaginate = viewModel::paginate,
-                listState = listState,
+                gridState = gridState,
                 onItemClick = { item ->
                     when (item) {
                         is ContentListItem.Battle -> {
@@ -421,13 +437,33 @@ fun ContentListPage(
                 )
             }
         } else {
-            // Expanded: master-detail Row layout
+            // Expanded: master-detail Row layout with animated detail pane.
+            //
+            // When a battle card is clicked, the grid must snap to its final (narrow) width
+            // before scrollToItem runs. In a multi-column LazyVerticalGrid, scrollToItem(N)
+            // for a non-row-start N gets clobbered back to the row-start by the next measure
+            // pass (LazyGridScrollPosition.updateFromMeasureResult). The only layout in which
+            // scrollToItem(N) sticks for any N is one where every row has exactly one item —
+            // i.e. a 1-column grid. So we force the grid to its post-animation width in the
+            // same composition as the state change, and let scrollToItem run against a grid
+            // that's already in its final column count. The pane's AnimatedVisibility slides
+            // in independently, filling the empty space beside the narrowed grid.
+            detailPaneState.targetState = selectedBattleId != null
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                // Dynamically size the pane so grid + 1dp divider + pane == maxWidth exactly.
+                // On wide viewports, the pane gets its full DETAIL_PANEL_MAX_WIDTH and the grid
+                // takes the rest. On narrow viewports (< ~1611dp), we shrink the pane and hold
+                // the grid at BATTLE_CARD_MAX_WIDTH so a battle card still fits in 1 column.
+                val panePostWidth = (maxWidth - BATTLE_CARD_MAX_WIDTH - 1.dp)
+                    .coerceIn(0.dp, DETAIL_PANEL_MAX_WIDTH)
+                val gridWidthWhenPaneOpen = (maxWidth - panePostWidth - 1.dp)
+                    .coerceAtLeast(BATTLE_CARD_MAX_WIDTH)
             Row(modifier = Modifier.fillMaxSize()) {
                 Box(
                     modifier = if (selectedBattleId != null) {
-                        Modifier.weight(1f).fillMaxHeight()
+                        Modifier.width(gridWidthWhenPaneOpen).fillMaxHeight()
                     } else {
-                        Modifier.fillMaxSize()
+                        Modifier.weight(1f).fillMaxHeight()
                     }
                 ) {
                     ContentListContent(
@@ -436,9 +472,7 @@ fun ContentListPage(
                         hasToolbar = onBack != null,
                         selectedBattleId = selectedBattleId,
                         showWinnerHighlight = showWinnerHighlight,
-                        scrollToBattleId = scrollToBattleId,
-                        restoreScrollPosition = restoreScrollPosition,
-                        listState = listState,
+                        gridState = gridState,
                         onRetry = viewModel::loadContent,
                         onPaginate = viewModel::paginate,
                         onItemClick = { item ->
@@ -551,23 +585,42 @@ fun ContentListPage(
                     }
                 }
 
-                selectedBattleId?.let { battleId ->
-                    VerticalDivider(modifier = Modifier.fillMaxHeight())
-                    BattleDetailPanel(
-                        battleId = battleId,
-                        isFavorited = battleId in favoriteBattleIds,
-                        onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
-                        onClose = { selectedBattleId = null },
-                        showWinnerHighlight = showWinnerHighlight,
-                        onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                            navigateToPokemon(id, name, imageUrl, typeImageUrls, formatId)
-                        },
-                        onPlayerClick = { id, name, formatId ->
-                            navigateToPlayer(id, name, formatId)
-                        },
-                        modifier = Modifier.widthIn(max = DETAIL_PANEL_MAX_WIDTH).fillMaxHeight()
+                // Remember the last non-null battle ID so content persists during exit animation
+                var lastBattleId by remember { mutableStateOf(selectedBattleId) }
+                if (selectedBattleId != null) lastBattleId = selectedBattleId
+
+                AnimatedVisibility(
+                    visibleState = detailPaneState,
+                    enter = slideInHorizontally(
+                        animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
+                        initialOffsetX = { fullWidth -> fullWidth }
+                    ),
+                    exit = slideOutHorizontally(
+                        animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
+                        targetOffsetX = { fullWidth -> fullWidth }
                     )
+                ) {
+                    lastBattleId?.let { battleId ->
+                        Row(modifier = Modifier.fillMaxHeight()) {
+                            VerticalDivider(modifier = Modifier.fillMaxHeight())
+                            BattleDetailPanel(
+                                battleId = battleId,
+                                isFavorited = battleId in favoriteBattleIds,
+                                onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
+                                onClose = { selectedBattleId = null },
+                                showWinnerHighlight = showWinnerHighlight,
+                                onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
+                                    navigateToPokemon(id, name, imageUrl, typeImageUrls, formatId)
+                                },
+                                onPlayerClick = { id, name, formatId ->
+                                    navigateToPlayer(id, name, formatId)
+                                },
+                                modifier = Modifier.width(panePostWidth).fillMaxHeight()
+                            )
+                        }
+                    }
                 }
+            }
             }
         }
     }
@@ -581,8 +634,6 @@ private fun ContentListContent(
     hasToolbar: Boolean = false,
     selectedBattleId: Int? = null,
     showWinnerHighlight: Boolean = true,
-    scrollToBattleId: Pair<Int, Int>? = null, // (battleId, generation) — generation forces re-trigger
-    restoreScrollPosition: Pair<Int, Int>? = null,
     onRetry: () -> Unit,
     onPaginate: () -> Unit,
     onItemClick: (ContentListItem) -> Unit,
@@ -598,12 +649,12 @@ private fun ContentListContent(
     searchQuery: String = "",
     onSearchQueryChanged: ((String) -> Unit)? = null,
     onSeeMore: (() -> Unit)? = null,
-    listState: LazyListState = rememberLazyListState()
+    gridState: LazyGridState = rememberLazyGridState()
 ) {
 
     val shouldPaginate by remember {
         derivedStateOf {
-            val layoutInfo = listState.layoutInfo
+            val layoutInfo = gridState.layoutInfo
             val totalItems = layoutInfo.totalItemsCount
             val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             lastVisibleIndex >= totalItems - PAGINATION_THRESHOLD
@@ -626,7 +677,7 @@ private fun ContentListContent(
         else -> 16.dp
     }
 
-    // Forward scroll-wheel events from the empty gutters to the LazyColumn on desktop.
+    // Forward scroll-wheel events from the empty gutters to the grid on desktop.
     // Gated on pointer type: touch devices (even in landscape/expanded) lose fling scrolling
     // when an outer scrollable intercepts drag events.
     Box(
@@ -634,7 +685,7 @@ private fun ContentListContent(
             if (windowSizeClass == WindowSizeClass.Expanded && hasFinePointer()) {
                 Modifier.scrollable(
                     state = rememberScrollableState { delta ->
-                        scope.launch { listState.scrollBy(-delta) }
+                        scope.launch { gridState.scrollBy(-delta) }
                         delta
                     },
                     orientation = Orientation.Vertical
@@ -644,44 +695,25 @@ private fun ContentListContent(
             }
         )
     ) {
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize()
-    ) {
-    val availableWidth = maxWidth
-    val battleColumns = computeBattleColumns(availableWidth)
 
-    // On pane open: scroll to the selected battle's row in the narrower grid.
-    // On pane close: restore the exact scroll position from before the pane opened.
-    LaunchedEffect(scrollToBattleId) {
-        val (targetId, _) = scrollToBattleId ?: return@LaunchedEffect
-        val index = computeBattleItemIndex(
-            header, uiState, targetId, battleColumns,
-            hasFormats = formats.isNotEmpty() && onFormatSelected != null,
-            hasSearchQuery = onSearchQueryChanged != null
-        )
-        if (index != null) {
-            listState.scrollToItem(index)
-        }
-    }
-    LaunchedEffect(restoreScrollPosition) {
-        val (index, offset) = restoreScrollPosition ?: return@LaunchedEffect
-        listState.scrollToItem(index, offset)
-    }
+    val fullSpan: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
 
-    LazyColumn(
-        state = listState,
+    LazyVerticalGrid(
+        columns = GridCells.FixedSize(BATTLE_CARD_MAX_WIDTH),
+        state = gridState,
         contentPadding = PaddingValues(
             top = topPadding,
             bottom = 16.dp
         ),
         verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing),
-        modifier = Modifier.fillMaxSize()
+        horizontalArrangement = Arrangement.spacedBy(BATTLE_GRID_SPACING, Alignment.Start),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)
     ) {
         when (val h = header) {
             is ContentListHeaderUiModel.None -> {}
             is ContentListHeaderUiModel.HomeHero -> {
-                item(key = "home_hero") {
-                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp).padding(top = 24.dp)) {
+                item(key = "home_hero", span = fullSpan) {
+                    CenteredItem(modifier = Modifier.padding(top = 24.dp)) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -703,8 +735,8 @@ private fun ContentListContent(
                 }
             }
             is ContentListHeaderUiModel.TopPokemonHero -> {
-                item(key = "top_pokemon_hero") {
-                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp).padding(top = 24.dp, bottom = 8.dp)) {
+                item(key = "top_pokemon_hero", span = fullSpan) {
+                    CenteredItem(modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -722,8 +754,8 @@ private fun ContentListContent(
                 // TODO: Replace with branded favorites asset when ready
             }
             is ContentListHeaderUiModel.SearchFilters -> {
-                item(key = "search_filters") {
-                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "search_filters", span = fullSpan) {
+                    CenteredItem {
                         SearchFilterChips(
                             filters = h,
                             searchParams = searchParams,
@@ -733,8 +765,8 @@ private fun ContentListContent(
                 }
             }
             is ContentListHeaderUiModel.PokemonHero -> {
-                item(key = "pokemon_hero") {
-                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "pokemon_hero", span = fullSpan) {
+                    CenteredItem {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -762,8 +794,8 @@ private fun ContentListContent(
                 }
             }
             is ContentListHeaderUiModel.PlayerHero -> {
-                item(key = "player_hero") {
-                    CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
+                item(key = "player_hero", span = fullSpan) {
+                    CenteredItem {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -785,11 +817,11 @@ private fun ContentListContent(
 
         when {
             uiState.isLoading -> {
-                item(key = "loading") {
+                item(key = "loading", span = fullSpan) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .fillParentMaxHeight(0.5f),
+                            .height(400.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         LoadingIndicator()
@@ -798,12 +830,12 @@ private fun ContentListContent(
             }
 
             uiState.error != null && uiState.items.isEmpty() -> {
-                item(key = "error") {
+                item(key = "error", span = fullSpan) {
                     ErrorView(
                         onRetry = onRetry,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .fillParentMaxHeight(0.5f)
+                            .height(400.dp)
                     )
                 }
             }
@@ -812,8 +844,8 @@ private fun ContentListContent(
                 uiState.items.forEach { topItem ->
                     if (topItem is ContentListItem.FormatSelector && formats.isNotEmpty() && onFormatSelected != null) {
                         val isLoadingFormat = "format_selector" in uiState.loadingSections
-                        item(key = topItem.listKey) {
-                            CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        item(key = topItem.listKey, span = fullSpan) {
+                            CenteredItem {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.Center,
@@ -835,8 +867,8 @@ private fun ContentListContent(
                         }
                     }
                     if (topItem is ContentListItem.SearchField && onSearchQueryChanged != null) {
-                        item(key = topItem.listKey) {
-                            CenteredItem(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        item(key = topItem.listKey, span = fullSpan) {
+                            CenteredItem {
                                 OutlinedTextField(
                                     value = searchQuery,
                                     onValueChange = onSearchQueryChanged,
@@ -859,24 +891,23 @@ private fun ContentListContent(
                         }
                     }
                 }
-                item(key = "empty") {
+                item(key = "empty", span = fullSpan) {
                     EmptyView(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .fillParentMaxHeight(0.5f)
+                            .height(400.dp)
                     )
                 }
             }
 
             else -> {
-                val itemPadding = Modifier.padding(horizontal = 16.dp)
                 uiState.items.forEach { topItem ->
                     when (topItem) {
                         is ContentListItem.Section -> {
                             val isLoadingSection = topItem.header in uiState.loadingSections
                             if (topItem.header.isNotEmpty()) {
-                                item(key = topItem.listKey) {
-                                    CenteredItem(modifier = itemPadding) {
+                                item(key = topItem.listKey, span = fullSpan) {
+                                    CenteredItem {
                                         SectionHeader(
                                             title = topItem.header,
                                             isLoading = isLoadingSection,
@@ -888,32 +919,48 @@ private fun ContentListContent(
                                 }
                             }
                             if (topItem.items.isEmpty() && !isLoadingSection) {
-                                item(key = "${topItem.listKey}_empty") {
-                                    CenteredItem(modifier = itemPadding) {
+                                item(key = "${topItem.listKey}_empty", span = fullSpan) {
+                                    CenteredItem {
                                         EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
                                     }
                                 }
                             }
                             val isBattleSection = topItem.items.firstOrNull() is ContentListItem.Battle
-                            if (isBattleSection && battleColumns > 1) {
+                            if (isBattleSection) {
                                 val loadingMod = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
-                                battleGridItems(
-                                    battles = topItem.items.filterIsInstance<ContentListItem.Battle>(),
-                                    columns = battleColumns,
-                                    selectedBattleId = selectedBattleId,
-                                    showWinnerHighlight = showWinnerHighlight,
-                                    onItemClick = onItemClick,
-                                    extraModifier = loadingMod
-                                )
+                                items(
+                                    items = topItem.items.filterIsInstance<ContentListItem.Battle>(),
+                                    key = { it.listKey }
+                                ) { battle ->
+                                    val isSelected = battle.uiModel.id == selectedBattleId
+                                    BattleCard(
+                                        uiModel = battle.uiModel,
+                                        showWinnerHighlight = showWinnerHighlight,
+                                        onClick = { onItemClick(battle) },
+                                        modifier = Modifier
+                                            .animateItem(
+                                                placementSpec = BATTLE_GRID_PLACEMENT_SPEC
+                                            )
+                                            .widthIn(max = BATTLE_CARD_MAX_WIDTH)
+                                            .fillMaxWidth()
+                                            .then(loadingMod)
+                                            .then(
+                                                if (isSelected) {
+                                                    Modifier.background(
+                                                        MaterialTheme.colorScheme.primaryContainer,
+                                                        RoundedCornerShape(CardCornerRadius)
+                                                    )
+                                                } else {
+                                                    Modifier
+                                                }
+                                            )
+                                    )
+                                }
                             } else {
-                                items(items = topItem.items, key = { it.listKey }) { child ->
-                                    val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
-                                    if (child is ContentListItem.Battle) {
-                                        Box(modifier = childModifier.then(itemPadding)) {
-                                            ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
-                                        }
-                                    } else {
-                                        CenteredItem(modifier = childModifier.then(if (!child.edgeToEdge) itemPadding else Modifier)) {
+                                topItem.items.forEach { child ->
+                                    item(key = child.listKey, span = fullSpan) {
+                                        val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
+                                        CenteredItem(modifier = childModifier) {
                                             ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
                                         }
                                     }
@@ -923,8 +970,8 @@ private fun ContentListContent(
                         is ContentListItem.FormatSelector -> {
                             if (formats.isNotEmpty() && onFormatSelected != null) {
                                 val isLoadingFormat = "format_selector" in uiState.loadingSections
-                                item(key = topItem.listKey) {
-                                    CenteredItem(modifier = itemPadding) {
+                                item(key = topItem.listKey, span = fullSpan) {
+                                    CenteredItem {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.Center,
@@ -948,8 +995,8 @@ private fun ContentListContent(
                         }
                         is ContentListItem.SearchField -> {
                             if (onSearchQueryChanged != null) {
-                                item(key = topItem.listKey) {
-                                    CenteredItem(modifier = itemPadding) {
+                                item(key = topItem.listKey, span = fullSpan) {
+                                    CenteredItem {
                                         OutlinedTextField(
                                             value = searchQuery,
                                             onValueChange = onSearchQueryChanged,
@@ -973,30 +1020,50 @@ private fun ContentListContent(
                             }
                         }
                         is ContentListItem.Battle -> {
-                            // Top-level battles (pages 2+) — handled via battleGridItems below
+                            // Top-level battles (pages 2+) — emitted below
                         }
-                        else -> item(key = topItem.listKey) {
-                            CenteredItem(modifier = if (!topItem.edgeToEdge) itemPadding else Modifier) {
+                        else -> item(key = topItem.listKey, span = fullSpan) {
+                            CenteredItem {
                                 ContentListItemRow(topItem, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
                             }
                         }
                     }
                 }
 
-                // Render top-level battles (pages 2+) in grid
+                // Render top-level battles (pages 2+) as individual grid items
                 val topLevelBattles = uiState.items.filterIsInstance<ContentListItem.Battle>()
                 if (topLevelBattles.isNotEmpty()) {
-                    battleGridItems(
-                        battles = topLevelBattles,
-                        columns = battleColumns,
-                        selectedBattleId = selectedBattleId,
-                        showWinnerHighlight = showWinnerHighlight,
-                        onItemClick = onItemClick
-                    )
+                    items(
+                        items = topLevelBattles,
+                        key = { it.listKey }
+                    ) { battle ->
+                        val isSelected = battle.uiModel.id == selectedBattleId
+                        BattleCard(
+                            uiModel = battle.uiModel,
+                            showWinnerHighlight = showWinnerHighlight,
+                            onClick = { onItemClick(battle) },
+                            modifier = Modifier
+                                .animateItem(
+                                    placementSpec = BATTLE_GRID_PLACEMENT_SPEC
+                                )
+                                .widthIn(max = BATTLE_CARD_MAX_WIDTH)
+                                .fillMaxWidth()
+                                .then(
+                                    if (isSelected) {
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                            RoundedCornerShape(CardCornerRadius)
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                        )
+                    }
                 }
 
                 if (uiState.isPaginating) {
-                    item(key = "paginating") {
+                    item(key = "paginating", span = fullSpan) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1012,23 +1079,21 @@ private fun ContentListContent(
     }
     if (windowSizeClass == WindowSizeClass.Expanded) {
         ThemedVerticalScrollbar(
-            listState = listState,
+            gridState = gridState,
             modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight()
         )
-    }
     }
     }
 }
 
 /**
- * Mirrors the item emission order of the LazyColumn builder to find the index
- * of the row containing a given battle ID. Returns null if not found.
+ * Mirrors the item emission order of the LazyVerticalGrid builder to find the index
+ * of the grid item for a given battle ID. Returns null if not found.
  */
 private fun computeBattleItemIndex(
     header: ContentListHeaderUiModel,
     uiState: ContentListUiState,
     battleId: Int,
-    battleColumns: Int,
     hasFormats: Boolean,
     hasSearchQuery: Boolean
 ): Int? {
@@ -1056,19 +1121,9 @@ private fun computeBattleItemIndex(
                             index++ // empty view
                             continue
                         }
-                        val isBattleSection = topItem.items.firstOrNull() is ContentListItem.Battle
-                        if (isBattleSection && battleColumns > 1) {
-                            val battles = topItem.items.filterIsInstance<ContentListItem.Battle>()
-                            val chunked = battles.chunked(battleColumns)
-                            for (row in chunked) {
-                                if (row.any { it.uiModel.id == battleId }) return index
-                                index++
-                            }
-                        } else {
-                            for (child in topItem.items) {
-                                if (child is ContentListItem.Battle && child.uiModel.id == battleId) return index
-                                index++
-                            }
+                        for (child in topItem.items) {
+                            if (child is ContentListItem.Battle && child.uiModel.id == battleId) return index
+                            index++
                         }
                     }
                     is ContentListItem.FormatSelector -> { if (hasFormats) index++ }
@@ -1079,12 +1134,9 @@ private fun computeBattleItemIndex(
             }
             // Top-level battles (pages 2+)
             val topLevelBattles = uiState.items.filterIsInstance<ContentListItem.Battle>()
-            if (topLevelBattles.isNotEmpty()) {
-                val chunked = topLevelBattles.chunked(battleColumns)
-                for (row in chunked) {
-                    if (row.any { it.uiModel.id == battleId }) return index
-                    index++
-                }
+            for (battle in topLevelBattles) {
+                if (battle.uiModel.id == battleId) return index
+                index++
             }
         }
     }
@@ -1108,65 +1160,14 @@ private fun CenteredItem(
     }
 }
 
-private val BATTLE_CARD_MIN_WIDTH = 420.dp
-private val BATTLE_CARD_MAX_WIDTH = 600.dp
+private val BATTLE_CARD_MAX_WIDTH = 650.dp
 private val BATTLE_GRID_SPACING = 12.dp
+private const val DETAIL_PANE_ANIM_DURATION_MS = 300
 
-private fun computeBattleColumns(availableWidth: Dp): Int {
-    val usableWidth = availableWidth - 32.dp // 16dp padding each side
-    return ((usableWidth + BATTLE_GRID_SPACING) / (BATTLE_CARD_MIN_WIDTH + BATTLE_GRID_SPACING))
-        .toInt()
-        .coerceAtLeast(1)
-}
+// Placement spec for battle card reflow when the detail pane opens/closes.
+// Tweak this to play with animation feel — swap for spring(), tween() with different
+// easings/durations, or keyframes. IntOffset generic because grid animateItem() animates
+// the item's (x, y) placement in the viewport.
+private val BATTLE_GRID_PLACEMENT_SPEC: FiniteAnimationSpec<IntOffset> =
+    tween(durationMillis = DETAIL_PANE_ANIM_DURATION_MS, easing = FastOutSlowInEasing)
 
-private fun LazyListScope.battleGridItems(
-    battles: List<ContentListItem.Battle>,
-    columns: Int,
-    selectedBattleId: Int?,
-    showWinnerHighlight: Boolean,
-    onItemClick: (ContentListItem) -> Unit,
-    extraModifier: Modifier = Modifier
-) {
-    val chunked = battles.chunked(columns)
-    chunked.forEach { row ->
-        item(key = "battle_row_${row.first().listKey}") {
-            Row(
-                modifier = extraModifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(BATTLE_GRID_SPACING, Alignment.CenterHorizontally)
-            ) {
-                row.forEach { battle ->
-                    val isSelected = battle.uiModel.id == selectedBattleId
-                    Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        BattleCard(
-                            uiModel = battle.uiModel,
-                            showWinnerHighlight = showWinnerHighlight,
-                            onClick = { onItemClick(battle) },
-                            modifier = Modifier
-                                .widthIn(max = BATTLE_CARD_MAX_WIDTH)
-                                .fillMaxWidth()
-                                .then(
-                                    if (isSelected) {
-                                        Modifier.background(
-                                            MaterialTheme.colorScheme.primaryContainer,
-                                            RoundedCornerShape(CardCornerRadius)
-                                        )
-                                    } else {
-                                        Modifier
-                                    }
-                                )
-                        )
-                    }
-                }
-                // Fill remaining slots so cards don't stretch on the last row
-                repeat(columns - row.size) {
-                    Box(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}

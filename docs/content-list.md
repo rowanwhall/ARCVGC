@@ -156,22 +156,21 @@ This is recursive — each child instance has its own independent state, creatin
 
 ### Web Desktop: Multi-Column Battle Grid & Scroll Restoration
 
-On desktop web (expanded size class), the content list uses a wider layout for battle cards:
+On desktop web (expanded size class), the content list uses `LazyVerticalGrid` with `GridCells.FixedSize(BATTLE_CARD_MAX_WIDTH)` (650dp cells) instead of `LazyColumn`. This provides:
 
-- **Non-battle items** (heroes, section headers, format selectors, stat chips, etc.) are centered with a `CONTENT_MAX_WIDTH` (900dp) cap via the `CenteredItem` wrapper composable.
-- **Battle cards** use available width, rendered in a multi-column grid. Column count is computed dynamically from `BATTLE_CARD_MIN_WIDTH` (420dp); individual cards are capped at `BATTLE_CARD_MAX_WIDTH` (600dp). Consecutive battle items (both inside sections and top-level pages 2+) are chunked into `Row` groups via `battleGridItems()`.
-- `computeBattleColumns()` accounts for 16dp horizontal padding on each side. On narrow screens the math yields 1 column, so the layout degrades gracefully.
+- **Non-battle items** (heroes, section headers, format selectors, stat chips, etc.) span the full grid width via `GridItemSpan(maxLineSpan)` and are centered with a `CONTENT_MAX_WIDTH` (900dp) cap via the `CenteredItem` wrapper composable.
+- **Battle cards** are emitted as individual grid items (one per card). Column count is derived from the grid's available width and the fixed cell size. Cards are left-aligned (`Arrangement.spacedBy(BATTLE_GRID_SPACING, Alignment.Start)`) so the leftmost column's X-position is stable across column-count changes, minimizing horizontal micro-animations when the pane opens/closes.
+- **Animated reflow**: Each battle card uses `Modifier.animateItem(placementSpec = BATTLE_GRID_PLACEMENT_SPEC)` with a `tween(DETAIL_PANE_ANIM_DURATION_MS, FastOutSlowInEasing)` placement spec, so cards smoothly slide to their new grid positions when the detail pane's width changes the grid's column count. The spec constant is declared at the bottom of `ContentListPage.kt` and can be tuned independently.
 
-When the battle detail pane opens/closes, the list width changes and the grid reflows (e.g., 3 columns → 2 or vice versa). Scroll restoration keeps the user oriented:
+**Snap-to-narrow grid width**: When `selectedBattleId` becomes non-null, the grid's outer Box modifier swaps from `Modifier.weight(1f)` to `Modifier.width(gridWidthWhenPaneOpen)` in the same composition. The grid remeasures with the new narrow width in a single frame — typically into a 1-column layout. This is critical because `LazyVerticalGrid.scrollToItem(N)` in a multi-column grid gets clobbered back to the row-start by the next measure pass (`LazyGridScrollPosition.updateFromMeasureResult`). By ensuring the grid is already in its final (usually 1-col) layout before `scrollToItem` runs, the target index sticks.
 
-- **Pane opens** (null → battle selected): Saves the exact scroll position (item index + pixel offset) in wide-grid coordinates. Then scrolls instantly to the selected battle's row in the narrower grid via `computeBattleItemIndex()`.
-- **Pane switches** (battle A → battle B, pane stays open): Saves the *battle ID* (not pixel offset, since current position is in narrow-grid space). Scrolls to the new battle's row.
-- **Pane closes after switch**: Resolves the saved battle ID to its index in the *wide* grid via `computeBattleItemIndex()` and scrolls there (offset 0).
-- **Pane closes without switch**: Restores the exact saved position (index + pixel offset) from before the pane opened.
+The pane width is sized dynamically via `BoxWithConstraints`: `panePostWidth = (maxWidth - BATTLE_CARD_MAX_WIDTH - 1.dp).coerceIn(0.dp, DETAIL_PANEL_MAX_WIDTH)`. On wide viewports the pane gets its full 960dp; on narrower viewports it shrinks so the grid can hold a full 650dp battle card. `grid + 1dp divider + pane = maxWidth` exactly, so there's no unused Row space.
 
-`computeBattleItemIndex()` mirrors the LazyColumn's item emission order (headers, sections with grid chunking, top-level items) to compute the correct index for a given battle ID. It accepts `battleColumns` to account for the current grid layout, and `hasFormats`/`hasSearchQuery` flags to match conditional item emission.
+**Pane animation**: The pane uses `slideInHorizontally`/`slideOutHorizontally` (not `expandHorizontally`/`shrinkHorizontally`) so the pane's layout bounds snap to their final width the moment `visibleState` becomes true, and the content translates in from off-screen-right. This avoids an artifact where the pane's growing right edge would leave a visible sliver of the outer `surface` background to its right.
 
-A `scrollGeneration` counter forces `LaunchedEffect` re-triggers when the same battle ID needs to scroll after both a pane switch and close.
+**Scroll restoration** (simplified to a single policy): A `lastSelectedBattleId` state variable tracks the most recently selected battle. On every pane open or switch, the grid calls `scrollToItem(index)` (first open) or `animateScrollToItem(index)` (switch while open). On close, the grid re-scrolls to `lastSelectedBattleId`'s index in the now-wide grid. The second argument to `scrollToItem` is `scrollOffsetPx = BATTLE_GRID_SPACING` converted to pixels via `LocalDensity.current`, providing a small top margin.
+
+`computeBattleItemIndex()` mirrors the grid's item emission order (headers, sections, top-level items) to compute the correct index for a given battle ID. Since each battle is its own grid item (no chunking), the index is a simple linear count. It accepts `hasFormats`/`hasSearchQuery` flags to match conditional item emission.
 
 ## Toolbar & Favorite Buttons
 
