@@ -77,3 +77,72 @@ internal fun PokemonListRow(
         }
     }
 }
+
+// PokemonFlowTile / PlayerFlowTile are webApp-local because the flow-tile
+// section layout is currently only used on desktop web. If Android tablet
+// ever adopts the same flow-tile rendering for Expanded search sections,
+// move both composables to shared/.../ui/contentlist/ per the shared-compose
+// rule before reusing them.
+@Composable
+internal fun PlayerFlowTile(
+    name: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(CardCornerRadius),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Text(
+            text = name,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+        )
+    }
+}
+
+@Composable
+internal fun PokemonFlowTile(
+    name: String,
+    imageUrl: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    usagePercent: String? = null
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(CardCornerRadius),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            PokemonAvatar(
+                imageUrl = imageUrl,
+                contentDescription = name,
+                circleSize = 32.dp,
+                spriteSize = 48.dp
+            )
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            if (usagePercent != null) {
+                Text(
+                    text = usagePercent,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}

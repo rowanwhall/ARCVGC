@@ -38,6 +38,14 @@
 - **SearchViewModel**: Plain `ViewModel()` constructor-injecting all 5 catalog repos + optional `AppConfigRepository`. Delegates to shared `SearchLogic` (passes `viewModelScope` + config flow for automatic default format observation).
 - **Compose UI**: `SearchFilterCard` has two layout modes based on window size. **Mobile web** (`Compact` window): same as Android — badges + context menu, name in non-compact only. **Desktop web** (`Expanded` window): inline Item/Tera/Ability buttons with `SmallFilterButton` text buttons (uses shared `AppTokens` for padding). All pickers include a "None" row for clearing. `PickerDialogs.kt` consolidates all 7 pickers as `Dialog` composables (search field at TOP, web convention). `PokemonPickerDialog`, `ItemPickerDialog`, `TeraTypePickerDialog`, `AbilityPickerDialog`, `FormatPickerDialog`, `MinRatingPickerDialog`, `SortOrderPickerDialog`. Picker state tracks team for routing.
 
+### Desktop-web search results layout
+
+On `WindowSizeClass.Expanded`, the search-results rendering in `webApp/.../ui/contentlist/ContentListPage.kt` diverges from the centered-900dp layout used elsewhere:
+
+- **Filter-chip header** (`SearchFilters`): emitted without the `CenteredItem` wrapper so the chips span the full cell-pack width of the battle grid below (the grid already centers full-span items via its `CenterHorizontally` arrangement).
+- **"Pokémon" / "Players" pinned sections**: rendered as a `FlowRow` of wrap-content tiles (`PokemonFlowTile` / `PlayerFlowTile` in `webApp/.../ui/contentlist/PokemonListRow.kt`) instead of full-width `PokemonListRow` / `PlayerListRow` rows. Detection uses `isFlowTileSection = Expanded && !needsIndividualCells && items.all { Pokemon || Player }` in the `ContentListItem.Section` branch. `SectionHeader` is emitted above the `FlowRow` inside a single full-span grid item. Mobile web / Android / iOS are unaffected — those platforms take the split-emission path that renders items as individual full-width rows.
+- **Flow-tile composables are webApp-local**: If Android tablet (`Expanded`) ever adopts the same flow-tile rendering, move `PokemonFlowTile` / `PlayerFlowTile` to `shared/.../ui/contentlist/` per the shared-compose rule.
+
 ## Sort Toggle & Section Loading
 
 ### Sort toggle

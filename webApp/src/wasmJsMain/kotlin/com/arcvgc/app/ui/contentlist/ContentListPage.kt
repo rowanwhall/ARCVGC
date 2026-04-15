@@ -10,6 +10,9 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -672,6 +675,7 @@ fun ContentListPage(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ContentListContent(
     uiState: ContentListUiState,
@@ -803,12 +807,20 @@ private fun ContentListContent(
             }
             is ContentListHeaderUiModel.SearchFilters -> {
                 item(key = "search_filters", span = fullSpan) {
-                    CenteredItem {
+                    if (windowSizeClass == WindowSizeClass.Expanded) {
                         SearchFilterChips(
                             filters = h,
                             searchParams = searchParams,
                             onSearchParamsChanged = onSearchParamsChanged
                         )
+                    } else {
+                        CenteredItem {
+                            SearchFilterChips(
+                                filters = h,
+                                searchParams = searchParams,
+                                onSearchParamsChanged = onSearchParamsChanged
+                            )
+                        }
                     }
                 }
             }
@@ -976,7 +988,48 @@ private fun ContentListContent(
                         is ContentListItem.Section -> {
                             val isLoadingSection = topItem.header in uiState.loadingSections
                             val needsIndividualCells = topItem.items.any { it.requiresIndividualGridCells }
-                            if (needsIndividualCells || windowSizeClass != WindowSizeClass.Expanded) {
+                            val isFlowTileSection = windowSizeClass == WindowSizeClass.Expanded &&
+                                !needsIndividualCells &&
+                                topItem.items.isNotEmpty() &&
+                                topItem.items.all { it is ContentListItem.Pokemon || it is ContentListItem.Player }
+                            if (isFlowTileSection) {
+                                item(key = topItem.listKey, span = fullSpan) {
+                                    val loadingMod = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        if (topItem.header.isNotEmpty()) {
+                                            SectionHeader(
+                                                title = topItem.header,
+                                                isLoading = isLoadingSection,
+                                                sortOrder = null,
+                                                onToggleSortOrder = null,
+                                                onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                                            )
+                                            Spacer(modifier = Modifier.height(ContentListItemSpacing))
+                                        }
+                                        FlowRow(
+                                            modifier = loadingMod.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            topItem.items.forEach { child ->
+                                                when (child) {
+                                                    is ContentListItem.Pokemon -> PokemonFlowTile(
+                                                        name = child.name,
+                                                        imageUrl = child.imageUrl,
+                                                        onClick = { onItemClick(child) },
+                                                        usagePercent = child.usagePercent
+                                                    )
+                                                    is ContentListItem.Player -> PlayerFlowTile(
+                                                        name = child.name,
+                                                        onClick = { onItemClick(child) }
+                                                    )
+                                                    else -> {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (needsIndividualCells || windowSizeClass != WindowSizeClass.Expanded) {
                                 // Battle sections (or compact layouts): header is a separate
                                 // full-span grid item whose width comes from the grid's own
                                 // layout math. On expanded, `BoxWithConstraints.maxWidth` inside

@@ -29,7 +29,7 @@ Sealed class with seven variants controlling what renders above the list:
 - **`HomeHero`** — Logo + "ARC" branding text in Orbitron font
 - **`TopPokemonHero`** — "Top Pokemon" title (separate type for planned redesign)
 - **`FavoritesHero`** — Currently blank (TODO: branded asset pending from artist)
-- **`SearchFilters`** — flow row of removable filter chips (Pokemon with items/tera, format, rating range, unrated, player name, date range). Each chip type has `canRemove*()` / `remove*()` methods on `SearchParams` controlling removability.
+- **`SearchFilters`** — flow row of removable filter chips (Pokemon with items/tera, format, rating range, unrated, player name, date range). Each chip type has `canRemove*()` / `remove*()` methods on `SearchParams` controlling removability. On desktop web (`WindowSizeClass.Expanded`) the chip row spans the grid's full cell-pack width (no 900dp centered cap), matching the width of the battle-card grid below. Mobile web / Android / iOS keep the 900dp centered cap.
 - **`PokemonHero`** — large Pokemon avatar (158dp circle / 227dp sprite) + name (headlineMedium/20pt) + type icons (24dp)
 - **`PlayerHero`** — player name in rounded pill background
 
