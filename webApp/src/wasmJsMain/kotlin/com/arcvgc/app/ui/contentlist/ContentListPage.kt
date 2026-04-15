@@ -1371,7 +1371,7 @@ private fun SectionContentAlignedHeader(
     }
 }
 
-private val BATTLE_CARD_MAX_WIDTH = 650.dp
+private val BATTLE_CARD_MAX_WIDTH = 620.dp
 private val BATTLE_GRID_SPACING = 12.dp
 internal const val DETAIL_PANE_ANIM_DURATION_MS = 300
 

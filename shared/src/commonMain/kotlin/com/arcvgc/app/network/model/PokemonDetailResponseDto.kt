@@ -36,7 +36,7 @@ data class PokemonFormDto(
     @SerialName("pokedex_number") val pokedexNumber: Int?,
     val name: String,
     val tier: String?,
-    val types: List<TypeDto>,
+    val types: List<TypeDto>? = null,
     @SerialName("is_cosmetic_only") val isCosmeticOnly: Boolean,
     @SerialName("image_url") val imageUrl: String? = null
 )
