@@ -84,7 +84,8 @@ final class ContentListViewModel: ObservableObject {
             ),
             mode: sharedMode,
             pokemonCatalogItems: pokemonCatalogItems,
-            pokemonCatalogState: nil
+            pokemonCatalogState: nil,
+            initialTopPokemonFetchCount: 6
         )
 
         self.state = logic.uiState.value

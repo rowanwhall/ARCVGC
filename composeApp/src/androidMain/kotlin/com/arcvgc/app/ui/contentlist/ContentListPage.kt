@@ -77,6 +77,7 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ReplayNavState
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
+import com.arcvgc.app.ui.model.unwrapSectionGroups
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -185,6 +186,7 @@ fun ContentListPage(
                         playerNavTarget = PlayerNavTarget(item.id, item.name, derivedFormatId)
                     }
                     is ContentListItem.Section -> {}
+                    is ContentListItem.SectionGroup -> {}
                     is ContentListItem.HighlightButtons -> {}
                     is ContentListItem.PokemonGrid -> {}
                     is ContentListItem.StatChipRow -> {}
@@ -663,7 +665,10 @@ private fun ContentListContent(
 
                 else -> {
                     val itemPadding = Modifier.padding(horizontal = 16.dp)
-                    uiState.items.forEach { topItem ->
+                    // Android currently renders every SectionGroup as its inner sections
+                    // stacked vertically (zero visual change). Tablet could opt in to a
+                    // multi-column layout in the future at this boundary.
+                    uiState.items.unwrapSectionGroups().forEach { topItem ->
                         when (topItem) {
                             is ContentListItem.Section -> {
                                 val isLoadingSection = topItem.header in uiState.loadingSections

@@ -31,6 +31,8 @@ import com.arcvgc.app.ui.mapper.BattleCardUiMapper
 import com.arcvgc.app.ui.model.BattleCardUiModel
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
+import com.arcvgc.app.ui.model.collectListKeys
+import com.arcvgc.app.ui.model.unwrapSectionGroups
 import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import kotlinx.coroutines.Dispatchers
@@ -322,13 +324,102 @@ class ContentListLogicTest {
         testScope.advanceUntilIdle()
 
         val items = logic.uiState.value.items
-        val sectionHeaders = items.filterIsInstance<ContentListItem.Section>().map { it.header }
         assertTrue(items[0] is ContentListItem.FormatSelector)
-        assertEquals(listOf("Top Teammates", "Top Items", "Top Tera Types", "Top Moves", "Top Abilities", "Battles"), sectionHeaders)
+        // Stat sections are wrapped in a SectionGroup (desktop web renders it as a
+        // multi-column row; other platforms flatten it transparently).
+        val group = items.filterIsInstance<ContentListItem.SectionGroup>().single()
+        assertEquals(
+            listOf("Top Teammates", "Top Items", "Top Tera Types", "Top Moves", "Top Abilities"),
+            group.sections.map { it.header }
+        )
+        val flatHeaders = items.unwrapSectionGroups()
+            .filterIsInstance<ContentListItem.Section>().map { it.header }
+        assertEquals(
+            listOf("Top Teammates", "Top Items", "Top Tera Types", "Top Moves", "Top Abilities", "Battles"),
+            flatHeaders
+        )
 
         // Verify usage percentages are formatted
-        val teammatesGrid = (items[1] as ContentListItem.Section).items[0] as ContentListItem.PokemonGrid
-        assertEquals("80.00%", teammatesGrid.pokemon[0].usagePercent)
+        val teammatesRow = group.sections.first { it.header == "Top Teammates" }
+            .items[0] as ContentListItem.StatChipRow
+        assertEquals("80.00%", teammatesRow.chips[0].usagePercent)
+        assertEquals(6, teammatesRow.chips[0].pokemonId)
+    }
+
+    @Test
+    fun unwrapSectionGroups_flattensGroupsAndPreservesOrder() {
+        val section = { header: String -> ContentListItem.Section(header, emptyList()) }
+        val input: List<ContentListItem> = listOf(
+            ContentListItem.FormatSelector,
+            ContentListItem.SectionGroup(listOf(section("A"), section("B"), section("C"))),
+            section("D")
+        )
+        val flat = input.unwrapSectionGroups()
+        assertEquals(
+            listOf("format_selector", "section_A", "section_B", "section_C", "section_D"),
+            flat.map { it.listKey }
+        )
+    }
+
+    @Test
+    fun collectListKeys_recursesThroughSectionAndGroupChildren() {
+        val chipRow = ContentListItem.StatChipRow(
+            chips = listOf(ContentListItem.StatChipItem(name = "Intimidate", usagePercent = "99%")),
+            id = "abilities"
+        )
+        val innerSection = ContentListItem.Section("Top Abilities", listOf(chipRow))
+        val wrappingSection = ContentListItem.Section(
+            "Pokémon",
+            listOf(ContentListItem.Pokemon(id = 25, name = "Pikachu", imageUrl = null, types = emptyList()))
+        )
+        val group = ContentListItem.SectionGroup(listOf(innerSection))
+        val input: List<ContentListItem> = listOf(
+            ContentListItem.FormatSelector,
+            wrappingSection,
+            group
+        )
+        val keys = input.collectListKeys()
+        // Top-level item keys
+        assertTrue("format_selector" in keys)
+        assertTrue("section_Pokémon" in keys)
+        // Nested child of a Section
+        assertTrue("pokemon_25" in keys)
+        // Wrapping group key + nested Section key + nested StatChipRow key
+        assertTrue(group.listKey in keys)
+        assertTrue("section_Top Abilities" in keys)
+        assertTrue("stat_chip_row_abilities" in keys)
+    }
+
+    @Test
+    fun pokemonMode_page1_formatWithoutTera_groupOmitsTeraSection() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, false)
+        )
+        fakeRepo.pokemonProfileResult = PokemonProfile(
+            id = 25, name = "Pikachu", pokedexNumber = 25, tier = "OU",
+            types = listOf(PokemonType(1, "Electric", null)),
+            imageUrl = null, baseSpecies = null, teamCount = 100,
+            topTeammates = listOf(TopStatTeammate(80, 6, "Charizard", 6, null)),
+            topItems = listOf(TopStatItem(50, 1, "Choice Band", null)),
+            topMoves = listOf(TopStatMove(90, 1, "Thunderbolt")),
+            topAbilities = listOf(TopStatAbility(95, 1, "Static")),
+            topTeraTypes = emptyList()
+        )
+
+        val logic = createLogic(ContentListMode.Pokemon(
+            pokemonId = 25, name = "Pikachu", imageUrl = null,
+            typeImageUrl1 = null, typeImageUrl2 = null, formatId = 1
+        ))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val group = logic.uiState.value.items
+            .filterIsInstance<ContentListItem.SectionGroup>().single()
+        assertEquals(
+            listOf("Top Teammates", "Top Items", "Top Moves", "Top Abilities"),
+            group.sections.map { it.header }
+        )
     }
 
     @Test
@@ -382,10 +473,12 @@ class ContentListLogicTest {
         val intermediateState = logic.uiState.value
         assertFalse(intermediateState.isLoading)
         assertTrue(intermediateState.loadingSections.contains("Battles"))
-        val sectionHeaders = intermediateState.items.filterIsInstance<ContentListItem.Section>().map { it.header }
+        val sectionHeaders = intermediateState.items.unwrapSectionGroups()
+            .filterIsInstance<ContentListItem.Section>().map { it.header }
         assertTrue(sectionHeaders.contains("Top Teammates"))
         assertTrue(sectionHeaders.contains("Battles"))
-        val battlesSection = intermediateState.items.filterIsInstance<ContentListItem.Section>().first { it.header == "Battles" }
+        val battlesSection = intermediateState.items.unwrapSectionGroups()
+            .filterIsInstance<ContentListItem.Section>().first { it.header == "Battles" }
         assertTrue(battlesSection.items.isEmpty())
 
         // Now let battles complete
@@ -393,7 +486,8 @@ class ContentListLogicTest {
 
         val finalState = logic.uiState.value
         assertTrue(finalState.loadingSections.isEmpty())
-        val finalBattles = finalState.items.filterIsInstance<ContentListItem.Section>().first { it.header == "Battles" }
+        val finalBattles = finalState.items.unwrapSectionGroups()
+            .filterIsInstance<ContentListItem.Section>().first { it.header == "Battles" }
         assertTrue(finalBattles.items.isNotEmpty())
     }
 
@@ -433,7 +527,8 @@ class ContentListLogicTest {
         val finalState = logic.uiState.value
         assertFalse(finalState.isLoading)
         assertTrue(finalState.loadingSections.isEmpty())
-        val sectionHeaders = finalState.items.filterIsInstance<ContentListItem.Section>().map { it.header }
+        val sectionHeaders = finalState.items.unwrapSectionGroups()
+            .filterIsInstance<ContentListItem.Section>().map { it.header }
         assertTrue(sectionHeaders.contains("Top Teammates"))
         assertTrue(sectionHeaders.contains("Battles"))
     }

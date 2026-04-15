@@ -30,6 +30,7 @@ import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.components.BattleCard
 import com.arcvgc.app.ui.components.FillPokemonAvatar
+import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
@@ -172,51 +173,92 @@ internal fun ContentListItemRow(
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 items(item.chips, key = { it.name }) { chip ->
-                    StatChip(name = chip.name, usagePercent = chip.usagePercent, imageUrl = chip.imageUrl)
+                    StatChip(
+                        name = chip.name,
+                        usagePercent = chip.usagePercent,
+                        imageUrl = chip.imageUrl,
+                        pokemonId = chip.pokemonId,
+                        onClick = chip.pokemonId?.let {
+                            {
+                                onPokemonGridClick(
+                                    ContentListItem.PokemonGridItem(it, chip.name, chip.imageUrl, chip.usagePercent)
+                                )
+                            }
+                        }
+                    )
                 }
             }
         }
         is ContentListItem.Section -> {}
+        is ContentListItem.SectionGroup -> {}
         is ContentListItem.FormatSelector -> {}
         is ContentListItem.SearchField -> {}
     }
 }
 
 @Composable
-internal fun StatChip(name: String, usagePercent: String?, imageUrl: String? = null) {
-    Surface(
-        shape = RoundedCornerShape(CardCornerRadius),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
+internal fun StatChip(
+    name: String,
+    usagePercent: String?,
+    imageUrl: String? = null,
+    pokemonId: Int? = null,
+    onClick: (() -> Unit)? = null
+) {
+    val shape = RoundedCornerShape(CardCornerRadius)
+    val color = MaterialTheme.colorScheme.surface
+    val border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
+    if (onClick != null) {
+        Surface(onClick = onClick, shape = shape, color = color, border = border) {
+            StatChipContent(name, usagePercent, imageUrl, pokemonId)
+        }
+    } else {
+        Surface(shape = shape, color = color, border = border) {
+            StatChipContent(name, usagePercent, imageUrl, pokemonId)
+        }
+    }
+}
+
+@Composable
+private fun StatChipContent(
+    name: String,
+    usagePercent: String?,
+    imageUrl: String?,
+    pokemonId: Int?
+) {
+    Row(
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            if (imageUrl != null) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = name,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Column {
+        if (pokemonId != null) {
+            PokemonAvatar(
+                imageUrl = imageUrl,
+                contentDescription = name,
+                circleSize = 20.dp,
+                spriteSize = 32.dp
+            )
+        } else if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = name,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Column {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
+            usagePercent?.let { pct ->
                 Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = pct,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
-                usagePercent?.let { pct ->
-                    Text(
-                        text = pct,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
-                }
             }
         }
     }

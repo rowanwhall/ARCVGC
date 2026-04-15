@@ -11,6 +11,7 @@ import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.mapper.ContentListItemMapper
 import com.arcvgc.app.ui.model.ContentListItem
+import com.arcvgc.app.ui.model.collectListKeys
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.TypeUiModel
 import com.arcvgc.app.ui.model.FavoriteContentType
@@ -284,14 +285,7 @@ class ContentListLogic(
                 _uiState.update { it.copy(isPaginating = true) }
                 val (items, pagination) = fetchContent(page = nextPage)
                 _uiState.update {
-                    val existingKeys = buildSet {
-                        it.items.forEach { item ->
-                            add(item.listKey)
-                            if (item is ContentListItem.Section) {
-                                item.items.forEach { child -> add(child.listKey) }
-                            }
-                        }
-                    }
+                    val existingKeys = it.items.collectListKeys()
                     val newItems = items.filter { item -> item.listKey !in existingKeys }
                     it.copy(
                         isPaginating = false,
@@ -674,38 +668,46 @@ class ContentListLogic(
 
     private fun buildPokemonProfileSections(profile: PokemonProfile?): List<ContentListItem> = buildList {
         add(ContentListItem.FormatSelector)
-        if (profile != null && profile.topTeammates.isNotEmpty()) {
-            val gridItems = profile.topTeammates.map {
-                ContentListItem.PokemonGridItem(
-                    it.id, it.name, it.imageUrl,
-                    formatUsagePercent(it.count, profile.teamCount)
-                )
+        if (profile == null) return@buildList
+        val statSections = buildList {
+            if (profile.topTeammates.isNotEmpty()) {
+                val chipItems = profile.topTeammates.map {
+                    ContentListItem.StatChipItem(
+                        name = it.name,
+                        usagePercent = formatUsagePercent(it.count, profile.teamCount),
+                        imageUrl = it.imageUrl,
+                        pokemonId = it.id
+                    )
+                }
+                add(ContentListItem.Section("Top Teammates", listOf(ContentListItem.StatChipRow(chipItems, "teammates"))))
             }
-            add(ContentListItem.Section("Top Teammates", listOf(ContentListItem.PokemonGrid(gridItems))))
+            if (profile.topItems.isNotEmpty()) {
+                val chipItems = profile.topItems.map {
+                    ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount), it.imageUrl)
+                }
+                add(ContentListItem.Section("Top Items", listOf(ContentListItem.StatChipRow(chipItems, "items"))))
+            }
+            if (profile.topTeraTypes.isNotEmpty()) {
+                val chipItems = profile.topTeraTypes.map {
+                    ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount), it.imageUrl)
+                }
+                add(ContentListItem.Section("Top Tera Types", listOf(ContentListItem.StatChipRow(chipItems, "tera_types"))))
+            }
+            if (profile.topMoves.isNotEmpty()) {
+                val chipItems = profile.topMoves.map {
+                    ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
+                }
+                add(ContentListItem.Section("Top Moves", listOf(ContentListItem.StatChipRow(chipItems, "moves"))))
+            }
+            if (profile.topAbilities.isNotEmpty()) {
+                val chipItems = profile.topAbilities.map {
+                    ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
+                }
+                add(ContentListItem.Section("Top Abilities", listOf(ContentListItem.StatChipRow(chipItems, "abilities"))))
+            }
         }
-        if (profile != null && profile.topItems.isNotEmpty()) {
-            val chipItems = profile.topItems.map {
-                ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount), it.imageUrl)
-            }
-            add(ContentListItem.Section("Top Items", listOf(ContentListItem.StatChipRow(chipItems, "items"))))
-        }
-        if (profile != null && profile.topTeraTypes.isNotEmpty()) {
-            val chipItems = profile.topTeraTypes.map {
-                ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount), it.imageUrl)
-            }
-            add(ContentListItem.Section("Top Tera Types", listOf(ContentListItem.StatChipRow(chipItems, "tera_types"))))
-        }
-        if (profile != null && profile.topMoves.isNotEmpty()) {
-            val chipItems = profile.topMoves.map {
-                ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
-            }
-            add(ContentListItem.Section("Top Moves", listOf(ContentListItem.StatChipRow(chipItems, "moves"))))
-        }
-        if (profile != null && profile.topAbilities.isNotEmpty()) {
-            val chipItems = profile.topAbilities.map {
-                ContentListItem.StatChipItem(it.name, formatUsagePercent(it.count, profile.teamCount))
-            }
-            add(ContentListItem.Section("Top Abilities", listOf(ContentListItem.StatChipRow(chipItems, "abilities"))))
+        if (statSections.isNotEmpty()) {
+            add(ContentListItem.SectionGroup(statSections))
         }
     }
 

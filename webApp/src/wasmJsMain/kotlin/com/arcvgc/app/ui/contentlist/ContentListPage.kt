@@ -64,8 +64,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -100,6 +102,7 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
+import com.arcvgc.app.ui.model.unwrapSectionGroups
 import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.tokens.AppTokens.BrandFontFamily
@@ -361,6 +364,7 @@ fun ContentListPage(
                             navigateToPlayer(item.id, item.name, derivedFormatId)
                         }
                         is ContentListItem.Section -> {}
+                        is ContentListItem.SectionGroup -> {}
                         is ContentListItem.HighlightButtons -> {}
                         is ContentListItem.PokemonGrid -> {}
                         is ContentListItem.StatChipRow -> {}
@@ -538,6 +542,7 @@ fun ContentListPage(
                                         navigateToPlayer(item.id, item.name, derivedFormatId)
                                     }
                                     is ContentListItem.Section -> {}
+                                    is ContentListItem.SectionGroup -> {}
                                     is ContentListItem.HighlightButtons -> {}
                                     is ContentListItem.PokemonGrid -> {}
                                     is ContentListItem.FormatSelector -> {}
@@ -938,8 +943,30 @@ private fun ContentListContent(
             }
 
             else -> {
-                uiState.items.forEach { topItem ->
+                // On compact we flatten SectionGroups so the existing per-Section dispatch
+                // handles them transparently. On expanded we keep groups intact so the new
+                // SectionGroup branch below can lay them out as a responsive column row.
+                val topLevelItems = if (windowSizeClass == WindowSizeClass.Expanded) {
+                    uiState.items
+                } else {
+                    uiState.items.unwrapSectionGroups()
+                }
+                topLevelItems.forEach { topItem ->
                     when (topItem) {
+                        is ContentListItem.SectionGroup -> {
+                            item(key = topItem.listKey, span = fullSpan) {
+                                SectionGroupLayout(
+                                    group = topItem,
+                                    loadingSections = uiState.loadingSections,
+                                    contentMaxWidth = expandedTopPokemonMaxWidth,
+                                    selectedBattleId = selectedBattleId,
+                                    showWinnerHighlight = showWinnerHighlight,
+                                    onItemClick = onItemClick,
+                                    onHighlightBattleClick = onHighlightBattleClick,
+                                    onPokemonGridClick = onPokemonGridClick
+                                )
+                            }
+                        }
                         is ContentListItem.Section -> {
                             val isLoadingSection = topItem.header in uiState.loadingSections
                             val needsIndividualCells = topItem.items.any { it.requiresIndividualGridCells }
@@ -1017,10 +1044,20 @@ private fun ContentListContent(
                                 } else {
                                     // Compact-only: non-battle children rendered individually in a
                                     // CenteredItem wrapper, matching the pre-existing compact layout.
+                                    // Edge-to-edge children (e.g. StatChipRow) skip the CenteredItem
+                                    // wrapper and use a layout modifier to negate the grid's
+                                    // horizontal padding, so the chip carousel scrolls flush to the
+                                    // viewport edges.
                                     topItem.items.forEach { child ->
                                         item(key = child.listKey, span = fullSpan) {
-                                            CenteredItem(modifier = loadingMod) {
-                                                ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                            if (child.edgeToEdge) {
+                                                Box(modifier = loadingMod.escapeGridHorizontalPadding()) {
+                                                    ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                                }
+                                            } else {
+                                                CenteredItem(modifier = loadingMod) {
+                                                    ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                                }
                                             }
                                         }
                                     }
@@ -1271,6 +1308,26 @@ private fun computeBattleItemIndex(
 
 private val CONTENT_MAX_WIDTH = 900.dp
 
+/**
+ * Re-measures the wrapped content at `constraints.maxWidth + 2 * [extraPadding]` and
+ * places it at `x = -extraPadding`, so content draws out beyond each horizontal edge
+ * of the layout. Used by compact edge-to-edge items (e.g. `StatChipRow`) to negate
+ * the parent `LazyVerticalGrid`'s `padding(horizontal = 16.dp)` and render flush to
+ * the viewport edges. Still reports the original layout width so siblings are
+ * unaffected.
+ */
+private fun Modifier.escapeGridHorizontalPadding(extraPadding: Dp = 16.dp): Modifier =
+    this.layout { measurable, constraints ->
+        val extraPx = (extraPadding * 2).roundToPx()
+        val extendedMax = (constraints.maxWidth + extraPx).coerceAtLeast(0)
+        val placeable = measurable.measure(
+            constraints.copy(minWidth = extendedMax, maxWidth = extendedMax)
+        )
+        layout(constraints.maxWidth, placeable.height) {
+            placeable.place(-extraPadding.roundToPx(), 0)
+        }
+    }
+
 @Composable
 private fun CenteredItem(
     modifier: Modifier = Modifier,
@@ -1395,4 +1452,152 @@ internal fun computeTopPokemonTileCount(availableWidth: Dp): Int {
 // the item's (x, y) placement in the viewport.
 private val BATTLE_GRID_PLACEMENT_SPEC: FiniteAnimationSpec<IntOffset> =
     tween(durationMillis = DETAIL_PANE_ANIM_DURATION_MS, easing = FastOutSlowInEasing)
+
+// Responsive breakpoints for `SectionGroup` column count on desktop web. Content width is
+// the grid's inner display width (`expandedTopPokemonMaxWidth`), which shrinks when the
+// battle detail pane is open. A just-above-compact window lands in the 1-col bucket; a
+// standard laptop lands in 2; a widescreen lands in 3.
+private val SECTION_GROUP_2_COL_MIN_WIDTH = 900.dp
+private val SECTION_GROUP_3_COL_MIN_WIDTH = 1500.dp
+
+private fun sectionGroupColumnCount(contentWidth: Dp): Int = when {
+    contentWidth >= SECTION_GROUP_3_COL_MIN_WIDTH -> 3
+    contentWidth >= SECTION_GROUP_2_COL_MIN_WIDTH -> 2
+    else -> 1
+}
+
+/**
+ * Lays out a [ContentListItem.SectionGroup] as a responsive 1/2/3-column block
+ * inside the battle grid's full-span slot.
+ *
+ * Uses [SubcomposeLayout] so each section can be actually composed and measured
+ * at the target column width before packing decisions are made. This gives us
+ * real rendered heights (including `FlowRow` wrap behavior) instead of the
+ * approximations we'd get from counting chips. The sections are then packed
+ * greedily into columns — each section (in shared-emission order) goes into the
+ * column with the smallest cumulative height, with ties broken toward the
+ * leftmost column. Since shared emits in priority order (Teammates, Items, Tera,
+ * Moves, Abilities), this naturally places Teammates/Items on row 1 and drops
+ * Abilities into whichever column has the most room, with left-first bias on
+ * genuine ties.
+ *
+ * The `reportedWidth` trick mirrors `ResponsivePokemonGridCard`: the grid passes
+ * `constraints.maxWidth == cellPackWidth` (e.g. `cols × 650 + gaps`), which is
+ * narrower than the true grid-box width. We measure content against the larger
+ * `contentMaxWidth` (the grid-box inner width) and report the cell-pack width
+ * back up so the grid places this item at `x = 0` of the content area. Placeables
+ * beyond the reported box draw into the grid's unused trailing gutter — same
+ * hit-testing caveat as `ResponsivePokemonGridCard`.
+ */
+@Composable
+private fun SectionGroupLayout(
+    group: ContentListItem.SectionGroup,
+    loadingSections: Set<String>,
+    contentMaxWidth: Dp,
+    selectedBattleId: Int?,
+    showWinnerHighlight: Boolean,
+    onItemClick: (ContentListItem) -> Unit,
+    onHighlightBattleClick: (Int) -> Unit,
+    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit
+) {
+    val cols = sectionGroupColumnCount(contentMaxWidth)
+        .coerceAtMost(group.sections.size)
+        .coerceAtLeast(1)
+    SubcomposeLayout { constraints ->
+        val contentMaxWidthPx = contentMaxWidth.roundToPx()
+            .coerceAtLeast(constraints.maxWidth)
+        val spacingPx = ContentListItemSpacing.roundToPx()
+        val colWidthPx = ((contentMaxWidthPx - (cols - 1) * spacingPx) / cols)
+            .coerceAtLeast(0)
+        val colConstraints = Constraints(
+            minWidth = colWidthPx,
+            maxWidth = colWidthPx,
+            minHeight = 0,
+            maxHeight = Constraints.Infinity
+        )
+
+        // Subcompose + measure each section at the target column width so we get
+        // real rendered heights (post-FlowRow-wrap) for packing decisions.
+        val sectionPlaceables = group.sections.mapIndexed { i, section ->
+            subcompose("section_$i") {
+                SectionGroupItem(
+                    section = section,
+                    isLoading = section.header in loadingSections,
+                    selectedBattleId = selectedBattleId,
+                    showWinnerHighlight = showWinnerHighlight,
+                    onItemClick = onItemClick,
+                    onHighlightBattleClick = onHighlightBattleClick,
+                    onPokemonGridClick = onPokemonGridClick
+                )
+            }.map { it.measure(colConstraints) }
+        }
+
+        // Greedy shortest-column packing with left-first tiebreak on height.
+        // `indices.minBy` returns the leftmost column when heights are tied, so
+        // sections bias toward the left column — including Abilities when both
+        // columns would otherwise end up the same height.
+        val colHeights = IntArray(cols)
+        val colAssignments = List(cols) { mutableListOf<Int>() }
+        group.sections.indices.forEach { sectionIdx ->
+            val sectionHeight = sectionPlaceables[sectionIdx].sumOf { it.height }
+            val target = colHeights.indices.minBy { colHeights[it] }
+            val prevCount = colAssignments[target].size
+            colAssignments[target].add(sectionIdx)
+            colHeights[target] += sectionHeight +
+                if (prevCount > 0) spacingPx else 0
+        }
+
+        val totalHeight = colHeights.maxOrNull() ?: 0
+        val reportedWidth = constraints.maxWidth.coerceAtMost(contentMaxWidthPx)
+
+        layout(reportedWidth, totalHeight) {
+            colAssignments.forEachIndexed { colIdx, sectionIndices ->
+                val x = colIdx * (colWidthPx + spacingPx)
+                var y = 0
+                sectionIndices.forEachIndexed { innerIdx, sectionIdx ->
+                    if (innerIdx > 0) y += spacingPx
+                    sectionPlaceables[sectionIdx].forEach { placeable ->
+                        placeable.place(x, y)
+                        y += placeable.height
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionGroupItem(
+    section: ContentListItem.Section,
+    isLoading: Boolean,
+    selectedBattleId: Int?,
+    showWinnerHighlight: Boolean,
+    onItemClick: (ContentListItem) -> Unit,
+    onHighlightBattleClick: (Int) -> Unit,
+    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit
+) {
+    val loadingMod = if (isLoading) Modifier.alpha(0.5f) else Modifier
+    Column(
+        verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing)
+    ) {
+        if (section.header.isNotEmpty()) {
+            SectionHeader(
+                title = section.header,
+                isLoading = isLoading
+            )
+        }
+        Column(modifier = loadingMod) {
+            section.items.forEach { child ->
+                ContentListItemRow(
+                    item = child,
+                    selectedBattleId = selectedBattleId,
+                    showWinnerHighlight = showWinnerHighlight,
+                    onItemClick = onItemClick,
+                    onHighlightBattleClick = onHighlightBattleClick,
+                    onPokemonGridClick = onPokemonGridClick
+                )
+            }
+        }
+    }
+}
 

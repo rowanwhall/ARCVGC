@@ -262,7 +262,11 @@ struct ContentListView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: geometry.size.height * 0.6)
                     } else {
-                        ForEach(Array(viewModel.state.items.enumerated()), id: \.element.listKey) { index, item in
+                        // iOS flattens SectionGroups into their inner Sections so the existing
+                        // per-Section rendering path stays unchanged. iPad multi-column layout
+                        // may opt in to rendering the group directly in the future.
+                        let unwrappedItems = unwrapSectionGroups(viewModel.state.items as! [ContentListItem])
+                        ForEach(Array(unwrappedItems.enumerated()), id: \.element.listKey) { index, item in
                             switch onEnum(of: item) {
                             case .section(let section):
                                 let showSort = section.header == "Battles" && hasSortToggle
@@ -328,7 +332,7 @@ struct ContentListView: View {
                                 contentItemView(item)
                                     .padding(.horizontal, item.edgeToEdge ? 0 : 16)
                                     .onAppear {
-                                        if index >= viewModel.state.items.count - paginationThreshold {
+                                        if index >= unwrappedItems.count - paginationThreshold {
                                             viewModel.paginate()
                                         }
                                     }
@@ -605,48 +609,73 @@ struct ContentListView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(Array(allChips.enumerated()), id: \.element.name) { _, chip in
-                        HStack(spacing: 8) {
-                            if let imageUrl = chip.imageUrl, let url = URL(string: imageUrl) {
-                                AsyncImage(url: url) { image in
-                                    image.resizable().scaledToFit()
-                                } placeholder: {
-                                    Color.clear
-                                }
-                                .frame(width: 24, height: 24)
+                        if let pokemonId = chip.pokemonId {
+                            Button {
+                                pokemonNavTarget = PokemonNavTarget(
+                                    id: pokemonId.int32Value,
+                                    name: chip.name,
+                                    imageUrl: chip.imageUrl,
+                                    typeImageUrl1: nil,
+                                    typeImageUrl2: nil,
+                                    formatId: viewModel.selectedFormatId
+                                )
+                            } label: {
+                                statChipBody(chip: chip)
                             }
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(chip.name)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(Color(.label))
-                                    .lineLimit(1)
-                                if let pct = chip.usagePercent {
-                                    Text(pct)
-                                        .font(.caption2)
-                                        .foregroundColor(Color(.label).opacity(0.75))
-                                        .lineLimit(1)
-                                }
-                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            statChipBody(chip: chip)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(AppTokens.cardCornerRadius)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
-                                .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
-                        )
                     }
                 }
                 .padding(.horizontal, 16)
             }
         case .section:
             EmptyView()
+        case .sectionGroup:
+            EmptyView()
         case .formatSelector:
             EmptyView()
         case .searchField:
             EmptyView()
         }
+    }
+
+    @ViewBuilder
+    private func statChipBody(chip: ContentListItem.StatChipItem) -> some View {
+        HStack(spacing: 8) {
+            if chip.pokemonId != nil {
+                PokemonAvatar(imageUrl: chip.imageUrl, circleSize: 20, spriteSize: 32)
+            } else if let imageUrl = chip.imageUrl, let url = URL(string: imageUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFit()
+                } placeholder: {
+                    Color.clear
+                }
+                .frame(width: 24, height: 24)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(chip.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(Color(.label))
+                    .lineLimit(1)
+                if let pct = chip.usagePercent {
+                    Text(pct)
+                        .font(.caption2)
+                        .foregroundColor(Color(.label).opacity(0.75))
+                        .lineLimit(1)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(.systemBackground))
+        .cornerRadius(AppTokens.cardCornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
+                .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
+        )
     }
 
     private func refreshContent() async {
@@ -662,5 +691,17 @@ struct ContentListView: View {
     let container = DependencyContainer()
     return NavigationStack {
         ContentListView(repository: container.battleRepository, favoritesStore: container.favoritesStore, settingsStore: container.settingsStore)
+    }
+}
+
+/// Replaces each `ContentListItem.SectionGroup` with its inner sections in place.
+/// iPhone and current iPad layouts render each section vertically as before; a
+/// future iPad multi-column layout can call the grouped path directly instead.
+private func unwrapSectionGroups(_ items: [ContentListItem]) -> [ContentListItem] {
+    items.flatMap { item -> [ContentListItem] in
+        if let group = item as? ContentListItem.SectionGroup {
+            return group.sections as! [ContentListItem]
+        }
+        return [item]
     }
 }

@@ -43,9 +43,10 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 | `Pokemon(id, name, imageUrl, types)` | Pokemon row (favorites, search pinned) | `"pokemon_{id}"` |
 | `Player(id, name)` | Player row (favorites, search pinned) | `"player_{id}"` |
 | `Section(header, items, trailingAction?)` | Grouping container with title and optional trailing action (e.g., `SectionAction.SeeMore` renders "See More" + chevron) | `"section_{header}"` |
+| `SectionGroup(sections)` | Wraps multiple `Section`s so desktop web can render them as a responsive multi-column row. Other platforms flatten via `unwrapSectionGroups()` and render each inner section vertically with no visual change. | `"section_group_{joined headers}"` |
 | `HighlightButtons(buttons)` | Player profile highlight cards (Top Rated / Latest Rated) | `"highlight_buttons"` |
-| `PokemonGrid(pokemon)` | Grid of Pokemon (player profile "Favorite Pokemon", pokemon profile "Top Teammates"). 3 columns on iPhone/Android phone, up to 6 on iPad/Android tablet/desktop web | `"pokemon_grid"` |
-| `StatChipRow(chips)` | Horizontal scrolling row of chips with name+percent and optional image (mobile), FlowRow (desktop web). Used for Top Abilities, Items, Moves, Tera Types. | `"stat_chip_row"` |
+| `PokemonGrid(pokemon)` | Grid of Pokemon (home "Top Pokémon", player profile "Favorite Pokemon"). 3 columns on iPhone/Android phone, up to 6 on iPad/Android tablet/desktop web | `"pokemon_grid"` |
+| `StatChipRow(chips)` | Horizontal scrolling row of chips with name+percent and optional image (mobile), FlowRow (desktop web). Used for Top Abilities, Items, Moves, Tera Types, and pokemon profile "Top Teammates" (chips carry a `pokemonId` and render a Pokemon avatar; tapping navigates to that Pokemon). | `"stat_chip_row"` |
 | `FormatSelector` | Format dropdown rendered as a list item (Home, TopPokemon, Pokemon, Player modes) | `"format_selector"` |
 | `SearchField(query)` | Text input for client-side filtering (TopPokemon mode) | `"search_field"` |
 
@@ -74,7 +75,7 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
 - **Display count on pane toggle**: `ResponsivePokemonGridCard` (in `webApp/.../ui/contentlist/ContentListItemRow.kt`) receives an `availableWidth: Dp` parameter — the current grid-box width (shrinks when the detail pane opens). It uses that to derive the visible tile count and wraps invisible overflow tiles in `AnimatedVisibility(visible = false)` so they fade out during the 300ms pane animation. No network traffic on pane toggle.
 - **Escape the battle grid's cell-pack constraint**: the LazyVerticalGrid uses `GridCells.FixedSize(BATTLE_CARD_MAX_WIDTH)` so a `fullSpan` item's natural max width is `cellCount × 650 + (cellCount−1) × 12`, which leaves unused space on the right. `ResponsivePokemonGridCard` uses a `Modifier.layout` shim that re-measures its child with the parent-provided `availableWidth` (the true grid-box width) but **reports** the grid's original `constraints.maxWidth` as its layout size, so the grid's `Arrangement.Start` still places it at position 0 of the content area while the tiles draw out into the otherwise-unused trailing space.
 - **Hit-testing caveat**: Compose tests pointer events against the placeable's actual (wider) bounds, so tiles drawn beyond `reportedWidth` still receive clicks. This works today but is an implementation detail — if it ever breaks, the symptom would be rightmost tiles becoming unclickable while still visible.
-- **Player "Favorite Pokémon" and Pokemon "Top Teammates"** flow through the same `ResponsivePokemonGridCard` render path and reflow on pane toggle. They do *not* drive `setTopPokemonFetchCount` (that's Home-only) — they just display as many of the already-fetched Pokemon as fit.
+- **Player "Favorite Pokémon"** flows through the same `ResponsivePokemonGridCard` render path and reflows on pane toggle. It does *not* drive `setTopPokemonFetchCount` (that's Home-only) — it just displays as many of the already-fetched Pokemon as fit. Pokemon "Top Teammates" is rendered as a `StatChipRow` with clickable pokemon-avatar chips and does not use `ResponsivePokemonGridCard`.
 - **Tile constants**: `TOP_POKEMON_TILE_WIDTH = 140.dp`, `TOP_POKEMON_TILE_SPACING = 8.dp`, `TOP_POKEMON_MIN_TILES = 3`. The card wraps to its tile content (border follows the rightmost tile's edge).
 - **Mobile web / Android / iOS are unaffected** — they continue using the legacy 3/6-col `PokemonGrid` render in `ContentListItemRow.kt`'s existing branch.
 
@@ -89,15 +90,32 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
 - **Pages 2+**: bare `Battle` items (appended to flat list, no wrapping section)
 
 ### Pokemon mode
-- **Page 1**: Up to 7 items — profile + battles fetched in parallel via `getPokemonProfile(id, formatId)` + `searchMatches(...)`. Profile errors are silently swallowed; page still shows battles.
+- **Page 1**: Up to 3 top-level items — profile + battles fetched in parallel via `getPokemonProfile(id, formatId)` + `searchMatches(...)`. Profile errors are silently swallowed; page still shows battles.
   1. `FormatSelector` — format dropdown (rendered as a centered list item)
-  2. `Section("Top Teammates", [PokemonGrid([...])])` — 3-column grid of top teammates with usage %. Only shown if profile succeeds and has teammates.
-  3. `Section("Top Items", [StatChipRow([...])])` — chip carousel of items with image, name, and usage %.
-  4. `Section("Top Tera Types", [StatChipRow([...])])` — chip carousel of tera types with image, name, and usage %.
-  5. `Section("Top Moves", [StatChipRow([...])])` — chip carousel of moves with usage %. Name + percent only.
-  6. `Section("Top Abilities", [StatChipRow([...])])` — chip carousel of abilities with usage %. Name + percent only.
-  7. `Section("Battles", [...])` — battle results
-  All profile sections are from pokemon profile API (count / matchCount), only shown if data is non-empty.
+  2. `SectionGroup([...])` — wraps the five profile stat sections (below) into a single group so desktop web can lay them out as a responsive 1/2/3-column row. Only emitted when the profile succeeds and contains at least one non-empty stat section. The group contains only non-empty sections — a section is omitted when the profile has no data for it (e.g. formats without tera types skip `Top Tera Types`).
+     - `Section("Top Teammates", [StatChipRow([...])])` — chip row of top teammates with pokemon avatar, name, and usage %. Each chip carries a `pokemonId`; tapping navigates to that Pokemon's page.
+     - `Section("Top Items", [StatChipRow([...])])` — chip row of items with image, name, and usage %.
+     - `Section("Top Tera Types", [StatChipRow([...])])` — chip row of tera types with image, name, and usage %.
+     - `Section("Top Moves", [StatChipRow([...])])` — chip row of moves with usage %. Name + percent only.
+     - `Section("Top Abilities", [StatChipRow([...])])` — chip row of abilities with usage %. Name + percent only.
+  3. `Section("Battles", [...])` — battle results
+  All profile sections are from the pokemon profile API (count / matchCount).
+
+  **Desktop web rendering**: the `SectionGroup` is emitted as one full-span grid item handled by the private `SectionGroupLayout` composable in `webApp/.../ui/contentlist/ContentListPage.kt`. It's a `SubcomposeLayout` that:
+
+  1. Computes a responsive column count from the grid-box content width: `< 900dp` → 1 column, `900..1499dp` → 2 columns, `≥ 1500dp` → 3 columns (capped at `sections.size`).
+  2. Subcomposes each section (header + `StatChipRow` content, wrapped in `SectionGroupItem`) and measures it at the target column width, so the resulting `Placeable` heights reflect real `FlowRow` wrap behavior rather than a chip-count approximation.
+  3. Greedy-packs sections into columns in shared-emission order (Teammates, Items, Tera, Moves, Abilities): each section goes into the column with the smallest cumulative height, with `IntArray.indices.minBy` breaking ties toward the leftmost column. Because the first sections are the tall ones, this naturally places Teammates and Items on row 1 side-by-side, and drops Abilities into whichever column ended up shortest (tie → left). Under the two typical profile shapes:
+     - Wide layout where all stat sections fit in 1–2 chip rows: columns tie after Teammates/Items/Tera/Moves, so Abilities lands in col 0.
+     - Narrow layout where Tera's chips wrap to an extra row: col 0 is genuinely taller, so Abilities lands in col 1.
+  4. Places each section's placeable at its assigned column's `(x, y)` and accumulates `y` with `ContentListItemSpacing` between sections. Columns grow independently (ragged bottom).
+  5. Escapes the battle grid's `FixedSize(650)` cell pack the same way `ResponsivePokemonGridCard` does: measures content at the full grid-box width (`expandedTopPokemonMaxWidth`) but reports `constraints.maxWidth` (the cell-pack width) as the layout size, so the grid places the group at `x = 0` of the content area and any content drawn past the cell pack extends into the unused trailing gutter.
+
+  Per-section loading opacity is applied inside `SectionGroupItem` (`Modifier.alpha(0.5f)` when the section's header is in `loadingSections`), so the architecture supports independently-loading sections in the future even though Pokemon mode currently loads them as a single profile API call.
+
+  **Android / iOS / mobile web**: these platforms call `unwrapSectionGroups()` on `uiState.items` at the rendering boundary, which replaces each `SectionGroup` with its inner sections in place. The existing per-`Section` render path then handles them exactly as before (vertical stacking). Android tablet and iPad multi-column layouts can opt in to rendering the group directly in the future. The pagination-dedup logic in `ContentListLogic.paginate()` uses a recursive `collect()` that walks through both `Section.items` and `SectionGroup.sections` so deduplication keys stay correct regardless of how sections are nested.
+
+  **Edge-to-edge children on compact web**: the `StatChipRow` child of a section has `edgeToEdge = true`. On compact web, the section-children emission loop detects this flag and renders the child via a `Modifier.layout` escape (`escapeGridHorizontalPadding`) instead of wrapping it in `CenteredItem`. The helper re-measures the child at `constraints.maxWidth + 32dp` and places it at `x = -16dp`, which negates the parent `LazyVerticalGrid`'s `padding(horizontal = 16.dp)` so the chip carousel's `LazyRow` scrolls flush to the viewport edges. The layout still reports `constraints.maxWidth` back up so sibling items are unaffected.
 - **Progressive loading**: Initial load uses `loadPokemonPage1()` which handles the two parallel API calls with progressive rendering. If the profile finishes before battles, profile sections are shown immediately with the Battles section header displaying a loading indicator in the sort toggle (`loadingSections = {"Battles"}`). If battles finishes before the profile, the unified loading spinner is maintained until the profile also completes (avoids layout jumpiness). Format change and sort toggle use the standard `fetchContent()` path with section-level loading.
 - **Pages 2+**: bare `Battle` items
 - **Format change**: reloads all profile sections and battles (`loadingSections = {"format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
