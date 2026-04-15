@@ -89,6 +89,7 @@ import com.arcvgc.app.domain.model.appendBattleParam
 import com.arcvgc.app.domain.model.encodeSearchPath
 import com.arcvgc.app.domain.model.encodeTopPokemonPath
 import com.arcvgc.app.domain.model.parseDeepLink
+import com.arcvgc.app.domain.model.PokemonListItem
 import com.arcvgc.app.network.normalizeImageUrl
 import com.arcvgc.app.ui.model.FavoriteContentType
 import kotlinx.browser.window
@@ -273,6 +274,15 @@ fun WebApp() {
         var navStack by navStackState
         val desktopNavStackState = remember { mutableStateOf(listOf<NavEntry>()) }
         var desktopNavStack by desktopNavStackState
+        val usageNestedStackState = remember { mutableStateOf(listOf<NavEntry>()) }
+        var usageNestedStack by usageNestedStackState
+        val usageSelectedPokemonState = remember { mutableStateOf<PokemonListItem?>(null) }
+        var usageSelectedPokemon by usageSelectedPokemonState
+        // One-shot format "push" from Home → See More. The tick increments each
+        // click so UsageDesktopPage's LaunchedEffect fires even when the format
+        // is the same as before, but only applies it once per new click.
+        var usagePendingFormatId by remember { mutableStateOf<Int?>(null) }
+        var usagePendingFormatTick by remember { mutableIntStateOf(0) }
         val historyDepthState = remember { mutableIntStateOf(0) }
         var historyDepth by historyDepthState
         val popStatesToIgnoreState = remember { mutableIntStateOf(0) }
@@ -351,6 +361,19 @@ fun WebApp() {
                         }
                         is DeepLinkResolver.ResolvedLink.TopPokemon -> {
                             selectedTab = 1
+                            val item = resolved.pokemonItem
+                            if (item != null) {
+                                usageSelectedPokemon = item
+                                // Mobile web: also push a Pokemon nav entry so the mobile layout
+                                // navigates to the Pokemon page (same UX as /pokemon/{id}).
+                                val entry = NavEntry.Pokemon(
+                                    id = item.id,
+                                    name = item.name,
+                                    imageUrl = normalizeImageUrl(item.imageUrl),
+                                    typeImageUrls = item.types.mapNotNull { normalizeImageUrl(it.imageUrl) }
+                                )
+                                navStack = navStack + entry
+                            }
                         }
                     }
                     replaceHistoryStateWithPath(path)
@@ -377,6 +400,8 @@ fun WebApp() {
                     navDirectionState.value = NavDirection.BackInstant
                     if (navStackState.value.isNotEmpty()) {
                         navStackState.value = navStackState.value.dropLast(1)
+                    } else if (usageNestedStackState.value.isNotEmpty()) {
+                        usageNestedStackState.value = usageNestedStackState.value.dropLast(1)
                     } else if (desktopNavStackState.value.isNotEmpty()) {
                         desktopNavStackState.value = desktopNavStackState.value.dropLast(1)
                     } else if (searchOverlayState.value != null) {
@@ -393,6 +418,8 @@ fun WebApp() {
             val isNewSearch = searchOverlayParams == null
             searchOverlayParams = params
             desktopNavStack = emptyList()
+            usageNestedStack = emptyList()
+            usageSelectedPokemon = null
             if (isNewSearch) {
                 pushHistoryStateWithPath(encodeSearchPath(params))
                 historyDepth++
@@ -402,10 +429,14 @@ fun WebApp() {
         }
 
         val handleSearchBack: () -> Unit = {
-            val entriesToRemove = minOf(navStack.size + desktopNavStack.size + 1, historyDepth)
+            val entriesToRemove = minOf(
+                navStack.size + desktopNavStack.size + usageNestedStack.size + 1,
+                historyDepth
+            )
             searchOverlayParams = null
             navStack = emptyList()
             desktopNavStack = emptyList()
+            usageNestedStack = emptyList()
             if (entriesToRemove > 0) {
                 popStatesToIgnore++
                 historyGo(-entriesToRemove)
@@ -446,11 +477,40 @@ fun WebApp() {
             }
         }
 
+        val handlePushUsageNestedEntry: (NavEntry) -> Unit = { entry ->
+            usageNestedStack = usageNestedStack + entry
+            pushHistoryStateWithPath(navEntryToPath(entry))
+            historyDepth++
+        }
+
+        val handlePopUsageNestedEntry: () -> Unit = {
+            usageNestedStack = usageNestedStack.dropLast(1)
+            if (historyDepth > 0) {
+                popStatesToIgnore++
+                historyGo(-1)
+                historyDepth--
+            }
+        }
+
+        val handleClearUsageNestedStack: () -> Unit = {
+            val depth = usageNestedStack.size
+            if (depth > 0) {
+                usageNestedStack = emptyList()
+                if (historyDepth >= depth) {
+                    popStatesToIgnore++
+                    historyGo(-depth)
+                    historyDepth -= depth
+                }
+            }
+        }
+
         val handleTabSelected: (Int) -> Unit = { index ->
             selectedTab = index
             searchOverlayParams = null
             navStack = emptyList()
             desktopNavStack = emptyList()
+            usageNestedStack = emptyList()
+            usageSelectedPokemon = null
             deepLinkBattleId = null
             // Mirror tab URL in browser address bar
             val tabPath = when (tabs[index]) {
@@ -523,12 +583,32 @@ fun WebApp() {
                                     tabs = tabs,
                                     selectedTab = selectedTab,
                                     onTabSelected = handleTabSelected,
+                                    onHomeSeeMoreTopPokemon = { fmt ->
+                                        usagePendingFormatId = fmt
+                                        usagePendingFormatTick++
+                                        handleTabSelected(1)
+                                    },
                                     searchOverlayParams = searchOverlayParams,
                                     onSearch = handleSearch,
                                     onSearchBack = handleSearchBack,
                                     desktopNavStack = desktopNavStack,
                                     onPushDesktopEntry = handlePushDesktopEntry,
                                     onPopDesktopEntry = handlePopDesktopEntry,
+                                    usageNestedStack = usageNestedStack,
+                                    usageSelectedPokemon = usageSelectedPokemon,
+                                    usagePendingFormatId = usagePendingFormatId,
+                                    usagePendingFormatTick = usagePendingFormatTick,
+                                    onPushUsageNestedEntry = handlePushUsageNestedEntry,
+                                    onPopUsageNestedEntry = handlePopUsageNestedEntry,
+                                    onClearUsageNestedStack = handleClearUsageNestedStack,
+                                    onUsageSelectedPokemonIdChanged = { fmtId, pokemonId ->
+                                        replaceHistoryStateWithPath(
+                                            encodeTopPokemonPath(
+                                                formatId = fmtId,
+                                                pokemonId = pokemonId
+                                            )
+                                        )
+                                    },
                                     initialBattleId = deepLinkBattleId,
                                     initialFavoritesSubTab = deepLinkFavoritesSubTab
                                 )
@@ -546,12 +626,21 @@ private fun DesktopLayout(
     tabs: List<Tab>,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
+    onHomeSeeMoreTopPokemon: (formatId: Int?) -> Unit,
     searchOverlayParams: SearchParams?,
     onSearch: (SearchParams) -> Unit,
     onSearchBack: () -> Unit,
     desktopNavStack: List<NavEntry>,
     onPushDesktopEntry: (NavEntry) -> Unit,
     onPopDesktopEntry: () -> Unit,
+    usageNestedStack: List<NavEntry>,
+    usageSelectedPokemon: PokemonListItem?,
+    usagePendingFormatId: Int?,
+    usagePendingFormatTick: Int,
+    onPushUsageNestedEntry: (NavEntry) -> Unit,
+    onPopUsageNestedEntry: () -> Unit,
+    onClearUsageNestedStack: () -> Unit,
+    onUsageSelectedPokemonIdChanged: (formatId: Int?, pokemonId: Int?) -> Unit,
     initialBattleId: Int? = null,
     initialFavoritesSubTab: Int? = null
 ) {
@@ -640,13 +729,7 @@ private fun DesktopLayout(
                     onPlayerClick = desktopPlayerClick,
                     initialBattleId = initialBattleId
                 )
-                is NavEntry.TopPokemon -> ContentListPage(
-                    mode = ContentListMode.TopPokemon(formatId = entry.formatId),
-                    onBack = onPopDesktopEntry,
-                    modifier = contentModifier,
-                    onPokemonClick = desktopPokemonClick,
-                    onPlayerClick = desktopPlayerClick
-                )
+                is NavEntry.TopPokemon -> {} // Desktop routes Home "See More" to Tab.Usage
                 is NavEntry.BattleDetail -> {} // Desktop doesn't use BattleDetail entries
             }
         } else if (searchOverlayParams != null) {
@@ -665,14 +748,19 @@ private fun DesktopLayout(
                     modifier = contentModifier,
                     onPokemonClick = desktopPokemonClick,
                     onPlayerClick = desktopPlayerClick,
-                    onTopPokemonClick = { formatId -> onPushDesktopEntry(NavEntry.TopPokemon(formatId)) },
+                    onTopPokemonClick = onHomeSeeMoreTopPokemon,
                     initialBattleId = initialBattleId
                 )
-                Tab.Usage -> ContentListPage(
-                    mode = ContentListMode.TopPokemon(),
-                    modifier = contentModifier,
-                    onPokemonClick = desktopPokemonClick,
-                    onPlayerClick = desktopPlayerClick
+                Tab.Usage -> com.arcvgc.app.ui.contentlist.UsageDesktopPage(
+                    pendingInitialFormatId = usagePendingFormatId,
+                    pendingInitialFormatTick = usagePendingFormatTick,
+                    initialSelectedPokemonId = usageSelectedPokemon?.id,
+                    nestedStack = usageNestedStack,
+                    onPushNestedEntry = onPushUsageNestedEntry,
+                    onPopNestedEntry = onPopUsageNestedEntry,
+                    onClearNestedStack = onClearUsageNestedStack,
+                    onSelectedPokemonChanged = onUsageSelectedPokemonIdChanged,
+                    modifier = contentModifier
                 )
                 Tab.Search -> SearchPage(modifier = contentModifier, onSearch = onSearch)
                 Tab.Favorites -> FavoritesPage(
@@ -686,26 +774,6 @@ private fun DesktopLayout(
             }
         }
     }
-}
-
-private sealed class NavEntry {
-    data class BattleDetail(val request: BattleOverlayRequest) : NavEntry()
-    data class Pokemon(
-        val id: Int,
-        val name: String,
-        val imageUrl: String?,
-        val typeImageUrls: List<String> = emptyList(),
-        val formatId: Int? = null
-    ) : NavEntry()
-    data class Player(val id: Int, val name: String, val formatId: Int? = null) : NavEntry()
-    data class TopPokemon(val formatId: Int? = null) : NavEntry()
-}
-
-private fun navEntryToPath(entry: NavEntry): String = when (entry) {
-    is NavEntry.BattleDetail -> "/battle/${entry.request.battleId}"
-    is NavEntry.Pokemon -> "/pokemon/${entry.id}"
-    is NavEntry.Player -> "/player/${entry.name}"
-    is NavEntry.TopPokemon -> encodeTopPokemonPath(entry.formatId)
 }
 
 @Composable

@@ -120,13 +120,16 @@ fun ContentListPage(
     onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?) -> Unit)? = null,
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null,
     onTopPokemonClick: ((formatId: Int?) -> Unit)? = null,
-    initialBattleId: Int? = null
+    initialBattleId: Int? = null,
+    showToolbarWithoutBack: Boolean = false,
+    mirrorUrl: Boolean = true
 ) {
+    val hasToolbar = onBack != null || showToolbarWithoutBack
     val viewModelKey = when (mode) {
         is ContentListMode.Home -> "content_list_home"
         is ContentListMode.Favorites -> "content_list_favorites_${mode.contentType.name}"
         is ContentListMode.Search -> "content_list_search_${mode.params}"
-        is ContentListMode.Pokemon -> "content_list_pokemon_${mode.pokemonId}"
+        is ContentListMode.Pokemon -> "content_list_pokemon_${mode.pokemonId}_${mode.formatId}"
         is ContentListMode.Player -> "content_list_player_${mode.playerId}_${mode.formatId}"
         is ContentListMode.TopPokemon -> "content_list_top_pokemon_${mode.formatId}"
     }
@@ -184,13 +187,15 @@ fun ContentListPage(
         is ContentListMode.Home -> "/"
         is ContentListMode.TopPokemon -> encodeTopPokemonPath(mode.formatId)
     }
-    LaunchedEffect(selectedBattleId) {
-        val path = if (mode is ContentListMode.Home && selectedBattleId != null) {
-            "/battle/$selectedBattleId"
-        } else {
-            appendBattleParam(modePath, selectedBattleId)
+    if (mirrorUrl) {
+        LaunchedEffect(selectedBattleId) {
+            val path = if (mode is ContentListMode.Home && selectedBattleId != null) {
+                "/battle/$selectedBattleId"
+            } else {
+                appendBattleParam(modePath, selectedBattleId)
+            }
+            replaceHistoryStateWithPath(path)
         }
-        replaceHistoryStateWithPath(path)
     }
     LaunchedEffect(gridState) {
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
@@ -313,7 +318,7 @@ fun ContentListPage(
             ContentListContent(
                 uiState = uiState,
                 header = mode.toHeaderUiModel(),
-                hasToolbar = onBack != null,
+                hasToolbar = hasToolbar,
                 selectedBattleId = null,
                 showWinnerHighlight = showWinnerHighlight,
                 onRetry = viewModel::loadContent,
@@ -403,14 +408,16 @@ fun ContentListPage(
                 modifier = Modifier.fillMaxSize()
             )
 
-            if (onBack != null) {
+            if (hasToolbar) {
                 GradientToolbar(
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
-                            )
+                        if (onBack != null) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
+                            }
                         }
                     },
                     actions = {
@@ -495,7 +502,7 @@ fun ContentListPage(
                         ContentListContent(
                             uiState = uiState,
                             header = mode.toHeaderUiModel(),
-                            hasToolbar = onBack != null,
+                            hasToolbar = hasToolbar,
                             selectedBattleId = selectedBattleId,
                             showWinnerHighlight = showWinnerHighlight,
                             gridState = gridState,
@@ -573,14 +580,16 @@ fun ContentListPage(
                             modifier = Modifier.fillMaxSize()
                         )
 
-                        if (onBack != null) {
+                        if (hasToolbar) {
                             GradientToolbar(
                                 navigationIcon = {
-                                    IconButton(onClick = onBack) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Back"
-                                        )
+                                    if (onBack != null) {
+                                        IconButton(onClick = onBack) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                                contentDescription = "Back"
+                                            )
+                                        }
                                     }
                                 },
                                 actions = {
@@ -770,7 +779,7 @@ private fun ContentListContent(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Top Pok\u00E9mon",
+                                text = "Usage",
                                 style = MaterialTheme.typography.displayMedium,
                                 fontWeight = FontWeight.Bold
                             )

@@ -284,7 +284,18 @@ fun App(deepLink: DeepLink? = null) {
                                 selectedTab = 4
                             }
                             is DeepLinkResolver.ResolvedLink.TopPokemon -> {
-                                selectedTab = 1
+                                val item = resolved.pokemonItem
+                                if (item != null) {
+                                    deepLinkOverlay = ContentListMode.Pokemon(
+                                        pokemonId = item.id,
+                                        name = item.name,
+                                        imageUrl = item.imageUrl,
+                                        typeImageUrl1 = item.types.getOrNull(0)?.imageUrl,
+                                        typeImageUrl2 = item.types.getOrNull(1)?.imageUrl
+                                    )
+                                } else {
+                                    selectedTab = 1
+                                }
                             }
                             null -> {}
                         }

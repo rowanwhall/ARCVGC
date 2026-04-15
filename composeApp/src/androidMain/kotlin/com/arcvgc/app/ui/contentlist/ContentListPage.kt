@@ -508,7 +508,7 @@ private fun ContentListContent(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Top Pok\u00E9mon",
+                                text = "Usage",
                                 style = MaterialTheme.typography.displayMedium,
                                 fontWeight = FontWeight.Bold
                             )

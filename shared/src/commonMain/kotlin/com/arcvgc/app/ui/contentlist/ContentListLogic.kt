@@ -70,7 +70,8 @@ class ContentListLogic(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private var allTopPokemonItems: List<ContentListItem.Pokemon> = emptyList()
+    private val _allTopPokemonItems = MutableStateFlow<List<ContentListItem.Pokemon>>(emptyList())
+    val allTopPokemonItems: StateFlow<List<ContentListItem.Pokemon>> = _allTopPokemonItems.asStateFlow()
     private var topPokemonTeamCount: Int = 0
 
     fun initialize() {
@@ -308,8 +309,9 @@ class ContentListLogic(
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
         if (mode !is ContentListMode.TopPokemon) return
-        val filtered = if (query.isBlank()) allTopPokemonItems
-        else allTopPokemonItems.filter { it.name.contains(query, ignoreCase = true) }
+        val all = _allTopPokemonItems.value
+        val filtered = if (query.isBlank()) all
+        else all.filter { it.name.contains(query, ignoreCase = true) }
         _uiState.update {
             it.copy(items = buildList {
                 add(ContentListItem.FormatSelector)
@@ -592,7 +594,7 @@ class ContentListLogic(
         is ContentListMode.TopPokemon -> {
             val formatDetail = repository.getFormatDetail(_selectedFormatId.value, topPokemonCount = 100)
             topPokemonTeamCount = formatDetail.teamCount
-            allTopPokemonItems = formatDetail.topPokemon.map { pokemon ->
+            val mapped = formatDetail.topPokemon.map { pokemon ->
                 ContentListItem.Pokemon(
                     id = pokemon.id,
                     name = pokemon.name,
@@ -601,14 +603,15 @@ class ContentListLogic(
                     usagePercent = formatUsagePercent(pokemon.count, formatDetail.teamCount)
                 )
             }
+            _allTopPokemonItems.value = mapped
             val items = buildList {
                 add(ContentListItem.FormatSelector)
                 add(ContentListItem.SearchField(""))
-                if (allTopPokemonItems.isNotEmpty()) {
-                    add(ContentListItem.Section("", allTopPokemonItems))
+                if (mapped.isNotEmpty()) {
+                    add(ContentListItem.Section("", mapped))
                 }
             }
-            items to Pagination(1, allTopPokemonItems.size, false)
+            items to Pagination(1, mapped.size, false)
         }
         is ContentListMode.Player -> if (page == 1) coroutineScope {
             val profileDeferred = async { runCatching { repository.getPlayerProfile(m.playerId) } }

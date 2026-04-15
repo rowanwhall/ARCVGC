@@ -13,7 +13,7 @@ sealed class DeepLinkTarget {
     data class Search(val params: SearchQueryParams) : DeepLinkTarget()
     data object SearchTab : DeepLinkTarget()
     data object SettingsTab : DeepLinkTarget()
-    data class TopPokemon(val formatId: Int? = null) : DeepLinkTarget()
+    data class TopPokemon(val formatId: Int? = null, val pokemonId: Int? = null) : DeepLinkTarget()
 }
 
 data class SearchQueryParams(
@@ -70,7 +70,10 @@ fun parseDeepLink(path: String): DeepLink? {
         segments.size == 1 && segments[0] == "settings" ->
             DeepLinkTarget.SettingsTab
         segments.size == 1 && (segments[0] == "top-pokemon" || segments[0] == "usage") ->
-            DeepLinkTarget.TopPokemon(formatId = queryParams["f"]?.toIntOrNull())
+            DeepLinkTarget.TopPokemon(
+                formatId = queryParams["f"]?.toIntOrNull(),
+                pokemonId = queryParams["pokemon"]?.toIntOrNull()
+            )
         // Root path (/) or /?battle=X
         segments.size == 1 && segments[0].isEmpty() ->
             DeepLinkTarget.Home
@@ -216,8 +219,11 @@ fun encodeSearchPath(params: SearchParams): String {
     return "/search?${parts.joinToString("&")}"
 }
 
-fun encodeTopPokemonPath(formatId: Int?): String {
-    return if (formatId != null) "/top-pokemon?f=$formatId" else "/top-pokemon"
+fun encodeTopPokemonPath(formatId: Int?, pokemonId: Int? = null): String {
+    val parts = mutableListOf<String>()
+    if (formatId != null) parts.add("f=$formatId")
+    if (pokemonId != null) parts.add("pokemon=$pokemonId")
+    return if (parts.isEmpty()) "/top-pokemon" else "/top-pokemon?${parts.joinToString("&")}"
 }
 
 fun appendBattleParam(basePath: String, battleId: Int?): String {

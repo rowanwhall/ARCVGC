@@ -93,7 +93,17 @@ final class DependencyContainer: ObservableObject {
             case .settingsTab:
                 pendingDeepLink = .settingsTab
             case .topPokemon(let topPokemon):
-                pendingDeepLink = .topPokemon(formatId: topPokemon.formatId?.int32Value)
+                if let item = topPokemon.pokemonItem {
+                    pendingDeepLink = .pokemon(target: PokemonNavTarget(
+                        id: item.id,
+                        name: item.name,
+                        imageUrl: item.imageUrl,
+                        typeImageUrl1: item.types.first?.imageUrl,
+                        typeImageUrl2: item.types.count > 1 ? item.types[1].imageUrl : nil
+                    ))
+                } else {
+                    pendingDeepLink = .topPokemon(formatId: topPokemon.formatId?.int32Value)
+                }
             }
         }
     }

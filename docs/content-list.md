@@ -117,7 +117,17 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
   3. `Pokemon` items with `usagePercent` — full list filtered by search query
 - **Format change**: reloads from API (`loadingSections = {"format_selector"}`), clears search query
 - **Search filtering**: client-side via `setSearchQuery()`, filters stored Pokemon list by name (case-insensitive), no API call
+- `ContentListLogic.allTopPokemonItems` exposes the unfiltered loaded list as a `StateFlow` so the desktop-web Usage layout can measure left-pane width against the longest name
 - Navigated to from Home page's "See More" button on the "Top Pokemon" section, threading the current format
+
+#### Desktop-web Usage layout
+On the `WindowSizeClass.Expanded` branch, the Usage tab is rendered by `webApp/.../ui/contentlist/UsageDesktopPage.kt` instead of the standard `ContentListPage`. Mobile web, Android, and iOS continue to use the standard `ContentListPage` rendering of TopPokemon mode (single column with type icons).
+
+- **Two-pane master/detail**: a left column pinned to the width of the longest Pokemon name + avatar + usage percent, and a right pane that takes the remaining width.
+- **Left column**: format dropdown, search field (fills column width), then a vertically scrolling list of simplified rows `[avatar][name][usage%]` with no type icons. Width is computed once via `rememberTextMeasurer()` over `allTopPokemonItems` after the catalog loads, sized to fit the longest Pokemon name + avatar + usage percent (and the widest format dropdown display name, whichever is larger). Selected row uses a `primary` border at 2× width. While the catalog is loading the entire pane shows a centered `LoadingIndicator`.
+- **Right pane**: renders a nested `ContentListPage(mode = Pokemon(...))` for the currently-selected Pokemon. The first Pokemon is auto-selected once data is ready. Selecting a different Pokemon from the left list resets the right pane's nested nav stack via `onClearUsageNestedStack`.
+- **Nested navigation**: `WebApp.kt` owns a `usageNestedStack: List<NavEntry>` parallel to `desktopNavStack` (Pokemon/Player drill-downs from inside the right pane). Browser back pops `usageNestedStack` first (before `desktopNavStack`), then `searchOverlayParams`. Battle detail clicks inside the right pane are handled by the nested page's own inline pane, producing a three-pane layout `[Usage list | Pokemon page | Battle detail]` when the viewport is wide enough.
+- **URL mirroring**: the selected Pokemon ID is reflected in the URL as `/top-pokemon?f={formatId}&pokemon={id}` (or `/usage?pokemon={id}` when typed manually). On mobile platforms the same URL navigates directly to `/pokemon/{id}` instead of selecting it on a Usage list — see the Deep Linking section in `docs/navigation.md`.
 
 ## Section Loading & Sort Toggle
 

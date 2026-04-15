@@ -132,13 +132,15 @@ All three platforms support deep links. Every page in the app is addressable via
 | Favorites sub-tab | `/favorites/{type}` | `arcvgc.com/favorites/pokemon` |
 | Search tab | `/search` | `arcvgc.com/search` |
 | Search results | `/search?p=...&f=...&order=...` | see search params below |
-| Usage (Top Pokémon) | `/top-pokemon` or `/usage` (with optional `?f={formatId}`) | `arcvgc.com/top-pokemon?f=5` |
+| Usage (Top Pokémon) | `/top-pokemon` or `/usage` (with optional `?f={formatId}` and `?pokemon={id}`) | `arcvgc.com/usage?f=5&pokemon=150` |
 | Settings | `/settings` | `arcvgc.com/settings` |
 
 **Battle detail as query param:** Any root URL can have `?battle={id}` appended. On all mobile platforms (Android, iOS, mobile web), the `?battle=X` param navigates directly to battle detail, ignoring the root page context. On desktop web, the root page renders in the left pane and the battle detail in the right pane. Examples:
 - `/pokemon/150?battle=42` — Opens battle 42 directly (mobile) or Pokemon page with battle 42 pane (desktop web)
 - `/battle/42` — Legacy format, opens battle 42 directly
 - `/?battle=42` — Opens battle 42 directly
+
+**Usage Pokemon as query param:** `/usage?pokemon={id}` (or `/top-pokemon?pokemon={id}`) selects a specific Pokemon on the right side of the desktop-web Usage layout. On mobile platforms (Android, iOS, mobile web) the same URL navigates directly to the Pokemon page (`/pokemon/{id}`) since they don't have the two-pane Usage layout. The resolver fetches the Pokemon item once and lets each platform decide how to act on it.
 
 **Search query parameters:** Team 1: `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `a` (ability IDs per slot). Team 2: `p2`, `i2`, `t2`, `a2` (same format). General: `f` (format ID), `w` (winner filter: `1`=team1, `2`=team2), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping. Team 2 and winner params are additive — old clients ignore unknown params gracefully.
 

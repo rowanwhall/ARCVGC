@@ -133,7 +133,7 @@ struct ContentListView: View {
 
                     if case .topPokemonHero = header {
                         VStack(spacing: 0) {
-                            Text("Top Pok\u{00E9}mon")
+                            Text("Usage")
                                 .font(.system(size: 34, weight: .bold))
                         }
                         .frame(maxWidth: .infinity)

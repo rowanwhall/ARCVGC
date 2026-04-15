@@ -38,7 +38,7 @@ class DeepLinkResolver(
         data class Search(val params: SearchParams) : ResolvedLink()
         data object SearchTab : ResolvedLink()
         data object SettingsTab : ResolvedLink()
-        data class TopPokemon(val formatId: Int?) : ResolvedLink()
+        data class TopPokemon(val formatId: Int?, val pokemonItem: PokemonListItem? = null) : ResolvedLink()
     }
 
     suspend fun resolve(deepLink: DeepLink): ResolvedLink? = resolve(deepLink.target)
@@ -69,7 +69,15 @@ class DeepLinkResolver(
         is DeepLinkTarget.Search -> resolveSearch(target.params)
         is DeepLinkTarget.SearchTab -> ResolvedLink.SearchTab
         is DeepLinkTarget.SettingsTab -> ResolvedLink.SettingsTab
-        is DeepLinkTarget.TopPokemon -> ResolvedLink.TopPokemon(target.formatId)
+        is DeepLinkTarget.TopPokemon -> {
+            val pokemonItem = target.pokemonId?.let { id ->
+                when (val result = apiService.getPokemonById(id)) {
+                    is NetworkResult.Success -> result.data.toPokemonListItem()
+                    is NetworkResult.Error -> null
+                }
+            }
+            ResolvedLink.TopPokemon(target.formatId, pokemonItem)
+        }
     }
 
     private suspend fun resolveSearch(query: SearchQueryParams): ResolvedLink.Search? {

@@ -177,7 +177,8 @@ fun FormatDropdown(
     formats: List<FormatUiModel>,
     selectedFormatId: Int,
     onFormatSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    fillMaxWidth: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedFormat = formats.find { it.id == selectedFormatId }
@@ -185,6 +186,7 @@ fun FormatDropdown(
     Box(modifier = modifier) {
         Row(
             modifier = Modifier
+                .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)
                 .clickable { expanded = true }
                 .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(SearchButtonCornerRadius))
                 .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -194,7 +196,8 @@ fun FormatDropdown(
             Text(
                 text = selectedFormat?.displayName ?: "Format",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = if (fillMaxWidth) Modifier.weight(1f) else Modifier
             )
             Icon(
                 imageVector = Icons.Default.ArrowDropDown,

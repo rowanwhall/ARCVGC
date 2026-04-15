@@ -263,6 +263,43 @@ class DeepLinkTargetTest {
         assertEquals(5, (result.target as DeepLinkTarget.TopPokemon).formatId)
     }
 
+    @Test
+    fun parseUsagePathWithPokemon() {
+        val result = parseDeepLink("/usage?pokemon=150")!!
+        assertIs<DeepLinkTarget.TopPokemon>(result.target)
+        val target = result.target as DeepLinkTarget.TopPokemon
+        assertNull(target.formatId)
+        assertEquals(150, target.pokemonId)
+    }
+
+    @Test
+    fun parseUsagePathWithFormatAndPokemon() {
+        val result = parseDeepLink("/usage?f=5&pokemon=150")!!
+        val target = result.target as DeepLinkTarget.TopPokemon
+        assertEquals(5, target.formatId)
+        assertEquals(150, target.pokemonId)
+    }
+
+    @Test
+    fun encodeTopPokemonPathWithPokemonRoundTrip() {
+        val encoded = encodeTopPokemonPath(formatId = 5, pokemonId = 150)
+        assertEquals("/top-pokemon?f=5&pokemon=150", encoded)
+        val parsed = parseDeepLink(encoded)!!
+        val target = parsed.target as DeepLinkTarget.TopPokemon
+        assertEquals(5, target.formatId)
+        assertEquals(150, target.pokemonId)
+    }
+
+    @Test
+    fun encodeTopPokemonPathPokemonOnly() {
+        val encoded = encodeTopPokemonPath(formatId = null, pokemonId = 150)
+        assertEquals("/top-pokemon?pokemon=150", encoded)
+        val parsed = parseDeepLink(encoded)!!
+        val target = parsed.target as DeepLinkTarget.TopPokemon
+        assertNull(target.formatId)
+        assertEquals(150, target.pokemonId)
+    }
+
     // Tab deep links
 
     @Test
