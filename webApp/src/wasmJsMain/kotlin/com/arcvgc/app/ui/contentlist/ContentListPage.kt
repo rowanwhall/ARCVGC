@@ -754,7 +754,7 @@ private fun ContentListContent(
             bottom = 16.dp
         ),
         verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing),
-        horizontalArrangement = Arrangement.spacedBy(BATTLE_GRID_SPACING, Alignment.Start),
+        horizontalArrangement = Arrangement.spacedBy(BATTLE_GRID_SPACING, Alignment.CenterHorizontally),
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)
     ) {
         when (val h = header) {
@@ -1074,10 +1074,13 @@ private fun ContentListContent(
                                 // content at its natural width and sizes the header to match,
                                 // so a trailing action (See More / Sort) lands at the content's
                                 // actual right edge — which can extend past the cell pack via
-                                // `ResponsivePokemonGridCard`'s layout escape. The item always
-                                // reports the grid's cell-pack width back up so the grid places
-                                // it at x=0, giving left-aligned content regardless of whether
-                                // content is narrower or wider than the cell pack.
+                                // `ResponsivePokemonGridCard`'s layout escape. The item still
+                                // reports `constraints.maxWidth` back up, but under the grid's
+                                // `CenterHorizontally` arrangement that places the item at the
+                                // cell-pack-centered position, and the header/content are then
+                                // placed at `(reportedWidth − contentWidth) / 2` so they sit
+                                // centered in the cell pack (narrow content) or overflow
+                                // symmetrically into both gutters (wide/layout-escape content).
                                 item(key = topItem.listKey, span = fullSpan) {
                                     SectionContentAlignedHeader(
                                         contentMeasureMaxWidth = expandedTopPokemonMaxWidth,
@@ -1415,19 +1418,32 @@ private fun SectionContentAlignedHeader(
             headerContentSpacing.roundToPx()
         } else 0
 
-        // Always report the grid's full cell-pack width so `LazyVerticalGrid` places
-        // this item at x=0 of the content area (reporting narrower would cause the
-        // grid to center the full-span item within its slot). Placeables place at
-        // their true widths and may draw beyond the reported box into the gutter.
+        // Always report the grid's full cell-pack width. Under the grid's
+        // `CenterHorizontally` arrangement, the grid places this full-span
+        // item at the cell-pack's centered x-position within the grid box.
+        //
+        // Header and content are then placed at `contentX = (reportedWidth −
+        // contentWidth) / 2`. Two cases:
+        //   - Content fits within the cell pack (contentWidth ≤ reportedWidth):
+        //     contentX ≥ 0 — content is centered inside the cell pack, which
+        //     is already centered in the grid box.
+        //   - Content is wider than the cell pack via a layout escape (e.g.
+        //     `ResponsivePokemonGridCard` drawing past the cell-pack width):
+        //     contentX is negative, shifting the content leftward so its
+        //     overflow extends equally into both gutters. Net effect: content
+        //     is visually centered within the full grid-box inner width,
+        //     matching the centered arrangement of the battle cards below.
+        val contentX = (constraints.maxWidth - contentWidth) / 2
+        val headerX = (constraints.maxWidth - headerWidthPx) / 2
         layout(constraints.maxWidth, headerHeight + spacingPx + contentHeight) {
             var y = 0
             headerPlaceables.forEach { placeable ->
-                placeable.place(0, y)
+                placeable.place(headerX, y)
                 y += placeable.height
             }
             y += spacingPx
             contentPlaceables.forEach { placeable ->
-                placeable.place(0, y)
+                placeable.place(contentX, y)
                 y += placeable.height
             }
         }
@@ -1548,41 +1564,69 @@ internal fun computeTopPokemonTileCount(availableWidth: Dp): Int {
 private val BATTLE_GRID_PLACEMENT_SPEC: FiniteAnimationSpec<IntOffset> =
     tween(durationMillis = DETAIL_PANE_ANIM_DURATION_MS, easing = FastOutSlowInEasing)
 
-// Responsive breakpoints for `SectionGroup` column count on desktop web. Content width is
-// the grid's inner display width (`expandedTopPokemonMaxWidth`), which shrinks when the
-// battle detail pane is open. A just-above-compact window lands in the 1-col bucket; a
-// standard laptop lands in 2; a widescreen lands in 3.
-private val SECTION_GROUP_2_COL_MIN_WIDTH = 900.dp
-private val SECTION_GROUP_3_COL_MIN_WIDTH = 1500.dp
+// `SectionGroup` column sizing on desktop web. The column count is derived
+// dynamically from the available width so each column has at least
+// [SECTION_GROUP_COLUMN_MIN_WIDTH] of space to live in, never exceeding the
+// section count (we'd rather leave a 4-section group in 4 visual columns
+// than 3 cols with one column holding two sections). Once col count is
+// chosen, every `SectionGroupItem` is forced to exactly
+// [SECTION_GROUP_ITEM_WIDTH] — narrower than the natural `grid-inner /
+// cols` split — so the packed block sits compressed toward the center with
+// visible gutters on either side instead of each chip list hugging the
+// left of a wider-than-needed column.
+//
+// Content width is the grid's inner display width
+// (`expandedTopPokemonMaxWidth`), which shrinks when the battle detail
+// pane is open.
+private val SECTION_GROUP_COLUMN_MIN_WIDTH = 360.dp
+private val SECTION_GROUP_ITEM_WIDTH = 320.dp
 
-private fun sectionGroupColumnCount(contentWidth: Dp): Int = when {
-    contentWidth >= SECTION_GROUP_3_COL_MIN_WIDTH -> 3
-    contentWidth >= SECTION_GROUP_2_COL_MIN_WIDTH -> 2
-    else -> 1
+private fun sectionGroupColumnCount(contentWidth: Dp, sectionCount: Int): Int {
+    // Max cols that fit at [SECTION_GROUP_COLUMN_MIN_WIDTH] each, solving:
+    //   cols * MIN + (cols − 1) * spacing ≤ contentWidth
+    // → cols ≤ (contentWidth + spacing) / (MIN + spacing)
+    val step = SECTION_GROUP_COLUMN_MIN_WIDTH + ContentListItemSpacing
+    val available = contentWidth + ContentListItemSpacing
+    val maxCols = (available.value / step.value).toInt()
+    return maxCols.coerceIn(1, sectionCount.coerceAtLeast(1))
 }
 
 /**
- * Lays out a [ContentListItem.SectionGroup] as a responsive 1/2/3-column block
- * inside the battle grid's full-span slot.
+ * Lays out a [ContentListItem.SectionGroup] as a responsive multi-column block
+ * inside the battle grid's full-span slot. Column count is derived dynamically
+ * by [sectionGroupColumnCount] (at [SECTION_GROUP_COLUMN_MIN_WIDTH] steps),
+ * capped at `group.sections.size` so a 4-section group gets 4 columns as soon
+ * as the viewport can fit them.
  *
  * Uses [SubcomposeLayout] so each section can be actually composed and measured
- * at the target column width before packing decisions are made. This gives us
- * real rendered heights (including `FlowRow` wrap behavior) instead of the
- * approximations we'd get from counting chips. The sections are then packed
- * greedily into columns — each section (in shared-emission order) goes into the
- * column with the smallest cumulative height, with ties broken toward the
- * leftmost column. Since shared emits in priority order (Teammates, Items, Tera,
- * Moves, Abilities), this naturally places Teammates/Items on row 1 and drops
- * Abilities into whichever column has the most room, with left-first bias on
- * genuine ties.
+ * before packing decisions are made. This gives us real rendered heights
+ * (including `FlowRow` wrap behavior) instead of the approximations we'd get
+ * from counting chips. The sections are then packed greedily into columns —
+ * each section (in shared-emission order) goes into the column with the
+ * smallest cumulative height, with ties broken toward the leftmost column.
+ * Since shared emits in priority order (Teammates, Items, Tera, Moves,
+ * Abilities), this naturally places Teammates/Items on row 1 and drops
+ * Abilities into whichever column has the most room, with left-first bias
+ * on genuine ties.
  *
- * The `reportedWidth` trick mirrors `ResponsivePokemonGridCard`: the grid passes
- * `constraints.maxWidth == cellPackWidth` (e.g. `cols × 650 + gaps`), which is
- * narrower than the true grid-box width. We measure content against the larger
- * `contentMaxWidth` (the grid-box inner width) and report the cell-pack width
- * back up so the grid places this item at `x = 0` of the content area. Placeables
- * beyond the reported box draw into the grid's unused trailing gutter — same
- * hit-testing caveat as `ResponsivePokemonGridCard`.
+ * Each section is forced to exactly [SECTION_GROUP_ITEM_WIDTH] via a
+ * `Modifier.width` on the outer Column in [SectionGroupItem], which is
+ * narrower than the naive `grid-inner / cols` split. The packed block is then
+ * centered within the reported box via `baseX = (reportedWidth −
+ * totalContentWidth) / 2`, so under the grid's `CenterHorizontally`
+ * arrangement the group sits compressed toward the center of the grid box
+ * with visible gutters on either side — rather than spreading out to fill
+ * the full width with empty space between each section's chip list and the
+ * next column.
+ *
+ * The `reportedWidth` stays at `constraints.maxWidth` (the cell-pack width)
+ * so the enclosing grid treats this item like any other full-span item.
+ * When the packed block is narrower than the cell pack, `baseX` is positive
+ * and the block sits centered inside it. When the packed block is wider
+ * than the cell pack (an edge case that shouldn't happen today but would
+ * under very wide viewports with many sections), `baseX` goes negative and
+ * the block overflows symmetrically into both gutters — same hit-testing
+ * caveat as `ResponsivePokemonGridCard`.
  */
 @Composable
 private fun SectionGroupLayout(
@@ -1595,24 +1639,34 @@ private fun SectionGroupLayout(
     onHighlightBattleClick: (Int) -> Unit,
     onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit
 ) {
-    val cols = sectionGroupColumnCount(contentMaxWidth)
-        .coerceAtMost(group.sections.size)
-        .coerceAtLeast(1)
+    val cols = sectionGroupColumnCount(contentMaxWidth, group.sections.size)
     SubcomposeLayout { constraints ->
         val contentMaxWidthPx = contentMaxWidth.roundToPx()
             .coerceAtLeast(constraints.maxWidth)
         val spacingPx = ContentListItemSpacing.roundToPx()
-        val colWidthPx = ((contentMaxWidthPx - (cols - 1) * spacingPx) / cols)
-            .coerceAtLeast(0)
+        // Upper bound on the per-column slot width. Sections are forced to
+        // exactly [SECTION_GROUP_ITEM_WIDTH] via `SectionGroupItem`'s
+        // `Modifier.width`, so the slot max just needs to be ≥ that — use
+        // the item width directly. (The `grid-inner / cols` split is
+        // intentionally not used here: the item width cap is what gives us
+        // the center-compressed layout instead of edge-to-edge fill.)
+        val slotMaxPx = SECTION_GROUP_ITEM_WIDTH.roundToPx()
+        // Loose constraints: min=0 lets sections shrink to the width of their
+        // widest child (inline header or chip FlowRow), instead of padding
+        // out to the full slot. Combined with `SectionGroupItem`'s inline
+        // (non-fillMaxWidth) header, this gives each section its natural
+        // rendered width, which we then use to size the column slot tightly.
         val colConstraints = Constraints(
-            minWidth = colWidthPx,
-            maxWidth = colWidthPx,
+            minWidth = 0,
+            maxWidth = slotMaxPx,
             minHeight = 0,
             maxHeight = Constraints.Infinity
         )
 
-        // Subcompose + measure each section at the target column width so we get
-        // real rendered heights (post-FlowRow-wrap) for packing decisions.
+        // Subcompose + measure each section at the loose column constraint
+        // so we get both real rendered heights (post-FlowRow-wrap) for the
+        // packing decisions below AND real rendered widths for the tight
+        // column-slot sizing below.
         val sectionPlaceables = group.sections.mapIndexed { i, section ->
             subcompose("section_$i") {
                 SectionGroupItem(
@@ -1626,6 +1680,17 @@ private fun SectionGroupLayout(
                 )
             }.map { it.measure(colConstraints) }
         }
+
+        // Uniform column slot = widest section. Keeps all columns aligned
+        // (so stacked sections in the same column share a left edge) while
+        // letting the group as a whole shrink below the naive
+        // `grid-inner / cols` split. `maxOfOrNull` guards against an empty
+        // `group.sections` — the shared data layer only emits a SectionGroup
+        // when at least one non-empty section exists, but defend anyway.
+        val colWidthPx = sectionPlaceables
+            .maxOfOrNull { placeables -> placeables.maxOfOrNull { it.width } ?: 0 }
+            ?.coerceAtLeast(1)
+            ?: SECTION_GROUP_ITEM_WIDTH.roundToPx()
 
         // Greedy shortest-column packing with left-first tiebreak on height.
         // `indices.minBy` returns the leftmost column when heights are tied, so
@@ -1644,10 +1709,19 @@ private fun SectionGroupLayout(
 
         val totalHeight = colHeights.maxOrNull() ?: 0
         val reportedWidth = constraints.maxWidth.coerceAtMost(contentMaxWidthPx)
+        // Total packed block width, tight to the actual content.
+        val totalContentWidth = cols * colWidthPx + (cols - 1) * spacingPx
+        // Center the packed columns horizontally within the reported box.
+        // Under the grid's `CenterHorizontally` arrangement, the full-span
+        // item is placed at the cell-pack-centered position, so a positive
+        // `baseX` shifts the packed block rightward to visually center it
+        // within the grid-box inner width (and a negative baseX lets wider
+        // content overflow symmetrically into both gutters).
+        val baseX = (reportedWidth - totalContentWidth) / 2
 
         layout(reportedWidth, totalHeight) {
             colAssignments.forEachIndexed { colIdx, sectionIndices ->
-                val x = colIdx * (colWidthPx + spacingPx)
+                val x = baseX + colIdx * (colWidthPx + spacingPx)
                 var y = 0
                 sectionIndices.forEachIndexed { innerIdx, sectionIdx ->
                     if (innerIdx > 0) y += spacingPx
@@ -1673,12 +1747,21 @@ private fun SectionGroupItem(
 ) {
     val loadingMod = if (isLoading) Modifier.alpha(0.5f) else Modifier
     Column(
+        modifier = Modifier.width(SECTION_GROUP_ITEM_WIDTH),
         verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing)
     ) {
+        // Inline header (not the shared `SectionHeader`) so it doesn't call
+        // `fillMaxWidth()` — the enclosing Column is measured at a loose
+        // constraint by `SectionGroupLayout` so each section can shrink to
+        // its natural content width. A `fillMaxWidth` header would force
+        // every section to the full column-slot width, defeating the
+        // per-section shrinking this layout relies on.
         if (section.header.isNotEmpty()) {
-            SectionHeader(
-                title = section.header,
-                isLoading = isLoading
+            Text(
+                text = section.header,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
         Column(modifier = loadingMod) {
