@@ -465,14 +465,18 @@ fun ContentListPage(
             // in independently, filling the empty space beside the narrowed grid.
             detailPaneState.targetState = selectedBattleId != null
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                // Derive the battle-card cell width from the **full** window width, not
+                // the grid-box width. The value is stable across pane-open/close so only
+                // the column count changes during the transition, not the card size.
+                val battleCardCellWidth = computeBattleCardCellWidth(maxWidth)
                 // Dynamically size the pane so grid + 1dp divider + pane == maxWidth exactly.
-                // On wide viewports, the pane gets its full DETAIL_PANEL_MAX_WIDTH and the grid
-                // takes the rest. On narrow viewports (< ~1611dp), we shrink the pane and hold
-                // the grid at BATTLE_CARD_MAX_WIDTH so a battle card still fits in 1 column.
-                val panePostWidth = (maxWidth - BATTLE_CARD_MAX_WIDTH - 1.dp)
+                // On wide viewports the pane gets its full DETAIL_PANEL_MAX_WIDTH and the grid
+                // takes the rest. On narrow viewports we shrink the pane and hold the grid at
+                // `battleCardCellWidth` so a battle card still fits in 1 column.
+                val panePostWidth = (maxWidth - battleCardCellWidth - 1.dp)
                     .coerceIn(0.dp, DETAIL_PANEL_MAX_WIDTH)
                 val gridWidthWhenPaneOpen = (maxWidth - panePostWidth - 1.dp)
-                    .coerceAtLeast(BATTLE_CARD_MAX_WIDTH)
+                    .coerceAtLeast(battleCardCellWidth)
 
                 // Top Pokémon row — escape the battle grid's FixedSize(650) cell-pack
                 // constraint so the row extends to the full grid box edge.
@@ -582,6 +586,7 @@ fun ContentListPage(
                                 if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
                             },
                             expandedTopPokemonMaxWidth = topPokemonDisplayMaxWidth,
+                            battleCardCellWidth = battleCardCellWidth,
                             modifier = Modifier.fillMaxSize()
                         )
 
@@ -681,6 +686,7 @@ private fun ContentListContent(
     onHighlightBattleClick: (Int) -> Unit = {},
     onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit = {},
     expandedTopPokemonMaxWidth: Dp = 0.dp,
+    battleCardCellWidth: Dp = BATTLE_CARD_DEFAULT_WIDTH,
     searchParams: SearchParams? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     sortOrder: String? = null,
@@ -741,7 +747,7 @@ private fun ContentListContent(
     val fullSpan: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
 
     LazyVerticalGrid(
-        columns = GridCells.FixedSize(BATTLE_CARD_MAX_WIDTH),
+        columns = GridCells.FixedSize(battleCardCellWidth),
         state = gridState,
         contentPadding = PaddingValues(
             top = topPadding,
@@ -1026,7 +1032,7 @@ private fun ContentListContent(
                                                 .animateItem(
                                                     placementSpec = BATTLE_GRID_PLACEMENT_SPEC
                                                 )
-                                                .widthIn(max = BATTLE_CARD_MAX_WIDTH)
+                                                .widthIn(max = battleCardCellWidth)
                                                 .fillMaxWidth()
                                                 .then(loadingMod)
                                                 .then(
@@ -1192,7 +1198,7 @@ private fun ContentListContent(
                                 .animateItem(
                                     placementSpec = BATTLE_GRID_PLACEMENT_SPEC
                                 )
-                                .widthIn(max = BATTLE_CARD_MAX_WIDTH)
+                                .widthIn(max = battleCardCellWidth)
                                 .fillMaxWidth()
                                 .then(
                                     if (isSelected) {
@@ -1428,9 +1434,98 @@ private fun SectionContentAlignedHeader(
     }
 }
 
-private val BATTLE_CARD_MAX_WIDTH = 620.dp
+// Battle card sizing (desktop web).
+//
+// `DEFAULT` is the natural designed width and the fallback used for compact mobile
+// layouts and any viewport too narrow for multi-column. On wider viewports the cell
+// width is derived from the window width at discrete column-count breakpoints, so
+// cards grow within `[MIN, MAX]` to fill the available space instead of leaving a
+// fixed 620dp column with dead gutter to the right.
+//
+// The derivation keys on **total window width**, not the grid-box width that
+// shrinks when the detail pane opens. That way the cell width is stable across
+// pane-open/close transitions — only the column count changes, so the individual
+// card size doesn't snap mid-animation.
+private val BATTLE_CARD_MIN_WIDTH = 560.dp
+private val BATTLE_CARD_DEFAULT_WIDTH = 620.dp
+// Upper bound on the dynamically-grown cell width. Named "GROWN_MAX" rather
+// than "MAX" because this isn't a universal ceiling — narrow viewports still
+// produce cards at [BATTLE_CARD_DEFAULT_WIDTH] (or smaller on sub-2-col
+// viewports via the fallback path). This constant only bounds how far cards
+// grow past default when a wide viewport has surplus space to distribute.
+private val BATTLE_CARD_GROWN_MAX_WIDTH = 780.dp
 private val BATTLE_GRID_SPACING = 12.dp
+// LazyVerticalGrid's horizontal contentPadding (16.dp × 2). Subtracted when
+// converting a window width into the space available for battle-card cells.
+private val BATTLE_GRID_HORIZONTAL_PADDING = 32.dp
+
+// Minimum detail-pane width at which `BattleDetailContent`'s `PlayerTeamSection`
+// fits 3 Pokemon cards per row in each team card. Derivation:
+//   - Section applies `fillMaxWidth().padding(horizontal = 16.dp)`, so the
+//     BoxWithConstraints inside sees `maxWidth = paneWidth − 32`.
+//   - Inside, `availableForCards = maxWidth − innerPadding × 2 = maxWidth − 32`.
+//   - 3 cols requires `(availableForCards + 12) / 292 ≥ 3`, i.e.
+//     `availableForCards ≥ 864` → `paneWidth ≥ 928`.
+// Battle-card growth is capped so opening the pane leaves at least this much
+// room beside the grid — otherwise wider battle cards would squeeze the pane
+// below the 3-pokemon-per-row threshold.
+private val DETAIL_PANEL_PREFERRED_MIN_WIDTH = 928.dp
+
 internal const val DETAIL_PANE_ANIM_DURATION_MS = 300
+
+/**
+ * Picks the desired battle-card column count for a given window width. Uses
+ * [BATTLE_CARD_DEFAULT_WIDTH] as the per-column minimum so cards never drop
+ * below the designed width just to squeeze in another column.
+ */
+private fun desiredBattleColumns(windowWidth: Dp): Int {
+    // N columns fit when `N * stepWidth - spacing + padding ≤ windowWidth`,
+    // i.e. `N ≤ (windowWidth - padding + spacing) / stepWidth`. The `+ spacing`
+    // is the inverse of "N columns need only N−1 spacings between them", so it
+    // cancels the trailing spacing that `stepWidth * N` over-counts.
+    val stepWidth = BATTLE_CARD_DEFAULT_WIDTH + BATTLE_GRID_SPACING
+    val available = (windowWidth - BATTLE_GRID_HORIZONTAL_PADDING + BATTLE_GRID_SPACING)
+        .coerceAtLeast(0.dp)
+    val raw = (available.value / stepWidth.value).toInt()
+    return raw.coerceAtLeast(1)
+}
+
+/**
+ * Derives the battle-card cell width from the full window width. Passed to
+ * `GridCells.FixedSize` so the grid fits [desiredBattleColumns] columns exactly,
+ * with each column sized to fill the available width within [[BATTLE_CARD_MIN_WIDTH],
+ * [BATTLE_CARD_GROWN_MAX_WIDTH]].
+ *
+ * Narrow viewports (below the 2-column breakpoint) return the default width so
+ * compact mobile layouts behave exactly like before the dynamic sizing was added.
+ *
+ * When the card would otherwise grow past [BATTLE_CARD_DEFAULT_WIDTH], it is
+ * further capped so the detail pane retains at least [DETAIL_PANEL_PREFERRED_MIN_WIDTH]
+ * room when open — keeping 3-pokemon-per-row pokemon in each team card. The
+ * cap floor is pinned at the default width so this only shrinks cards relative
+ * to their unconstrained growth; cards never drop *below* the default just to
+ * buy pane width, which avoids a visible card-width jolt when resizing through
+ * the threshold where the cap first becomes relevant.
+ */
+private fun computeBattleCardCellWidth(windowWidth: Dp): Dp {
+    val twoColMinWidth = BATTLE_CARD_DEFAULT_WIDTH * 2 +
+        BATTLE_GRID_SPACING +
+        BATTLE_GRID_HORIZONTAL_PADDING
+    if (windowWidth < twoColMinWidth) return BATTLE_CARD_DEFAULT_WIDTH
+    val cols = desiredBattleColumns(windowWidth)
+    val interCardSpacing = BATTLE_GRID_SPACING * (cols - 1)
+    val available = (windowWidth - BATTLE_GRID_HORIZONTAL_PADDING - interCardSpacing)
+        .coerceAtLeast(0.dp)
+    val natural = (available / cols).coerceIn(BATTLE_CARD_MIN_WIDTH, BATTLE_CARD_GROWN_MAX_WIDTH)
+
+    if (natural <= BATTLE_CARD_DEFAULT_WIDTH) return natural
+    // `− 1.dp` matches the 1dp VerticalDivider the expanded branch places
+    // between the grid and the detail pane, so `grid + divider + pane` sums to
+    // exactly `windowWidth` when the pane is open.
+    val paneReservedCap = (windowWidth - DETAIL_PANEL_PREFERRED_MIN_WIDTH - 1.dp)
+        .coerceAtLeast(BATTLE_CARD_DEFAULT_WIDTH)
+    return natural.coerceAtMost(paneReservedCap)
+}
 
 internal val TOP_POKEMON_TILE_WIDTH = 140.dp
 internal val TOP_POKEMON_TILE_SPACING = 8.dp
