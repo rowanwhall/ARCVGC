@@ -119,7 +119,8 @@ internal val BATTLE_GRID_PLACEMENT_SPEC: FiniteAnimationSpec<IntOffset> =
 // endregion
 
 // region: Top Pokémon tile sizing
-internal val TOP_POKEMON_TILE_WIDTH = 140.dp
+internal val TOP_POKEMON_TILE_MIN_WIDTH = 120.dp
+internal val TOP_POKEMON_TILE_MAX_WIDTH = 160.dp
 internal val TOP_POKEMON_TILE_SPACING = 8.dp
 internal const val TOP_POKEMON_MIN_TILES = 3
 // Outer padding of the Top Pokémon card (`cardInnerPadding × 2`), subtracted when
@@ -127,10 +128,32 @@ internal const val TOP_POKEMON_MIN_TILES = 3
 // `ResponsivePokemonGridCard.cardInnerPadding`.
 internal val TOP_POKEMON_CARD_INNER_PADDING_TOTAL = 24.dp
 
-internal fun computeTopPokemonTileCount(availableWidth: Dp): Int {
-    val tile = (TOP_POKEMON_TILE_WIDTH + TOP_POKEMON_TILE_SPACING).value
-    val raw = ((availableWidth.value + TOP_POKEMON_TILE_SPACING.value) / tile).toInt()
+/**
+ * Actual rendered width of the battle-card cluster (all columns + inter-column
+ * gaps), which is narrower than the grid box when the grid is centered. The Top
+ * Pokémon card sizes itself to match this so both sections align visually.
+ */
+internal fun computeBattleGridRenderedWidth(
+    gridBoxWidth: Dp,
+    battleCardCellWidth: Dp
+): Dp {
+    val available = (gridBoxWidth - BATTLE_GRID_HORIZONTAL_PADDING + BATTLE_GRID_SPACING)
+        .coerceAtLeast(0.dp)
+    val cols = (available.value / (battleCardCellWidth + BATTLE_GRID_SPACING).value)
+        .toInt().coerceAtLeast(1)
+    return battleCardCellWidth * cols + BATTLE_GRID_SPACING * (cols - 1)
+}
+
+internal fun computeTopPokemonTileCount(innerWidth: Dp): Int {
+    val tile = (TOP_POKEMON_TILE_MIN_WIDTH + TOP_POKEMON_TILE_SPACING).value
+    val raw = ((innerWidth.value + TOP_POKEMON_TILE_SPACING.value) / tile).toInt()
     return raw.coerceAtLeast(TOP_POKEMON_MIN_TILES)
+}
+
+internal fun computeTopPokemonTileWidth(innerWidth: Dp, tileCount: Int): Dp {
+    if (tileCount <= 0) return TOP_POKEMON_TILE_MIN_WIDTH
+    return ((innerWidth - TOP_POKEMON_TILE_SPACING * (tileCount - 1)) / tileCount)
+        .coerceIn(TOP_POKEMON_TILE_MIN_WIDTH, TOP_POKEMON_TILE_MAX_WIDTH)
 }
 // endregion
 

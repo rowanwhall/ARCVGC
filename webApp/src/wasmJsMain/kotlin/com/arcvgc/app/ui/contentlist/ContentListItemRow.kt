@@ -255,13 +255,12 @@ internal fun ResponsivePokemonGridCard(
     pokemon: List<ContentListItem.PokemonGridItem>,
     onPokemonClick: (ContentListItem.PokemonGridItem) -> Unit,
     availableWidth: Dp,
-    modifier: Modifier = Modifier
+    tileCount: Int,
+    modifier: Modifier = Modifier,
+    tileWidth: Dp = TOP_POKEMON_TILE_MIN_WIDTH
 ) {
-    // Computed from the parent-provided availableWidth (full grid-box width, not the
-    // battle grid's cell-packed fullSpan width). Subtract card padding (12.dp × 2).
     val cardInnerPadding = 12.dp
-    val innerWidth = (availableWidth - cardInnerPadding * 2).coerceAtLeast(0.dp)
-    val fitCount = computeTopPokemonTileCount(innerWidth).coerceAtMost(pokemon.size)
+    val fitCount = tileCount.coerceAtMost(pokemon.size)
     // Escape the LazyVerticalGrid's FixedSize(650) cell-pack max width: re-measure
     // the child with our larger target constraint, but *report* the grid's original
     // maxWidth so the grid's horizontal arrangement still places us start-aligned at
@@ -304,7 +303,7 @@ internal fun ResponsivePokemonGridCard(
                     Surface(
                         onClick = { onPokemonClick(item) },
                         color = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.width(TOP_POKEMON_TILE_WIDTH)
+                        modifier = Modifier.width(tileWidth)
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             FillPokemonAvatar(

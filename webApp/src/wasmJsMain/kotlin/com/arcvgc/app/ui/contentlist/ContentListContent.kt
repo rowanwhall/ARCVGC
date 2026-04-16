@@ -128,6 +128,9 @@ internal fun ContentListContent(
     val searchQuery = formatState.searchQuery
     val battleCardCellWidth = gridConfig.battleCardCellWidth
     val expandedTopPokemonMaxWidth = gridConfig.expandedTopPokemonMaxWidth
+    val topPokemonTargetWidth = gridConfig.topPokemonTargetWidth
+    val topPokemonTileCount = gridConfig.topPokemonTileCount
+    val topPokemonTileWidth = gridConfig.topPokemonTileWidth
 
     val shouldPaginate by remember {
         derivedStateOf {
@@ -403,7 +406,9 @@ internal fun ContentListContent(
                                                             ResponsivePokemonGridCard(
                                                                 pokemon = child.pokemon,
                                                                 onPokemonClick = onPokemonGridClick,
-                                                                availableWidth = expandedTopPokemonMaxWidth
+                                                                availableWidth = if (topPokemonTargetWidth > 0.dp) topPokemonTargetWidth else expandedTopPokemonMaxWidth,
+                                                                tileCount = topPokemonTileCount,
+                                                                tileWidth = topPokemonTileWidth
                                                             )
                                                         } else {
                                                             ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)

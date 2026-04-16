@@ -414,25 +414,32 @@ fun ContentListPage(
                 val gridWidthWhenPaneOpen = (maxWidth - panePostWidth - 1.dp)
                     .coerceAtLeast(battleCardCellWidth)
 
-                // Top Pokémon row — escape the battle grid's FixedSize(650) cell-pack
-                // constraint so the row extends to the full grid box edge.
-                // Fetch capacity is based on the pane-closed viewport width so closing the
-                // pane has enough tiles ready without a re-fetch.
                 val gridOuterPadding = 32.dp  // LazyVerticalGrid horizontal padding 16.dp × 2
-                val topPokemonFetchMaxWidth =
-                    (maxWidth - gridOuterPadding - TOP_POKEMON_CARD_INNER_PADDING_TOTAL)
+
+                // Top Pokémon row — sized to match the battle grid's rendered width so
+                // both sections align visually.
+                // Fetch capacity uses the pane-closed rendered width so closing the pane
+                // has enough tiles ready without a re-fetch.
+                val paneClosedGridRendered =
+                    computeBattleGridRenderedWidth(maxWidth, battleCardCellWidth)
+                val paneClosedInner =
+                    (paneClosedGridRendered - TOP_POKEMON_CARD_INNER_PADDING_TOTAL)
                         .coerceAtLeast(0.dp)
-                val paneClosedTileCapacity = computeTopPokemonTileCount(topPokemonFetchMaxWidth)
-                // Only Home mode actually re-fetches on this call — Pokemon/Player modes'
-                // setTopPokemonFetchCount short-circuits on the non-Home guard. Running the
-                // effect for them is harmless.
+                val paneClosedTileCapacity = computeTopPokemonTileCount(paneClosedInner)
                 LaunchedEffect(paneClosedTileCapacity) {
                     viewModel.setTopPokemonFetchCount(paneClosedTileCapacity)
                 }
-                // Current display width — shrinks when the detail pane opens. Passed to
-                // ResponsivePokemonGridCard so it reflows its visible tile count.
+
                 val currentGridBoxWidth =
                     if (selectedBattleId != null) gridWidthWhenPaneOpen else maxWidth
+                val currentGridRendered =
+                    computeBattleGridRenderedWidth(currentGridBoxWidth, battleCardCellWidth)
+                val currentInner =
+                    (currentGridRendered - TOP_POKEMON_CARD_INNER_PADDING_TOTAL)
+                        .coerceAtLeast(0.dp)
+                val currentTileCount = computeTopPokemonTileCount(currentInner)
+                val currentTileWidth = computeTopPokemonTileWidth(currentInner, currentTileCount)
+
                 val topPokemonDisplayMaxWidth =
                     (currentGridBoxWidth - gridOuterPadding).coerceAtLeast(0.dp)
                 Row(modifier = Modifier.fillMaxSize()) {
@@ -456,7 +463,10 @@ fun ContentListPage(
                             formatState = contentListFormatState,
                             gridConfig = ContentListGridConfig(
                                 battleCardCellWidth = battleCardCellWidth,
-                                expandedTopPokemonMaxWidth = topPokemonDisplayMaxWidth
+                                expandedTopPokemonMaxWidth = topPokemonDisplayMaxWidth,
+                                topPokemonTargetWidth = currentGridRendered,
+                                topPokemonTileCount = currentTileCount,
+                                topPokemonTileWidth = currentTileWidth
                             ),
                             gridState = gridState,
                             modifier = Modifier.fillMaxSize()

@@ -59,4 +59,7 @@ internal data class ContentListFormatState(
 internal data class ContentListGridConfig(
     val battleCardCellWidth: Dp = BATTLE_CARD_DEFAULT_WIDTH,
     val expandedTopPokemonMaxWidth: Dp = 0.dp,
+    val topPokemonTargetWidth: Dp = 0.dp,
+    val topPokemonTileCount: Int = TOP_POKEMON_MIN_TILES,
+    val topPokemonTileWidth: Dp = TOP_POKEMON_TILE_MIN_WIDTH,
 )
