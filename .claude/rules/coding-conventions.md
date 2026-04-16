@@ -96,6 +96,23 @@ The app uses **Orbitron** (variable weight, OFL license) as its brand font for "
 - `IconButton` refresh instead of `PullToRefreshBox`; no `BackHandler` — back buttons are visible UI elements
 - `TeamPreviewTab` uses fixed 280.dp card width instead of `LocalConfiguration.current.screenWidthDp`
 
+## Web ContentListPage File Organization
+
+The web `ContentListPage` is split across five files in `webApp/.../ui/contentlist/`:
+
+| File | Responsibility | When to edit |
+|------|---------------|-------------|
+| `ContentListPage.kt` | Page orchestration — navigation, state hoisting, master-detail layout, `buildCallbacks()` factory, URL mirroring | Adding navigation targets, changing compact/expanded branching, modifying battle detail pane behavior |
+| `ContentListContent.kt` | Grid builder body, section emission, `emitPageHeader`/`emitFormatSelectorItem`/`emitSearchFieldItem` subscopes, layout helpers (`CenteredItem`, `SectionGroupLayout`, `SectionContentAlignedHeader`) | Adding new header types, new section rendering, new grid item types |
+| `ContentListContentParams.kt` | `ContentListCallbacks`, `ContentListFormatState`, `ContentListGridConfig` data classes | Adding new callbacks or format/grid state that `ContentListContent` needs |
+| `ContentListLayout.kt` | Pure layout math + dp constants — battle card sizing, top pokemon tiles, section group columns, animation specs | Tuning responsive breakpoints, card widths, column counts |
+| `ContentListNavigation.kt` | `derivedFormatId()` helper (mode → formatId mapping) | Adding new `ContentListMode` variants |
+
+**Key patterns:**
+- **Data class grouping for composable params**: When a composable has >12 parameters, group related params into data classes (callbacks, state, config). Use defaults that encode "disabled" so callers only pass what they need. See `ContentListContentParams.kt`.
+- **LazyGridScope subscope extensions**: Extract repeated or large grid `item {}` / `items {}` blocks as `LazyGridScope.emitXxx()` extension functions. Keep them `private` in the file that uses them.
+- **`buildCallbacks()` factory**: When Compact and Expanded branches wire identical callbacks except for 1–2 handlers, hoist the common wiring into a factory function that takes only the differing handlers as parameters.
+
 ## ContentListItem Rendering
 
 `ContentListPage` / `ContentListView` renders items heterogeneously via sealed class dispatch — `ContentListItem.Battle` -> shared `BattleCard` (Android/Web) / `BattleCardView` (iOS), `ContentListItem.Pokemon` -> `PokemonListRow` / `SimplePokemonRow`, `ContentListItem.Player` -> shared `PlayerListRow` (Android/Web) / player `HStack` (iOS). iOS uses SKIE `onEnum(of:)` for pattern matching.

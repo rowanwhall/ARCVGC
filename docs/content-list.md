@@ -67,7 +67,7 @@ This is a key behavioral detail: several modes compose a richer page 1 with sect
 
 #### Responsive Top Pokémon row (desktop web only)
 
-On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentListPage.kt`, the Home page's Top Pokémon section is rendered as a single horizontal row of Pokémon tiles that fills the available grid-box width and is centered within the grid box (via `SectionContentAlignedHeader`'s `(reportedWidth − contentWidth) / 2` placement), instead of the centered 900dp-capped card used on mobile/iPad.
+On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentListContent.kt`, the Home page's Top Pokémon section is rendered as a single horizontal row of Pokémon tiles that fills the available grid-box width and is centered within the grid box (via `SectionContentAlignedHeader`'s `(reportedWidth − contentWidth) / 2` placement), instead of the centered 900dp-capped card used on mobile/iPad.
 
 - **Fetch count**: `ContentListLogic.setTopPokemonFetchCount(count)` (Home mode only) targets the count that would fill the **pane-closed** viewport width, so when the user closes the battle detail pane, enough tiles are already cached to fill the wider row without a re-fetch. The count is computed from `maxWidth - gridOuterPadding - TOP_POKEMON_CARD_INNER_PADDING_TOTAL` via `computeTopPokemonTileCount()` and passed via `LaunchedEffect` from inside the expanded branch's `BoxWithConstraints`.
 - **Monotonic fetch-above-peak**: `setTopPokemonFetchCount` tracks `topPokemonFetchedCount` (the largest count actually fetched so far) separately from `topPokemonFetchCount` (the current target). Decrease-then-increase-below-peak does not re-fetch — the UI re-slices the already-loaded list. Only a count strictly greater than `topPokemonFetchedCount` triggers a network round-trip.
@@ -101,7 +101,7 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
   3. `Section("Battles", [...])` — battle results
   All profile sections are from the pokemon profile API (count / matchCount).
 
-  **Desktop web rendering**: the `SectionGroup` is emitted as one full-span grid item handled by the private `SectionGroupLayout` composable in `webApp/.../ui/contentlist/ContentListPage.kt`. It's a `SubcomposeLayout` that:
+  **Desktop web rendering**: the `SectionGroup` is emitted as one full-span grid item handled by the private `SectionGroupLayout` composable in `webApp/.../ui/contentlist/ContentListContent.kt`. It's a `SubcomposeLayout` that:
 
   1. Computes column count dynamically via `sectionGroupColumnCount(contentWidth, sections.size)` — the max number of columns that fit at `SECTION_GROUP_COLUMN_MIN_WIDTH (360dp)` steps, capped at `sections.size` so a 4-section group gets 4 columns as soon as the grid-inner width permits (roughly ≥ 1488dp). The old fixed `< 900 / 900..1499 / ≥ 1500` breakpoints were replaced by this formula.
   2. Subcomposes each section (inline `Text` header + `StatChipRow` content, wrapped in `SectionGroupItem`) and measures it at a loose column constraint (`min=0, max=slotMaxPx`). `SectionGroupItem` forces its outer `Column` to a fixed width via `Modifier.width(SECTION_GROUP_ITEM_WIDTH)` (320dp), and uses an inline `Text` header — not the shared `SectionHeader` — so it can actually shrink below the col-slot width (the shared `SectionHeader` calls `fillMaxWidth()`).
@@ -314,4 +314,4 @@ Home mode waits for app config before loading (needs default format ID):
 | Shared tests | `shared/src/commonTest/.../ui/contentlist/ContentListLogicTest.kt` |
 | Android | `composeApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt`, `SearchFilterChips.kt`, `ContentListItemRow.kt`, `ContentListComponents.kt` |
 | iOS | `iosApp/iosApp/ContentListView.swift`, `ContentListViewModel.swift`, `SearchFilterChipsView.swift`, `ContentListComponents.swift` |
-| Web | `webApp/.../ui/contentlist/ContentListPage.kt`, `ContentListViewModel.kt`, `SearchFilterChips.kt`, `ContentListItemRow.kt`, `ContentListComponents.kt` |
+| Web | `webApp/.../ui/contentlist/ContentListPage.kt`, `ContentListContent.kt`, `ContentListContentParams.kt`, `ContentListLayout.kt`, `ContentListNavigation.kt`, `ContentListViewModel.kt`, `SearchFilterChips.kt`, `ContentListItemRow.kt`, `ContentListComponents.kt` |
