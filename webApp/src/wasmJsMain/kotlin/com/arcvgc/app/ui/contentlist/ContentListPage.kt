@@ -203,14 +203,12 @@ fun ContentListPage(
     val isCompact = windowSizeClass == WindowSizeClass.Compact
     val battleOverlay = LocalBattleOverlay.current
 
-    // When the detail pane opens/closes, scroll to the target battle immediately.
-    // The grid Box width snaps to its narrow (post-animation) value in the same composition
-    // that sets selectedBattleId, so by the time this effect runs the grid is already in its
-    // final column count (typically 1-col). scrollToItem(N) therefore sticks without being
-    // clobbered to a row-start by the next measure pass.
+    // When the detail pane opens/closes, scroll to the target battle.
+    // On open: scroll to the selected battle so it's visible next to the detail pane.
+    // On close: restore to wherever the user was last looking (firstVisibleItemIndex),
+    // which naturally tracks both auto-scrolls from battle selection and manual scrolling.
     val hasFormats = (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) && sortedFormats.isNotEmpty()
     val hasSearchQuery = mode is ContentListMode.TopPokemon
-    var lastSelectedBattleId by remember { mutableStateOf<Int?>(null) }
     var paneWasOpen by remember { mutableStateOf(false) }
     val detailPaneState = remember { MutableTransitionState(initialBattleId != null) }
     val scrollOffsetPx = with(LocalDensity.current) { BATTLE_GRID_SPACING.roundToPx() }
@@ -218,7 +216,6 @@ fun ContentListPage(
         if (isCompact) return@LaunchedEffect
         val battleId = selectedBattleId
         if (battleId != null) {
-            lastSelectedBattleId = battleId
             val index = computeBattleItemIndex(
                 mode.toHeaderUiModel(), uiState, battleId,
                 hasFormats = hasFormats,
@@ -234,19 +231,9 @@ fun ContentListPage(
             }
             paneWasOpen = true
         } else if (paneWasOpen) {
-            val closeBattleId = lastSelectedBattleId
-            if (closeBattleId != null) {
-                val index = computeBattleItemIndex(
-                    mode.toHeaderUiModel(), uiState, closeBattleId,
-                    hasFormats = hasFormats,
-                    hasSearchQuery = hasSearchQuery,
-                    windowSizeClass = windowSizeClass
-                )
-                if (index != null) {
-                    gridState.animateScrollToItem(index, scrollOffsetPx)
-                }
-            }
-            lastSelectedBattleId = null
+            val restoreIndex = gridState.firstVisibleItemIndex
+            val restoreOffset = gridState.firstVisibleItemScrollOffset
+            gridState.animateScrollToItem(restoreIndex, restoreOffset)
             paneWasOpen = false
         }
     }
