@@ -838,7 +838,10 @@ private fun SectionGroupLayout(
         val contentMaxWidthPx = contentMaxWidth.roundToPx()
             .coerceAtLeast(constraints.maxWidth)
         val spacingPx = ContentListItemSpacing.roundToPx()
+        val availablePerColPx =
+            (contentMaxWidthPx + spacingPx) / cols.coerceAtLeast(1) - spacingPx
         val slotMaxPx = SECTION_GROUP_ITEM_WIDTH.roundToPx()
+            .coerceAtMost(availablePerColPx.coerceAtLeast(1))
         val colConstraints = Constraints(
             minWidth = 0,
             maxWidth = slotMaxPx,

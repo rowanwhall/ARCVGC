@@ -164,16 +164,16 @@ internal fun computeTopPokemonTileWidth(innerWidth: Dp, tileCount: Int): Dp {
 // [SECTION_GROUP_COLUMN_MIN_WIDTH] of space to live in, never exceeding the
 // section count (we'd rather leave a 4-section group in 4 visual columns
 // than 3 cols with one column holding two sections). Once col count is
-// chosen, every `SectionGroupItem` is forced to exactly
-// [SECTION_GROUP_ITEM_WIDTH] — narrower than the natural `grid-inner /
-// cols` split — so the packed block sits compressed toward the center with
-// visible gutters on either side instead of each chip list hugging the
-// left of a wider-than-needed column.
+// chosen, every `SectionGroupItem` is capped at [SECTION_GROUP_ITEM_WIDTH]
+// (or the available-per-column width when space is tight) so the packed
+// block sits compressed toward the center with visible gutters on either
+// side instead of each chip list hugging the left of a wider-than-needed
+// column.
 //
 // Content width is the grid's inner display width
 // (`expandedTopPokemonMaxWidth`), which shrinks when the battle detail
 // pane is open.
-internal val SECTION_GROUP_COLUMN_MIN_WIDTH = 360.dp
+internal val SECTION_GROUP_COLUMN_MIN_WIDTH = 280.dp
 internal val SECTION_GROUP_ITEM_WIDTH = 320.dp
 
 internal fun sectionGroupColumnCount(contentWidth: Dp, sectionCount: Int): Int {

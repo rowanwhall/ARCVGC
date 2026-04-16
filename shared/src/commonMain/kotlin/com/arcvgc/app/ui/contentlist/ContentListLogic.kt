@@ -50,7 +50,11 @@ class ContentListLogic(
     val uiState: StateFlow<ContentListUiState> = _uiState.asStateFlow()
 
     private val _sortOrder = MutableStateFlow(
-        if (mode is ContentListMode.Search) (mode as ContentListMode.Search).params.orderBy else "time"
+        when (mode) {
+            is ContentListMode.Search -> (mode as ContentListMode.Search).params.orderBy
+            is ContentListMode.Pokemon -> "rating"
+            else -> "time"
+        }
     )
     val sortOrder: StateFlow<String> = _sortOrder.asStateFlow()
 

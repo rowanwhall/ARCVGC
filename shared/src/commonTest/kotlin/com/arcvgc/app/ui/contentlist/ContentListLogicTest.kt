@@ -841,17 +841,17 @@ class ContentListLogicTest {
         logic.initialize()
         testScope.advanceUntilIdle()
 
-        assertEquals("time", logic.sortOrder.value)
-
-        logic.toggleSortOrder()
-        testScope.advanceUntilIdle()
-
         assertEquals("rating", logic.sortOrder.value)
 
         logic.toggleSortOrder()
         testScope.advanceUntilIdle()
 
         assertEquals("time", logic.sortOrder.value)
+
+        logic.toggleSortOrder()
+        testScope.advanceUntilIdle()
+
+        assertEquals("rating", logic.sortOrder.value)
     }
 
     @Test
@@ -876,7 +876,7 @@ class ContentListLogicTest {
         // Should have made a new call with page=1
         assertTrue(fakeRepo.searchMatchesCalls.isNotEmpty())
         assertEquals(1, fakeRepo.searchMatchesCalls.last().page)
-        assertEquals("rating", fakeRepo.searchMatchesCalls.last().orderBy)
+        assertEquals("time", fakeRepo.searchMatchesCalls.last().orderBy)
         assertEquals(1, logic.uiState.value.currentPage)
     }
 
