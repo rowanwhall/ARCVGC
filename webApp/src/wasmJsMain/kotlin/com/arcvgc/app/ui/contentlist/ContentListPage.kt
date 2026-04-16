@@ -401,8 +401,6 @@ fun ContentListPage(
                 val gridWidthWhenPaneOpen = (maxWidth - panePostWidth - 1.dp)
                     .coerceAtLeast(battleCardCellWidth)
 
-                val gridOuterPadding = 32.dp  // LazyVerticalGrid horizontal padding 16.dp × 2
-
                 // Top Pokémon row — sized to match the battle grid's rendered width so
                 // both sections align visually.
                 // Fetch capacity uses the pane-closed rendered width so closing the pane
@@ -419,16 +417,20 @@ fun ContentListPage(
 
                 val currentGridBoxWidth =
                     if (selectedBattleId != null) gridWidthWhenPaneOpen else maxWidth
+                val topPokemonDisplayMaxWidth =
+                    (currentGridBoxWidth - BATTLE_GRID_HORIZONTAL_PADDING).coerceAtLeast(0.dp)
+                // Cap to the grid content area so the pokemon grid doesn't overflow
+                // when the detail pane is open and the battle card width exceeds the
+                // content area (battle cards are centered by the grid arrangement,
+                // but fullSpan items like the pokemon grid are not).
                 val currentGridRendered =
                     computeBattleGridRenderedWidth(currentGridBoxWidth, battleCardCellWidth)
+                        .coerceAtMost(topPokemonDisplayMaxWidth)
                 val currentInner =
                     (currentGridRendered - TOP_POKEMON_CARD_INNER_PADDING_TOTAL)
                         .coerceAtLeast(0.dp)
                 val currentTileCount = computeTopPokemonTileCount(currentInner)
                 val currentTileWidth = computeTopPokemonTileWidth(currentInner, currentTileCount)
-
-                val topPokemonDisplayMaxWidth =
-                    (currentGridBoxWidth - gridOuterPadding).coerceAtLeast(0.dp)
                 Row(modifier = Modifier.fillMaxSize()) {
                     Box(
                         modifier = if (selectedBattleId != null) {
