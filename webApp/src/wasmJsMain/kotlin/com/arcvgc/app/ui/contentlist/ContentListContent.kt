@@ -190,7 +190,7 @@ internal fun ContentListContent(
 
         when {
             uiState.isLoading -> {
-                item(key = "loading", span = fullSpan) {
+                animatedItem(key = "loading", span = fullSpan) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -203,7 +203,7 @@ internal fun ContentListContent(
             }
 
             uiState.error != null && uiState.items.isEmpty() -> {
-                item(key = "error", span = fullSpan) {
+                animatedItem(key = "error", span = fullSpan) {
                     ErrorView(
                         onRetry = onRetry,
                         modifier = Modifier
@@ -222,7 +222,7 @@ internal fun ContentListContent(
                         emitSearchFieldItem(topItem, searchQuery, onSearchQueryChanged, fullSpan)
                     }
                 }
-                item(key = "empty", span = fullSpan) {
+                animatedItem(key = "empty", span = fullSpan) {
                     EmptyView(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -240,7 +240,7 @@ internal fun ContentListContent(
                 topLevelItems.forEach { topItem ->
                     when (topItem) {
                         is ContentListItem.SectionGroup -> {
-                            item(key = topItem.listKey, span = fullSpan) {
+                            animatedItem(key = topItem.listKey, span = fullSpan) {
                                 SectionGroupLayout(
                                     group = topItem,
                                     loadingSections = uiState.loadingSections,
@@ -261,7 +261,7 @@ internal fun ContentListContent(
                                 topItem.items.isNotEmpty() &&
                                 topItem.items.all { it is ContentListItem.Pokemon || it is ContentListItem.Player }
                             if (isFlowTileSection) {
-                                item(key = topItem.listKey, span = fullSpan) {
+                                animatedItem(key = topItem.listKey, span = fullSpan) {
                                     val loadingMod = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
                                     Column(modifier = Modifier.fillMaxWidth()) {
                                         if (topItem.header.isNotEmpty()) {
@@ -299,7 +299,7 @@ internal fun ContentListContent(
                                 }
                             } else if (needsIndividualCells || windowSizeClass != WindowSizeClass.Expanded) {
                                 if (topItem.header.isNotEmpty()) {
-                                    item(key = topItem.listKey, span = fullSpan) {
+                                    animatedItem(key = topItem.listKey, span = fullSpan) {
                                         if (windowSizeClass == WindowSizeClass.Expanded) {
                                             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                                                 Box(modifier = Modifier.width(maxWidth)) {
@@ -326,7 +326,7 @@ internal fun ContentListContent(
                                     }
                                 }
                                 if (topItem.items.isEmpty() && !isLoadingSection) {
-                                    item(key = "${topItem.listKey}_empty", span = fullSpan) {
+                                    animatedItem(key = "${topItem.listKey}_empty", span = fullSpan) {
                                         CenteredItem {
                                             EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
                                         }
@@ -345,7 +345,7 @@ internal fun ContentListContent(
                                             onClick = { onItemClick(battle) },
                                             modifier = Modifier
                                                 .animateItem(
-                                                    placementSpec = BATTLE_GRID_PLACEMENT_SPEC
+                                                    placementSpec = GRID_ITEM_PLACEMENT_SPEC
                                                 )
                                                 .widthIn(max = battleCardCellWidth)
                                                 .fillMaxWidth()
@@ -364,7 +364,7 @@ internal fun ContentListContent(
                                     }
                                 } else {
                                     topItem.items.forEach { child ->
-                                        item(key = child.listKey, span = fullSpan) {
+                                        animatedItem(key = child.listKey, span = fullSpan) {
                                             if (child.edgeToEdge) {
                                                 Box(modifier = loadingMod.escapeGridHorizontalPadding()) {
                                                     ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
@@ -378,7 +378,7 @@ internal fun ContentListContent(
                                     }
                                 }
                             } else {
-                                item(key = topItem.listKey, span = fullSpan) {
+                                animatedItem(key = topItem.listKey, span = fullSpan) {
                                     SectionContentAlignedHeader(
                                         contentMeasureMaxWidth = expandedTopPokemonMaxWidth,
                                         header = if (topItem.header.isNotEmpty()) {
@@ -430,7 +430,7 @@ internal fun ContentListContent(
                         is ContentListItem.Battle -> {
                             // Top-level battles (pages 2+) — emitted below
                         }
-                        else -> item(key = topItem.listKey, span = fullSpan) {
+                        else -> animatedItem(key = topItem.listKey, span = fullSpan) {
                             CenteredItem {
                                 ContentListItemRow(topItem, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
                             }
@@ -452,7 +452,7 @@ internal fun ContentListContent(
                             onClick = { onItemClick(battle) },
                             modifier = Modifier
                                 .animateItem(
-                                    placementSpec = BATTLE_GRID_PLACEMENT_SPEC
+                                    placementSpec = GRID_ITEM_PLACEMENT_SPEC
                                 )
                                 .widthIn(max = battleCardCellWidth)
                                 .fillMaxWidth()
@@ -471,7 +471,7 @@ internal fun ContentListContent(
                 }
 
                 if (uiState.isPaginating) {
-                    item(key = "paginating", span = fullSpan) {
+                    animatedItem(key = "paginating", span = fullSpan) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -508,7 +508,7 @@ private fun LazyGridScope.emitPageHeader(
     when (val h = header) {
         is ContentListHeaderUiModel.None -> {}
         is ContentListHeaderUiModel.HomeHero -> {
-            item(key = "home_hero", span = fullSpan) {
+            animatedItem(key = "home_hero", span = fullSpan) {
                 CenteredItem(modifier = Modifier.padding(top = 24.dp)) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -531,7 +531,7 @@ private fun LazyGridScope.emitPageHeader(
             }
         }
         is ContentListHeaderUiModel.TopPokemonHero -> {
-            item(key = "top_pokemon_hero", span = fullSpan) {
+            animatedItem(key = "top_pokemon_hero", span = fullSpan) {
                 CenteredItem(modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -550,7 +550,7 @@ private fun LazyGridScope.emitPageHeader(
             // TODO: Replace with branded favorites asset when ready
         }
         is ContentListHeaderUiModel.SearchFilters -> {
-            item(key = "search_filters", span = fullSpan) {
+            animatedItem(key = "search_filters", span = fullSpan) {
                 if (windowSizeClass == WindowSizeClass.Expanded) {
                     SearchFilterChips(
                         filters = h,
@@ -569,7 +569,7 @@ private fun LazyGridScope.emitPageHeader(
             }
         }
         is ContentListHeaderUiModel.PokemonHero -> {
-            item(key = "pokemon_hero", span = fullSpan) {
+            animatedItem(key = "pokemon_hero", span = fullSpan) {
                 CenteredItem {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -598,7 +598,7 @@ private fun LazyGridScope.emitPageHeader(
             }
         }
         is ContentListHeaderUiModel.PlayerHero -> {
-            item(key = "player_hero", span = fullSpan) {
+            animatedItem(key = "player_hero", span = fullSpan) {
                 CenteredItem {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -629,7 +629,7 @@ private fun LazyGridScope.emitFormatSelectorItem(
     fullSpan: LazyGridItemSpanScope.() -> GridItemSpan
 ) {
     if (formats.isEmpty() || onFormatSelected == null) return
-    item(key = item.listKey, span = fullSpan) {
+    animatedItem(key = item.listKey, span = fullSpan) {
         CenteredItem {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -659,7 +659,7 @@ private fun LazyGridScope.emitSearchFieldItem(
     fullSpan: LazyGridItemSpanScope.() -> GridItemSpan
 ) {
     if (onSearchQueryChanged == null) return
-    item(key = item.listKey, span = fullSpan) {
+    animatedItem(key = item.listKey, span = fullSpan) {
         CenteredItem {
             OutlinedTextField(
                 value = searchQuery,
@@ -742,6 +742,22 @@ internal fun computeBattleItemIndex(
         }
     }
     return null
+}
+
+// ---------------------------------------------------------------------------
+// Grid helpers
+// ---------------------------------------------------------------------------
+
+private fun LazyGridScope.animatedItem(
+    key: Any?,
+    span: (LazyGridItemSpanScope.() -> GridItemSpan)? = null,
+    content: @Composable () -> Unit
+) {
+    item(key = key, span = span) {
+        Box(modifier = Modifier.animateItem(placementSpec = GRID_ITEM_PLACEMENT_SPEC)) {
+            content()
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

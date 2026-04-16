@@ -110,11 +110,8 @@ internal fun computeBattleCardCellWidth(windowWidth: Dp): Dp {
     return natural.coerceAtMost(paneReservedCap)
 }
 
-// Placement spec for battle card reflow when the detail pane opens/closes.
-// Tweak this to play with animation feel — swap for spring(), tween() with different
-// easings/durations, or keyframes. IntOffset generic because grid animateItem() animates
-// the item's (x, y) placement in the viewport.
-internal val BATTLE_GRID_PLACEMENT_SPEC: FiniteAnimationSpec<IntOffset> =
+// Placement spec for grid item reflow when the detail pane opens/closes.
+internal val GRID_ITEM_PLACEMENT_SPEC: FiniteAnimationSpec<IntOffset> =
     tween(durationMillis = DETAIL_PANE_ANIM_DURATION_MS, easing = FastOutSlowInEasing)
 // endregion
 
