@@ -59,7 +59,6 @@ struct SearchFiltersData {
 enum ContentListHeader {
     case none
     case homeHero
-    case topPokemonHero
     case favoritesHero
     case pokemonHero(name: String, imageUrl: String?, typeImageUrls: [String])
     case playerHero(name: String)
@@ -77,7 +76,7 @@ enum ContentListHeader {
         case .player(_, let name, _):
             self = .playerHero(name: name)
         case .topPokemon:
-            self = .topPokemonHero
+            self = .none
         case .search(let params):
             let team1Chips = params.filters.enumerated().map { index, slot in
                 SearchFilterChipData(

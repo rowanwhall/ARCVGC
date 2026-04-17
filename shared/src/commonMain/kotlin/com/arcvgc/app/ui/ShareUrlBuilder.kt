@@ -23,7 +23,7 @@ fun shareUrlForMode(mode: ContentListMode, battleId: Int?): String {
             FavoriteContentType.Players -> "/favorites/players"
         }
         is ContentListMode.Search -> encodeSearchPath(mode.params)
-        is ContentListMode.TopPokemon -> "/top-pokemon"
+        is ContentListMode.TopPokemon -> "/usage"
     }
     return "$SHARE_BASE_URL${appendBattleParam(basePath, battleId)}"
 }

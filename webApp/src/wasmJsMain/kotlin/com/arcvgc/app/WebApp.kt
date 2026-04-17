@@ -515,7 +515,7 @@ fun WebApp() {
             // Mirror tab URL in browser address bar
             val tabPath = when (tabs[index]) {
                 Tab.Home -> "/"
-                Tab.Usage -> "/top-pokemon"
+                Tab.Usage -> "/usage"
                 Tab.Search -> "/search"
                 Tab.Favorites -> "/favorites/battles"
                 Tab.Settings -> "/settings"

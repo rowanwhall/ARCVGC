@@ -108,6 +108,11 @@ struct ContentListView: View {
         )
     }
 
+    private var isTopPokemonMode: Bool {
+        if case .topPokemon = mode { return true }
+        return false
+    }
+
     var body: some View {
         let header = ContentListHeader(mode: viewModel.mode)
 
@@ -129,17 +134,6 @@ struct ContentListView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 16)
                         .padding(.top, 24)
-                    }
-
-                    if case .topPokemonHero = header {
-                        VStack(spacing: 0) {
-                            Text("Usage")
-                                .font(.system(size: 34, weight: .bold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 24)
-                        .padding(.bottom, 8)
                     }
 
                     // TODO: Replace with branded favorites asset when ready
@@ -216,7 +210,7 @@ struct ContentListView: View {
                     } else if !hasContent {
                         // Render non-content items (e.g. FormatSelector) before the empty view
                         ForEach(Array(viewModel.state.items.enumerated()), id: \.element.listKey) { _, item in
-                            if !item.isContentItem {
+                            if !item.isContentItem && !isTopPokemonMode {
                                 switch onEnum(of: item) {
                                 case .formatSelector:
                                     if !formatItems.isEmpty {
@@ -294,7 +288,7 @@ struct ContentListView: View {
                                         .padding(.horizontal, child.edgeToEdge ? 0 : 16)
                                 }
                             case .formatSelector:
-                                if !formatItems.isEmpty {
+                                if !formatItems.isEmpty && !isTopPokemonMode {
                                     let isLoadingFormat = viewModel.state.loadingSections.contains("format_selector")
                                     HStack(spacing: 8) {
                                         Spacer()
@@ -312,22 +306,24 @@ struct ContentListView: View {
                                     .padding(.horizontal, 16)
                                 }
                             case .searchField:
-                                TextField("", text: Binding(
-                                    get: { viewModel.searchQuery },
-                                    set: { viewModel.setSearchQuery($0) }
-                                ), prompt: Text("Search Pok\u{00E9}mon").foregroundColor(Color(.secondaryLabel)))
-                                    .focused($isSearchFieldFocused)
-                                    .outlinedTextFieldStyle(isFocused: isSearchFieldFocused)
-                                    .overlay(alignment: .trailing) {
-                                        if !viewModel.searchQuery.isEmpty {
-                                            Button { viewModel.setSearchQuery("") } label: {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .foregroundColor(Color(.tertiaryLabel))
+                                if !isTopPokemonMode {
+                                    TextField("", text: Binding(
+                                        get: { viewModel.searchQuery },
+                                        set: { viewModel.setSearchQuery($0) }
+                                    ), prompt: Text("Search Pok\u{00E9}mon").foregroundColor(Color(.secondaryLabel)))
+                                        .focused($isSearchFieldFocused)
+                                        .outlinedTextFieldStyle(isFocused: isSearchFieldFocused)
+                                        .overlay(alignment: .trailing) {
+                                            if !viewModel.searchQuery.isEmpty {
+                                                Button { viewModel.setSearchQuery("") } label: {
+                                                    Image(systemName: "xmark.circle.fill")
+                                                        .foregroundColor(Color(.tertiaryLabel))
+                                                }
+                                                .padding(.trailing, 8)
                                             }
-                                            .padding(.trailing, 8)
                                         }
-                                    }
-                                    .padding(.horizontal, 16)
+                                        .padding(.horizontal, 16)
+                                }
                             default:
                                 contentItemView(item)
                                     .padding(.horizontal, item.edgeToEdge ? 0 : 16)
@@ -346,10 +342,26 @@ struct ContentListView: View {
                     }
                 }
                 .padding(.top, header.hasPokemonHero ? 4 : 0)
-                .padding(.bottom, 16)
+                .padding(.bottom, isTopPokemonMode ? AppTokens.usageBottomBarReservedHeight : 16)
             }
             .refreshable {
                 await refreshContent()
+            }
+            .overlay(alignment: .bottom) {
+                if isTopPokemonMode {
+                    UsageBottomBar(
+                        formats: formatItems,
+                        selectedFormatId: viewModel.selectedFormatId,
+                        onFormatSelected: { viewModel.selectFormat($0) },
+                        isLoadingFormat: viewModel.state.loadingSections.contains("format_selector"),
+                        searchQuery: Binding(
+                            get: { viewModel.searchQuery },
+                            set: { viewModel.setSearchQuery($0) }
+                        )
+                    )
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 4)
+                }
             }
         }
         .navigationTitle("")

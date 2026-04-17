@@ -69,7 +69,7 @@ fun parseDeepLink(path: String): DeepLink? {
             DeepLinkTarget.SearchTab
         segments.size == 1 && segments[0] == "settings" ->
             DeepLinkTarget.SettingsTab
-        segments.size == 1 && (segments[0] == "top-pokemon" || segments[0] == "usage") ->
+        segments.size == 1 && segments[0] == "usage" ->
             DeepLinkTarget.TopPokemon(
                 formatId = queryParams["f"]?.toIntOrNull(),
                 pokemonId = queryParams["pokemon"]?.toIntOrNull()
@@ -223,7 +223,7 @@ fun encodeTopPokemonPath(formatId: Int?, pokemonId: Int? = null): String {
     val parts = mutableListOf<String>()
     if (formatId != null) parts.add("f=$formatId")
     if (pokemonId != null) parts.add("pokemon=$pokemonId")
-    return if (parts.isEmpty()) "/top-pokemon" else "/top-pokemon?${parts.joinToString("&")}"
+    return if (parts.isEmpty()) "/usage" else "/usage?${parts.joinToString("&")}"
 }
 
 fun appendBattleParam(basePath: String, battleId: Int?): String {

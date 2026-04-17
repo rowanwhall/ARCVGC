@@ -49,6 +49,6 @@ sealed class ContentListMode {
             name, imageUrl, listOfNotNull(typeImageUrl1, typeImageUrl2)
         )
         is Player -> ContentListHeaderUiModel.PlayerHero(playerName)
-        is TopPokemon -> ContentListHeaderUiModel.TopPokemonHero
+        is TopPokemon -> ContentListHeaderUiModel.None
     }
 }

@@ -202,6 +202,13 @@ fun ContentListPage(
     val windowSizeClass = LocalWindowSizeClass.current
     val isCompact = windowSizeClass == WindowSizeClass.Compact
     val battleOverlay = LocalBattleOverlay.current
+    val isTopPokemonCompact = isCompact && mode is ContentListMode.TopPokemon
+    val filteredUiState = remember(uiState, isTopPokemonCompact) {
+        if (!isTopPokemonCompact) uiState
+        else uiState.copy(items = uiState.items.filter {
+            it !is ContentListItem.FormatSelector && it !is ContentListItem.SearchField
+        })
+    }
 
     // When the detail pane opens/closes, scroll to the target battle.
     // On open: scroll to the selected battle so it's visible next to the detail pane.
@@ -309,7 +316,7 @@ fun ContentListPage(
         if (isCompact) {
             // Compact: full-width list, battle detail hoisted to MobileLayout via LocalBattleOverlay
             ContentListContent(
-                uiState = uiState,
+                uiState = filteredUiState,
                 callbacks = buildCallbacks(
                     onBattleItemClick = { battle ->
                         if (battleOverlay != null) {
@@ -332,8 +339,21 @@ fun ContentListPage(
                 showWinnerHighlight = showWinnerHighlight,
                 formatState = contentListFormatState,
                 gridState = gridState,
+                extraBottomPadding = if (isTopPokemonCompact) UsageBottomBarReservedHeight else 0.dp,
                 modifier = Modifier.fillMaxSize()
             )
+
+            if (isTopPokemonCompact) {
+                UsageBottomBar(
+                    formats = sortedFormats,
+                    selectedFormatId = selectedFormatId,
+                    onFormatSelected = viewModel::selectFormat,
+                    isLoadingFormat = "format_selector" in uiState.loadingSections,
+                    searchQuery = searchQuery,
+                    onSearchQueryChanged = viewModel::setSearchQuery,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
 
             if (hasToolbar) {
                 GradientToolbar(

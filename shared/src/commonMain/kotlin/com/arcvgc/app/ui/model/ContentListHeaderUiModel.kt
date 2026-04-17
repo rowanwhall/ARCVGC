@@ -6,7 +6,6 @@ sealed class ContentListHeaderUiModel {
     data object None : ContentListHeaderUiModel()
     data object HomeHero : ContentListHeaderUiModel()
     data object FavoritesHero : ContentListHeaderUiModel()
-    data object TopPokemonHero : ContentListHeaderUiModel()
     data class PokemonHero(val name: String, val imageUrl: String?, val typeImageUrls: List<String> = emptyList()) : ContentListHeaderUiModel()
     data class PlayerHero(val name: String) : ContentListHeaderUiModel()
     data class SearchFilters(

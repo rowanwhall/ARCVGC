@@ -109,7 +109,8 @@ internal fun ContentListContent(
     showWinnerHighlight: Boolean = true,
     formatState: ContentListFormatState = ContentListFormatState(),
     gridConfig: ContentListGridConfig = ContentListGridConfig(),
-    gridState: LazyGridState = rememberLazyGridState()
+    gridState: LazyGridState = rememberLazyGridState(),
+    extraBottomPadding: Dp = 0.dp
 ) {
     val onRetry = callbacks.onRetry
     val onPaginate = callbacks.onPaginate
@@ -180,7 +181,7 @@ internal fun ContentListContent(
         state = gridState,
         contentPadding = PaddingValues(
             top = topPadding,
-            bottom = 16.dp
+            bottom = 16.dp + extraBottomPadding
         ),
         verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing),
         horizontalArrangement = Arrangement.spacedBy(BATTLE_GRID_SPACING, Alignment.CenterHorizontally),
@@ -525,22 +526,6 @@ private fun LazyGridScope.emitPageHeader(
                             fontFamily = BrandFontFamily,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-            }
-        }
-        is ContentListHeaderUiModel.TopPokemonHero -> {
-            animatedItem(key = "top_pokemon_hero", span = fullSpan) {
-                CenteredItem(modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Usage",
-                            style = MaterialTheme.typography.displayMedium,
-                            fontWeight = FontWeight.Bold
                         )
                     }
                 }

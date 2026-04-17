@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
@@ -55,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.shared.Res
@@ -85,6 +85,7 @@ import com.arcvgc.app.ui.shareBattleUrl
 import com.arcvgc.app.ui.shareUrlForMode
 import com.arcvgc.app.ui.tokens.AppTokens.ContentListItemSpacing
 import com.arcvgc.app.ui.tokens.AppTokens.BrandFontFamily
+import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.HeroLogoHeight
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.PlayerChipHorizontalPadding
@@ -135,6 +136,13 @@ fun ContentListPage(
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
 
     val statusBarHeight = if (consumeTopInsets) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
+    val isTopPokemonMode = mode is ContentListMode.TopPokemon
+    val filteredUiState = remember(uiState, isTopPokemonMode) {
+        if (!isTopPokemonMode) uiState
+        else uiState.copy(items = uiState.items.filter {
+            it !is ContentListItem.FormatSelector && it !is ContentListItem.SearchField
+        })
+    }
 
     if (onBack != null && selectedBattleId == null && pokemonNavTarget == null && playerNavTarget == null && topPokemonFormatId == null) {
         BackHandler { onBack() }
@@ -146,7 +154,8 @@ fun ContentListPage(
             .background(MaterialTheme.colorScheme.surface)
     ) {
         ContentListContent(
-            uiState = uiState,
+            uiState = filteredUiState,
+            extraBottomPadding = if (isTopPokemonMode) UsageBottomBarReservedHeight else 0.dp,
             header = mode.toHeaderUiModel(),
             hasToolbar = onBack != null,
             consumeTopInsets = consumeTopInsets,
@@ -223,6 +232,18 @@ fun ContentListPage(
             onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
             onSeeMore = { topPokemonFormatId = viewModel.selectedFormatId.value }
         )
+
+        if (isTopPokemonMode) {
+            UsageBottomBar(
+                formats = sortedFormats,
+                selectedFormatId = selectedFormatId,
+                onFormatSelected = viewModel::selectFormat,
+                isLoadingFormat = "format_selector" in uiState.loadingSections,
+                searchQuery = searchQuery,
+                onSearchQueryChanged = viewModel::setSearchQuery,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
 
         if (onBack != null) {
             GradientToolbar(
@@ -432,7 +453,8 @@ private fun ContentListContent(
     onFormatSelected: ((Int) -> Unit)? = null,
     searchQuery: String = "",
     onSearchQueryChanged: ((String) -> Unit)? = null,
-    onSeeMore: (() -> Unit)? = null
+    onSeeMore: (() -> Unit)? = null,
+    extraBottomPadding: Dp = 0.dp
 ) {
     val listState = rememberLazyListState()
 
@@ -469,7 +491,7 @@ private fun ContentListContent(
             state = listState,
             contentPadding = PaddingValues(
                 top = topPadding,
-                bottom = 16.dp
+                bottom = 16.dp + extraBottomPadding
             ),
             verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing),
             modifier = Modifier.fillMaxSize()
@@ -496,23 +518,6 @@ private fun ContentListContent(
                                 fontFamily = BrandFontFamily,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-                is ContentListHeaderUiModel.TopPokemonHero -> {
-                    item(key = "top_pokemon_hero") {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 24.dp, bottom = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Usage",
-                                style = MaterialTheme.typography.displayMedium,
-                                fontWeight = FontWeight.Bold
                             )
                         }
                     }

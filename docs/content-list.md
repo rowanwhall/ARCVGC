@@ -19,15 +19,14 @@ Sealed class defining the six modes. Each mode maps to a header via `toHeaderUiM
 | `Search(params)` | `SearchParams` | `SearchFilters` | Yes | Yes |
 | `Pokemon(pokemonId, name, imageUrl, typeImageUrl1, typeImageUrl2, formatId?)` | Optional `formatId` threaded from battle detail | `PokemonHero` | Yes | Yes |
 | `Player(playerId, playerName, formatId?)` | Optional `formatId` threaded from battle detail | `PlayerHero` | Yes | Yes |
-| `TopPokemon(formatId?)` | Optional `formatId` threaded from Home page | `TopPokemonHero` | No (has format selector + search field) | No |
+| `TopPokemon(formatId?)` | Optional `formatId` threaded from Home page | `None` | No (has format selector + search field) | No |
 
 ### ContentListHeaderUiModel
 
-Sealed class with seven variants controlling what renders above the list:
+Sealed class with six variants controlling what renders above the list:
 
-- **`None`** — no header
+- **`None`** — no header (also used by `TopPokemon` mode — the Usage tab has no title header; the format selector sits at the top of the list)
 - **`HomeHero`** — Logo + "ARC" branding text in Orbitron font
-- **`TopPokemonHero`** — "Top Pokemon" title (separate type for planned redesign)
 - **`FavoritesHero`** — Currently blank (TODO: branded asset pending from artist)
 - **`SearchFilters`** — flow row of removable filter chips (Pokemon with items/tera, format, rating range, unrated, player name, date range). Each chip type has `canRemove*()` / `remove*()` methods on `SearchParams` controlling removability. On desktop web (`WindowSizeClass.Expanded`) the chip row spans the grid's full cell-pack width (no 900dp centered cap), matching the width of the battle-card grid below. Mobile web / Android / iOS keep the 900dp centered cap.
 - **`PokemonHero`** — large Pokemon avatar (158dp circle / 227dp sprite) + name (headlineMedium/20pt) + type icons (24dp)
@@ -47,8 +46,8 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 | `HighlightButtons(buttons)` | Player profile highlight cards (Top Rated / Latest Rated) | `"highlight_buttons"` |
 | `PokemonGrid(pokemon)` | Grid of Pokemon (home "Top Pokémon", player profile "Favorite Pokemon"). 3 columns on iPhone/Android phone, up to 6 on iPad/Android tablet/desktop web | `"pokemon_grid"` |
 | `StatChipRow(chips)` | Horizontal scrolling row of chips with name+percent and optional image (mobile), FlowRow (desktop web). Used for Top Abilities, Items, Moves, Tera Types, and pokemon profile "Top Teammates" (chips carry a `pokemonId` and render a Pokemon avatar; tapping navigates to that Pokemon). | `"stat_chip_row"` |
-| `FormatSelector` | Format dropdown rendered as a list item (Home, TopPokemon, Pokemon, Player modes) | `"format_selector"` |
-| `SearchField(query)` | Text input for client-side filtering (TopPokemon mode) | `"search_field"` |
+| `FormatSelector` | Format dropdown rendered as a list item (Home, Pokemon, Player modes). In TopPokemon mode on mobile/mobile-web, this list item is suppressed — the dropdown is rendered instead inside an anchored `UsageBottomBar` at the bottom of the screen so it's within thumb reach. Desktop web uses `UsageDesktopPage` which has its own format dropdown. | `"format_selector"` |
+| `SearchField(query)` | Text input for client-side filtering (TopPokemon mode). On mobile/mobile-web, this list item is suppressed and the field is rendered inside the anchored `UsageBottomBar` alongside the format selector. | `"search_field"` |
 
 `ContentListItemMapper` (in `shared/.../ui/mapper/`) provides factory methods: `fromBattles()`, `fromPokemon()`, `fromPlayers()`, `fromPokemonCatalog()`.
 
@@ -75,6 +74,7 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
 - **Display count on pane toggle**: `ResponsivePokemonGridCard` (in `webApp/.../ui/contentlist/ContentListItemRow.kt`) receives an `availableWidth: Dp` parameter — the current grid-box width (shrinks when the detail pane opens). It uses that to derive the visible tile count and wraps invisible overflow tiles in `AnimatedVisibility(visible = false)` so they fade out during the 300ms pane animation. No network traffic on pane toggle.
 - **Escape the battle grid's cell-pack constraint**: the LazyVerticalGrid uses `GridCells.FixedSize(battleCardCellWidth)` so a `fullSpan` item's natural max width is `cellCount × battleCardCellWidth + (cellCount−1) × 12`, which can leave unused space on the right. `ResponsivePokemonGridCard` uses a `Modifier.layout` shim that re-measures its child with the parent-provided `availableWidth` (the true grid-box width) but **reports** the grid's original `constraints.maxWidth` as its layout size. Under the grid's `CenterHorizontally` arrangement, the full-span item is placed at the cell-pack-centered position; `SectionContentAlignedHeader` then places the wider child at `(reportedWidth − childWidth) / 2` (a negative offset in the overflow case) so the tiles draw symmetrically into both gutters.
 - **Hit-testing caveat**: Compose tests pointer events against the placeable's actual (wider) bounds, so tiles drawn beyond `reportedWidth` still receive clicks. This works today but is an implementation detail — if it ever breaks, the symptom would be rightmost tiles becoming unclickable while still visible.
+- **Pane-open width cap**: `currentGridRendered` (the battle-card cluster width passed to the Top Pokémon row) is capped at `currentGridBoxWidth − BATTLE_GRID_HORIZONTAL_PADDING` via `coerceAtMost`. Without this, when the detail pane is open the battle-card cluster can exceed the grid content area; battle cards are centered by the grid's `Arrangement.CenterHorizontally` so they still fit visually, but the fullSpan Pokémon row's escape layout would draw into the pane area. Pane-closed, the cluster already fits within the content area so the cap is a no-op.
 - **Player "Favorite Pokémon"** flows through the same `ResponsivePokemonGridCard` render path and reflows on pane toggle. It does *not* drive `setTopPokemonFetchCount` (that's Home-only) — it just displays as many of the already-fetched Pokemon as fit. Pokemon "Top Teammates" is rendered as a `StatChipRow` with clickable pokemon-avatar chips and does not use `ResponsivePokemonGridCard`.
 - **Tile sizing**: Tiles flex within `[TOP_POKEMON_TILE_MIN_WIDTH = 120.dp, TOP_POKEMON_TILE_MAX_WIDTH = 160.dp]` (spacing: `TOP_POKEMON_TILE_SPACING = 8.dp`, min tiles: `TOP_POKEMON_MIN_TILES = 3`). The tile width is computed to make the card's outer width exactly match `computeBattleGridRenderedWidth()` — the actual rendered width of the battle-card cluster below. `computeTopPokemonTileCount()` maximizes the number of tiles that fit at `>= MIN_WIDTH`, then `computeTopPokemonTileWidth()` distributes the remaining space evenly so the fit is exact. The card wraps to its tile content (border follows the rightmost tile's edge).
 - **Mobile web / Android / iOS are unaffected** — they continue using the legacy 3/6-col `PokemonGrid` render in `ContentListItemRow.kt`'s existing branch.
@@ -143,7 +143,7 @@ On the `WindowSizeClass.Expanded` branch, the Usage tab is rendered by `webApp/.
 - **Left column**: format dropdown, search field (fills column width), then a vertically scrolling list of simplified rows `[avatar][name][usage%]` with no type icons. Width is computed once via `rememberTextMeasurer()` over `allTopPokemonItems` after the catalog loads, sized to fit the longest Pokemon name + avatar + usage percent (and the widest format dropdown display name, whichever is larger). Selected row uses a `primary` border at 2× width. While the catalog is loading the entire pane shows a centered `LoadingIndicator`.
 - **Right pane**: renders a nested `ContentListPage(mode = Pokemon(...))` for the currently-selected Pokemon. The first Pokemon is auto-selected once data is ready. Selecting a different Pokemon from the left list resets the right pane's nested nav stack via `onClearUsageNestedStack`.
 - **Nested navigation**: `WebApp.kt` owns a `usageNestedStack: List<NavEntry>` parallel to `desktopNavStack` (Pokemon/Player drill-downs from inside the right pane). Browser back pops `usageNestedStack` first (before `desktopNavStack`), then `searchOverlayParams`. Battle detail clicks inside the right pane are handled by the nested page's own inline pane, producing a three-pane layout `[Usage list | Pokemon page | Battle detail]` when the viewport is wide enough.
-- **URL mirroring**: the selected Pokemon ID is reflected in the URL as `/top-pokemon?f={formatId}&pokemon={id}` (or `/usage?pokemon={id}` when typed manually). On mobile platforms the same URL navigates directly to `/pokemon/{id}` instead of selecting it on a Usage list — see the Deep Linking section in `docs/navigation.md`.
+- **URL mirroring**: the selected Pokemon ID is reflected in the URL as `/usage?f={formatId}&pokemon={id}`. On mobile platforms the same URL navigates directly to `/pokemon/{id}` instead of selecting it on a Usage list — see the Deep Linking section in `docs/navigation.md`.
 
 ## Section Loading & Sort Toggle
 
