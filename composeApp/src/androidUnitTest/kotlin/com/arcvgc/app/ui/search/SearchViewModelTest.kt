@@ -145,7 +145,7 @@ private class FakeSettingsRepository : SettingsRepository {
     override val selectedThemeId = shared.selectedThemeId
     override val darkModeId = shared.darkModeId
     override val preferredFormatId = shared.preferredFormatId
-    override val settingItems = shared.settingItems
+    override val settingSections = shared.settingSections
     override fun setBooleanSetting(key: String, value: Boolean) { shared.setBooleanSetting(key, value) }
     override fun setIntSetting(key: String, value: Int) { shared.setIntSetting(key, value) }
     override fun performAction(key: String) { shared.performAction(key) }

@@ -8,7 +8,7 @@ final class SettingsStore: ObservableObject {
     @Published private(set) var darkModeId: Int32 = 0
     @Published private(set) var themeColor: Color = SettingsStore.colorForThemeId(0)
     @Published private(set) var preferredFormatId: Int32 = 0
-    @Published private(set) var settingItems: [SettingItem] = []
+    @Published private(set) var settingSections: [SettingsSection] = []
 
     /// Snapshot of the user's effective preferred format (falls back to config default, then 1).
     var effectivePreferredFormatId: Int32 {
@@ -37,7 +37,7 @@ final class SettingsStore: ObservableObject {
         // SettingsStore lives for the process lifetime via DependencyContainer, so
         // we don't cancel this task or weakly capture self — matches AppConfigStore.
         Task {
-            for await _ in repo.settingItems {
+            for await _ in repo.settingSections {
                 self.syncState()
             }
         }
@@ -73,6 +73,6 @@ final class SettingsStore: ObservableObject {
         darkModeId = repo.getDarkModeId()
         preferredFormatId = Int32(repo.getPreferredFormatId())
         themeColor = SettingsStore.colorForThemeId(selectedThemeId)
-        settingItems = repo.getSettingItems()
+        settingSections = repo.getSettingSections()
     }
 }

@@ -10,9 +10,13 @@ struct SettingsView: View {
     @State private var showFormatPicker = false
     @State private var confirmActionKey: String?
 
+    private var allItems: [SettingItem] {
+        settingsStore.settingSections.flatMap { $0.items }
+    }
+
     private var confirmActionItem: SettingItem.Action? {
         guard let key = confirmActionKey else { return nil }
-        return settingsStore.settingItems
+        return allItems
             .compactMap { item -> SettingItem.Action? in
                 switch onEnum(of: item) {
                 case .action(let action): return action
@@ -23,7 +27,7 @@ struct SettingsView: View {
     }
 
     private var currentFormatChoice: SettingItem.FormatChoice? {
-        settingsStore.settingItems
+        allItems
             .compactMap { item -> SettingItem.FormatChoice? in
                 switch onEnum(of: item) {
                 case .formatChoice(let choice): return choice
@@ -35,90 +39,92 @@ struct SettingsView: View {
 
     var body: some View {
         List {
-            Section {
-                ForEach(settingsStore.settingItems, id: \.key) { item in
-                    switch onEnum(of: item) {
-                    case .toggle(let toggle):
-                        Toggle(isOn: Binding(
-                            get: { toggle.isEnabled },
-                            set: { settingsStore.setBooleanSetting(key: toggle.key, value: $0) }
-                        )) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(toggle.title)
-                                Text(toggle.subtitle)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    case .darkModeChoice(let darkModeChoice):
-                        Button {
-                            showDarkModePicker = true
-                        } label: {
-                            HStack {
+            ForEach(settingsStore.settingSections, id: \.title) { section in
+                Section(section.title) {
+                    ForEach(section.items, id: \.key) { item in
+                        switch onEnum(of: item) {
+                        case .toggle(let toggle):
+                            Toggle(isOn: Binding(
+                                get: { toggle.isEnabled },
+                                set: { settingsStore.setBooleanSetting(key: toggle.key, value: $0) }
+                            )) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(darkModeChoice.title)
-                                        .foregroundColor(.primary)
-                                    Text(darkModeChoice.subtitle)
+                                    Text(toggle.title)
+                                    Text(toggle.subtitle)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
-                                Spacer()
-                                Text(DarkModeOption.companion.fromId(id: darkModeChoice.selectedModeId).displayName)
-                                    .foregroundColor(.secondary)
                             }
-                        }
-                    case .colorChoice(let colorChoice):
-                        Button {
-                            showThemePicker = true
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(colorChoice.title)
-                                        .foregroundColor(.primary)
-                                    Text(colorChoice.subtitle)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                Spacer()
-                                RoundedRectangle(cornerRadius: AppTokens.colorSwatchCornerRadius)
-                                    .fill(SettingsStore.colorForThemeId(colorChoice.selectedThemeId))
-                                    .frame(width: AppTokens.colorSwatchSize, height: AppTokens.colorSwatchSize)
-                            }
-                        }
-                    case .formatChoice(let formatChoice):
-                        FormatChoiceSettingRow(
-                            formatChoice: formatChoice,
-                            formats: catalogStore?.formatItems ?? [],
-                            catalogLoading: catalogStore?.formatLoading ?? true,
-                            onTap: { showFormatPicker = true }
-                        )
-                    case .action(let action):
-                        Button {
-                            confirmActionKey = action.key
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(action.title)
-                                    .foregroundColor(.primary)
-                                Text(action.subtitle)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    case .link(let link):
-                        if let url = URL(string: link.url) {
-                            SwiftUI.Link(destination: url) {
+                        case .darkModeChoice(let darkModeChoice):
+                            Button {
+                                showDarkModePicker = true
+                            } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(link.title)
+                                        Text(darkModeChoice.title)
                                             .foregroundColor(.primary)
-                                        Text(link.subtitle)
+                                        Text(darkModeChoice.subtitle)
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
                                     Spacer()
-                                    Image(systemName: "arrow.up.right")
+                                    Text(DarkModeOption.companion.fromId(id: darkModeChoice.selectedModeId).displayName)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        case .colorChoice(let colorChoice):
+                            Button {
+                                showThemePicker = true
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(colorChoice.title)
+                                            .foregroundColor(.primary)
+                                        Text(colorChoice.subtitle)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    RoundedRectangle(cornerRadius: AppTokens.colorSwatchCornerRadius)
+                                        .fill(SettingsStore.colorForThemeId(colorChoice.selectedThemeId))
+                                        .frame(width: AppTokens.colorSwatchSize, height: AppTokens.colorSwatchSize)
+                                }
+                            }
+                        case .formatChoice(let formatChoice):
+                            FormatChoiceSettingRow(
+                                formatChoice: formatChoice,
+                                formats: catalogStore?.formatItems ?? [],
+                                catalogLoading: catalogStore?.formatLoading ?? true,
+                                onTap: { showFormatPicker = true }
+                            )
+                        case .action(let action):
+                            Button {
+                                confirmActionKey = action.key
+                            } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(action.title)
+                                        .foregroundColor(.primary)
+                                    Text(action.subtitle)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
+                                }
+                            }
+                        case .link(let link):
+                            if let url = URL(string: link.url) {
+                                SwiftUI.Link(destination: url) {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(link.title)
+                                                .foregroundColor(.primary)
+                                            Text(link.subtitle)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        Spacer()
+                                        Image(systemName: "arrow.up.right")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
                             }
                         }

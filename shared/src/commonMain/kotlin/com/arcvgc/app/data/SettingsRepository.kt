@@ -3,6 +3,7 @@ package com.arcvgc.app.data
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.DarkModeOption
 import com.arcvgc.app.ui.model.SettingItem
+import com.arcvgc.app.ui.model.SettingsSection
 import com.arcvgc.app.util.createSafeScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,18 +39,18 @@ class SettingsRepository(
     )
     val preferredFormatId: StateFlow<Int> = _preferredFormatId.asStateFlow()
 
-    private val _settingItems = MutableStateFlow(buildSettingItems())
-    val settingItems: StateFlow<List<SettingItem>> = _settingItems.asStateFlow()
+    private val _settingSections = MutableStateFlow(buildSettingSections())
+    val settingSections: StateFlow<List<SettingsSection>> = _settingSections.asStateFlow()
 
     init {
         if (appConfigRepository != null) {
             scope.launch {
                 try {
                     appConfigRepository.config.collect {
-                        _settingItems.value = buildSettingItems()
+                        _settingSections.value = buildSettingSections()
                     }
                 } catch (_: Exception) {
-                    // Ignore; keep last-built items.
+                    // Ignore; keep last-built sections.
                 }
             }
         }
@@ -58,25 +59,25 @@ class SettingsRepository(
     fun setShowWinnerHighlight(enabled: Boolean) {
         _showWinnerHighlight.value = enabled
         storage.putBoolean(KEY_SHOW_WINNER_HIGHLIGHT, enabled)
-        _settingItems.value = buildSettingItems()
+        _settingSections.value = buildSettingSections()
     }
 
     fun setSelectedThemeId(id: Int) {
         _selectedThemeId.value = id
         storage.putInt(KEY_SELECTED_THEME, id)
-        _settingItems.value = buildSettingItems()
+        _settingSections.value = buildSettingSections()
     }
 
     fun setDarkModeId(id: Int) {
         _darkModeId.value = id
         storage.putInt(KEY_DARK_MODE, id)
-        _settingItems.value = buildSettingItems()
+        _settingSections.value = buildSettingSections()
     }
 
     fun setPreferredFormatId(id: Int) {
         _preferredFormatId.value = id
         storage.putInt(KEY_PREFERRED_FORMAT, id)
-        _settingItems.value = buildSettingItems()
+        _settingSections.value = buildSettingSections()
     }
 
     /** Snapshot getter for iOS interop. */
@@ -103,7 +104,7 @@ class SettingsRepository(
     }
 
     /** Snapshot getter for iOS interop. */
-    fun getSettingItems(): List<SettingItem> = _settingItems.value
+    fun getSettingSections(): List<SettingsSection> = _settingSections.value
 
     fun setBooleanSetting(key: String, value: Boolean) {
         when (key) {
@@ -130,55 +131,75 @@ class SettingsRepository(
         }
     }
 
-    private fun buildSettingItems(): List<SettingItem> = listOf(
-        SettingItem.DarkModeChoice(
-            key = KEY_DARK_MODE,
-            title = "Dark Mode",
-            subtitle = "Choose between system, light, or dark appearance.",
-            selectedModeId = _darkModeId.value
+    private fun buildSettingSections(): List<SettingsSection> = listOf(
+        SettingsSection(
+            title = "Appearance",
+            items = listOf(
+                SettingItem.DarkModeChoice(
+                    key = KEY_DARK_MODE,
+                    title = "Dark Mode",
+                    subtitle = "Choose between system, light, or dark appearance.",
+                    selectedModeId = _darkModeId.value
+                ),
+                SettingItem.ColorChoice(
+                    key = KEY_SELECTED_THEME,
+                    title = "Theme Color",
+                    subtitle = "Choose the app's accent color. We like red like our mascot, but maybe you're feeling Great, Ultra, or Master.",
+                    selectedThemeId = _selectedThemeId.value
+                )
+            )
         ),
-        SettingItem.ColorChoice(
-            key = KEY_SELECTED_THEME,
-            title = "Theme Color",
-            subtitle = "Choose the app's accent color. We like red like our mascot, but maybe you're feeling Great, Ultra, or Master.",
-            selectedThemeId = _selectedThemeId.value
+        SettingsSection(
+            title = "Behavior",
+            items = listOf(
+                SettingItem.FormatChoice(
+                    key = KEY_PREFERRED_FORMAT,
+                    title = "Preferred Format",
+                    subtitle = "What do you want to see first?",
+                    selectedFormatId = _preferredFormatId.value,
+                    defaultFormatId = appConfigRepository?.getConfig()?.defaultFormat?.id ?: 0
+                ),
+                SettingItem.Toggle(
+                    key = KEY_SHOW_WINNER_HIGHLIGHT,
+                    title = "Highlight Winner",
+                    subtitle = "Could save you time, but maybe you don't want spoilers.",
+                    isEnabled = _showWinnerHighlight.value
+                )
+            )
         ),
-        SettingItem.FormatChoice(
-            key = KEY_PREFERRED_FORMAT,
-            title = "Preferred Format",
-            subtitle = "What do you want to see first?",
-            selectedFormatId = _preferredFormatId.value,
-            defaultFormatId = appConfigRepository?.getConfig()?.defaultFormat?.id ?: 0
+        SettingsSection(
+            title = "Data",
+            items = listOf(
+                SettingItem.Action(
+                    key = KEY_CLEAR_FAVORITES,
+                    title = "Clear Favorites",
+                    subtitle = "Guess you couldn't choose just one?",
+                    confirmationMessage = "Are you sure? This can't be undone."
+                ),
+                SettingItem.Action(
+                    key = KEY_CLEAR_CACHE,
+                    title = "Invalidate Cache",
+                    subtitle = "Use this if your search tab is missing options or you can't see the latest format.",
+                    confirmationMessage = "Are you sure? This action is usually only done once a month and can use a lot of data."
+                )
+            )
         ),
-        SettingItem.Toggle(
-            key = KEY_SHOW_WINNER_HIGHLIGHT,
-            title = "Highlight Winner",
-            subtitle = "Could save you time, but maybe you don't want spoilers.",
-            isEnabled = _showWinnerHighlight.value
-        ),
-        SettingItem.Action(
-            key = KEY_CLEAR_FAVORITES,
-            title = "Clear Favorites",
-            subtitle = "Guess you couldn't choose just one?",
-            confirmationMessage = "Are you sure? This can't be undone."
-        ),
-        SettingItem.Action(
-            key = KEY_CLEAR_CACHE,
-            title = "Invalidate Cache",
-            subtitle = "Use this if your search tab is missing options or you can't see the latest format.",
-            confirmationMessage = "Are you sure? This action is usually only done once a month and can use a lot of data."
-        ),
-        SettingItem.Link(
-            key = KEY_PRIVACY_POLICY,
-            title = "Privacy Policy",
-            subtitle = "How ARC handles your data (spoiler: it doesn't).",
-            url = URL_PRIVACY_POLICY
-        ),
-        SettingItem.Link(
-            key = KEY_TERMS_OF_SERVICE,
-            title = "Terms of Service",
-            subtitle = "The boring-but-important stuff.",
-            url = URL_TERMS_OF_SERVICE
+        SettingsSection(
+            title = "Links",
+            items = listOf(
+                SettingItem.Link(
+                    key = KEY_PRIVACY_POLICY,
+                    title = "Privacy Policy",
+                    subtitle = "How ARC handles your data (spoiler: it doesn't).",
+                    url = URL_PRIVACY_POLICY
+                ),
+                SettingItem.Link(
+                    key = KEY_TERMS_OF_SERVICE,
+                    title = "Terms of Service",
+                    subtitle = "The boring-but-important stuff.",
+                    url = URL_TERMS_OF_SERVICE
+                )
+            )
         )
     )
 

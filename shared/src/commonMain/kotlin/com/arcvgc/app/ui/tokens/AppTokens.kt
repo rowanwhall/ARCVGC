@@ -49,6 +49,12 @@ object AppTokens {
     val SettingsSubtitleFontSize = 13.sp
     val SettingsValueFontSize = 14.sp
 
+    // --- Settings Section (grouped card style) ---
+    val SettingsSectionHorizontalPadding = 16.dp
+    val SettingsSectionHeaderTopPadding = 20.dp
+    val SettingsSectionHeaderBottomPadding = 6.dp
+    val SettingsSectionHeaderFontSize = 12.sp
+
     // --- Content List ---
     val ContentListItemSpacing = 12.dp
 

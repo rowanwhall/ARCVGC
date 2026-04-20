@@ -12,10 +12,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -43,6 +43,8 @@ import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.DarkModeOption
 import com.arcvgc.app.ui.model.FormatUiModel
+import com.arcvgc.app.ui.components.SettingsSectionCard
+import com.arcvgc.app.ui.components.SettingsSectionHeader
 import com.arcvgc.app.ui.model.SettingItem
 import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchSize
@@ -59,7 +61,8 @@ fun SettingsPage(
     modifier: Modifier = Modifier
 ) {
     val settingsRepository = DependencyContainer.settingsRepository
-    val items by settingsRepository.settingItems.collectAsState()
+    val sections by settingsRepository.settingSections.collectAsState()
+    val allItems = sections.flatMap { it.items }
     val formatCatalogState by DependencyContainer.formatCatalogRepository.state.collectAsState()
     var showThemePicker by remember { mutableStateOf(false) }
     var showDarkModePicker by remember { mutableStateOf(false) }
@@ -69,7 +72,7 @@ fun SettingsPage(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
+            .background(MaterialTheme.colorScheme.surfaceContainer),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Column(
@@ -83,36 +86,51 @@ fun SettingsPage(
             )
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(items, key = { it.key }) { item ->
-                    when (item) {
-                        is SettingItem.Toggle -> ToggleSettingRow(
-                            item = item,
-                            onToggle = { enabled ->
-                                settingsRepository.setBooleanSetting(key = item.key, value = enabled)
+                sections.forEach { section ->
+                    item(key = "header_${section.title}") {
+                        SettingsSectionHeader(title = section.title)
+                    }
+                    item(key = "card_${section.title}") {
+                        SettingsSectionCard {
+                            section.items.forEachIndexed { index, item ->
+                                if (index > 0) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = SettingsRowHorizontalPadding),
+                                        color = MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                }
+                                when (item) {
+                                    is SettingItem.Toggle -> ToggleSettingRow(
+                                        item = item,
+                                        onToggle = { enabled ->
+                                            settingsRepository.setBooleanSetting(key = item.key, value = enabled)
+                                        }
+                                    )
+                                    is SettingItem.DarkModeChoice -> DarkModeChoiceSettingRow(
+                                        item = item,
+                                        onClick = { showDarkModePicker = true }
+                                    )
+                                    is SettingItem.ColorChoice -> ColorChoiceSettingRow(
+                                        item = item,
+                                        onClick = { showThemePicker = true }
+                                    )
+                                    is SettingItem.FormatChoice -> FormatChoiceSettingRow(
+                                        item = item,
+                                        formats = formatCatalogState.items,
+                                        catalogLoading = formatCatalogState.isLoading,
+                                        onClick = { showFormatPicker = true }
+                                    )
+                                    is SettingItem.Action -> ActionSettingRow(
+                                        item = item,
+                                        onClick = { confirmActionKey = item.key }
+                                    )
+                                    is SettingItem.Link -> LinkSettingRow(
+                                        item = item,
+                                        onClick = { window.open(item.url, "_blank") }
+                                    )
+                                }
                             }
-                        )
-                        is SettingItem.DarkModeChoice -> DarkModeChoiceSettingRow(
-                            item = item,
-                            onClick = { showDarkModePicker = true }
-                        )
-                        is SettingItem.ColorChoice -> ColorChoiceSettingRow(
-                            item = item,
-                            onClick = { showThemePicker = true }
-                        )
-                        is SettingItem.FormatChoice -> FormatChoiceSettingRow(
-                            item = item,
-                            formats = formatCatalogState.items,
-                            catalogLoading = formatCatalogState.isLoading,
-                            onClick = { showFormatPicker = true }
-                        )
-                        is SettingItem.Action -> ActionSettingRow(
-                            item = item,
-                            onClick = { confirmActionKey = item.key }
-                        )
-                        is SettingItem.Link -> LinkSettingRow(
-                            item = item,
-                            onClick = { window.open(item.url, "_blank") }
-                        )
+                        }
                     }
                 }
                 item {
@@ -129,7 +147,7 @@ fun SettingsPage(
     }
 
     if (confirmActionKey != null) {
-        val actionItem = items.filterIsInstance<SettingItem.Action>()
+        val actionItem = allItems.filterIsInstance<SettingItem.Action>()
             .firstOrNull { it.key == confirmActionKey }
         if (actionItem != null) {
             AlertDialog(
@@ -158,7 +176,7 @@ fun SettingsPage(
     }
 
     if (showThemePicker) {
-        val currentItem = items.filterIsInstance<SettingItem.ColorChoice>().firstOrNull()
+        val currentItem = allItems.filterIsInstance<SettingItem.ColorChoice>().firstOrNull()
         ThemePickerDialog(
             selectedThemeId = currentItem?.selectedThemeId ?: AppTheme.Red.id,
             onSelect = { themeId ->
@@ -170,7 +188,7 @@ fun SettingsPage(
     }
 
     if (showDarkModePicker) {
-        val currentItem = items.filterIsInstance<SettingItem.DarkModeChoice>().firstOrNull()
+        val currentItem = allItems.filterIsInstance<SettingItem.DarkModeChoice>().firstOrNull()
         DarkModePickerDialog(
             selectedModeId = currentItem?.selectedModeId ?: DarkModeOption.System.id,
             onSelect = { modeId ->
@@ -182,7 +200,7 @@ fun SettingsPage(
     }
 
     if (showFormatPicker) {
-        val currentItem = items.filterIsInstance<SettingItem.FormatChoice>().firstOrNull()
+        val currentItem = allItems.filterIsInstance<SettingItem.FormatChoice>().firstOrNull()
         if (currentItem != null) {
             PreferredFormatPickerDialog(
                 formats = formatCatalogState.items,

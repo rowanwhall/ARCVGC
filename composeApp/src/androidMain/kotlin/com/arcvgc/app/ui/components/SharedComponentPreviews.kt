@@ -3,6 +3,7 @@ package com.arcvgc.app.ui.components
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -112,5 +113,26 @@ private fun SimplePokemonRowPreview() {
             onClick = {},
             modifier = Modifier.padding(8.dp)
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsSectionHeaderPreview() {
+    MaterialTheme {
+        SettingsSectionHeader(title = "Appearance")
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsSectionCardPreview() {
+    MaterialTheme {
+        SettingsSectionCard {
+            Text(
+                text = "Card content",
+                modifier = Modifier.padding(16.dp)
+            )
+        }
     }
 }

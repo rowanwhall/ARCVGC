@@ -3,7 +3,7 @@ package com.arcvgc.app.data.repository
 import android.content.Context
 import com.arcvgc.app.data.CatalogCacheStorage
 import com.arcvgc.app.data.SettingsStorage
-import com.arcvgc.app.ui.model.SettingItem
+import com.arcvgc.app.ui.model.SettingsSection
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -15,7 +15,7 @@ interface SettingsRepository {
     val selectedThemeId: StateFlow<Int>
     val darkModeId: StateFlow<Int>
     val preferredFormatId: StateFlow<Int>
-    val settingItems: StateFlow<List<SettingItem>>
+    val settingSections: StateFlow<List<SettingsSection>>
     /** Escape hatch for shared-module consumers (ContentListLogic, SearchLogic) that need the shared instance. */
     val shared: SharedSettingsRepository
     fun setBooleanSetting(key: String, value: Boolean)
@@ -45,7 +45,7 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override val preferredFormatId: StateFlow<Int> = shared.preferredFormatId
 
-    override val settingItems: StateFlow<List<SettingItem>> = shared.settingItems
+    override val settingSections: StateFlow<List<SettingsSection>> = shared.settingSections
 
     override fun setBooleanSetting(key: String, value: Boolean) = shared.setBooleanSetting(key, value)
 

@@ -111,27 +111,33 @@ class SettingsRepositoryTest {
         assertEquals(0L, cacheStorage.getLong("pokemon_catalog_timestamp", 99L))
     }
 
-    // --- settingItems ---
+    // --- settingSections ---
 
     @Test
-    fun settingItems_returns8Items() {
+    fun settingSections_returns4Sections() {
         val repo = createRepo()
-        val items = repo.settingItems.value
-        assertEquals(8, items.size)
+        val sections = repo.settingSections.value
+        assertEquals(4, sections.size)
+        assertEquals(listOf("Appearance", "Behavior", "Data", "Links"), sections.map { it.title })
     }
 
     @Test
-    fun settingItems_hasCorrectTypes() {
+    fun settingSections_hasCorrectItemTypes() {
         val repo = createRepo()
-        val items = repo.settingItems.value
-        assertIs<SettingItem.DarkModeChoice>(items[0])
-        assertIs<SettingItem.ColorChoice>(items[1])
-        assertIs<SettingItem.FormatChoice>(items[2])
-        assertIs<SettingItem.Toggle>(items[3])
-        assertIs<SettingItem.Action>(items[4])
-        assertIs<SettingItem.Action>(items[5])
-        assertIs<SettingItem.Link>(items[6])
-        assertIs<SettingItem.Link>(items[7])
+        val sections = repo.settingSections.value
+        val appearance = sections[0].items
+        val behavior = sections[1].items
+        val data = sections[2].items
+        val links = sections[3].items
+
+        assertIs<SettingItem.DarkModeChoice>(appearance[0])
+        assertIs<SettingItem.ColorChoice>(appearance[1])
+        assertIs<SettingItem.FormatChoice>(behavior[0])
+        assertIs<SettingItem.Toggle>(behavior[1])
+        assertIs<SettingItem.Action>(data[0])
+        assertIs<SettingItem.Action>(data[1])
+        assertIs<SettingItem.Link>(links[0])
+        assertIs<SettingItem.Link>(links[1])
     }
 
     // --- Preferred format ---
@@ -174,11 +180,14 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun settingItems_formatChoice_exposesSelectedAndDefaultIds() {
+    fun settingSections_formatChoice_exposesSelectedAndDefaultIds() {
         val storage = FakeSettingsStorage()
         storage.putInt("preferred_format", 5)
         val repo = SettingsRepository(storage)
-        val formatChoice = repo.settingItems.value.filterIsInstance<SettingItem.FormatChoice>().first()
+        val formatChoice = repo.settingSections.value
+            .flatMap { it.items }
+            .filterIsInstance<SettingItem.FormatChoice>()
+            .first()
         assertEquals(5, formatChoice.selectedFormatId)
         assertEquals(0, formatChoice.defaultFormatId)
     }
