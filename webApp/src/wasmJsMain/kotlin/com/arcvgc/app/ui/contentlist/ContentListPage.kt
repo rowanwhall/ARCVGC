@@ -84,7 +84,8 @@ fun ContentListPage(
             pokemonCatalogItems = DependencyContainer.pokemonCatalogRepository.state.value.items,
             appConfigRepository = DependencyContainer.appConfigRepository,
             formatCatalogRepository = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) DependencyContainer.formatCatalogRepository else null,
-            pokemonCatalogRepository = DependencyContainer.pokemonCatalogRepository
+            pokemonCatalogRepository = DependencyContainer.pokemonCatalogRepository,
+            settingsRepository = DependencyContainer.settingsRepository
         )
     }
 
@@ -96,8 +97,10 @@ fun ContentListPage(
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
     val formatCatalogState = viewModel.formatCatalogState?.collectAsState()
     val appConfig by viewModel.appConfigState.collectAsState()
-    val sortedFormats = remember(formatCatalogState?.value?.items, appConfig) {
-        FormatSorter.sorted(formatCatalogState?.value?.items ?: emptyList(), appConfig?.defaultFormat?.id)
+    val preferredFormatId by DependencyContainer.settingsRepository.preferredFormatId.collectAsState()
+    val pinnedFormatId = if (preferredFormatId != 0) preferredFormatId else appConfig?.defaultFormat?.id
+    val sortedFormats = remember(formatCatalogState?.value?.items, pinnedFormatId) {
+        FormatSorter.sorted(formatCatalogState?.value?.items ?: emptyList(), pinnedFormatId)
     }
     val selectedFormatId by viewModel.selectedFormatId.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()

@@ -7,6 +7,7 @@ struct SettingsView: View {
     @ObservedObject var favoritesStore: FavoritesStore
     @State private var showThemePicker = false
     @State private var showDarkModePicker = false
+    @State private var showFormatPicker = false
     @State private var confirmActionKey: String?
 
     private var confirmActionItem: SettingItem.Action? {
@@ -19,6 +20,17 @@ struct SettingsView: View {
                 }
             }
             .first { $0.key == key }
+    }
+
+    private var currentFormatChoice: SettingItem.FormatChoice? {
+        settingsStore.settingItems
+            .compactMap { item -> SettingItem.FormatChoice? in
+                switch onEnum(of: item) {
+                case .formatChoice(let choice): return choice
+                default: return nil
+                }
+            }
+            .first
     }
 
     var body: some View {
@@ -73,6 +85,13 @@ struct SettingsView: View {
                                     .frame(width: AppTokens.colorSwatchSize, height: AppTokens.colorSwatchSize)
                             }
                         }
+                    case .formatChoice(let formatChoice):
+                        FormatChoiceSettingRow(
+                            formatChoice: formatChoice,
+                            formats: catalogStore?.formatItems ?? [],
+                            catalogLoading: catalogStore?.formatLoading ?? true,
+                            onTap: { showFormatPicker = true }
+                        )
                     case .action(let action):
                         Button {
                             confirmActionKey = action.key
@@ -131,6 +150,18 @@ struct SettingsView: View {
                 }
             )
         }
+        .sheet(isPresented: $showFormatPicker) {
+            if let formatChoice = currentFormatChoice {
+                PreferredFormatPickerSheet(
+                    formats: catalogStore?.formatItems ?? [],
+                    selectedFormatId: formatChoice.selectedFormatId,
+                    defaultFormatId: formatChoice.defaultFormatId,
+                    onSelect: { formatId in
+                        settingsStore.setIntSetting(key: formatChoice.key, value: formatId)
+                    }
+                )
+            }
+        }
         .alert(
             confirmActionItem?.title ?? "",
             isPresented: Binding(
@@ -158,5 +189,109 @@ struct SettingsView: View {
 #Preview {
     NavigationStack {
         SettingsView(settingsStore: SettingsStore(), catalogStore: nil, favoritesStore: FavoritesStore())
+    }
+}
+
+private struct FormatChoiceSettingRow: View {
+    let formatChoice: SettingItem.FormatChoice
+    let formats: [FormatUiModel]
+    let catalogLoading: Bool
+    let onTap: () -> Void
+
+    private var canInteract: Bool { !catalogLoading && !formats.isEmpty }
+
+    private var selectedName: String {
+        let effectiveId = formatChoice.selectedFormatId == 0
+            ? formatChoice.defaultFormatId
+            : formatChoice.selectedFormatId
+        return formats.first(where: { $0.id == effectiveId })?.displayName ?? ""
+    }
+
+    var body: some View {
+        Button {
+            if canInteract { onTap() }
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(formatChoice.title)
+                        .foregroundColor(.primary)
+                    Text(formatChoice.subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .layoutPriority(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if canInteract {
+                    Text(selectedName)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                }
+            }
+        }
+        .disabled(!canInteract)
+    }
+}
+
+private struct PreferredFormatPickerSheet: View {
+    let formats: [FormatUiModel]
+    let selectedFormatId: Int32
+    let defaultFormatId: Int32
+    let onSelect: (Int32) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    private var defaultName: String? {
+        formats.first(where: { $0.id == defaultFormatId })?.displayName
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let defaultName {
+                    Button {
+                        onSelect(0)
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Text("VGC Default - \(defaultName)")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if selectedFormatId == 0 {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                    }
+                }
+                ForEach(formats, id: \.id) { format in
+                    Button {
+                        onSelect(format.id)
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Text(format.displayName)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if selectedFormatId == format.id {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Preferred Format")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
     }
 }

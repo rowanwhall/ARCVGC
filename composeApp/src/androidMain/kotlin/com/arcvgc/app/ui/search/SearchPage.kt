@@ -69,8 +69,10 @@ fun SearchPage(
     val abilityCatalog by viewModel.abilityCatalogState.collectAsStateWithLifecycle()
     val formatCatalog by viewModel.formatCatalogState.collectAsStateWithLifecycle()
     val appConfig by viewModel.appConfigState.collectAsStateWithLifecycle()
-    val sortedFormatCatalog = remember(formatCatalog, appConfig) {
-        formatCatalog.copy(items = FormatSorter.sorted(formatCatalog.items, appConfig?.defaultFormat?.id))
+    val preferredFormatId by viewModel.preferredFormatId.collectAsStateWithLifecycle()
+    val pinnedFormatId = if (preferredFormatId != 0) preferredFormatId else appConfig?.defaultFormat?.id
+    val sortedFormatCatalog = remember(formatCatalog, pinnedFormatId) {
+        formatCatalog.copy(items = FormatSorter.sorted(formatCatalog.items, pinnedFormatId))
     }
 
     // Team: 0=none, 1=team1, 2=team2

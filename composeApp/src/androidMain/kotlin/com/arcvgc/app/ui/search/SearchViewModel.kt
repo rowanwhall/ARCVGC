@@ -8,6 +8,7 @@ import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.ItemCatalogRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
+import com.arcvgc.app.data.repository.SettingsRepository
 import com.arcvgc.app.data.repository.TeraTypeCatalogRepository
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.WinnerFilter
@@ -18,7 +19,10 @@ import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import com.arcvgc.app.ui.model.SearchUiState
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,12 +32,20 @@ class SearchViewModel @Inject constructor(
     teraTypeCatalogRepository: TeraTypeCatalogRepository,
     formatCatalogRepository: FormatCatalogRepository,
     abilityCatalogRepository: AbilityCatalogRepository,
-    appConfigRepository: AppConfigRepository
+    appConfigRepository: AppConfigRepository,
+    settingsRepository: SettingsRepository
 ) : ViewModel() {
+
+    private val formatItemsFlow: StateFlow<List<FormatUiModel>> =
+        formatCatalogRepository.state
+            .map { it.items }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, formatCatalogRepository.state.value.items)
 
     private val logic = SearchLogic(
         scope = viewModelScope,
-        appConfigFlow = appConfigRepository.config
+        appConfigFlow = appConfigRepository.config,
+        settingsRepository = settingsRepository.shared,
+        formatCatalogFlow = formatItemsFlow
     )
 
     val uiState: StateFlow<SearchUiState> = logic.uiState
@@ -54,6 +66,8 @@ class SearchViewModel @Inject constructor(
         abilityCatalogRepository.state
 
     val appConfigState: StateFlow<AppConfig?> = appConfigRepository.config
+
+    val preferredFormatId: StateFlow<Int> = settingsRepository.preferredFormatId
 
     fun addPokemon(pokemon: PokemonPickerUiModel) = logic.addPokemon(pokemon)
     fun removePokemon(index: Int) = logic.removePokemon(index)

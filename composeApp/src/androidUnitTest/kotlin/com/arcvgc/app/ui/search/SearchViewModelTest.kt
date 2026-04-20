@@ -1,11 +1,13 @@
 package com.arcvgc.app.ui.search
 
 import com.arcvgc.app.data.CatalogState
+import com.arcvgc.app.data.SettingsStorageApi
 import com.arcvgc.app.data.repository.AbilityCatalogRepository
 import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.ItemCatalogRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
+import com.arcvgc.app.data.repository.SettingsRepository
 import com.arcvgc.app.data.repository.TeraTypeCatalogRepository
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.Format
@@ -14,6 +16,7 @@ import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
+import com.arcvgc.app.data.SettingsRepository as SharedSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +51,8 @@ class SearchViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val settingsRepo = FakeSettingsRepository()
+
     private fun createViewModel(): SearchViewModel {
         return SearchViewModel(
             pokemonCatalogRepository = pokemonCatalogRepo,
@@ -55,7 +60,8 @@ class SearchViewModelTest {
             teraTypeCatalogRepository = teraTypeCatalogRepo,
             formatCatalogRepository = formatCatalogRepo,
             abilityCatalogRepository = abilityCatalogRepo,
-            appConfigRepository = appConfigRepo
+            appConfigRepository = appConfigRepo,
+            settingsRepository = settingsRepo
         )
     }
 
@@ -122,4 +128,25 @@ private class FakeAppConfigRepository : AppConfigRepository {
     val configFlow = MutableStateFlow<AppConfig?>(null)
     override val config: StateFlow<AppConfig?> = configFlow
     override val catalogVersionChanged = MutableStateFlow(false)
+}
+
+private class InMemorySettingsStorage : SettingsStorageApi {
+    private val booleans = mutableMapOf<String, Boolean>()
+    private val ints = mutableMapOf<String, Int>()
+    override fun getBoolean(key: String, defaultValue: Boolean): Boolean = booleans[key] ?: defaultValue
+    override fun putBoolean(key: String, value: Boolean) { booleans[key] = value }
+    override fun getInt(key: String, defaultValue: Int): Int = ints[key] ?: defaultValue
+    override fun putInt(key: String, value: Int) { ints[key] = value }
+}
+
+private class FakeSettingsRepository : SettingsRepository {
+    override val shared = SharedSettingsRepository(InMemorySettingsStorage())
+    override val showWinnerHighlight = shared.showWinnerHighlight
+    override val selectedThemeId = shared.selectedThemeId
+    override val darkModeId = shared.darkModeId
+    override val preferredFormatId = shared.preferredFormatId
+    override val settingItems = shared.settingItems
+    override fun setBooleanSetting(key: String, value: Boolean) { shared.setBooleanSetting(key, value) }
+    override fun setIntSetting(key: String, value: Int) { shared.setIntSetting(key, value) }
+    override fun performAction(key: String) { shared.performAction(key) }
 }

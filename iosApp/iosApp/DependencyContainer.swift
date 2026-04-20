@@ -47,7 +47,10 @@ final class DependencyContainer: ObservableObject {
             // and catalogs are loaded, so waiting is unnecessary.
             catalogStateFlows: []
         )
-        self.settingsStore = SettingsStore(favoritesRepository: favoritesStore.repo)
+        self.settingsStore = SettingsStore(
+            favoritesRepository: favoritesStore.repo,
+            appConfigRepository: appConfigStore.repo
+        )
     }
 
     func handleDeepLink(deepLink: DeepLink) {

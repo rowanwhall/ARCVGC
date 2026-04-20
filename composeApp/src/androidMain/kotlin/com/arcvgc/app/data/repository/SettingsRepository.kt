@@ -14,7 +14,10 @@ interface SettingsRepository {
     val showWinnerHighlight: StateFlow<Boolean>
     val selectedThemeId: StateFlow<Int>
     val darkModeId: StateFlow<Int>
+    val preferredFormatId: StateFlow<Int>
     val settingItems: StateFlow<List<SettingItem>>
+    /** Escape hatch for shared-module consumers (ContentListLogic, SearchLogic) that need the shared instance. */
+    val shared: SharedSettingsRepository
     fun setBooleanSetting(key: String, value: Boolean)
     fun setIntSetting(key: String, value: Int)
     fun performAction(key: String)
@@ -23,13 +26,15 @@ interface SettingsRepository {
 @Singleton
 class SettingsRepositoryImpl @Inject constructor(
     @ApplicationContext context: Context,
-    favoritesRepository: FavoritesRepository
+    favoritesRepository: FavoritesRepository,
+    appConfigRepository: AppConfigRepository
 ) : SettingsRepository {
 
-    private val shared = SharedSettingsRepository(
+    override val shared = SharedSettingsRepository(
         storage = SettingsStorage(context),
         cacheStorage = CatalogCacheStorage(context),
-        favoritesRepository = (favoritesRepository as FavoritesRepositoryImpl).shared
+        favoritesRepository = (favoritesRepository as FavoritesRepositoryImpl).shared,
+        appConfigRepository = (appConfigRepository as AppConfigRepositoryImpl).shared
     )
 
     override val showWinnerHighlight: StateFlow<Boolean> = shared.showWinnerHighlight
@@ -37,6 +42,8 @@ class SettingsRepositoryImpl @Inject constructor(
     override val selectedThemeId: StateFlow<Int> = shared.selectedThemeId
 
     override val darkModeId: StateFlow<Int> = shared.darkModeId
+
+    override val preferredFormatId: StateFlow<Int> = shared.preferredFormatId
 
     override val settingItems: StateFlow<List<SettingItem>> = shared.settingItems
 

@@ -104,7 +104,8 @@ class ContentListLogicTest {
         mode: ContentListMode = ContentListMode.Home,
         pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
         pokemonCatalogState: MutableStateFlow<CatalogState<PokemonPickerUiModel>>? = null,
-        initialTopPokemonFetchCount: Int = ContentListLogic.DEFAULT_TOP_POKEMON_COUNT
+        initialTopPokemonFetchCount: Int = ContentListLogic.DEFAULT_TOP_POKEMON_COUNT,
+        settingsRepository: com.arcvgc.app.data.SettingsRepository? = null
     ): ContentListLogic {
         return ContentListLogic(
             scope = testScope,
@@ -114,8 +115,46 @@ class ContentListLogicTest {
             mode = mode,
             pokemonCatalogItems = pokemonCatalogItems,
             pokemonCatalogState = pokemonCatalogState,
-            initialTopPokemonFetchCount = initialTopPokemonFetchCount
+            initialTopPokemonFetchCount = initialTopPokemonFetchCount,
+            settingsRepository = settingsRepository
         )
+    }
+
+    // --- Preferred format ---
+
+    @Test
+    fun homeMode_userPreferredFormat_overridesConfigDefault() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val storage = com.arcvgc.app.testutil.FakeSettingsStorage().apply {
+            putInt("preferred_format", 42)
+        }
+        val settingsRepo = com.arcvgc.app.data.SettingsRepository(storage)
+
+        val logic = createLogic(ContentListMode.Home, settingsRepository = settingsRepo)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        assertEquals(42, logic.selectedFormatId.value)
+    }
+
+    @Test
+    fun homeMode_unsetPreferredFormat_fallsBackToConfigDefault() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val settingsRepo = com.arcvgc.app.data.SettingsRepository(
+            com.arcvgc.app.testutil.FakeSettingsStorage(),
+            appConfigRepository = appConfigRepo
+        )
+
+        val logic = createLogic(ContentListMode.Home, settingsRepository = settingsRepo)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        // Cached config has format_id = 1
+        assertEquals(1, logic.selectedFormatId.value)
     }
 
     // --- Initialization ---

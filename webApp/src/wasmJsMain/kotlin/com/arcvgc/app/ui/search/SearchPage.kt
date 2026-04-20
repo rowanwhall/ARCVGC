@@ -71,7 +71,8 @@ fun SearchPage(
             DependencyContainer.teraTypeCatalogRepository,
             DependencyContainer.abilityCatalogRepository,
             DependencyContainer.formatCatalogRepository,
-            DependencyContainer.appConfigRepository
+            DependencyContainer.appConfigRepository,
+            DependencyContainer.settingsRepository
         )
     }
     val uiState by viewModel.uiState.collectAsState()
@@ -81,8 +82,10 @@ fun SearchPage(
     val abilityCatalog by viewModel.abilityCatalogState.collectAsState()
     val formatCatalog by viewModel.formatCatalogState.collectAsState()
     val appConfig by viewModel.appConfigState.collectAsState()
-    val sortedFormatCatalog = remember(formatCatalog, appConfig) {
-        formatCatalog.copy(items = FormatSorter.sorted(formatCatalog.items, appConfig?.defaultFormat?.id))
+    val preferredFormatId by DependencyContainer.settingsRepository.preferredFormatId.collectAsState()
+    val pinnedFormatId = if (preferredFormatId != 0) preferredFormatId else appConfig?.defaultFormat?.id
+    val sortedFormatCatalog = remember(formatCatalog, pinnedFormatId) {
+        formatCatalog.copy(items = FormatSorter.sorted(formatCatalog.items, pinnedFormatId))
     }
 
     val todayMillis = remember { currentTimeMillis() }

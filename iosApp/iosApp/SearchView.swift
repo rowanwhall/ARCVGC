@@ -35,22 +35,25 @@ struct SearchView: View {
     @StateObject private var viewModel: SearchViewModel
     @ObservedObject var catalogStore: CatalogStore
     @ObservedObject var appConfigStore: AppConfigStore
+    @ObservedObject var settingsStore: SettingsStore
     @EnvironmentObject var container: DependencyContainer
     @State private var activeSheet: SearchSheet? = nil
     @State private var searchParams: SearchParams?
 
-    init(catalogStore: CatalogStore, appConfigStore: AppConfigStore, initialSearchParams: SearchParams? = nil) {
-        self._viewModel = StateObject(wrappedValue: SearchViewModel(appConfigRepository: appConfigStore.repo))
+    init(catalogStore: CatalogStore, appConfigStore: AppConfigStore, settingsStore: SettingsStore, initialSearchParams: SearchParams? = nil) {
+        self._viewModel = StateObject(wrappedValue: SearchViewModel(appConfigRepository: appConfigStore.repo, settingsStore: settingsStore, catalogStore: catalogStore))
         self._catalogStore = ObservedObject(wrappedValue: catalogStore)
         self._appConfigStore = ObservedObject(wrappedValue: appConfigStore)
+        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
         _searchParams = State(initialValue: initialSearchParams)
     }
 
     private var sortedFormatItems: [FormatUiModel] {
-        let defaultId = appConfigStore.config?.defaultFormat.id
+        let preferred = settingsStore.preferredFormatId
+        let pinned: Int32? = preferred != 0 ? preferred : appConfigStore.config?.defaultFormat.id
         return FormatSorter.shared.sorted(
             formats: catalogStore.formatItems,
-            defaultFormatId: defaultId.map { KotlinInt(int: $0) }
+            defaultFormatId: pinned.map { KotlinInt(int: $0) }
         )
     }
 
@@ -317,6 +320,9 @@ struct SearchView: View {
                     )
                 }
             }
+            .task { viewModel.applyPreferredFormatIfPossible() }
+            .onChange(of: catalogStore.formatItems) { _, _ in viewModel.applyPreferredFormatIfPossible() }
+            .onChange(of: settingsStore.preferredFormatId) { _, _ in viewModel.applyPreferredFormatIfPossible() }
             .sheet(item: $activeSheet) { sheet in
                 switch sheet {
                 case .pokemon(let team):
@@ -549,6 +555,6 @@ struct DatePickerSheet: View {
 
 #Preview {
     let container = DependencyContainer()
-    return SearchView(catalogStore: container.catalogStore, appConfigStore: container.appConfigStore)
+    return SearchView(catalogStore: container.catalogStore, appConfigStore: container.appConfigStore, settingsStore: container.settingsStore)
         .environmentObject(container)
 }

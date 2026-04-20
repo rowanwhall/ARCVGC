@@ -8,6 +8,7 @@ import com.arcvgc.app.data.FormatCatalogRepository
 import com.arcvgc.app.data.ItemCatalogRepository
 import com.arcvgc.app.data.PokemonCatalogRepository
 import com.arcvgc.app.data.AbilityCatalogRepository
+import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.data.TeraTypeCatalogRepository
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.WinnerFilter
@@ -18,7 +19,10 @@ import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import com.arcvgc.app.ui.model.SearchUiState
 import com.arcvgc.app.ui.model.TeraTypeUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 class SearchViewModel(
     pokemonCatalogRepository: PokemonCatalogRepository,
@@ -26,12 +30,20 @@ class SearchViewModel(
     teraTypeCatalogRepository: TeraTypeCatalogRepository,
     abilityCatalogRepository: AbilityCatalogRepository,
     formatCatalogRepository: FormatCatalogRepository,
-    appConfigRepository: AppConfigRepository? = null
+    appConfigRepository: AppConfigRepository? = null,
+    settingsRepository: SettingsRepository? = null
 ) : ViewModel() {
+
+    private val formatItemsFlow: StateFlow<List<FormatUiModel>> =
+        formatCatalogRepository.state
+            .map { it.items }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, formatCatalogRepository.state.value.items)
 
     private val logic = SearchLogic(
         scope = viewModelScope,
-        appConfigFlow = appConfigRepository?.config
+        appConfigFlow = appConfigRepository?.config,
+        settingsRepository = settingsRepository,
+        formatCatalogFlow = formatItemsFlow
     )
 
     val uiState: StateFlow<SearchUiState> = logic.uiState

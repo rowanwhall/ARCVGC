@@ -33,6 +33,7 @@ enum AppTokens {
     static let settingsRowVerticalPadding: CGFloat = 12
     static let settingsTitleFontSize: CGFloat = 16
     static let settingsSubtitleFontSize: CGFloat = 13
+    static let settingsValueFontSize: CGFloat = 14
 
     // Content List
     static let contentListItemSpacing: CGFloat = 12

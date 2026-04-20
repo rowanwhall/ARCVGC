@@ -7,7 +7,13 @@ final class SettingsStore: ObservableObject {
     @Published private(set) var selectedThemeId: Int32 = 0
     @Published private(set) var darkModeId: Int32 = 0
     @Published private(set) var themeColor: Color = SettingsStore.colorForThemeId(0)
+    @Published private(set) var preferredFormatId: Int32 = 0
     @Published private(set) var settingItems: [SettingItem] = []
+
+    /// Snapshot of the user's effective preferred format (falls back to config default, then 1).
+    var effectivePreferredFormatId: Int32 {
+        Int32(repo.getEffectivePreferredFormatId())
+    }
 
     var colorSchemeOverride: ColorScheme? {
         switch darkModeId {
@@ -17,11 +23,24 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    private let repo: SettingsRepository
+    let repo: SettingsRepository
 
-    init(favoritesRepository: Shared.FavoritesRepository? = nil) {
-        self.repo = SettingsRepository(storage: SettingsStorage(), cacheStorage: CatalogCacheStorage(), favoritesRepository: favoritesRepository)
+    init(favoritesRepository: Shared.FavoritesRepository? = nil, appConfigRepository: Shared.AppConfigRepository? = nil) {
+        self.repo = SettingsRepository(
+            storage: SettingsStorage(),
+            cacheStorage: CatalogCacheStorage(),
+            favoritesRepository: favoritesRepository,
+            appConfigRepository: appConfigRepository
+        )
         syncState()
+
+        // SettingsStore lives for the process lifetime via DependencyContainer, so
+        // we don't cancel this task or weakly capture self — matches AppConfigStore.
+        Task {
+            for await _ in repo.settingItems {
+                self.syncState()
+            }
+        }
     }
 
     func setBooleanSetting(key: String, value: Bool) {
@@ -52,6 +71,7 @@ final class SettingsStore: ObservableObject {
         showWinnerHighlight = repo.isShowWinnerHighlightEnabled()
         selectedThemeId = repo.getSelectedThemeId()
         darkModeId = repo.getDarkModeId()
+        preferredFormatId = Int32(repo.getPreferredFormatId())
         themeColor = SettingsStore.colorForThemeId(selectedThemeId)
         settingItems = repo.getSettingItems()
     }

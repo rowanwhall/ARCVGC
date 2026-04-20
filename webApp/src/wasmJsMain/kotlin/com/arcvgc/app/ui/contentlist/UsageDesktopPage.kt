@@ -72,7 +72,8 @@ internal fun UsageDesktopPage(
             mode = ContentListMode.TopPokemon(formatId = pendingInitialFormatId),
             appConfigRepository = DependencyContainer.appConfigRepository,
             formatCatalogRepository = DependencyContainer.formatCatalogRepository,
-            pokemonCatalogRepository = DependencyContainer.pokemonCatalogRepository
+            pokemonCatalogRepository = DependencyContainer.pokemonCatalogRepository,
+            settingsRepository = DependencyContainer.settingsRepository
         )
     }
 
@@ -98,8 +99,10 @@ internal fun UsageDesktopPage(
     }
     val formatCatalogState by DependencyContainer.formatCatalogRepository.state.collectAsState()
     val appConfig by DependencyContainer.appConfigRepository.config.collectAsState()
-    val sortedFormats = remember(formatCatalogState.items, appConfig) {
-        FormatSorter.sorted(formatCatalogState.items, appConfig?.defaultFormat?.id)
+    val preferredFormatId by DependencyContainer.settingsRepository.preferredFormatId.collectAsState()
+    val pinnedFormatId = if (preferredFormatId != 0) preferredFormatId else appConfig?.defaultFormat?.id
+    val sortedFormats = remember(formatCatalogState.items, pinnedFormatId) {
+        FormatSorter.sorted(formatCatalogState.items, pinnedFormatId)
     }
 
     var selectedPokemon by remember { mutableStateOf<ContentListItem.Pokemon?>(null) }

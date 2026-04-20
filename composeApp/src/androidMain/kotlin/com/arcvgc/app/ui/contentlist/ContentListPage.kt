@@ -124,8 +124,10 @@ fun ContentListPage(
     val showWinnerHighlight by viewModel.settingsRepository.showWinnerHighlight.collectAsStateWithLifecycle()
     val formatCatalogState by viewModel.formatCatalogRepository.state.collectAsStateWithLifecycle()
     val appConfig by viewModel.appConfigRepository.config.collectAsStateWithLifecycle()
-    val sortedFormats = remember(formatCatalogState.items, appConfig) {
-        FormatSorter.sorted(formatCatalogState.items, appConfig?.defaultFormat?.id)
+    val preferredFormatId by viewModel.settingsRepository.preferredFormatId.collectAsStateWithLifecycle()
+    val pinnedFormatId = if (preferredFormatId != 0) preferredFormatId else appConfig?.defaultFormat?.id
+    val sortedFormats = remember(formatCatalogState.items, pinnedFormatId) {
+        FormatSorter.sorted(formatCatalogState.items, pinnedFormatId)
     }
     val selectedFormatId by viewModel.selectedFormatId.collectAsStateWithLifecycle()
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }

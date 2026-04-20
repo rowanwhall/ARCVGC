@@ -27,12 +27,14 @@ struct ContentListView: View {
 
     private let appConfigStore: AppConfigStore?
 
-    /// Live format items from the catalog store, sorted with default format first.
+    /// Live format items from the catalog store, sorted with the user's preferred format pinned
+    /// to the top (falling back to the app-config default when no preference is set).
     private var formatItems: [FormatUiModel] {
-        let defaultId = appConfigStore?.config?.defaultFormat.id
+        let preferred = settingsStore.preferredFormatId
+        let pinned: Int32? = preferred != 0 ? preferred : appConfigStore?.config?.defaultFormat.id
         return FormatSorter.shared.sorted(
             formats: container.catalogStore.formatItems,
-            defaultFormatId: defaultId.map { KotlinInt(int: $0) }
+            defaultFormatId: pinned.map { KotlinInt(int: $0) }
         )
     }
 
@@ -43,7 +45,7 @@ struct ContentListView: View {
         self.settingsStore = settingsStore
         self.appConfigStore = appConfigStore
         self.onSearchParamsChanged = onSearchParamsChanged
-        _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems, appConfigStore: appConfigStore, formatItems: formatItems))
+        _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems, appConfigStore: appConfigStore, formatItems: formatItems, settingsStore: settingsStore))
     }
 
     private func buildShareUrl(battleId: Int32? = nil) -> String {

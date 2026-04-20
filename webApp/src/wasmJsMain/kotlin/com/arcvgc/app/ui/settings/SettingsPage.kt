@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -41,6 +42,7 @@ import com.arcvgc.app.data.SettingsRepository as SharedSettingsRepository
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.DarkModeOption
+import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.SettingItem
 import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchSize
@@ -49,6 +51,7 @@ import com.arcvgc.app.ui.tokens.AppTokens.SettingsRowHorizontalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsRowVerticalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsSubtitleFontSize
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsTitleFontSize
+import com.arcvgc.app.ui.tokens.AppTokens.SettingsValueFontSize
 import kotlinx.browser.window
 
 @Composable
@@ -57,8 +60,10 @@ fun SettingsPage(
 ) {
     val settingsRepository = DependencyContainer.settingsRepository
     val items by settingsRepository.settingItems.collectAsState()
+    val formatCatalogState by DependencyContainer.formatCatalogRepository.state.collectAsState()
     var showThemePicker by remember { mutableStateOf(false) }
     var showDarkModePicker by remember { mutableStateOf(false) }
+    var showFormatPicker by remember { mutableStateOf(false) }
     var confirmActionKey by remember { mutableStateOf<String?>(null) }
 
     Column(
@@ -93,6 +98,12 @@ fun SettingsPage(
                         is SettingItem.ColorChoice -> ColorChoiceSettingRow(
                             item = item,
                             onClick = { showThemePicker = true }
+                        )
+                        is SettingItem.FormatChoice -> FormatChoiceSettingRow(
+                            item = item,
+                            formats = formatCatalogState.items,
+                            catalogLoading = formatCatalogState.isLoading,
+                            onClick = { showFormatPicker = true }
                         )
                         is SettingItem.Action -> ActionSettingRow(
                             item = item,
@@ -168,6 +179,22 @@ fun SettingsPage(
             },
             onDismiss = { showDarkModePicker = false }
         )
+    }
+
+    if (showFormatPicker) {
+        val currentItem = items.filterIsInstance<SettingItem.FormatChoice>().firstOrNull()
+        if (currentItem != null) {
+            PreferredFormatPickerDialog(
+                formats = formatCatalogState.items,
+                selectedFormatId = currentItem.selectedFormatId,
+                defaultFormatId = currentItem.defaultFormatId,
+                onSelect = { formatId ->
+                    settingsRepository.setIntSetting(currentItem.key, formatId)
+                    showFormatPicker = false
+                },
+                onDismiss = { showFormatPicker = false }
+            )
+        }
     }
 }
 
@@ -283,6 +310,112 @@ private fun ToggleSettingRow(
 }
 
 @Composable
+private fun FormatChoiceSettingRow(
+    item: SettingItem.FormatChoice,
+    formats: List<FormatUiModel>,
+    catalogLoading: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val clickable = !catalogLoading && formats.isNotEmpty()
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .let { if (clickable) it.clickable(onClick = onClick) else it }
+            .padding(horizontal = SettingsRowHorizontalPadding, vertical = SettingsRowVerticalPadding),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.title,
+                fontSize = SettingsTitleFontSize,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = item.subtitle,
+                fontSize = SettingsSubtitleFontSize,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (clickable) {
+            val effectiveId = if (item.selectedFormatId == SharedSettingsRepository.USE_DEFAULT_FORMAT) {
+                item.defaultFormatId
+            } else item.selectedFormatId
+            val name = formats.firstOrNull { it.id == effectiveId }?.displayName ?: ""
+            Text(
+                text = name,
+                fontSize = SettingsValueFontSize,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            )
+        } else {
+            CircularProgressIndicator(
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(16.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun PreferredFormatPickerDialog(
+    formats: List<FormatUiModel>,
+    selectedFormatId: Int,
+    defaultFormatId: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val defaultName = formats.firstOrNull { it.id == defaultFormatId }?.displayName
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            tonalElevation = 0.dp,
+            modifier = Modifier.width(DialogWidth)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Preferred Format",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                if (defaultName != null) {
+                    ListItem(
+                        headlineContent = { Text("VGC Default - $defaultName") },
+                        leadingContent = {
+                            RadioButton(
+                                selected = selectedFormatId == SharedSettingsRepository.USE_DEFAULT_FORMAT,
+                                onClick = { onSelect(SharedSettingsRepository.USE_DEFAULT_FORMAT) }
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(SharedSettingsRepository.USE_DEFAULT_FORMAT) }
+                    )
+                }
+                formats.forEach { format ->
+                    ListItem(
+                        headlineContent = { Text(format.displayName) },
+                        leadingContent = {
+                            RadioButton(
+                                selected = selectedFormatId == format.id,
+                                onClick = { onSelect(format.id) }
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(format.id) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun DarkModeChoiceSettingRow(
     item: SettingItem.DarkModeChoice,
     onClick: () -> Unit,
@@ -309,7 +442,7 @@ private fun DarkModeChoiceSettingRow(
         }
         Text(
             text = DarkModeOption.fromId(item.selectedModeId).displayName,
-            fontSize = 14.sp,
+            fontSize = SettingsValueFontSize,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }

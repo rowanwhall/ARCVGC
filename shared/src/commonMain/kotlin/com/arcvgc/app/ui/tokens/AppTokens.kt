@@ -47,6 +47,7 @@ object AppTokens {
     val SettingsRowVerticalPadding = 12.dp
     val SettingsTitleFontSize = 16.sp
     val SettingsSubtitleFontSize = 13.sp
+    val SettingsValueFontSize = 14.sp
 
     // --- Content List ---
     val ContentListItemSpacing = 12.dp

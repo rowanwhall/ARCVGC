@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,7 @@ import com.arcvgc.app.data.repository.SettingsRepository
 import com.arcvgc.app.data.repository.TeraTypeCatalogRepository
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.DarkModeOption
+import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.SettingItem
 import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchSize
@@ -57,6 +59,7 @@ import com.arcvgc.app.ui.tokens.AppTokens.SettingsRowHorizontalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsRowVerticalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsSubtitleFontSize
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsTitleFontSize
+import com.arcvgc.app.ui.tokens.AppTokens.SettingsValueFontSize
 import com.arcvgc.app.data.SettingsRepository as SharedSettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -68,7 +71,7 @@ class SettingsViewModel @Inject constructor(
     private val pokemonCatalogRepository: PokemonCatalogRepository,
     private val itemCatalogRepository: ItemCatalogRepository,
     private val teraTypeCatalogRepository: TeraTypeCatalogRepository,
-    private val formatCatalogRepository: FormatCatalogRepository
+    val formatCatalogRepository: FormatCatalogRepository
 ) : ViewModel() {
     fun performAction(key: String) {
         settingsRepository.performAction(key)
@@ -86,8 +89,10 @@ fun SettingsPage(
 ) {
     val context = LocalContext.current
     val items by viewModel.settingsRepository.settingItems.collectAsStateWithLifecycle()
+    val formatCatalogState by viewModel.formatCatalogRepository.state.collectAsStateWithLifecycle()
     var showThemePicker by remember { mutableStateOf(false) }
     var showDarkModePicker by remember { mutableStateOf(false) }
+    var showFormatPicker by remember { mutableStateOf(false) }
     var confirmActionKey by remember { mutableStateOf<String?>(null) }
 
     Column(
@@ -118,6 +123,12 @@ fun SettingsPage(
                     is SettingItem.DarkModeChoice -> DarkModeChoiceSettingRow(
                         item = item,
                         onClick = { showDarkModePicker = true }
+                    )
+                    is SettingItem.FormatChoice -> FormatChoiceSettingRow(
+                        item = item,
+                        formats = formatCatalogState.items,
+                        catalogLoading = formatCatalogState.isLoading,
+                        onClick = { showFormatPicker = true }
                     )
                     is SettingItem.Action -> ActionSettingRow(
                         item = item,
@@ -190,6 +201,22 @@ fun SettingsPage(
             },
             onDismiss = { showDarkModePicker = false }
         )
+    }
+
+    if (showFormatPicker) {
+        val currentItem = items.filterIsInstance<SettingItem.FormatChoice>().firstOrNull()
+        if (currentItem != null) {
+            PreferredFormatPickerSheet(
+                formats = formatCatalogState.items,
+                selectedFormatId = currentItem.selectedFormatId,
+                defaultFormatId = currentItem.defaultFormatId,
+                onSelect = { formatId ->
+                    viewModel.settingsRepository.setIntSetting(currentItem.key, formatId)
+                    showFormatPicker = false
+                },
+                onDismiss = { showFormatPicker = false }
+            )
+        }
     }
 }
 
@@ -321,6 +348,110 @@ private fun LinkSettingRow(
 }
 
 @Composable
+private fun FormatChoiceSettingRow(
+    item: SettingItem.FormatChoice,
+    formats: List<FormatUiModel>,
+    catalogLoading: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val clickable = !catalogLoading && formats.isNotEmpty()
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .let { if (clickable) it.clickable(onClick = onClick) else it }
+            .padding(horizontal = SettingsRowHorizontalPadding, vertical = SettingsRowVerticalPadding),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.title,
+                fontSize = SettingsTitleFontSize,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = item.subtitle,
+                fontSize = SettingsSubtitleFontSize,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (clickable) {
+            val effectiveId = if (item.selectedFormatId == SharedSettingsRepository.USE_DEFAULT_FORMAT) {
+                item.defaultFormatId
+            } else item.selectedFormatId
+            val name = formats.firstOrNull { it.id == effectiveId }?.displayName ?: ""
+            Text(
+                text = name,
+                fontSize = SettingsValueFontSize,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            )
+        } else {
+            CircularProgressIndicator(
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(16.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PreferredFormatPickerSheet(
+    formats: List<FormatUiModel>,
+    selectedFormatId: Int,
+    defaultFormatId: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val defaultName = formats.firstOrNull { it.id == defaultFormatId }?.displayName
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Text(
+            text = "Preferred Format",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        if (defaultName != null) {
+            ListItem(
+                headlineContent = { Text("VGC Default - $defaultName") },
+                leadingContent = {
+                    RadioButton(
+                        selected = selectedFormatId == SharedSettingsRepository.USE_DEFAULT_FORMAT,
+                        onClick = { onSelect(SharedSettingsRepository.USE_DEFAULT_FORMAT) }
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSelect(SharedSettingsRepository.USE_DEFAULT_FORMAT) }
+            )
+        }
+        formats.forEach { format ->
+            ListItem(
+                headlineContent = { Text(format.displayName) },
+                leadingContent = {
+                    RadioButton(
+                        selected = selectedFormatId == format.id,
+                        onClick = { onSelect(format.id) }
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSelect(format.id) }
+            )
+        }
+    }
+}
+
+@Composable
 private fun DarkModeChoiceSettingRow(
     item: SettingItem.DarkModeChoice,
     onClick: () -> Unit,
@@ -347,7 +478,7 @@ private fun DarkModeChoiceSettingRow(
         }
         Text(
             text = DarkModeOption.fromId(item.selectedModeId).displayName,
-            fontSize = 14.sp,
+            fontSize = SettingsValueFontSize,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -450,6 +581,60 @@ private fun ToggleSettingRowPreview() {
                 isEnabled = true
             ),
             onToggle = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FormatChoiceSettingRowLoadedPreview() {
+    MaterialTheme {
+        FormatChoiceSettingRow(
+            item = SettingItem.FormatChoice(
+                key = "preferred_format",
+                title = "Preferred Format",
+                subtitle = "What do you want to see first?",
+                selectedFormatId = 1,
+                defaultFormatId = 1
+            ),
+            formats = listOf(FormatUiModel(id = 1, displayName = "[Gen 9 Champions] VGC 2026 Reg M-A (Bo3)")),
+            catalogLoading = false,
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FormatChoiceSettingRowLoadingPreview() {
+    MaterialTheme {
+        FormatChoiceSettingRow(
+            item = SettingItem.FormatChoice(
+                key = "preferred_format",
+                title = "Preferred Format",
+                subtitle = "What do you want to see first?",
+                selectedFormatId = 0,
+                defaultFormatId = 0
+            ),
+            formats = emptyList(),
+            catalogLoading = true,
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DarkModeChoiceSettingRowPreview() {
+    MaterialTheme {
+        DarkModeChoiceSettingRow(
+            item = SettingItem.DarkModeChoice(
+                key = "dark_mode",
+                title = "Dark Mode",
+                subtitle = "Choose between system, light, or dark appearance.",
+                selectedModeId = 0
+            ),
+            onClick = {}
         )
     }
 }

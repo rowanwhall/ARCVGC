@@ -114,10 +114,10 @@ class SettingsRepositoryTest {
     // --- settingItems ---
 
     @Test
-    fun settingItems_returns7Items() {
+    fun settingItems_returns8Items() {
         val repo = createRepo()
         val items = repo.settingItems.value
-        assertEquals(7, items.size)
+        assertEquals(8, items.size)
     }
 
     @Test
@@ -126,11 +126,61 @@ class SettingsRepositoryTest {
         val items = repo.settingItems.value
         assertIs<SettingItem.DarkModeChoice>(items[0])
         assertIs<SettingItem.ColorChoice>(items[1])
-        assertIs<SettingItem.Toggle>(items[2])
-        assertIs<SettingItem.Action>(items[3])
+        assertIs<SettingItem.FormatChoice>(items[2])
+        assertIs<SettingItem.Toggle>(items[3])
         assertIs<SettingItem.Action>(items[4])
-        assertIs<SettingItem.Link>(items[5])
+        assertIs<SettingItem.Action>(items[5])
         assertIs<SettingItem.Link>(items[6])
+        assertIs<SettingItem.Link>(items[7])
+    }
+
+    // --- Preferred format ---
+
+    @Test
+    fun defaultPreferredFormatId_isZero() {
+        val repo = createRepo()
+        assertEquals(0, repo.preferredFormatId.value)
+        assertEquals(0, repo.getPreferredFormatId())
+    }
+
+    @Test
+    fun setPreferredFormatId_updatesFlowAndPersists() {
+        val storage = FakeSettingsStorage()
+        val repo = SettingsRepository(storage)
+        repo.setPreferredFormatId(42)
+        assertEquals(42, repo.preferredFormatId.value)
+        assertEquals(42, storage.getInt("preferred_format", 0))
+    }
+
+    @Test
+    fun setIntSetting_dispatchesToSetPreferredFormatId() {
+        val repo = createRepo()
+        repo.setIntSetting("preferred_format", 99)
+        assertEquals(99, repo.preferredFormatId.value)
+    }
+
+    @Test
+    fun getEffectivePreferredFormatId_prefersUserSelection() {
+        val repo = createRepo()
+        repo.setPreferredFormatId(7)
+        assertEquals(7, repo.getEffectivePreferredFormatId())
+    }
+
+    @Test
+    fun getEffectivePreferredFormatId_fallsBackToOne_whenNoConfig() {
+        val repo = createRepo()
+        // No user selection, no appConfigRepository — should return 1
+        assertEquals(1, repo.getEffectivePreferredFormatId())
+    }
+
+    @Test
+    fun settingItems_formatChoice_exposesSelectedAndDefaultIds() {
+        val storage = FakeSettingsStorage()
+        storage.putInt("preferred_format", 5)
+        val repo = SettingsRepository(storage)
+        val formatChoice = repo.settingItems.value.filterIsInstance<SettingItem.FormatChoice>().first()
+        assertEquals(5, formatChoice.selectedFormatId)
+        assertEquals(0, formatChoice.defaultFormatId)
     }
 
     // --- Default values ---

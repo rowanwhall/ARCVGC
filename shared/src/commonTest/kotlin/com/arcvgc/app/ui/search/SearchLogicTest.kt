@@ -71,6 +71,44 @@ class SearchLogicTest {
     }
 
     @Test
+    fun init_preferredFormatOverridesConfigDefault() = runTest(UnconfinedTestDispatcher()) {
+        val configFlow = MutableStateFlow<AppConfig?>(testConfig())
+        val catalogFlow = MutableStateFlow(listOf(
+            FormatUiModel(id = 5, displayName = "Reg G"),
+            FormatUiModel(id = 42, displayName = "Reg M-A")
+        ))
+        val settingsStorage = com.arcvgc.app.testutil.FakeSettingsStorage().apply {
+            putInt("preferred_format", 42)
+        }
+        val settings = com.arcvgc.app.data.SettingsRepository(settingsStorage)
+        val logic = SearchLogic(
+            scope = backgroundScope,
+            appConfigFlow = configFlow,
+            settingsRepository = settings,
+            formatCatalogFlow = catalogFlow
+        )
+
+        val format = logic.uiState.value.selectedFormat
+        assertEquals(42, format?.id)
+        assertEquals("Reg M-A", format?.displayName)
+    }
+
+    @Test
+    fun init_preferredFormatUnset_usesConfigDefault() = runTest(UnconfinedTestDispatcher()) {
+        val configFlow = MutableStateFlow<AppConfig?>(testConfig())
+        val catalogFlow = MutableStateFlow(listOf(FormatUiModel(id = 5, displayName = "Reg G")))
+        val settings = com.arcvgc.app.data.SettingsRepository(com.arcvgc.app.testutil.FakeSettingsStorage())
+        val logic = SearchLogic(
+            scope = backgroundScope,
+            appConfigFlow = configFlow,
+            settingsRepository = settings,
+            formatCatalogFlow = catalogFlow
+        )
+
+        assertEquals(5, logic.uiState.value.selectedFormat?.id)
+    }
+
+    @Test
     fun setUnratedOnly_clearsRatingsAndSwitchesSortOrder() {
         val logic = SearchLogic()
         logic.setMinRating(1500)

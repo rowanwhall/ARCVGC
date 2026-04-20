@@ -4,6 +4,7 @@ import com.arcvgc.app.data.AppConfigRepository
 import com.arcvgc.app.data.BattleRepositoryApi
 import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
+import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.data.currentTimeMillis
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PokemonProfile
@@ -38,7 +39,8 @@ class ContentListLogic(
     private var mode: ContentListMode,
     private val pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
     private val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null,
-    initialTopPokemonFetchCount: Int = DEFAULT_TOP_POKEMON_COUNT
+    initialTopPokemonFetchCount: Int = DEFAULT_TOP_POKEMON_COUNT,
+    private val settingsRepository: SettingsRepository? = null
 ) {
     // Count the next fetch should request.
     private var topPokemonFetchCount: Int = initialTopPokemonFetchCount
@@ -60,17 +62,26 @@ class ContentListLogic(
 
     private val _selectedFormatId = MutableStateFlow(
         when (mode) {
-            is ContentListMode.Home -> appConfigRepository.getDefaultFormatId()
+            is ContentListMode.Home -> preferredFormatId()
             is ContentListMode.Pokemon -> (mode as ContentListMode.Pokemon).formatId
-                ?: appConfigRepository.getDefaultFormatId()
+                ?: preferredFormatId()
             is ContentListMode.Player -> (mode as ContentListMode.Player).formatId
-                ?: appConfigRepository.getDefaultFormatId()
+                ?: preferredFormatId()
             is ContentListMode.TopPokemon -> (mode as ContentListMode.TopPokemon).formatId
-                ?: appConfigRepository.getDefaultFormatId()
+                ?: preferredFormatId()
             else -> 0
         }
     )
     val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()
+
+    private fun preferredFormatId(): Int =
+        settingsRepository?.getEffectivePreferredFormatId()
+            ?: appConfigRepository.getDefaultFormatId()
+
+    private fun hasExplicitPreferredFormat(): Boolean {
+        val repo = settingsRepository ?: return false
+        return repo.getPreferredFormatId() != SettingsRepository.USE_DEFAULT_FORMAT
+    }
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -95,14 +106,16 @@ class ContentListLogic(
     private fun waitForConfigThenLoad() {
         scope.launch {
             try {
+                // A user-chosen preferred format is usable immediately; otherwise
+                // we still need the config to know which default to fall back to.
                 val currentConfig = appConfigRepository.config.value
-                if (currentConfig != null) {
-                    _selectedFormatId.value = appConfigRepository.getDefaultFormatId()
+                if (hasExplicitPreferredFormat() || currentConfig != null) {
+                    _selectedFormatId.value = preferredFormatId()
                     loadContent()
                 } else {
                     _uiState.update { it.copy(isLoading = true) }
                     appConfigRepository.config.filterNotNull().first()
-                    _selectedFormatId.value = appConfigRepository.getDefaultFormatId()
+                    _selectedFormatId.value = preferredFormatId()
                     loadContent()
                 }
             } catch (e: Exception) {

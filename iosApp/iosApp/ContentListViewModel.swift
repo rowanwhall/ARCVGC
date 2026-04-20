@@ -65,7 +65,7 @@ final class ContentListViewModel: ObservableObject {
     private let logicScope: Kotlinx_coroutines_coreCoroutineScope
     private var observationTasks: [Task<Void, Never>] = []
 
-    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore? = nil, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = []) {
+    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore? = nil, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], settingsStore: SettingsStore? = nil) {
         self.mode = mode
         self.formatItems = formatItems
 
@@ -85,7 +85,8 @@ final class ContentListViewModel: ObservableObject {
             mode: sharedMode,
             pokemonCatalogItems: pokemonCatalogItems,
             pokemonCatalogState: nil,
-            initialTopPokemonFetchCount: 6
+            initialTopPokemonFetchCount: 6,
+            settingsRepository: settingsStore?.repo
         )
 
         self.state = logic.uiState.value

@@ -106,7 +106,7 @@ private struct ThemedContentView: View {
             }
             .tag(1)
 
-            SearchView(catalogStore: container.catalogStore, appConfigStore: container.appConfigStore, initialSearchParams: deepLinkSearchParams)
+            SearchView(catalogStore: container.catalogStore, appConfigStore: container.appConfigStore, settingsStore: container.settingsStore, initialSearchParams: deepLinkSearchParams)
                 .id(deepLinkSearchParams?.hashValue ?? 0)
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")

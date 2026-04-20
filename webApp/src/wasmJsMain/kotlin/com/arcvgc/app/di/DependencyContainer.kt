@@ -44,5 +44,7 @@ object DependencyContainer {
     val formatCatalogRepository: FormatCatalogRepository by lazy {
         FormatCatalogRepository(apiService, cacheStorage)
     }
-    val settingsRepository: SettingsRepository by lazy { SettingsRepository(SettingsStorage(), cacheStorage, favoritesRepository) }
+    val settingsRepository: SettingsRepository by lazy {
+        SettingsRepository(SettingsStorage(), cacheStorage, favoritesRepository, appConfigRepository)
+    }
 }
