@@ -88,6 +88,14 @@ class DeepLinkTargetTest {
         assertNull(parseDeepLink("/player/"))
     }
 
+    @Test
+    fun parsePlayerLinkPercentEncoded() {
+        val result = parseDeepLink("/player/steven%20he%20vgc?battle=103733")!!
+        assertIs<DeepLinkTarget.Player>(result.target)
+        assertEquals("steven he vgc", (result.target as DeepLinkTarget.Player).name)
+        assertEquals(103733, result.battleId)
+    }
+
     // Favorites deep links
 
     @Test

@@ -58,7 +58,7 @@ fun parseDeepLink(path: String): DeepLink? {
         segments.size == 2 && segments[0] == "pokemon" ->
             segments[1].toIntOrNull()?.let { DeepLinkTarget.Pokemon(it) }
         segments.size >= 2 && segments[0] == "player" -> {
-            val name = segments.drop(1).joinToString("/")
+            val name = segments.drop(1).joinToString("/") { decodePercent(it) }
             name.takeIf { it.isNotBlank() }?.let { DeepLinkTarget.Player(it) }
         }
         segments.size == 2 && segments[0] == "favorites" && segments[1] in VALID_FAVORITES_TYPES ->
