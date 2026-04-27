@@ -89,25 +89,29 @@ internal fun ContentListItemRow(
             onClick = { onItemClick(item) }
         )
         is ContentListItem.HighlightButtons -> {
+            val isExpanded = LocalWindowSizeClass.current == WindowSizeClass.Expanded
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = if (isExpanded) {
+                    Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                } else {
+                    Arrangement.spacedBy(8.dp)
+                }
             ) {
                 item.buttons.forEach { button ->
                     Surface(
                         onClick = { onHighlightBattleClick(button.battleId) },
-                        modifier = Modifier.weight(1f),
+                        modifier = if (isExpanded) Modifier else Modifier.weight(1f),
                         shape = RoundedCornerShape(CardCornerRadius),
                         color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(modifier = if (isExpanded) Modifier else Modifier.weight(1f)) {
                                 Text(
                                     text = button.label,
                                     style = MaterialTheme.typography.bodyMedium,
