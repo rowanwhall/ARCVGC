@@ -31,9 +31,16 @@ enum AppTokens {
     // Settings Row
     static let settingsRowHorizontalPadding: CGFloat = 16
     static let settingsRowVerticalPadding: CGFloat = 12
+    static let settingsRowAccessoryGap: CGFloat = 12
     static let settingsTitleFontSize: CGFloat = 16
     static let settingsSubtitleFontSize: CGFloat = 13
     static let settingsValueFontSize: CGFloat = 14
+
+    // Settings Section (grouped card style)
+    static let settingsSectionHorizontalPadding: CGFloat = 16
+    static let settingsSectionHeaderTopPadding: CGFloat = 20
+    static let settingsSectionHeaderBottomPadding: CGFloat = 6
+    static let settingsSectionHeaderFontSize: CGFloat = 12
 
     // Content List
     static let contentListItemSpacing: CGFloat = 12

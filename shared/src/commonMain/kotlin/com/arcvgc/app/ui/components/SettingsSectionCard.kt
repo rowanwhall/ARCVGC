@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,6 +16,7 @@ import com.arcvgc.app.ui.tokens.AppTokens.SettingsSectionHeaderBottomPadding
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsSectionHeaderFontSize
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsSectionHeaderTopPadding
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsSectionHorizontalPadding
+import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
 
 @Composable
 fun SettingsSectionHeader(
@@ -45,7 +47,8 @@ fun SettingsSectionCard(
             .fillMaxWidth()
             .padding(horizontal = SettingsSectionHorizontalPadding),
         shape = RoundedCornerShape(CardCornerRadius),
-        color = MaterialTheme.colorScheme.surface
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column { content() }
     }

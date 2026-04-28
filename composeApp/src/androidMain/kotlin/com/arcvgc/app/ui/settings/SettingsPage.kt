@@ -59,6 +59,7 @@ import com.arcvgc.app.ui.components.SettingsSectionHeader
 import com.arcvgc.app.ui.model.SettingItem
 import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.ColorSwatchSize
+import com.arcvgc.app.ui.tokens.AppTokens.SettingsRowAccessoryGap
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsRowHorizontalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsRowVerticalPadding
 import com.arcvgc.app.ui.tokens.AppTokens.SettingsSubtitleFontSize
@@ -113,7 +114,7 @@ fun SettingsPage(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Text(
             text = "Settings",
@@ -308,7 +309,7 @@ private fun ColorChoiceSettingRow(
         }
         Box(
             modifier = Modifier
-                .padding(start = 12.dp)
+                .padding(start = SettingsRowAccessoryGap)
                 .size(ColorSwatchSize)
                 .clip(RoundedCornerShape(ColorSwatchCornerRadius))
                 .background(Color(AppTheme.fromId(item.selectedThemeId).primaryColor))
@@ -417,7 +418,7 @@ private fun FormatChoiceSettingRow(
                 textAlign = androidx.compose.ui.text.style.TextAlign.End,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 12.dp)
+                    .padding(start = SettingsRowAccessoryGap)
             )
         } else {
             CircularProgressIndicator(
