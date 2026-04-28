@@ -14,6 +14,10 @@ data class FormatDetailDto(
     val id: Int,
     val name: String,
     @SerialName("formatted_name") val formattedName: String? = null,
+    @SerialName("is_historic") val isHistoric: Boolean = false,
+    @SerialName("is_open_teamsheet") val isOpenTeamsheet: Boolean = false,
+    @SerialName("is_official") val isOfficial: Boolean = false,
+    @SerialName("has_series") val hasSeries: Boolean = false,
     @SerialName("match_count") val matchCount: Int = 0,
     @SerialName("team_count") val teamCount: Int = 0,
     @SerialName("top_pokemon") val topPokemon: List<TopPokemonDto>? = null

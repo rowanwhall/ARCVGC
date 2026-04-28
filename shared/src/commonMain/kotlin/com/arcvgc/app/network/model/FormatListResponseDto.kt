@@ -14,5 +14,9 @@ data class FormatListResponseDto(
 data class FormatListItemDto(
     val id: Int,
     val name: String,
-    @SerialName("formatted_name") val formattedName: String? = null
+    @SerialName("formatted_name") val formattedName: String? = null,
+    @SerialName("is_historic") val isHistoric: Boolean = false,
+    @SerialName("is_open_teamsheet") val isOpenTeamsheet: Boolean = false,
+    @SerialName("is_official") val isOfficial: Boolean = false,
+    @SerialName("has_series") val hasSeries: Boolean = false
 )

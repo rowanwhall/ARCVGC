@@ -13,7 +13,11 @@ fun FormatDetailDto.toDomain(): FormatDetail {
         formattedName = formattedName,
         matchCount = matchCount,
         teamCount = teamCount,
-        topPokemon = topPokemon?.map { it.toDomain() }.orEmpty()
+        topPokemon = topPokemon?.map { it.toDomain() }.orEmpty(),
+        isHistoric = isHistoric,
+        isOpenTeamsheet = isOpenTeamsheet,
+        isOfficial = isOfficial,
+        hasSeries = hasSeries
     )
 }
 

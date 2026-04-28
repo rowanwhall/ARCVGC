@@ -6,7 +6,11 @@ data class FormatDetail(
     val formattedName: String?,
     val matchCount: Int,
     val teamCount: Int,
-    val topPokemon: List<TopPokemon>
+    val topPokemon: List<TopPokemon>,
+    val isHistoric: Boolean = false,
+    val isOpenTeamsheet: Boolean = false,
+    val isOfficial: Boolean = false,
+    val hasSeries: Boolean = false
 )
 
 data class TopPokemon(

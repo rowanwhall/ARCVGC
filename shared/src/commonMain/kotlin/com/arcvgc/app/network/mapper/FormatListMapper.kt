@@ -6,5 +6,9 @@ import com.arcvgc.app.network.model.FormatListItemDto
 fun FormatListItemDto.toDomain(): Format = Format(
     id = id,
     name = name,
-    formattedName = formattedName
+    formattedName = formattedName,
+    isHistoric = isHistoric,
+    isOpenTeamsheet = isOpenTeamsheet,
+    isOfficial = isOfficial,
+    hasSeries = hasSeries
 )

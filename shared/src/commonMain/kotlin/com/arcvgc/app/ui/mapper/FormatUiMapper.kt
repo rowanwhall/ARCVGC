@@ -8,7 +8,11 @@ object FormatUiMapper {
     fun map(format: Format): FormatUiModel {
         return FormatUiModel(
             id = format.id,
-            displayName = format.formattedName ?: format.name
+            displayName = format.formattedName ?: format.name,
+            isHistoric = format.isHistoric,
+            isOpenTeamsheet = format.isOpenTeamsheet,
+            isOfficial = format.isOfficial,
+            hasSeries = format.hasSeries
         )
     }
 

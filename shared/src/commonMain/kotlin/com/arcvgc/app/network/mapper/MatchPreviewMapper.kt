@@ -52,7 +52,11 @@ fun FormatDto.toDomain(): Format {
     return Format(
         id = id,
         name = name,
-        formattedName = formattedName
+        formattedName = formattedName,
+        isHistoric = isHistoric,
+        isOpenTeamsheet = isOpenTeamsheet,
+        isOfficial = isOfficial,
+        hasSeries = hasSeries
     )
 }
 
