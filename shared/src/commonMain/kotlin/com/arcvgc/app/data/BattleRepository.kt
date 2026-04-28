@@ -155,6 +155,29 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
         }
     }
 
+    suspend fun submitReplay(replayUrl: String): BattleDetailUiModel {
+        return when (val result = apiService.submitReplay(replayUrl)) {
+            is NetworkResult.Success -> BattleDetailUiMapper.map(result.data)
+            is NetworkResult.Error -> {
+                val error = Exception(result.message)
+                captureException(error)
+                throw error
+            }
+        }
+    }
+
+    /**
+     * Non-throwing variant for iOS — returns null on error instead of throwing.
+     * Errors are reported to Sentry automatically.
+     */
+    suspend fun submitReplayOrNull(replayUrl: String): BattleDetailUiModel? {
+        return try {
+            submitReplay(replayUrl)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     suspend fun getMatchDetail(id: Int): BattleDetailUiModel {
         return when (val result = apiService.getMatchDetail(id)) {
             is NetworkResult.Success -> BattleDetailUiMapper.map(result.data)

@@ -23,6 +23,7 @@ interface BattleRepository {
         formatId: Int? = null
     ): Result<Pair<List<BattleCardUiModel>, Pagination>>
     suspend fun getMatchDetail(id: Int): Result<BattleDetailUiModel>
+    suspend fun submitReplay(replayUrl: String): Result<BattleDetailUiModel>
     suspend fun searchMatches(
         filters: List<SearchFilterSlot>,
         formatId: Int = 1,
@@ -106,6 +107,14 @@ class BattleRepositoryImpl @Inject constructor(
     override suspend fun getMatchDetail(id: Int): Result<BattleDetailUiModel> {
         return try {
             Result.success(shared.getMatchDetail(id))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun submitReplay(replayUrl: String): Result<BattleDetailUiModel> {
+        return try {
+            Result.success(shared.submitReplay(replayUrl))
         } catch (e: Exception) {
             Result.failure(e)
         }

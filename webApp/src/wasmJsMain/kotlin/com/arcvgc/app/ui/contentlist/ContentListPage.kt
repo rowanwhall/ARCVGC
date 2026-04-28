@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddLink
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Icon
@@ -53,6 +54,7 @@ import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.rememberViewModel
 import com.arcvgc.app.ui.replaceHistoryStateWithPath
+import com.arcvgc.app.ui.submitreplay.SubmitReplayDialogHost
 
 @Composable
 fun ContentListPage(
@@ -67,7 +69,8 @@ fun ContentListPage(
     showToolbarWithoutBack: Boolean = false,
     mirrorUrl: Boolean = true
 ) {
-    val hasToolbar = onBack != null || showToolbarWithoutBack
+    val hasToolbar = onBack != null || showToolbarWithoutBack || mode is ContentListMode.Home
+    var showSubmitReplayDialog by remember { mutableStateOf(false) }
     val viewModelKey = when (mode) {
         is ContentListMode.Home -> "content_list_home"
         is ContentListMode.Favorites -> "content_list_favorites_${mode.contentType.name}"
@@ -371,6 +374,15 @@ fun ContentListPage(
                         }
                     },
                     actions = {
+                        if (mode is ContentListMode.Home) {
+                            IconButton(onClick = { showSubmitReplayDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.AddLink,
+                                    contentDescription = "Submit replay",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         if (mode is ContentListMode.Pokemon) {
                             val pId = mode.pokemonId
                             val isFav = pId in favoritePokemonIds
@@ -497,6 +509,15 @@ fun ContentListPage(
                                     }
                                 },
                                 actions = {
+                                    if (mode is ContentListMode.Home) {
+                                        IconButton(onClick = { showSubmitReplayDialog = true }) {
+                                            Icon(
+                                                imageVector = Icons.Default.AddLink,
+                                                contentDescription = "Submit replay",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
                                     if (mode is ContentListMode.Pokemon) {
                                         val pId = mode.pokemonId
                                         val isFav = pId in favoritePokemonIds
@@ -562,6 +583,10 @@ fun ContentListPage(
                     }
                 }
             }
+        }
+
+        if (showSubmitReplayDialog) {
+            SubmitReplayDialogHost(onDismiss = { showSubmitReplayDialog = false })
         }
     }
 }

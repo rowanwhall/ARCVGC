@@ -8,6 +8,7 @@ struct ContentListView: View {
     @State private var pokemonNavTarget: PokemonNavTarget? = nil
     @State private var playerNavTarget: PlayerNavTarget? = nil
     @State private var topPokemonFormatId: Int32? = nil
+    @State private var showSubmitReplayDialog: Bool = false
     @FocusState private var isSearchFieldFocused: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @EnvironmentObject private var container: DependencyContainer
@@ -60,8 +61,23 @@ struct ContentListView: View {
         }
     }
 
+    private var showSubmitReplayButton: Bool {
+        if case .home = mode { return true }
+        return false
+    }
+
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        if showSubmitReplayButton {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showSubmitReplayDialog = true
+                } label: {
+                    Image(systemName: "link.badge.plus")
+                        .foregroundColor(Color(.secondaryLabel))
+                }
+            }
+        }
         if showShareButton {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if let url = URL(string: buildShareUrl()) {
@@ -427,6 +443,13 @@ struct ContentListView: View {
                     appConfigStore: appConfigStore
                 )
             }
+        }
+        .sheet(isPresented: $showSubmitReplayDialog) {
+            SubmitReplayDialog(
+                repository: repository,
+                onDismiss: { showSubmitReplayDialog = false }
+            )
+            .presentationDetents([.medium])
         }
         .onAppear {
             if viewModel.state.items.isEmpty {

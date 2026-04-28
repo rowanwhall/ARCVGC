@@ -37,6 +37,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import com.arcvgc.app.network.model.SearchRequestDto
+import com.arcvgc.app.network.model.SubmitReplayRequestDto
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -290,6 +291,26 @@ class ApiService {
                 NetworkResult.Success(response.data.toDomain())
             } else {
                 NetworkResult.Error("Pokémon not found")
+            }
+        } catch (e: Exception) {
+            captureException(e)
+            NetworkResult.Error(e.message ?: "Unknown error", e)
+        }
+    }
+
+    suspend fun submitReplay(replayUrl: String): NetworkResult<MatchDetail> {
+        return try {
+            val response: MatchDetailResponseDto = client
+                .post("${ApiConstants.BASE_URL}${ApiConstants.MATCHES_ENDPOINT}") {
+                    contentType(ContentType.Application.Json)
+                    setBody(SubmitReplayRequestDto(replayUrl))
+                }
+                .body()
+
+            if (response.success && !response.data.isNullOrEmpty()) {
+                NetworkResult.Success(response.data.first().toDomain())
+            } else {
+                NetworkResult.Error("Replay submission failed")
             }
         } catch (e: Exception) {
             captureException(e)

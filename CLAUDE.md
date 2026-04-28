@@ -56,6 +56,7 @@ Base URL: `https://arcvgc.com`
 |---|---|
 | `GET /api/v1/config/` | App config (default format, min versions, catalog version) |
 | `GET /api/v1/matches/?limit=50&page=1` | Paginated battle list (supports `order_by`, `rated_only`, `format_id`) |
+| `POST /api/v1/matches/` | Submit a replay (body: `{replay_url}`) — returns the resulting `MatchDetail` |
 | `GET /api/v1/matches/{id}` | Battle detail |
 | `GET /api/v1/pokemon/?exclude_illegal=true&limit=50&page=N` | Pokemon catalog |
 | `GET /api/v1/pokemon/{id}?format_id=N` | Pokemon profile (stats, top teammates/items/moves/abilities/tera types) |
@@ -74,7 +75,7 @@ All catalog endpoints return `{ success, data, pagination }` using `PaginationDt
 
 ## Key Screens
 
-- **ContentListPage** — Generic paginated list page for Home (with logo + "ARC" branding in Orbitron font), Usage (Top Pokemon), Search results, per-Pokemon battles, Favorites sub-tabs. Sort toggle in Search/Pokemon/Player modes. Desktop web also shows logo + "ARC" branding in the NavigationRail header.
+- **ContentListPage** — Generic paginated list page for Home (with logo + "ARC" branding in Orbitron font), Usage (Top Pokemon), Search results, per-Pokemon battles, Favorites sub-tabs. Sort toggle in Search/Pokemon/Player modes. Desktop web also shows logo + "ARC" branding in the NavigationRail header. Home mode renders a gradient toolbar with a top-right "Submit replay" action (`AddLink` icon / `link.badge.plus` on iOS) that opens `SubmitReplayDialog` — a URL input that POSTs to `/api/v1/matches/` via `BattleRepository.submitReplay`.
 - **BattleDetailScreen** — Full-screen battle detail page with format name + rating header (shows "Unrated" with info icon when null), "Game N" replay buttons (with chevron and info icon), and team preview cards. Closed teamsheet matches gracefully hide ability/item row and moves section. On iPad/Android tablet/desktop web, team Pokemon display in a centered grid (max 3 columns, fixed 280pt/dp card width); on iPhone/Android phone/mobile web, a horizontal scroll carousel
 - **SearchPage** — Team-based Pokemon filter UI with team1/team2 support. On mobile (Android phone, iPhone, mobile web), both single-team and two-team cards show avatar + name (non-compact only) + sub-filter badge icons (item/tera images, ability initials in outlined circles) + MoreVert context menu for Item/Tera/Ability pickers. On iPad, Android tablet, and desktop web, cards show inline Item/Tera/Ability buttons (larger avatar, dedicated button per filter). Two-team mode shows compact side-by-side cards. All pickers include a "None" option to clear a selection. Includes format (pre-selected from config), winner filter (`WinnerFilter` enum — non-compact: "Wins Only" toggle for team1; compact: two side-by-side mutually exclusive "Winner" buttons, only visible when pokemon are added), rating, date, player name, sort order. Search results show "vs" divider between team1 and team2 Pokemon chips in the header (chips display: `[pokemon_sprite] "Name - Ability" [item_icon] [tera_icon]`); winning team's chips get an accent-colored outline border (`WinnerBorderWidth`). Player name search returns all fuzzy matches (via `searchPlayersByName`), not just the first
 - **FavoritesPage** — Three sub-tabs: Battles, Pokemon, Players

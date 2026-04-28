@@ -136,3 +136,33 @@ private fun SettingsSectionCardPreview() {
         }
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+private fun SubmitReplayDialogPreview() {
+    MaterialTheme {
+        SubmitReplayDialog(
+            onDismiss = {},
+            onSubmit = {},
+            isSubmitting = false,
+            error = null,
+            hasClipboardText = true,
+            onPasteClipboard = { null }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SubmitReplayDialogErrorPreview() {
+    MaterialTheme {
+        SubmitReplayDialog(
+            onDismiss = {},
+            onSubmit = {},
+            isSubmitting = false,
+            error = "Replay URL is invalid",
+            hasClipboardText = false,
+            onPasteClipboard = { null }
+        )
+    }
+}

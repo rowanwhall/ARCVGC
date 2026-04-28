@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddLink
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -83,6 +84,7 @@ import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.shareBattleUrl
 import com.arcvgc.app.ui.shareUrlForMode
+import com.arcvgc.app.ui.submitreplay.SubmitReplayDialogHost
 import com.arcvgc.app.ui.tokens.AppTokens.ContentListItemSpacing
 import com.arcvgc.app.ui.tokens.AppTokens.BrandFontFamily
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
@@ -136,6 +138,7 @@ fun ContentListPage(
     var topPokemonFormatId by remember { mutableStateOf<Int?>(null) }
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
+    var showSubmitReplayDialog by remember { mutableStateOf(false) }
 
     val statusBarHeight = if (consumeTopInsets) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
     val isTopPokemonMode = mode is ContentListMode.TopPokemon
@@ -159,7 +162,7 @@ fun ContentListPage(
             uiState = filteredUiState,
             extraBottomPadding = if (isTopPokemonMode) UsageBottomBarReservedHeight else 0.dp,
             header = mode.toHeaderUiModel(),
-            hasToolbar = onBack != null,
+            hasToolbar = onBack != null || mode is ContentListMode.Home,
             consumeTopInsets = consumeTopInsets,
             showWinnerHighlight = showWinnerHighlight,
             onRefresh = {
@@ -247,19 +250,30 @@ fun ContentListPage(
             )
         }
 
-        if (onBack != null) {
+        if (onBack != null || mode is ContentListMode.Home) {
             GradientToolbar(
                 statusBarPadding = statusBarHeight,
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
                     }
                 },
                 actions = {
-                    if (mode !is ContentListMode.TopPokemon) {
+                    if (mode is ContentListMode.Home) {
+                        IconButton(onClick = { showSubmitReplayDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.AddLink,
+                                contentDescription = "Submit replay",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (mode !is ContentListMode.TopPokemon && mode !is ContentListMode.Home) {
                         val actionContext = LocalContext.current
                         IconButton(onClick = {
                             val url = shareUrlForMode(mode, null)
@@ -420,6 +434,10 @@ fun ContentListPage(
                     modifier = Modifier.fillMaxSize()
                 )
             }
+        }
+
+        if (showSubmitReplayDialog) {
+            SubmitReplayDialogHost(onDismiss = { showSubmitReplayDialog = false })
         }
     }
 }
