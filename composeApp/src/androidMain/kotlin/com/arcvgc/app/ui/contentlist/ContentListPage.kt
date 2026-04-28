@@ -82,6 +82,7 @@ import com.arcvgc.app.ui.model.unwrapSectionGroups
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
+import com.arcvgc.app.ui.model.excludeHistoric
 import com.arcvgc.app.ui.shareBattleUrl
 import com.arcvgc.app.ui.shareUrlForMode
 import com.arcvgc.app.ui.submitreplay.SubmitReplayDialogHost
@@ -128,8 +129,13 @@ fun ContentListPage(
     val appConfig by viewModel.appConfigRepository.config.collectAsStateWithLifecycle()
     val preferredFormatId by viewModel.settingsRepository.preferredFormatId.collectAsStateWithLifecycle()
     val pinnedFormatId = if (preferredFormatId != 0) preferredFormatId else appConfig?.defaultFormat?.id
-    val sortedFormats = remember(formatCatalogState.items, pinnedFormatId) {
-        FormatSorter.sorted(formatCatalogState.items, pinnedFormatId)
+    val isHomeMode = mode is ContentListMode.Home
+    val selectorFormats = remember(formatCatalogState.items, isHomeMode, pinnedFormatId) {
+        if (isHomeMode) formatCatalogState.items.excludeHistoric(keepId = pinnedFormatId)
+        else formatCatalogState.items
+    }
+    val sortedFormats = remember(selectorFormats, pinnedFormatId) {
+        FormatSorter.sorted(selectorFormats, pinnedFormatId)
     }
     val selectedFormatId by viewModel.selectedFormatId.collectAsStateWithLifecycle()
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }

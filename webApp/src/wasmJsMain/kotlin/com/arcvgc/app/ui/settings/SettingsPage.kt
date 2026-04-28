@@ -43,6 +43,7 @@ import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.DarkModeOption
 import com.arcvgc.app.ui.model.FormatUiModel
+import com.arcvgc.app.ui.model.excludeHistoric
 import com.arcvgc.app.ui.components.SettingsSectionCard
 import com.arcvgc.app.ui.components.SettingsSectionHeader
 import com.arcvgc.app.ui.model.SettingItem
@@ -64,6 +65,10 @@ fun SettingsPage(
     val sections by settingsRepository.settingSections.collectAsState()
     val allItems = sections.flatMap { it.items }
     val formatCatalogState by DependencyContainer.formatCatalogRepository.state.collectAsState()
+    val currentFormatChoice = allItems.filterIsInstance<SettingItem.FormatChoice>().firstOrNull()
+    val preferredFormatChoices = remember(formatCatalogState.items, currentFormatChoice?.selectedFormatId) {
+        formatCatalogState.items.excludeHistoric(keepId = currentFormatChoice?.selectedFormatId)
+    }
     var showThemePicker by remember { mutableStateOf(false) }
     var showDarkModePicker by remember { mutableStateOf(false) }
     var showFormatPicker by remember { mutableStateOf(false) }
@@ -116,7 +121,7 @@ fun SettingsPage(
                                     )
                                     is SettingItem.FormatChoice -> FormatChoiceSettingRow(
                                         item = item,
-                                        formats = formatCatalogState.items,
+                                        formats = preferredFormatChoices,
                                         catalogLoading = formatCatalogState.isLoading,
                                         onClick = { showFormatPicker = true }
                                     )
@@ -203,7 +208,7 @@ fun SettingsPage(
         val currentItem = allItems.filterIsInstance<SettingItem.FormatChoice>().firstOrNull()
         if (currentItem != null) {
             PreferredFormatPickerDialog(
-                formats = formatCatalogState.items,
+                formats = preferredFormatChoices,
                 selectedFormatId = currentItem.selectedFormatId,
                 defaultFormatId = currentItem.defaultFormatId,
                 onSelect = { formatId ->

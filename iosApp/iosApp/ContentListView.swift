@@ -33,8 +33,19 @@ struct ContentListView: View {
     private var formatItems: [FormatUiModel] {
         let preferred = settingsStore.preferredFormatId
         let pinned: Int32? = preferred != 0 ? preferred : appConfigStore?.config?.defaultFormat.id
+        let allFormats = container.catalogStore.formatItems
+        let formats: [FormatUiModel]
+        if case .home = mode {
+            formats = allFormats.filter { format in
+                if !format.isHistoric { return true }
+                if let keep = pinned { return format.id == keep }
+                return false
+            }
+        } else {
+            formats = allFormats
+        }
         return FormatSorter.shared.sorted(
-            formats: container.catalogStore.formatItems,
+            formats: formats,
             defaultFormatId: pinned.map { KotlinInt(int: $0) }
         )
     }

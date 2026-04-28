@@ -57,8 +57,8 @@ struct UsageBottomBar: View {
         var body: some View {
             UsageBottomBar(
                 formats: [
-                    FormatUiModel(id: 1, displayName: "[Gen 9] VGC 2026 Reg A"),
-                    FormatUiModel(id: 2, displayName: "[Gen 9] VGC 2026 Reg M-A (Bo3)")
+                    FormatUiModel(id: 1, displayName: "[Gen 9] VGC 2026 Reg A", isHistoric: false, isOpenTeamsheet: true, isOfficial: true, hasSeries: true),
+                    FormatUiModel(id: 2, displayName: "[Gen 9] VGC 2026 Reg M-A (Bo3)", isHistoric: false, isOpenTeamsheet: true, isOfficial: true, hasSeries: true)
                 ],
                 selectedFormatId: 2,
                 onFormatSelected: { _ in },

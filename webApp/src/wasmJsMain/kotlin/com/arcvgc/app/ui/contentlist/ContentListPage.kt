@@ -52,6 +52,7 @@ import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.model.FormatSorter
+import com.arcvgc.app.ui.model.excludeHistoric
 import com.arcvgc.app.ui.rememberViewModel
 import com.arcvgc.app.ui.replaceHistoryStateWithPath
 import com.arcvgc.app.ui.submitreplay.SubmitReplayDialogHost
@@ -102,8 +103,13 @@ fun ContentListPage(
     val appConfig by viewModel.appConfigState.collectAsState()
     val preferredFormatId by DependencyContainer.settingsRepository.preferredFormatId.collectAsState()
     val pinnedFormatId = if (preferredFormatId != 0) preferredFormatId else appConfig?.defaultFormat?.id
-    val sortedFormats = remember(formatCatalogState?.value?.items, pinnedFormatId) {
-        FormatSorter.sorted(formatCatalogState?.value?.items ?: emptyList(), pinnedFormatId)
+    val isHomeMode = mode is ContentListMode.Home
+    val selectorFormats = remember(formatCatalogState?.value?.items, isHomeMode, pinnedFormatId) {
+        val items = formatCatalogState?.value?.items ?: emptyList()
+        if (isHomeMode) items.excludeHistoric(keepId = pinnedFormatId) else items
+    }
+    val sortedFormats = remember(selectorFormats, pinnedFormatId) {
+        FormatSorter.sorted(selectorFormats, pinnedFormatId)
     }
     val selectedFormatId by viewModel.selectedFormatId.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()

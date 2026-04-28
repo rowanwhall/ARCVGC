@@ -20,7 +20,7 @@ final class SubmitReplayViewModel: ObservableObject {
         error = nil
 
         Task {
-            let detail = await repository.submitReplayOrNull(replayUrl: replayUrl)
+            let detail = try? await repository.submitReplayOrNull(replayUrl: replayUrl)
             if detail != nil {
                 isSubmitting = false
                 onSuccess()

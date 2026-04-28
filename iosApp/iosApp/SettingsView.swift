@@ -93,7 +93,7 @@ struct SettingsView: View {
                         case .formatChoice(let formatChoice):
                             FormatChoiceSettingRow(
                                 formatChoice: formatChoice,
-                                formats: catalogStore?.formatItems ?? [],
+                                formats: (catalogStore?.formatItems ?? []).filter { !$0.isHistoric || $0.id == formatChoice.selectedFormatId },
                                 catalogLoading: catalogStore?.formatLoading ?? true,
                                 onTap: { showFormatPicker = true }
                             )
@@ -159,7 +159,7 @@ struct SettingsView: View {
         .sheet(isPresented: $showFormatPicker) {
             if let formatChoice = currentFormatChoice {
                 PreferredFormatPickerSheet(
-                    formats: catalogStore?.formatItems ?? [],
+                    formats: (catalogStore?.formatItems ?? []).filter { !$0.isHistoric || $0.id == formatChoice.selectedFormatId },
                     selectedFormatId: formatChoice.selectedFormatId,
                     defaultFormatId: formatChoice.defaultFormatId,
                     onSelect: { formatId in

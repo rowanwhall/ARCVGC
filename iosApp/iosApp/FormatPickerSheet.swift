@@ -63,9 +63,9 @@ struct FormatPickerSheet: View {
 #Preview {
     FormatPickerSheet(
         items: [
-            FormatUiModel(id: 1, displayName: "VGC 2026 Reg H"),
-            FormatUiModel(id: 2, displayName: "OU"),
-            FormatUiModel(id: 3, displayName: "Ubers")
+            FormatUiModel(id: 1, displayName: "VGC 2026 Reg H", isHistoric: false, isOpenTeamsheet: true, isOfficial: true, hasSeries: true),
+            FormatUiModel(id: 2, displayName: "OU", isHistoric: false, isOpenTeamsheet: false, isOfficial: false, hasSeries: false),
+            FormatUiModel(id: 3, displayName: "Ubers", isHistoric: false, isOpenTeamsheet: false, isOfficial: false, hasSeries: false)
         ],
         isLoading: false,
         error: nil,

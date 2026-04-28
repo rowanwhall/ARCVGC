@@ -11,3 +11,6 @@ data class FormatUiModel(
     val isOfficial: Boolean = false,
     val hasSeries: Boolean = false
 )
+
+fun List<FormatUiModel>.excludeHistoric(keepId: Int? = null): List<FormatUiModel> =
+    filter { !it.isHistoric || it.id == keepId }
