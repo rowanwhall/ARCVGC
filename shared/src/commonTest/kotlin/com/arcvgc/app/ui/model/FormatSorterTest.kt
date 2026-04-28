@@ -72,4 +72,32 @@ class FormatSorterTest {
         assertEquals(listOf(2, 1), result.map { it.id })
         assertEquals("Reg I", result.first().displayName)
     }
+
+    @Test
+    fun officialDefaultGroupsOfficialFirstThenUnofficial() {
+        val formats = listOf(
+            FormatUiModel(id = 1, displayName = "Unofficial 1", isOfficial = false),
+            FormatUiModel(id = 2, displayName = "Official 2", isOfficial = true),
+            FormatUiModel(id = 3, displayName = "Unofficial 3", isOfficial = false),
+            FormatUiModel(id = 4, displayName = "Official 4", isOfficial = true),
+            FormatUiModel(id = 5, displayName = "Official 5", isOfficial = true)
+        )
+        // Default is id=4 (official). Order: 4, then official desc (5, 2), then unofficial desc (3, 1)
+        val result = FormatSorter.sorted(formats, defaultFormatId = 4)
+        assertEquals(listOf(4, 5, 2, 3, 1), result.map { it.id })
+    }
+
+    @Test
+    fun unofficialDefaultGroupsUnofficialFirstThenOfficial() {
+        val formats = listOf(
+            FormatUiModel(id = 1, displayName = "Unofficial 1", isOfficial = false),
+            FormatUiModel(id = 2, displayName = "Official 2", isOfficial = true),
+            FormatUiModel(id = 3, displayName = "Unofficial 3", isOfficial = false),
+            FormatUiModel(id = 4, displayName = "Official 4", isOfficial = true),
+            FormatUiModel(id = 5, displayName = "Unofficial 5", isOfficial = false)
+        )
+        // Default is id=3 (unofficial). Order: 3, then unofficial desc (5, 1), then official desc (4, 2)
+        val result = FormatSorter.sorted(formats, defaultFormatId = 3)
+        assertEquals(listOf(3, 5, 1, 4, 2), result.map { it.id })
+    }
 }

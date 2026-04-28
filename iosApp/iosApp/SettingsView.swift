@@ -37,6 +37,12 @@ struct SettingsView: View {
             .first
     }
 
+    private func preferredFormats(for formatChoice: SettingItem.FormatChoice) -> [FormatUiModel] {
+        let filtered = (catalogStore?.formatItems ?? []).filter { !$0.isHistoric || $0.id == formatChoice.selectedFormatId }
+        let effectiveId: Int32 = formatChoice.selectedFormatId == 0 ? formatChoice.defaultFormatId : formatChoice.selectedFormatId
+        return FormatSorter.shared.sorted(formats: filtered, defaultFormatId: KotlinInt(int: effectiveId))
+    }
+
     var body: some View {
         List {
             ForEach(settingsStore.settingSections, id: \.title) { section in
@@ -93,7 +99,7 @@ struct SettingsView: View {
                         case .formatChoice(let formatChoice):
                             FormatChoiceSettingRow(
                                 formatChoice: formatChoice,
-                                formats: (catalogStore?.formatItems ?? []).filter { !$0.isHistoric || $0.id == formatChoice.selectedFormatId },
+                                formats: preferredFormats(for: formatChoice),
                                 catalogLoading: catalogStore?.formatLoading ?? true,
                                 onTap: { showFormatPicker = true }
                             )
@@ -159,7 +165,7 @@ struct SettingsView: View {
         .sheet(isPresented: $showFormatPicker) {
             if let formatChoice = currentFormatChoice {
                 PreferredFormatPickerSheet(
-                    formats: (catalogStore?.formatItems ?? []).filter { !$0.isHistoric || $0.id == formatChoice.selectedFormatId },
+                    formats: preferredFormats(for: formatChoice),
                     selectedFormatId: formatChoice.selectedFormatId,
                     defaultFormatId: formatChoice.defaultFormatId,
                     onSelect: { formatId in

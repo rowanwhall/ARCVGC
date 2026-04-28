@@ -6,6 +6,8 @@ object FormatSorter {
         val sorted = formats.sortedByDescending { it.id }
         if (defaultFormatId == null) return sorted
         val defaultFormat = sorted.find { it.id == defaultFormatId } ?: return sorted
-        return listOf(defaultFormat) + sorted.filter { it.id != defaultFormat.id }
+        val rest = sorted.filter { it.id != defaultFormat.id }
+        val (matching, other) = rest.partition { it.isOfficial == defaultFormat.isOfficial }
+        return listOf(defaultFormat) + matching + other
     }
 }

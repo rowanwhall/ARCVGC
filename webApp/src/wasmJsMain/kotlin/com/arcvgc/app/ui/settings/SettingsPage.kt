@@ -42,6 +42,7 @@ import com.arcvgc.app.data.SettingsRepository as SharedSettingsRepository
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.DarkModeOption
+import com.arcvgc.app.ui.model.FormatSorter
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.excludeHistoric
 import com.arcvgc.app.ui.components.SettingsSectionCard
@@ -66,8 +67,14 @@ fun SettingsPage(
     val allItems = sections.flatMap { it.items }
     val formatCatalogState by DependencyContainer.formatCatalogRepository.state.collectAsState()
     val currentFormatChoice = allItems.filterIsInstance<SettingItem.FormatChoice>().firstOrNull()
-    val preferredFormatChoices = remember(formatCatalogState.items, currentFormatChoice?.selectedFormatId) {
-        formatCatalogState.items.excludeHistoric(keepId = currentFormatChoice?.selectedFormatId)
+    val preferredFormatChoices = remember(formatCatalogState.items, currentFormatChoice?.selectedFormatId, currentFormatChoice?.defaultFormatId) {
+        val effectiveId = currentFormatChoice?.let {
+            if (it.selectedFormatId == SharedSettingsRepository.USE_DEFAULT_FORMAT) it.defaultFormatId else it.selectedFormatId
+        }
+        FormatSorter.sorted(
+            formatCatalogState.items.excludeHistoric(keepId = currentFormatChoice?.selectedFormatId),
+            effectiveId
+        )
     }
     var showThemePicker by remember { mutableStateOf(false) }
     var showDarkModePicker by remember { mutableStateOf(false) }
