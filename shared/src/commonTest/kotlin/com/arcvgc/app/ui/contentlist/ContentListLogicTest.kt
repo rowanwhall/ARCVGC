@@ -33,6 +33,7 @@ import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.collectListKeys
 import com.arcvgc.app.ui.model.unwrapSectionGroups
+import com.arcvgc.app.ui.model.unwrapSingletonSectionGroups
 import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import kotlinx.coroutines.Dispatchers
@@ -398,6 +399,24 @@ class ContentListLogicTest {
             listOf("format_selector", "section_A", "section_B", "section_C", "section_D"),
             flat.map { it.listKey }
         )
+    }
+
+    @Test
+    fun unwrapSingletonSectionGroups_unwrapsOnlySingleSectionGroups() {
+        val section = { header: String -> ContentListItem.Section(header, emptyList()) }
+        val input: List<ContentListItem> = listOf(
+            ContentListItem.FormatSelector,
+            ContentListItem.SectionGroup(listOf(section("Solo"))),
+            ContentListItem.SectionGroup(listOf(section("A"), section("B"))),
+            section("D")
+        )
+        val result = input.unwrapSingletonSectionGroups()
+        assertEquals(4, result.size)
+        assertEquals("format_selector", result[0].listKey)
+        assertEquals("section_Solo", result[1].listKey)
+        assertTrue(result[2] is ContentListItem.SectionGroup)
+        assertEquals(2, (result[2] as ContentListItem.SectionGroup).sections.size)
+        assertEquals("section_D", result[3].listKey)
     }
 
     @Test

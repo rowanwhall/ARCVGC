@@ -78,6 +78,7 @@ import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.unwrapSectionGroups
+import com.arcvgc.app.ui.model.unwrapSingletonSectionGroups
 import com.arcvgc.app.ui.tokens.AppTokens.BrandFontFamily
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.ContentListItemSpacing
@@ -234,7 +235,7 @@ internal fun ContentListContent(
 
             else -> {
                 val topLevelItems = if (windowSizeClass == WindowSizeClass.Expanded) {
-                    uiState.items
+                    uiState.items.unwrapSingletonSectionGroups()
                 } else {
                     uiState.items.unwrapSectionGroups()
                 }

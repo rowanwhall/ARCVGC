@@ -105,6 +105,18 @@ fun List<ContentListItem>.unwrapSectionGroups(): List<ContentListItem> =
     }
 
 /**
+ * Like [unwrapSectionGroups] but only unwraps groups that contain a single section.
+ * Used by desktop web so a singleton group renders through the normal top-level
+ * Section path (full content width, centered header) instead of the column-packing
+ * layout, while multi-section groups keep their packed layout.
+ */
+fun List<ContentListItem>.unwrapSingletonSectionGroups(): List<ContentListItem> =
+    flatMap { item ->
+        if (item is ContentListItem.SectionGroup && item.sections.size == 1) item.sections
+        else listOf(item)
+    }
+
+/**
  * Collects every `listKey` reachable from this list, recursing through
  * [ContentListItem.Section] children and [ContentListItem.SectionGroup] sections
  * so nested items contribute their own keys. Used by pagination dedup to avoid
