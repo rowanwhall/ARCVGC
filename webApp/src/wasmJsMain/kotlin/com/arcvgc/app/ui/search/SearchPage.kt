@@ -189,7 +189,8 @@ fun SearchPage(
                             onTeraClick = { teraPickerTeam = 1; teraPickerSlotIndex = rowIndex },
                             onAbilityClick = { abilityPickerTeam = 1; abilityPickerSlotIndex = rowIndex },
                             compact = true,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            selectedFormat = uiState.selectedFormat
                         )
                     } else {
                         Spacer(modifier = Modifier.weight(1f))
@@ -202,7 +203,8 @@ fun SearchPage(
                             onTeraClick = { teraPickerTeam = 2; teraPickerSlotIndex = rowIndex },
                             onAbilityClick = { abilityPickerTeam = 2; abilityPickerSlotIndex = rowIndex },
                             compact = true,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            selectedFormat = uiState.selectedFormat
                         )
                     } else {
                         Spacer(modifier = Modifier.weight(1f))
@@ -254,7 +256,8 @@ fun SearchPage(
                     onRemove = { viewModel.removePokemon(index) },
                     onItemClick = { itemPickerTeam = 1; itemPickerSlotIndex = index },
                     onTeraClick = { teraPickerTeam = 1; teraPickerSlotIndex = index },
-                    onAbilityClick = { abilityPickerTeam = 1; abilityPickerSlotIndex = index }
+                    onAbilityClick = { abilityPickerTeam = 1; abilityPickerSlotIndex = index },
+                    selectedFormat = uiState.selectedFormat
                 )
             }
             item {

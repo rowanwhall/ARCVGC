@@ -3,6 +3,7 @@ package com.arcvgc.app.ui.search
 import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.WinnerFilter
+import com.arcvgc.app.ui.mapper.FormatUiMapper
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
@@ -44,16 +45,12 @@ class SearchLogic(
                     }
                 } else {
                     appConfigFlow.filterNotNull().collect { config ->
-                        val format = config.defaultFormat
-                        _uiState.update {
-                            SearchStateReducer.setDefaultFormat(
-                                it,
-                                FormatUiModel(
-                                    id = format.id,
-                                    displayName = format.formattedName ?: format.name
-                                )
-                            )
-                        }
+                        val format = resolveDefaultFormat(
+                            config,
+                            SettingsRepository.USE_DEFAULT_FORMAT,
+                            emptyList()
+                        )
+                        _uiState.update { SearchStateReducer.setDefaultFormat(it, format) }
                     }
                 }
             }
@@ -68,11 +65,7 @@ class SearchLogic(
         if (preferredFormatId != SettingsRepository.USE_DEFAULT_FORMAT) {
             catalog.firstOrNull { it.id == preferredFormatId }?.let { return it }
         }
-        val default = config.defaultFormat
-        return FormatUiModel(
-            id = default.id,
-            displayName = default.formattedName ?: default.name
-        )
+        return FormatUiMapper.map(config.defaultFormat)
     }
 
     fun addPokemon(pokemon: PokemonPickerUiModel) {

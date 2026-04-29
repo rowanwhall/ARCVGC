@@ -6,6 +6,7 @@ data class SearchUiState(
     val filterSlots: List<SearchFilterSlotUiModel> = emptyList(),
     val team2FilterSlots: List<SearchFilterSlotUiModel> = emptyList(),
     val selectedFormat: FormatUiModel? = null,
+    val userSelectedFormat: Boolean = false,
     val selectedMinRating: Int? = null,
     val selectedMaxRating: Int? = null,
     val unratedOnly: Boolean = false,

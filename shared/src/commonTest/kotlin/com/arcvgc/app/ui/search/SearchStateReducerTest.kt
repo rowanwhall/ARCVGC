@@ -180,6 +180,35 @@ class SearchStateReducerTest {
         assertEquals(99, state.selectedFormat?.id)
     }
 
+    @Test
+    fun setDefaultFormat_overwritesPreviousDefault() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.setDefaultFormat(state, FormatUiModel(id = 1, displayName = "Initial"))
+
+        state = SearchStateReducer.setDefaultFormat(state, FormatUiModel(id = 5, displayName = "Preferred"))
+
+        assertEquals(5, state.selectedFormat?.id)
+        assertEquals("Preferred", state.selectedFormat?.displayName)
+    }
+
+    @Test
+    fun setFormat_marksUserSelected() {
+        var state = SearchStateReducer.initialState()
+        state = SearchStateReducer.setFormat(state, FormatUiModel(id = 7, displayName = "User Pick"))
+
+        assertEquals(true, state.userSelectedFormat)
+    }
+
+    @Test
+    fun setDefaultFormat_doesNotMarkUserSelected() {
+        val state = SearchStateReducer.setDefaultFormat(
+            SearchStateReducer.initialState(),
+            FormatUiModel(id = 1, displayName = "Default")
+        )
+
+        assertEquals(false, state.userSelectedFormat)
+    }
+
     // --- Rating ---
 
     @Test

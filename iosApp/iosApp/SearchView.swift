@@ -113,7 +113,8 @@ struct SearchView: View {
                                         onItemTap: { activeSheet = .item(team: 1, slotIndex: rowIndex) },
                                         onTeraTap: { activeSheet = .teraType(team: 1, slotIndex: rowIndex) },
                                         onAbilityTap: { activeSheet = .ability(team: 1, slotIndex: rowIndex) },
-                                        compact: true
+                                        compact: true,
+                                        selectedFormat: viewModel.state.selectedFormat
                                     )
                                 } else {
                                     Spacer().frame(maxWidth: .infinity)
@@ -125,7 +126,8 @@ struct SearchView: View {
                                         onItemTap: { activeSheet = .item(team: 2, slotIndex: rowIndex) },
                                         onTeraTap: { activeSheet = .teraType(team: 2, slotIndex: rowIndex) },
                                         onAbilityTap: { activeSheet = .ability(team: 2, slotIndex: rowIndex) },
-                                        compact: true
+                                        compact: true,
+                                        selectedFormat: viewModel.state.selectedFormat
                                     )
                                 } else {
                                     Spacer().frame(maxWidth: .infinity)
@@ -149,7 +151,8 @@ struct SearchView: View {
                                 onRemove: { viewModel.removePokemon(at: index) },
                                 onItemTap: { activeSheet = .item(team: 1, slotIndex: index) },
                                 onTeraTap: { activeSheet = .teraType(team: 1, slotIndex: index) },
-                                onAbilityTap: { activeSheet = .ability(team: 1, slotIndex: index) }
+                                onAbilityTap: { activeSheet = .ability(team: 1, slotIndex: index) },
+                                selectedFormat: viewModel.state.selectedFormat
                             )
                             .id("single_\(index)_\(team1Slots.count)")
                         }

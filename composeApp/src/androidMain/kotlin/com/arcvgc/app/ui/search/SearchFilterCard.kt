@@ -47,6 +47,7 @@ import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.components.AutoSizeText
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.PreviewAsyncImage
+import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.ItemUiModel
 import com.arcvgc.app.ui.model.SearchFilterSlotUiModel
 import com.arcvgc.app.ui.model.TeraTypeUiModel
@@ -63,10 +64,12 @@ fun SearchFilterCard(
     onTeraClick: () -> Unit,
     onAbilityClick: () -> Unit,
     modifier: Modifier = Modifier,
-    compact: Boolean = false
+    compact: Boolean = false,
+    selectedFormat: FormatUiModel? = null
 ) {
     val isPreview = LocalInspectionMode.current
     val isMobile = LocalWindowSizeClass.current == WindowSizeClass.Compact
+    val showSetFilters = selectedFormat?.isOpenTeamsheet != false
 
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),
@@ -98,16 +101,20 @@ fun SearchFilterCard(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                FilterBadges(slot, isPreview)
+                if (showSetFilters) {
+                    FilterBadges(slot, isPreview)
+                }
                 if (compact) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
-                CompactFilterMenu(
-                    slot = slot,
-                    onItemClick = onItemClick,
-                    onTeraClick = onTeraClick,
-                    onAbilityClick = onAbilityClick
-                )
+                if (showSetFilters) {
+                    CompactFilterMenu(
+                        slot = slot,
+                        onItemClick = onItemClick,
+                        onTeraClick = onTeraClick,
+                        onAbilityClick = onAbilityClick
+                    )
+                }
             } else {
                 PokemonAvatar(
                     imageUrl = slot.pokemonImageUrl,
@@ -123,13 +130,15 @@ fun SearchFilterCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    InlineItemButton(slot, isPreview, onItemClick)
-                    InlineTeraButton(slot, isPreview, onTeraClick)
-                    InlineAbilityButton(slot, onAbilityClick)
+                if (showSetFilters) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        InlineItemButton(slot, isPreview, onItemClick)
+                        InlineTeraButton(slot, isPreview, onTeraClick)
+                        InlineAbilityButton(slot, onAbilityClick)
+                    }
                 }
             }
 
@@ -462,6 +471,32 @@ private fun SearchFilterCardCompactPreview() {
             onAbilityClick = {},
             compact = true,
             modifier = Modifier.padding(8.dp)
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SearchFilterCardClosedTeamsheetPreview() {
+    MaterialTheme {
+        SearchFilterCard(
+            slot = SearchFilterSlotUiModel(
+                pokemonId = 149,
+                pokemonName = "Dragonite",
+                pokemonImageUrl = null,
+                item = ItemUiModel(id = 1, name = "Choice Band", imageUrl = null),
+                teraType = TeraTypeUiModel(id = 1, name = "Normal", imageUrl = null)
+            ),
+            onRemove = {},
+            onItemClick = {},
+            onTeraClick = {},
+            onAbilityClick = {},
+            modifier = Modifier.padding(8.dp),
+            selectedFormat = FormatUiModel(
+                id = 1,
+                displayName = "Reg G (Closed Sheets)",
+                isOpenTeamsheet = false
+            )
         )
     }
 }

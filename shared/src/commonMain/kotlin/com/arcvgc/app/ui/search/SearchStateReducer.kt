@@ -114,11 +114,11 @@ object SearchStateReducer {
     }
 
     fun setFormat(state: SearchUiState, format: FormatUiModel): SearchUiState {
-        return state.copy(selectedFormat = format)
+        return state.copy(selectedFormat = format, userSelectedFormat = true)
     }
 
     fun setDefaultFormat(state: SearchUiState, format: FormatUiModel): SearchUiState {
-        if (state.selectedFormat != null) return state
+        if (state.userSelectedFormat) return state
         return state.copy(selectedFormat = format)
     }
 

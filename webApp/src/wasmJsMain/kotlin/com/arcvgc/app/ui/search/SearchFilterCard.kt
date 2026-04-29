@@ -46,6 +46,7 @@ import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.components.AutoSizeText
 import com.arcvgc.app.ui.components.PokemonAvatar
+import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.SearchFilterSlotUiModel
 import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.SmallFilterButtonFontSize
@@ -60,9 +61,11 @@ fun SearchFilterCard(
     onTeraClick: () -> Unit,
     onAbilityClick: () -> Unit,
     modifier: Modifier = Modifier,
-    compact: Boolean = false
+    compact: Boolean = false,
+    selectedFormat: FormatUiModel? = null
 ) {
     val context = LocalPlatformContext.current
+    val showSetFilters = selectedFormat?.isOpenTeamsheet != false
 
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),
@@ -95,11 +98,15 @@ fun SearchFilterCard(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                FilterBadges(slot, context)
+                if (showSetFilters) {
+                    FilterBadges(slot, context)
+                }
                 if (compact) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
-                CompactFilterMenu(slot, onItemClick, onTeraClick, onAbilityClick)
+                if (showSetFilters) {
+                    CompactFilterMenu(slot, onItemClick, onTeraClick, onAbilityClick)
+                }
             } else {
                 PokemonAvatar(
                     imageUrl = slot.pokemonImageUrl,
@@ -115,13 +122,15 @@ fun SearchFilterCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    InlineItemButton(slot, context, onItemClick)
-                    InlineTeraButton(slot, context, onTeraClick)
-                    InlineAbilityButton(slot, onAbilityClick)
+                if (showSetFilters) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        InlineItemButton(slot, context, onItemClick)
+                        InlineTeraButton(slot, context, onTeraClick)
+                        InlineAbilityButton(slot, onAbilityClick)
+                    }
                 }
             }
 

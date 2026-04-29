@@ -8,11 +8,17 @@ struct SearchFilterCard: View {
     var onTeraTap: () -> Void
     var onAbilityTap: () -> Void
     var compact: Bool = false
+    var selectedFormat: FormatUiModel? = nil
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var isExpanded: Bool {
         horizontalSizeClass == .regular
+    }
+
+    private var showSetFilters: Bool {
+        guard let format = selectedFormat else { return true }
+        return format.isOpenTeamsheet
     }
 
     var body: some View {
@@ -36,12 +42,16 @@ struct SearchFilterCard: View {
                     .minimumScaleFactor(0.6)
             }
 
-            badgesContent
+            if showSetFilters {
+                badgesContent
+            }
 
             Spacer()
 
             // Context menu
-            filterMenu
+            if showSetFilters {
+                filterMenu
+            }
 
             // Remove button
             Button { onRemove() } label: {
@@ -72,10 +82,12 @@ struct SearchFilterCard: View {
                 .minimumScaleFactor(0.6)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: 8) {
-                InlineItemButton(slot: slot, onTap: onItemTap)
-                InlineTeraButton(slot: slot, onTap: onTeraTap)
-                InlineAbilityButton(slot: slot, onTap: onAbilityTap)
+            if showSetFilters {
+                HStack(spacing: 8) {
+                    InlineItemButton(slot: slot, onTap: onItemTap)
+                    InlineTeraButton(slot: slot, onTap: onTeraTap)
+                    InlineAbilityButton(slot: slot, onTap: onAbilityTap)
+                }
             }
 
             Button { onRemove() } label: {
@@ -304,6 +316,32 @@ private func abilityInitials(_ name: String) -> String {
         onTeraTap: {},
         onAbilityTap: {},
         compact: true
+    )
+    .padding()
+}
+
+#Preview("Closed Teamsheet") {
+    SearchFilterCard(
+        slot: SearchFilterSlotUiModel(
+            pokemonId: 149,
+            pokemonName: "Dragonite",
+            pokemonImageUrl: nil,
+            item: ItemUiModel(id: 1, name: "Choice Band", imageUrl: nil),
+            teraType: TeraTypeUiModel(id: 1, name: "Normal", imageUrl: nil),
+            ability: AbilityUiModel(id: 1, name: "Inner Focus")
+        ),
+        onRemove: {},
+        onItemTap: {},
+        onTeraTap: {},
+        onAbilityTap: {},
+        selectedFormat: FormatUiModel(
+            id: 1,
+            displayName: "Reg G (Closed Sheets)",
+            isHistoric: false,
+            isOpenTeamsheet: false,
+            isOfficial: false,
+            hasSeries: false
+        )
     )
     .padding()
 }
