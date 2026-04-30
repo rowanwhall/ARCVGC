@@ -43,12 +43,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -97,6 +99,14 @@ import org.jetbrains.compose.resources.painterResource
 // navigation, state hoisting, and master-detail layout while this file owns
 // the grid-builder body, section emission, and helper layouts.
 // ---------------------------------------------------------------------------
+
+/**
+ * Read inside lazy-grid items to decide whether grid items animate placement
+ * changes. Sourced from `ContentListGridConfig.animateListItems` (controlled by
+ * the user's "Enable Animations" setting on web). Defaults to true so any
+ * accidental read outside a provider matches historical behavior.
+ */
+private val LocalContentListAnimateItems = staticCompositionLocalOf { true }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -177,6 +187,7 @@ internal fun ContentListContent(
 
     val fullSpan: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
 
+    CompositionLocalProvider(LocalContentListAnimateItems provides gridConfig.animateListItems) {
     LazyVerticalGrid(
         columns = GridCells.FixedSize(battleCardCellWidth),
         state = gridState,
@@ -341,13 +352,20 @@ internal fun ContentListContent(
                                         key = { it.listKey }
                                     ) { battle ->
                                         val isSelected = battle.uiModel.id == selectedBattleId
+                                        val animate = LocalContentListAnimateItems.current
                                         BattleCard(
                                             uiModel = battle.uiModel,
                                             showWinnerHighlight = showWinnerHighlight,
                                             onClick = { onItemClick(battle) },
                                             modifier = Modifier
-                                                .animateItem(
-                                                    placementSpec = GRID_ITEM_PLACEMENT_SPEC
+                                                .then(
+                                                    if (animate) {
+                                                        Modifier.animateItem(
+                                                            placementSpec = GRID_ITEM_PLACEMENT_SPEC
+                                                        )
+                                                    } else {
+                                                        Modifier
+                                                    }
                                                 )
                                                 .widthIn(max = battleCardCellWidth)
                                                 .fillMaxWidth()
@@ -448,13 +466,20 @@ internal fun ContentListContent(
                         key = { it.listKey }
                     ) { battle ->
                         val isSelected = battle.uiModel.id == selectedBattleId
+                        val animate = LocalContentListAnimateItems.current
                         BattleCard(
                             uiModel = battle.uiModel,
                             showWinnerHighlight = showWinnerHighlight,
                             onClick = { onItemClick(battle) },
                             modifier = Modifier
-                                .animateItem(
-                                    placementSpec = GRID_ITEM_PLACEMENT_SPEC
+                                .then(
+                                    if (animate) {
+                                        Modifier.animateItem(
+                                            placementSpec = GRID_ITEM_PLACEMENT_SPEC
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
                                 )
                                 .widthIn(max = battleCardCellWidth)
                                 .fillMaxWidth()
@@ -486,6 +511,7 @@ internal fun ContentListContent(
                 }
             }
         }
+    }
     }
     if (windowSizeClass == WindowSizeClass.Expanded) {
         ThemedVerticalScrollbar(
@@ -740,7 +766,13 @@ private fun LazyGridScope.animatedItem(
     content: @Composable () -> Unit
 ) {
     item(key = key, span = span) {
-        Box(modifier = Modifier.animateItem(placementSpec = GRID_ITEM_PLACEMENT_SPEC)) {
+        val animate = LocalContentListAnimateItems.current
+        val itemModifier = if (animate) {
+            Modifier.animateItem(placementSpec = GRID_ITEM_PLACEMENT_SPEC)
+        } else {
+            Modifier
+        }
+        Box(modifier = itemModifier) {
             content()
         }
     }

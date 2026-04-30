@@ -576,7 +576,7 @@ private fun ColorChoiceSettingRowPreview() {
             item = SettingItem.ColorChoice(
                 key = "theme",
                 title = "Theme Color",
-                subtitle = "Choose the app's accent color. We like red like our mascot, but maybe you're feeling Great, Ultra, or Master.",
+                subtitle = "We like red like our mascot, but maybe you're feeling Great, Ultra, or Master.",
                 selectedThemeId = 0
             ),
             onClick = {}
@@ -662,7 +662,7 @@ private fun DarkModeChoiceSettingRowPreview() {
             item = SettingItem.DarkModeChoice(
                 key = "dark_mode",
                 title = "Dark Mode",
-                subtitle = "Choose between system, light, or dark appearance.",
+                subtitle = "What's easiest on the eyes?",
                 selectedModeId = 0
             ),
             onClick = {}

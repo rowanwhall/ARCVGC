@@ -15,8 +15,9 @@ class SettingsRepositoryTest {
     private fun createRepo(
         storage: FakeSettingsStorage = FakeSettingsStorage(),
         cacheStorage: FakeCatalogCacheStorage? = null,
-        favoritesRepo: FavoritesRepository? = null
-    ) = SettingsRepository(storage, cacheStorage, favoritesRepo)
+        favoritesRepo: FavoritesRepository? = null,
+        platform: SettingsPlatform = SettingsPlatform.Android
+    ) = SettingsRepository(storage, cacheStorage, favoritesRepo, platform = platform)
 
     // --- setShowWinnerHighlight ---
 
@@ -216,5 +217,57 @@ class SettingsRepositoryTest {
         assertFalse(repo.showWinnerHighlight.value)
         assertEquals(3, repo.selectedThemeId.value)
         assertEquals(2, repo.darkModeId.value)
+    }
+
+    // --- enableAnimations ---
+
+    @Test
+    fun enableAnimations_defaultsToTrue() {
+        val repo = createRepo(platform = SettingsPlatform.Web)
+        assertTrue(repo.enableAnimations.value)
+    }
+
+    @Test
+    fun setEnableAnimations_updatesFlowAndPersists() {
+        val storage = FakeSettingsStorage()
+        val repo = SettingsRepository(storage, platform = SettingsPlatform.Web)
+        repo.setEnableAnimations(false)
+        assertFalse(repo.enableAnimations.value)
+        assertFalse(storage.getBoolean("enable_animations", true))
+    }
+
+    @Test
+    fun setBooleanSetting_dispatchesToSetEnableAnimations() {
+        val repo = createRepo(platform = SettingsPlatform.Web)
+        repo.setBooleanSetting("enable_animations", false)
+        assertFalse(repo.enableAnimations.value)
+    }
+
+    @Test
+    fun enableAnimations_initialValueLoadedFromStorage() {
+        val storage = FakeSettingsStorage()
+        storage.putBoolean("enable_animations", false)
+        val repo = SettingsRepository(storage, platform = SettingsPlatform.Web)
+        assertFalse(repo.enableAnimations.value)
+    }
+
+    // --- platform-gated settings ---
+
+    @Test
+    fun behaviorSection_includesEnableAnimationsToggle_onlyOnWeb() {
+        val webRepo = createRepo(platform = SettingsPlatform.Web)
+        val behaviorWeb = webRepo.settingSections.value.first { it.title == "Behavior" }.items
+        val webToggleKeys = behaviorWeb.filterIsInstance<SettingItem.Toggle>().map { it.key }
+        assertTrue(webToggleKeys.contains("enable_animations"))
+
+        for (platform in listOf(SettingsPlatform.Android, SettingsPlatform.Ios)) {
+            val nativeRepo = createRepo(platform = platform)
+            val behaviorNative = nativeRepo.settingSections.value.first { it.title == "Behavior" }.items
+            val nativeToggleKeys = behaviorNative.filterIsInstance<SettingItem.Toggle>().map { it.key }
+            assertFalse(
+                nativeToggleKeys.contains("enable_animations"),
+                "enable_animations toggle should not be present on $platform"
+            )
+        }
     }
 }

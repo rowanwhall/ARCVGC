@@ -30,7 +30,8 @@ final class SettingsStore: ObservableObject {
             storage: SettingsStorage(),
             cacheStorage: CatalogCacheStorage(),
             favoritesRepository: favoritesRepository,
-            appConfigRepository: appConfigRepository
+            appConfigRepository: appConfigRepository,
+            platform: .ios
         )
         syncState()
 

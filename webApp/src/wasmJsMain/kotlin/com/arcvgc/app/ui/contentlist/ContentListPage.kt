@@ -1,6 +1,8 @@
 package com.arcvgc.app.ui.contentlist
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
@@ -99,6 +101,7 @@ fun ContentListPage(
     val favoritePokemonIds by viewModel.favoritesRepository.favoritePokemonIds.collectAsState()
     val favoritePlayerNames by viewModel.favoritesRepository.favoritePlayerNames.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
+    val enableAnimations by DependencyContainer.settingsRepository.enableAnimations.collectAsState()
     val formatCatalogState = viewModel.formatCatalogState?.collectAsState()
     val appConfig by viewModel.appConfigState.collectAsState()
     val preferredFormatId by DependencyContainer.settingsRepository.preferredFormatId.collectAsState()
@@ -350,6 +353,7 @@ fun ContentListPage(
                 selectedBattleId = null,
                 showWinnerHighlight = showWinnerHighlight,
                 formatState = contentListFormatState,
+                gridConfig = ContentListGridConfig(animateListItems = enableAnimations),
                 gridState = gridState,
                 extraBottomPadding = if (isTopPokemonCompact) UsageBottomBarReservedHeight else 0.dp,
                 modifier = Modifier.fillMaxSize()
@@ -496,7 +500,8 @@ fun ContentListPage(
                                 expandedTopPokemonMaxWidth = topPokemonDisplayMaxWidth,
                                 topPokemonTargetWidth = currentGridRendered,
                                 topPokemonTileCount = currentTileCount,
-                                topPokemonTileWidth = currentTileWidth
+                                topPokemonTileWidth = currentTileWidth,
+                                animateListItems = enableAnimations
                             ),
                             gridState = gridState,
                             modifier = Modifier.fillMaxSize()
@@ -558,14 +563,18 @@ fun ContentListPage(
 
                     AnimatedVisibility(
                         visibleState = detailPaneState,
-                        enter = slideInHorizontally(
-                            animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
-                            initialOffsetX = { fullWidth -> fullWidth }
-                        ),
-                        exit = slideOutHorizontally(
-                            animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
-                            targetOffsetX = { fullWidth -> fullWidth }
-                        )
+                        enter = if (enableAnimations) {
+                            slideInHorizontally(
+                                animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
+                                initialOffsetX = { fullWidth -> fullWidth }
+                            )
+                        } else EnterTransition.None,
+                        exit = if (enableAnimations) {
+                            slideOutHorizontally(
+                                animationSpec = tween(DETAIL_PANE_ANIM_DURATION_MS),
+                                targetOffsetX = { fullWidth -> fullWidth }
+                            )
+                        } else ExitTransition.None
                     ) {
                         lastBattleId?.let { battleId ->
                             Row(modifier = Modifier.fillMaxHeight()) {

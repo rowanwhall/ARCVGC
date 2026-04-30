@@ -14,7 +14,8 @@ class SettingsRepository(
     private val storage: SettingsStorageApi,
     private val cacheStorage: CatalogCacheStorageApi? = null,
     private val favoritesRepository: FavoritesRepository? = null,
-    private val appConfigRepository: AppConfigRepository? = null
+    private val appConfigRepository: AppConfigRepository? = null,
+    private val platform: SettingsPlatform = SettingsPlatform.Android
 ) {
 
     private val scope = createSafeScope()
@@ -38,6 +39,11 @@ class SettingsRepository(
         storage.getInt(KEY_PREFERRED_FORMAT, USE_DEFAULT_FORMAT)
     )
     val preferredFormatId: StateFlow<Int> = _preferredFormatId.asStateFlow()
+
+    private val _enableAnimations = MutableStateFlow(
+        storage.getBoolean(KEY_ENABLE_ANIMATIONS, true)
+    )
+    val enableAnimations: StateFlow<Boolean> = _enableAnimations.asStateFlow()
 
     private val _settingSections = MutableStateFlow(buildSettingSections())
     val settingSections: StateFlow<List<SettingsSection>> = _settingSections.asStateFlow()
@@ -80,6 +86,12 @@ class SettingsRepository(
         _settingSections.value = buildSettingSections()
     }
 
+    fun setEnableAnimations(enabled: Boolean) {
+        _enableAnimations.value = enabled
+        storage.putBoolean(KEY_ENABLE_ANIMATIONS, enabled)
+        _settingSections.value = buildSettingSections()
+    }
+
     /** Snapshot getter for iOS interop. */
     fun isShowWinnerHighlightEnabled(): Boolean = _showWinnerHighlight.value
 
@@ -109,6 +121,7 @@ class SettingsRepository(
     fun setBooleanSetting(key: String, value: Boolean) {
         when (key) {
             KEY_SHOW_WINNER_HIGHLIGHT -> setShowWinnerHighlight(value)
+            KEY_ENABLE_ANIMATIONS -> setEnableAnimations(value)
         }
     }
 
@@ -138,20 +151,20 @@ class SettingsRepository(
                 SettingItem.DarkModeChoice(
                     key = KEY_DARK_MODE,
                     title = "Dark Mode",
-                    subtitle = "Choose between system, light, or dark appearance.",
+                    subtitle = "What's easiest on the eyes?",
                     selectedModeId = _darkModeId.value
                 ),
                 SettingItem.ColorChoice(
                     key = KEY_SELECTED_THEME,
                     title = "Theme Color",
-                    subtitle = "Choose the app's accent color. We like red like our mascot, but maybe you're feeling Great, Ultra, or Master.",
+                    subtitle = "We like red like our mascot, but maybe you're feeling Great, Ultra, or Master.",
                     selectedThemeId = _selectedThemeId.value
                 )
             )
         ),
         SettingsSection(
             title = "Behavior",
-            items = listOf(
+            items = listOfNotNull(
                 SettingItem.FormatChoice(
                     key = KEY_PREFERRED_FORMAT,
                     title = "Preferred Format",
@@ -164,7 +177,15 @@ class SettingsRepository(
                     title = "Highlight Winner",
                     subtitle = "Could save you time, but maybe you don't want spoilers.",
                     isEnabled = _showWinnerHighlight.value
-                )
+                ),
+                if (platform == SettingsPlatform.Web) {
+                    SettingItem.Toggle(
+                        key = KEY_ENABLE_ANIMATIONS,
+                        title = "Enable Animations",
+                        subtitle = "We like them, but they're optional.",
+                        isEnabled = _enableAnimations.value
+                    )
+                } else null
             )
         ),
         SettingsSection(
@@ -208,6 +229,7 @@ class SettingsRepository(
         private const val KEY_SELECTED_THEME = "selected_theme"
         private const val KEY_DARK_MODE = "dark_mode"
         const val KEY_PREFERRED_FORMAT = "preferred_format"
+        const val KEY_ENABLE_ANIMATIONS = "enable_animations"
         private const val KEY_CLEAR_FAVORITES = "clear_favorites"
         private const val KEY_CLEAR_CACHE = "clear_cache"
         private const val KEY_PRIVACY_POLICY = "privacy_policy"

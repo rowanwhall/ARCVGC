@@ -2,6 +2,7 @@ package com.arcvgc.app.data.repository
 
 import android.content.Context
 import com.arcvgc.app.data.CatalogCacheStorage
+import com.arcvgc.app.data.SettingsPlatform
 import com.arcvgc.app.data.SettingsStorage
 import com.arcvgc.app.ui.model.SettingsSection
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,7 +35,8 @@ class SettingsRepositoryImpl @Inject constructor(
         storage = SettingsStorage(context),
         cacheStorage = CatalogCacheStorage(context),
         favoritesRepository = (favoritesRepository as FavoritesRepositoryImpl).shared,
-        appConfigRepository = (appConfigRepository as AppConfigRepositoryImpl).shared
+        appConfigRepository = (appConfigRepository as AppConfigRepositoryImpl).shared,
+        platform = SettingsPlatform.Android
     )
 
     override val showWinnerHighlight: StateFlow<Boolean> = shared.showWinnerHighlight
