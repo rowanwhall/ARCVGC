@@ -132,6 +132,26 @@ fun ContentListPage(
         viewModel.savedBattleId = selectedBattleId
     }
 
+    // The ViewModelStore caches this VM across tab switches so cached state
+    // renders instantly. While the page is in composition, this loop wakes
+    // exactly once per server ingestion boundary (:05 / :35 of the hour) to
+    // silently merge a fresh page 1 into the cached state — pagination tail
+    // is preserved, so the user isn't kicked out of their browsing position.
+    //
+    // Gated to modes whose data actually changes on the :00/:30 cadence:
+    // - Favorites: catalog/local data
+    // - TopPokemon: usage stats change slowly; this page is also rarely held
+    //   open long enough for a boundary to matter
+    val watchesStaleness = mode is ContentListMode.Home ||
+        mode is ContentListMode.Search ||
+        mode is ContentListMode.Pokemon ||
+        mode is ContentListMode.Player
+    if (watchesStaleness) {
+        LaunchedEffect(viewModel) {
+            viewModel.watchForStaleness()
+        }
+    }
+
     // Mirror page URL in the browser address bar
     val modePath = when (mode) {
         is ContentListMode.Pokemon -> "/pokemon/${mode.pokemonId}"

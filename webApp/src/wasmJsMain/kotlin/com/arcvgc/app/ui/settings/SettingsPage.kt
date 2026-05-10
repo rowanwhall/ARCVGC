@@ -91,13 +91,6 @@ fun SettingsPage(
         Column(
             modifier = Modifier.widthIn(max = 600.dp).fillMaxSize()
         ) {
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 16.dp, top = 32.dp, bottom = 16.dp)
-            )
-
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 sections.forEach { section ->
                     item(key = "header_${section.title}") {

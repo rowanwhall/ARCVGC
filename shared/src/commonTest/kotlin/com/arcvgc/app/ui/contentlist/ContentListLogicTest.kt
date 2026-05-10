@@ -38,6 +38,7 @@ import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -1446,4 +1447,92 @@ class ContentListLogicTest {
             )
         )
     )
+
+    // ----- nextStaleAtMs (server ingestion boundary math) -----
+
+    private val msPerMinute = 60_000L
+    private val msPerHour = 60L * msPerMinute
+
+    // Reference epoch hour-start (Unix epoch ms is anchored to UTC :00, so
+    // any whole-hour ms value lands at minute 0 of the hour for boundary math).
+    private val hourStart = 1_700_000L * msPerHour // ~2023-11-14T16:00 UTC
+
+    @Test
+    fun nextStaleAtMs_loadedAtTwentyMinutesIn_returnsThirtyFiveMark() {
+        val loadedAt = hourStart + 20 * msPerMinute
+        val expected = hourStart + 35 * msPerMinute
+        assertEquals(expected, ContentListLogic.nextStaleAtMs(loadedAt))
+    }
+
+    @Test
+    fun nextStaleAtMs_loadedAtFiftyMinutesIn_returnsNextHourFiveMark() {
+        val loadedAt = hourStart + 50 * msPerMinute
+        val expected = hourStart + msPerHour + 5 * msPerMinute
+        assertEquals(expected, ContentListLogic.nextStaleAtMs(loadedAt))
+    }
+
+    @Test
+    fun nextStaleAtMs_loadedAtThreeMinutesIn_returnsFiveMarkSameHour() {
+        val loadedAt = hourStart + 3 * msPerMinute
+        val expected = hourStart + 5 * msPerMinute
+        assertEquals(expected, ContentListLogic.nextStaleAtMs(loadedAt))
+    }
+
+    @Test
+    fun nextStaleAtMs_loadedExactlyAtFiveMark_returnsThirtyFiveMark() {
+        // Strictly after — sitting on :05 means the next ingestion has just
+        // happened, but we treat the loaded data as fresh at that instant and
+        // wait until the *next* boundary (:35).
+        val loadedAt = hourStart + 5 * msPerMinute
+        val expected = hourStart + 35 * msPerMinute
+        assertEquals(expected, ContentListLogic.nextStaleAtMs(loadedAt))
+    }
+
+    @Test
+    fun nextStaleAtMs_loadedExactlyAtThirtyFiveMark_returnsNextHourFiveMark() {
+        val loadedAt = hourStart + 35 * msPerMinute
+        val expected = hourStart + msPerHour + 5 * msPerMinute
+        assertEquals(expected, ContentListLogic.nextStaleAtMs(loadedAt))
+    }
+
+    @Test
+    fun nextStaleAtMs_loadedAtTopOfHour_returnsFiveMarkSameHour() {
+        val loadedAt = hourStart
+        val expected = hourStart + 5 * msPerMinute
+        assertEquals(expected, ContentListLogic.nextStaleAtMs(loadedAt))
+    }
+
+    // ----- softRefresh failure path -----
+
+    @Test
+    fun softRefresh_failureKeepsStateSilentAndStampsTimestamp() {
+        // Initial successful load — stamps lastLoadedAtMs.
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val itemsBefore = logic.uiState.value.items
+        val timestampBefore = logic.lastLoadedAtMsForTest
+        assertTrue(timestampBefore != null && timestampBefore > 0L)
+
+        // Switch to failure mode.
+        fakeRepo.bestPreviousDayError = Exception("boom")
+        fakeRepo.formatDetailError = Exception("boom")
+
+        testScope.launch { logic.softRefresh() }
+        testScope.advanceUntilIdle()
+
+        // Silent: items, error, and refreshing flag all untouched.
+        assertEquals(itemsBefore, logic.uiState.value.items)
+        assertNull(logic.uiState.value.error)
+        assertFalse(logic.uiState.value.isRefreshing)
+
+        // Timestamp stamped on failure so the next loop iteration computes
+        // its boundary from "now" and waits a full :05/:35 cycle instead of
+        // retrying tight.
+        val timestampAfter = logic.lastLoadedAtMsForTest
+        assertTrue(timestampAfter != null && timestampAfter >= timestampBefore)
+    }
 }

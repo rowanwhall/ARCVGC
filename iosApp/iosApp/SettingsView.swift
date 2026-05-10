@@ -60,7 +60,6 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Color(.systemBackground))
-        .navigationTitle("Settings")
         .sheet(isPresented: $showThemePicker) {
             ThemePickerSheet(
                 selectedThemeId: settingsStore.selectedThemeId,

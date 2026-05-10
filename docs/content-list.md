@@ -238,11 +238,12 @@ class ContentListLogic(
     mode: ContentListMode,
     pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
     pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null,  // for favorites Pokemon tab
-    initialTopPokemonFetchCount: Int = DEFAULT_TOP_POKEMON_COUNT  // Home mode only; 6 by default
+    initialTopPokemonFetchCount: Int = DEFAULT_TOP_POKEMON_COUNT,  // Home mode only; 6 by default
+    settingsRepository: SettingsRepository? = null  // for preferred-format setting
 )
 ```
 
-**Public API** (all non-suspend — they launch internally via the injected scope):
+**Public API** (all non-suspend except `watchForStaleness` — they launch internally via the injected scope):
 - `initialize()` — one-shot init, routes to correct startup path based on mode
 - `loadContent()` / `refresh()` — fetch page 1 (loading vs refreshing indicator)
 - `paginate()` — next page with guards (isPaginating, canPaginate, loadingSections)
@@ -250,6 +251,7 @@ class ContentListLogic(
 - `toggleSortOrder()` — sort toggle + section reload
 - `updateSearchParams(params)` — reset state and reload with new search params
 - `setTopPokemonFetchCount(count)` — Home mode only. Sets the target count and, if it exceeds the last-fetched peak, re-fetches just the Top Pokémon section in place. See "Responsive Top Pokémon row" under Home mode above.
+- `suspend watchForStaleness()` — loops until cancelled. See "Stale-Data Background Refresh" below.
 
 **Scope injection pattern:**
 - **Android/Web**: pass `viewModelScope` (auto-cancelled on ViewModel clear)
@@ -296,6 +298,28 @@ data class ContentListUiState(
 - Guards: `!isPaginating && canPaginate && loadingSections.isEmpty()`
 - New items appended with `distinctBy { listKey }` to prevent duplicates
 - `canPaginate` set from `pagination.hasNext`
+
+## Stale-Data Background Refresh
+
+Web only. The ViewModelStore caches `ContentListViewModel` instances across tab switches, so cached state renders instantly when the user returns to a page — but that cache can grow stale if the user revisits a page after the server has ingested new data. `ContentListLogic.watchForStaleness()` is a suspend loop that wakes exactly once per server ingestion boundary (`:05` and `:35` of the hour — the server ingests at `:00`/`:30` and finishes within 5 minutes) and silently merges a fresh page 1 into the cached items list.
+
+**Invocation** — `webApp/.../ui/contentlist/ContentListPage.kt` calls `LaunchedEffect(viewModel) { viewModel.watchForStaleness() }` for modes whose data actually changes on the `:00`/`:30` cadence: `Home`, `Search`, `Pokemon`, `Player`. `Favorites` and `TopPokemon` are skipped. The `LaunchedEffect` is tied to composition, so polling stops when the page leaves the screen.
+
+**Cycle** — `watchForStaleness` reads `lastLoadedAtMs` (stamped after every successful page-1 load), computes `nextStaleAtMs(loadedAt) - currentTimeMillis()` via the pure helper in `ContentListLogic`'s companion object, and `delay()`s exactly that long. One wake per boundary; `delay()` doesn't burn CPU.
+
+**Soft merge** — `softRefresh()` is internal-private. Instead of the hard-reset semantics of `refresh()` (which wipes `currentPage`/`canPaginate` and replaces the items list), softRefresh:
+1. Fetches page 1.
+2. Collects keys recursively from the fresh items (`collectListKeys()`).
+3. Takes a tail of existing items whose `listKey` isn't in the fresh set — preserves any flat page-2+ entries the user has already paginated through.
+4. Replaces items with `freshItems + tail`. The LazyGrid keys items by `listKey` so unchanged items stay put; only the genuine diff animates.
+
+The user's scroll position, pagination state, and any in-flight UI overlays are untouched.
+
+**Concurrency guards** — softRefresh skips when `isLoading`, `isRefreshing`, or `loadingSections.isNotEmpty()` (matching `paginate()`'s guard). This prevents races with initial load, manual refresh, and `selectFormat`/`toggleSortOrder`.
+
+**Failure backoff** — `lastLoadedAtMs` is stamped in both the success and failure paths of softRefresh. Stamping on failure ensures the next loop iteration computes `msUntilStale` from "now" rather than from the original load time, deferring the next attempt to the next `:05`/`:35` instead of looping tight while the API is failing.
+
+The pure `nextStaleAtMs(loadedAtMs: Long)` helper is unit-tested in `ContentListLogicTest.kt` along with the failure-backoff invariant.
 
 ## Home Mode Special Behavior
 

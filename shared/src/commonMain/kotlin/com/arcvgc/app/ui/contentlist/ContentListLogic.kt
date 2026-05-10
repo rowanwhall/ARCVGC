@@ -20,6 +20,7 @@ import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -89,6 +90,17 @@ class ContentListLogic(
     private val _allTopPokemonItems = MutableStateFlow<List<ContentListItem.Pokemon>>(emptyList())
     val allTopPokemonItems: StateFlow<List<ContentListItem.Pokemon>> = _allTopPokemonItems.asStateFlow()
     private var topPokemonTeamCount: Int = 0
+
+    // Wall-clock ms of the most recent page-1 load attempt. Used by
+    // `watchForStaleness` to decide whether the cached state has crossed the
+    // next ingestion boundary and should silently re-fetch. Stamped on both
+    // success and failure — stamping on failure defers the next attempt to
+    // the next :05/:35 boundary instead of looping immediately.
+    private var lastLoadedAtMs: Long? = null
+
+    // Read-only test accessor for the timestamp above. Internal so tests can
+    // verify the failure-backoff behavior without exposing mutation.
+    internal val lastLoadedAtMsForTest: Long? get() = lastLoadedAtMs
 
     fun initialize() {
         when {
@@ -193,6 +205,7 @@ class ContentListLogic(
             _uiState.update {
                 it.copy(isLoading = false, items = map(items), error = null, canPaginate = false)
             }
+            lastLoadedAtMs = currentTimeMillis()
         } catch (e: Exception) {
             _uiState.update { it.copy(isLoading = false, error = e.message) }
         }
@@ -216,6 +229,7 @@ class ContentListLogic(
                             canPaginate = pagination.hasNext
                         )
                     }
+                    lastLoadedAtMs = currentTimeMillis()
                 }
             } catch (e: Exception) {
                 _uiState.update {
@@ -268,6 +282,7 @@ class ContentListLogic(
                 canPaginate = result.pagination.hasNext
             )
         }
+        lastLoadedAtMs = currentTimeMillis()
     }
 
     fun refresh() {
@@ -284,11 +299,60 @@ class ContentListLogic(
                         canPaginate = pagination.hasNext
                     )
                 }
+                lastLoadedAtMs = currentTimeMillis()
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isRefreshing = false, error = e.message ?: "Unknown error")
                 }
             }
+        }
+    }
+
+    /**
+     * Suspends until the next server-ingestion boundary (:05 / :35 of the hour)
+     * after the last successful load, then silently merges a fresh page 1 into
+     * the existing items and loops. Pagination state is preserved so the user's
+     * scrolled-through tail isn't truncated. Caller-driven scope (e.g. a
+     * `LaunchedEffect`) — when the page leaves composition, polling stops.
+     */
+    suspend fun watchForStaleness() {
+        while (true) {
+            val loadedAt = lastLoadedAtMs
+            if (loadedAt == null) {
+                // Initial load hasn't completed yet — re-check shortly.
+                delay(STALENESS_INITIAL_POLL_MS)
+                continue
+            }
+            val msUntilStale = (nextStaleAtMs(loadedAt) - currentTimeMillis())
+                .coerceAtLeast(0L)
+            if (msUntilStale > 0) delay(msUntilStale)
+            softRefresh()
+        }
+    }
+
+    internal suspend fun softRefresh() {
+        val state = _uiState.value
+        // Skip when any other load is in flight: `isLoading` covers initial
+        // load, `isRefreshing` covers manual pull-to-refresh, and
+        // `loadingSections` covers `selectFormat`/`toggleSortOrder`.
+        if (state.isLoading || state.isRefreshing || state.loadingSections.isNotEmpty()) return
+        try {
+            val (freshItems, _) = fetchContent(page = 1)
+            val freshKeys = freshItems.collectListKeys()
+            _uiState.update {
+                // Tail = items not represented in the fresh page-1 fetch.
+                // This drops sections we just refetched (and any items inside
+                // them) and preserves any flat page-2+ items the user has
+                // already paginated through.
+                val tail = it.items.filter { item -> item.listKey !in freshKeys }
+                it.copy(items = freshItems + tail)
+            }
+            lastLoadedAtMs = currentTimeMillis()
+        } catch (_: Exception) {
+            // Silent — keep showing cached data. Stamp the timestamp anyway so
+            // the loop defers the next attempt to the next :05/:35 boundary
+            // instead of looping tight while the API is failing.
+            lastLoadedAtMs = currentTimeMillis()
         }
     }
 
@@ -400,6 +464,7 @@ class ContentListLogic(
                         canPaginate = pagination.hasNext
                     )
                 }
+                lastLoadedAtMs = currentTimeMillis()
             } catch (e: Exception) {
                 _uiState.update { it.copy(loadingSections = emptySet()) }
             }
@@ -420,6 +485,7 @@ class ContentListLogic(
                         canPaginate = pagination.hasNext
                     )
                 }
+                lastLoadedAtMs = currentTimeMillis()
             } catch (e: Exception) {
                 _uiState.update { it.copy(loadingSections = emptySet()) }
             }
@@ -738,5 +804,26 @@ class ContentListLogic(
 
     companion object {
         const val DEFAULT_TOP_POKEMON_COUNT = 6
+
+        // How often `watchForStaleness` re-checks while waiting for the
+        // initial load to complete. Once `lastLoadedAtMs` is non-null, polling
+        // shifts to wake exactly once per :05 / :35 boundary.
+        private const val STALENESS_INITIAL_POLL_MS = 30_000L
+
+        // Server ingests new data at :00 and :30 of each hour, completing
+        // within ~5 minutes. Once the wall clock passes :05 / :35 after a load,
+        // the cached page-1 data is considered stale.
+        internal fun nextStaleAtMs(loadedAtMs: Long): Long {
+            val msPerHour = 60L * 60_000L
+            val msPer5min = 5L * 60_000L
+            val msPer35min = 35L * 60_000L
+            val msIntoHour = ((loadedAtMs % msPerHour) + msPerHour) % msPerHour
+            val hourStart = loadedAtMs - msIntoHour
+            return when {
+                msIntoHour < msPer5min -> hourStart + msPer5min
+                msIntoHour < msPer35min -> hourStart + msPer35min
+                else -> hourStart + msPerHour + msPer5min
+            }
+        }
     }
 }

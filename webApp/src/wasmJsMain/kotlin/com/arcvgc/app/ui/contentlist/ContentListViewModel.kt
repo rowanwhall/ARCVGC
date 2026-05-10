@@ -67,6 +67,7 @@ class ContentListViewModel(
     init { logic.initialize() }
 
     fun loadContent() = logic.loadContent()
+    suspend fun watchForStaleness() = logic.watchForStaleness()
     fun paginate() = logic.paginate()
     fun selectFormat(formatId: Int) = logic.selectFormat(formatId)
     fun toggleSortOrder() = logic.toggleSortOrder()
