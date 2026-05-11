@@ -43,7 +43,8 @@ class ContentListLogic(
     private val pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
     private val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null,
     initialTopPokemonFetchCount: Int = DEFAULT_TOP_POKEMON_COUNT,
-    private val settingsRepository: SettingsRepository? = null
+    private val settingsRepository: SettingsRepository? = null,
+    private val isFormatHistoric: (Int) -> Boolean = { false }
 ) {
     // Count the next fetch should request.
     private var topPokemonFetchCount: Int = initialTopPokemonFetchCount
@@ -398,7 +399,7 @@ class ContentListLogic(
         _uiState.update {
             it.copy(items = buildList {
                 add(ContentListItem.FormatSelector)
-                add(ContentListItem.LookbackSelector)
+                if (!isFormatHistoric(_selectedFormatId.value)) add(ContentListItem.LookbackSelector)
                 add(ContentListItem.SearchField(query))
                 add(ContentListItem.Section("", filtered))
             })
@@ -461,6 +462,7 @@ class ContentListLogic(
         if (_selectedFormatId.value == formatId) return
         _selectedFormatId.value = formatId
         if (mode is ContentListMode.TopPokemon) _searchQuery.value = ""
+        if (isFormatHistoric(formatId)) _selectedLookback.value = LookbackWindow.All
         scope.launch {
             try {
                 _uiState.update { it.copy(loadingSections = reloadSections(), currentPage = 1, canPaginate = false) }
@@ -721,7 +723,7 @@ class ContentListLogic(
             _allTopPokemonItems.value = mapped
             val items = buildList {
                 add(ContentListItem.FormatSelector)
-                add(ContentListItem.LookbackSelector)
+                if (!isFormatHistoric(_selectedFormatId.value)) add(ContentListItem.LookbackSelector)
                 add(ContentListItem.SearchField(""))
                 if (mapped.isNotEmpty()) {
                     add(ContentListItem.Section("", mapped))
@@ -790,7 +792,7 @@ class ContentListLogic(
 
     private fun buildPokemonProfileSections(profile: PokemonProfile?): List<ContentListItem> = buildList {
         add(ContentListItem.FormatSelector)
-        add(ContentListItem.LookbackSelector)
+        if (!isFormatHistoric(_selectedFormatId.value)) add(ContentListItem.LookbackSelector)
         if (profile == null) return@buildList
         val statSections = buildList {
             if (profile.topTeammates.isNotEmpty()) {

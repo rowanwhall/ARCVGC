@@ -74,6 +74,7 @@ final class ContentListViewModel: ObservableObject {
         self.logicScope = scope
 
         let sharedMode = mode.toSharedMode()
+        let formatItemsCopy = formatItems
         self.logic = ContentListLogic(
             scope: scope,
             repository: repository,
@@ -87,7 +88,11 @@ final class ContentListViewModel: ObservableObject {
             pokemonCatalogItems: pokemonCatalogItems,
             pokemonCatalogState: nil,
             initialTopPokemonFetchCount: 6,
-            settingsRepository: settingsStore?.repo
+            settingsRepository: settingsStore?.repo,
+            isFormatHistoric: { id in
+                let isHistoric = formatItemsCopy.first(where: { $0.id == id.int32Value })?.isHistoric ?? false
+                return KotlinBoolean(bool: isHistoric)
+            }
         )
 
         self.state = logic.uiState.value

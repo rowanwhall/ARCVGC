@@ -387,6 +387,7 @@ fun ContentListPage(
             )
 
             if (isTopPokemonCompact) {
+                val isSelectedFormatHistoric = sortedFormats.find { it.id == selectedFormatId }?.isHistoric == true
                 UsageBottomBar(
                     formats = sortedFormats,
                     selectedFormatId = selectedFormatId,
@@ -396,7 +397,8 @@ fun ContentListPage(
                     onLookbackSelected = viewModel::selectLookback,
                     searchQuery = searchQuery,
                     onSearchQueryChanged = viewModel::setSearchQuery,
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    showLookback = !isSelectedFormatHistoric
                 )
             }
 

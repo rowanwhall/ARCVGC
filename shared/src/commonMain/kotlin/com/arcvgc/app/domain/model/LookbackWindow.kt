@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 enum class LookbackWindow(val value: String, val displayName: String, val durationSeconds: Long?) {
     @SerialName("all") All("all", "All", null),
     @SerialName("30days") ThirtyDays("30days", "30 days", 30L * 86_400L),
-    @SerialName("week") Week("week", "Week", 7L * 86_400L),
+    @SerialName("week") Week("week", "7 days", 7L * 86_400L),
     @SerialName("day") Day("day", "Today", 86_400L);
 
     /**

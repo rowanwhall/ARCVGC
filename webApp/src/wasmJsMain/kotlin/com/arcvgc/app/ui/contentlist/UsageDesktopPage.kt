@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +47,7 @@ import com.arcvgc.app.NavEntry
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.PokemonAvatar
+import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FormatSorter
@@ -104,6 +107,9 @@ internal fun UsageDesktopPage(
     val pinnedFormatId = if (preferredFormatId != 0) preferredFormatId else appConfig?.defaultFormat?.id
     val sortedFormats = remember(formatCatalogState.items, pinnedFormatId) {
         FormatSorter.sorted(formatCatalogState.items, pinnedFormatId)
+    }
+    val selectedFormatIsHistoric = remember(sortedFormats, selectedFormatId) {
+        sortedFormats.find { it.id == selectedFormatId }?.isHistoric == true
     }
 
     var selectedPokemon by remember { mutableStateOf<ContentListItem.Pokemon?>(null) }
@@ -184,51 +190,53 @@ internal fun UsageDesktopPage(
             modifier = Modifier
                 .width(leftPaneWidth)
                 .fillMaxHeight()
-                .padding(horizontal = leftPanePadding)
                 .padding(top = leftPanePadding)
         ) {
-            val formFieldSpacing = 12.dp
+            Column(modifier = Modifier.padding(horizontal = leftPanePadding)) {
+                FormatDropdown(
+                    formats = sortedFormats,
+                    selectedFormatId = selectedFormatId,
+                    onFormatSelected = listViewModel::selectFormat,
+                    fillMaxWidth = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 4.dp)
+                )
 
-            // OutlinedTextField has ~8dp of intrinsic vertical inset around its
-            // visible border (reserved for the floating label), so the dropdown
-            // needs less bottom spacing to visually match the search→list gap.
-            FormatDropdown(
-                formats = sortedFormats,
-                selectedFormatId = selectedFormatId,
-                onFormatSelected = listViewModel::selectFormat,
-                fillMaxWidth = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp)
-            )
+                if (!selectedFormatIsHistoric) {
+                    LookbackSegmentedSelector(
+                        selectedLookback = selectedLookback,
+                        onLookbackSelected = listViewModel::selectLookback,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                    )
+                }
 
-            LookbackSegmentedSelector(
-                selectedLookback = selectedLookback,
-                onLookbackSelected = listViewModel::selectLookback,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp)
-            )
-
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = listViewModel::setSearchQuery,
-                label = { Text("Search Pok\u00E9mon") },
-                singleLine = true,
-                trailingIcon = if (searchQuery.isNotEmpty()) {
-                    {
-                        IconButton(onClick = { listViewModel.setSearchQuery("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = listViewModel::setSearchQuery,
+                    label = { Text("Search Pok\u00E9mon") },
+                    singleLine = true,
+                    trailingIcon = if (searchQuery.isNotEmpty()) {
+                        {
+                            IconButton(onClick = { listViewModel.setSearchQuery("") }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            }
                         }
-                    }
-                } else null,
-                shape = RoundedCornerShape(CardCornerRadius),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                ),
+                    } else null,
+                    shape = RoundedCornerShape(CardCornerRadius),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            HorizontalDivider(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = formFieldSpacing)
+                    .padding(top = 8.dp)
             )
 
             val visibleItems = if (searchQuery.isBlank()) {
@@ -238,35 +246,48 @@ internal fun UsageDesktopPage(
             }
             val listState = rememberLazyListState()
             val isReloading = uiState.loadingSections.isNotEmpty()
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (isReloading) Modifier.alpha(0.5f) else Modifier),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(visibleItems, key = { it.listKey }) { pokemon ->
-                    UsagePokemonRow(
-                        name = pokemon.name,
-                        imageUrl = pokemon.imageUrl,
-                        usagePercent = pokemon.usagePercent ?: "",
-                        avatarSize = rowAvatarSize,
-                        spriteSize = rowSpriteSize,
-                        horizontalPadding = rowInnerHorizontalPadding,
-                        avatarToTextSpacing = avatarToTextSpacing,
-                        nameToPercentSpacing = nameToPercentSpacing,
-                        isSelected = pokemon.id == selectedPokemon?.id,
-                        onClick = {
-                            val sameSelection = pokemon.id == selectedPokemon?.id &&
-                                selectedFormatId == formatAtSelection
-                            if (!sameSelection) {
-                                selectedPokemon = pokemon
-                                formatAtSelection = selectedFormatId
-                                onClearNestedStack()
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(if (isReloading) Modifier.alpha(0.5f) else Modifier),
+                    contentPadding = PaddingValues(
+                        start = leftPanePadding,
+                        end = leftPanePadding,
+                        top = 8.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(visibleItems, key = { it.listKey }) { pokemon ->
+                        UsagePokemonRow(
+                            name = pokemon.name,
+                            imageUrl = pokemon.imageUrl,
+                            usagePercent = pokemon.usagePercent ?: "",
+                            avatarSize = rowAvatarSize,
+                            spriteSize = rowSpriteSize,
+                            horizontalPadding = rowInnerHorizontalPadding,
+                            avatarToTextSpacing = avatarToTextSpacing,
+                            nameToPercentSpacing = nameToPercentSpacing,
+                            isSelected = pokemon.id == selectedPokemon?.id,
+                            onClick = {
+                                val sameSelection = pokemon.id == selectedPokemon?.id &&
+                                    selectedFormatId == formatAtSelection
+                                if (!sameSelection) {
+                                    selectedPokemon = pokemon
+                                    formatAtSelection = selectedFormatId
+                                    onClearNestedStack()
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
+                ThemedVerticalScrollbar(
+                    listState = listState,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                )
             }
         }
 

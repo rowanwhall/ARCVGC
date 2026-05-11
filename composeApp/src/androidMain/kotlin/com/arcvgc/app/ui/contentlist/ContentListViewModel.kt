@@ -60,7 +60,10 @@ class ContentListViewModel @Inject constructor(
             mode = mode,
             pokemonCatalogItems = pokemonCatalogRepository.state.value.items,
             pokemonCatalogState = pokemonCatalogRepository.state,
-            settingsRepository = settingsRepository.shared
+            settingsRepository = settingsRepository.shared,
+            isFormatHistoric = { id ->
+                formatCatalogRepository.state.value.items.find { it.id == id }?.isHistoric == true
+            }
         )
         logic = l
 

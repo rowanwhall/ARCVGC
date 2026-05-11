@@ -36,7 +36,10 @@ class ContentListViewModel(
         mode = mode,
         pokemonCatalogItems = pokemonCatalogItems,
         pokemonCatalogState = pokemonCatalogRepository?.state,
-        settingsRepository = settingsRepository
+        settingsRepository = settingsRepository,
+        isFormatHistoric = { id ->
+            formatCatalogRepository?.state?.value?.items?.find { it.id == id }?.isHistoric == true
+        }
     )
 
     val uiState: StateFlow<ContentListUiState> = logic.uiState

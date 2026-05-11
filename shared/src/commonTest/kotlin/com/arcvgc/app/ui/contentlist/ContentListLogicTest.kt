@@ -109,7 +109,8 @@ class ContentListLogicTest {
         pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
         pokemonCatalogState: MutableStateFlow<CatalogState<PokemonPickerUiModel>>? = null,
         initialTopPokemonFetchCount: Int = ContentListLogic.DEFAULT_TOP_POKEMON_COUNT,
-        settingsRepository: com.arcvgc.app.data.SettingsRepository? = null
+        settingsRepository: com.arcvgc.app.data.SettingsRepository? = null,
+        historicFormatIds: Set<Int> = emptySet()
     ): ContentListLogic {
         return ContentListLogic(
             scope = testScope,
@@ -120,7 +121,8 @@ class ContentListLogicTest {
             pokemonCatalogItems = pokemonCatalogItems,
             pokemonCatalogState = pokemonCatalogState,
             initialTopPokemonFetchCount = initialTopPokemonFetchCount,
-            settingsRepository = settingsRepository
+            settingsRepository = settingsRepository,
+            isFormatHistoric = { it in historicFormatIds }
         )
     }
 
@@ -1118,6 +1120,100 @@ class ContentListLogicTest {
 
         assertTrue(fakeRepo.getFormatDetailCalls.isNotEmpty())
         assertEquals(LookbackWindow.All, fakeRepo.getFormatDetailCalls.last().lookback)
+    }
+
+    // --- Historic format gating ---
+
+    @Test
+    fun selectFormat_historicFormat_resetsLookbackToAll() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(
+            ContentListMode.TopPokemon(formatId = 1),
+            historicFormatIds = setOf(99)
+        )
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        logic.selectLookback(LookbackWindow.Week)
+        testScope.advanceUntilIdle()
+        assertEquals(LookbackWindow.Week, logic.selectedLookback.value)
+
+        logic.selectFormat(99)
+        testScope.advanceUntilIdle()
+
+        assertEquals(LookbackWindow.All, logic.selectedLookback.value)
+        assertEquals(LookbackWindow.All, fakeRepo.getFormatDetailCalls.last().lookback)
+    }
+
+    @Test
+    fun selectFormat_nonHistoricFormat_preservesLookback() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(
+            ContentListMode.TopPokemon(formatId = 1),
+            historicFormatIds = setOf(99)
+        )
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        logic.selectLookback(LookbackWindow.Week)
+        testScope.advanceUntilIdle()
+
+        logic.selectFormat(2)
+        testScope.advanceUntilIdle()
+
+        assertEquals(LookbackWindow.Week, logic.selectedLookback.value)
+    }
+
+    @Test
+    fun topPokemonItems_excludeLookbackSelectorWhenFormatIsHistoric() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(
+            ContentListMode.TopPokemon(formatId = 99),
+            historicFormatIds = setOf(99)
+        )
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        assertTrue(items.any { it is ContentListItem.FormatSelector })
+        assertTrue(items.none { it is ContentListItem.LookbackSelector })
+        assertTrue(items.any { it is ContentListItem.SearchField })
+    }
+
+    @Test
+    fun topPokemonItems_includeLookbackSelectorWhenFormatIsNotHistoric() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(
+            ContentListMode.TopPokemon(formatId = 1),
+            historicFormatIds = setOf(99)
+        )
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        assertTrue(items.any { it is ContentListItem.LookbackSelector })
+    }
+
+    @Test
+    fun setSearchQuery_topPokemon_excludesLookbackSelectorWhenHistoric() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(
+            ContentListMode.TopPokemon(formatId = 99),
+            historicFormatIds = setOf(99)
+        )
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        logic.setSearchQuery("pika")
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        assertTrue(items.none { it is ContentListItem.LookbackSelector })
     }
 
     // --- Home mode ---

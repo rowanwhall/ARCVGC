@@ -45,7 +45,8 @@ fun UsageBottomBar(
     onLookbackSelected: (LookbackWindow) -> Unit,
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showLookback: Boolean = true
 ) {
     Column(
         modifier = modifier
@@ -77,11 +78,13 @@ fun UsageBottomBar(
                 )
             }
         }
-        LookbackSegmentedSelector(
-            selectedLookback = selectedLookback,
-            onLookbackSelected = onLookbackSelected,
-            modifier = Modifier.fillMaxWidth()
-        )
+        if (showLookback) {
+            LookbackSegmentedSelector(
+                selectedLookback = selectedLookback,
+                onLookbackSelected = onLookbackSelected,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChanged,
