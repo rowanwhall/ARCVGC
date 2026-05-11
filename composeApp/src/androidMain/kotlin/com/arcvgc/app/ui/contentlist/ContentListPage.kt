@@ -517,6 +517,7 @@ private fun ContentListContent(
         is ContentListHeaderUiModel.PlayerHero -> 0.dp
         is ContentListHeaderUiModel.SearchFilters -> 8.dp
         is ContentListHeaderUiModel.FavoritesHero -> 16.dp
+        is ContentListHeaderUiModel.HomeHero -> 0.dp
         else -> 16.dp
     }
 
@@ -541,8 +542,7 @@ private fun ContentListContent(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 24.dp),
+                                .padding(horizontal = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Image(

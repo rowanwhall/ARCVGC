@@ -162,7 +162,6 @@ struct ContentListView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 16)
-                        .padding(.top, 24)
                     }
 
                     // TODO: Replace with branded favorites asset when ready

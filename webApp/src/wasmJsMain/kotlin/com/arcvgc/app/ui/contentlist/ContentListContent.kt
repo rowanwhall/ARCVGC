@@ -169,6 +169,7 @@ internal fun ContentListContent(
         is ContentListHeaderUiModel.PokemonHero -> 4.dp
         is ContentListHeaderUiModel.PlayerHero -> 4.dp
         is ContentListHeaderUiModel.SearchFilters -> 8.dp
+        is ContentListHeaderUiModel.HomeHero -> 0.dp
         else -> 16.dp
     }
 
@@ -546,7 +547,7 @@ private fun LazyGridScope.emitPageHeader(
         is ContentListHeaderUiModel.None -> {}
         is ContentListHeaderUiModel.HomeHero -> {
             animatedItem(key = "home_hero", span = fullSpan) {
-                CenteredItem(modifier = Modifier.padding(top = 24.dp)) {
+                CenteredItem {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
