@@ -430,9 +430,11 @@ class ContentListLogic(
             if (count <= topPokemonFetchedCount) return@launch
             if (count != topPokemonFetchCount) return@launch
             try {
-                _uiState.update { it.copy(loadingSections = it.loadingSections + "Top Pokémon") }
+                _uiState.update { it.copy(loadingSections = it.loadingSections + HOME_TOP_POKEMON_SECTION) }
                 val formatDetail = repository.getFormatDetail(
-                    _selectedFormatId.value, topPokemonCount = count
+                    _selectedFormatId.value,
+                    topPokemonCount = count,
+                    lookback = LookbackWindow.Day
                 )
                 topPokemonFetchedCount = count
                 val gridItems = formatDetail.topPokemon.map {
@@ -443,17 +445,17 @@ class ContentListLogic(
                 }
                 _uiState.update { state ->
                     val newItems = state.items.map { item ->
-                        if (item is ContentListItem.Section && item.header == "Top Pokémon") {
+                        if (item is ContentListItem.Section && item.header == HOME_TOP_POKEMON_SECTION) {
                             item.copy(items = listOf(ContentListItem.PokemonGrid(gridItems)))
                         } else item
                     }
                     state.copy(
                         items = newItems,
-                        loadingSections = state.loadingSections - "Top Pokémon"
+                        loadingSections = state.loadingSections - HOME_TOP_POKEMON_SECTION
                     )
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(loadingSections = it.loadingSections - "Top Pokémon") }
+                _uiState.update { it.copy(loadingSections = it.loadingSections - HOME_TOP_POKEMON_SECTION) }
             }
         }
     }
@@ -527,7 +529,7 @@ class ContentListLogic(
     }
 
     private fun reloadSections(): Set<String> = when (mode) {
-        is ContentListMode.Home -> setOf("format_selector", "Top Pokémon", "Today's Top Battles")
+        is ContentListMode.Home -> setOf("format_selector", HOME_TOP_POKEMON_SECTION, "Today's Top Battles")
         is ContentListMode.TopPokemon -> setOf("format_selector", "")
         is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles")
         is ContentListMode.Player -> setOf("format_selector", "Battles")
@@ -546,7 +548,15 @@ class ContentListLogic(
             val formatId = _selectedFormatId.value
             val fetchCount = topPokemonFetchCount
 
-            val formatDeferred = async { runCatching { repository.getFormatDetail(formatId, topPokemonCount = fetchCount) } }
+            val formatDeferred = async {
+                runCatching {
+                    repository.getFormatDetail(
+                        formatId,
+                        topPokemonCount = fetchCount,
+                        lookback = LookbackWindow.Day
+                    )
+                }
+            }
             val battlesDeferred = async {
                 runCatching { repository.getBestPreviousDay(formatId) }
             }
@@ -573,7 +583,7 @@ class ContentListLogic(
                         )
                     }
                     add(ContentListItem.Section(
-                        "Top Pokémon",
+                        HOME_TOP_POKEMON_SECTION,
                         listOf(ContentListItem.PokemonGrid(gridItems)),
                         trailingAction = ContentListItem.SectionAction.SeeMore
                     ))
@@ -855,6 +865,7 @@ class ContentListLogic(
 
     companion object {
         const val DEFAULT_TOP_POKEMON_COUNT = 6
+        const val HOME_TOP_POKEMON_SECTION = "Today's Top Pokémon"
 
         // How often `watchForStaleness` re-checks while waiting for the
         // initial load to complete. Once `lastLoadedAtMs` is non-null, polling

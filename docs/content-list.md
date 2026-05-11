@@ -57,13 +57,13 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 This is a key behavioral detail: several modes compose a richer page 1 with sections, while pages 2+ append bare battle items.
 
 ### Home mode
-- **Page 1**: Up to 3 items — format detail + battles fetched in parallel via `getFormatDetail(formatId, topPokemonCount=N)` + `getBestPreviousDay(formatId)` (server-cached endpoint, returns flat list without pagination). `N` defaults to 6 (mobile/Android/iOS) and is bumped up on desktop web — see "Responsive Top Pokémon row" below. Format detail errors are silently swallowed; page still shows battles. Pagination (`hasNext`) is inferred from result size (>= 10 implies more pages). `currentPage` is set to `battlesCount / 10` so that page 2+ pagination aligns with `searchMatches`'s default limit of 10 (e.g., 50 battles → `currentPage=5`, next page requests page 6). Deduplication in `paginate()` handles any overlap when the count is not evenly divisible.
+- **Page 1**: Up to 3 items — format detail + battles fetched in parallel via `getFormatDetail(formatId, topPokemonCount=N, lookback=Day)` + `getBestPreviousDay(formatId)` (server-cached endpoint, returns flat list without pagination). The Home page hardcodes `LookbackWindow.Day` so its top-Pokemon tile reflects the last 24 hours; the Home page does not expose a lookback selector. `N` defaults to 6 (mobile/Android/iOS) and is bumped up on desktop web — see "Responsive Top Pokémon row" below. Format detail errors are silently swallowed; page still shows battles. Pagination (`hasNext`) is inferred from result size (>= 10 implies more pages). `currentPage` is set to `battlesCount / 10` so that page 2+ pagination aligns with `searchMatches`'s default limit of 10 (e.g., 50 battles → `currentPage=5`, next page requests page 6). Deduplication in `paginate()` handles any overlap when the count is not evenly divisible.
   1. `FormatSelector` — format dropdown (same as Pokemon/Player modes), fed from app config default format
-  2. `Section("Top Pokémon", [PokemonGrid([...])])` — grid of top usage Pokemon with usage %. Mobile/iPhone/iPad/Android: 3-col card (iPhone/phone) or up to 6-col card (iPad/tablet). Desktop web: responsive single-row card — see "Responsive Top Pokémon row" below. Has `SectionAction.SeeMore` trailing action (renders "See More" + chevron button in section header). Only shown if format detail succeeds and has Pokemon.
+  2. `Section("Today's Top Pokémon", [PokemonGrid([...])])` — grid of top usage Pokemon with usage % over the last 24 hours. The section title literal lives at `ContentListLogic.HOME_TOP_POKEMON_SECTION`. Mobile/iPhone/iPad/Android: 3-col card (iPhone/phone) or up to 6-col card (iPad/tablet). Desktop web: responsive single-row card — see "Responsive Top Pokémon row" below. Has `SectionAction.SeeMore` trailing action (renders "See More" + chevron button in section header). Only shown if format detail succeeds and has Pokemon. Tapping "See More" navigates to TopPokemon mode, which uses its own user-toggleable lookback (defaults to `All`).
   3. `Section("Today's Top Battles", [...])` — battle results sorted by rating from last 24 hours. No sort toggle.
   Both sections are omitted if their data is empty. If both API calls fail, the error state shows. If one fails, that section is omitted.
 - **Pages 2+**: bare `Battle` items via `searchMatches` (last 24h, rating sort, limit=10)
-- **Format change**: reloads all sections (`loadingSections = {"format_selector", "Top Pokémon", "Today's Top Battles"}`)
+- **Format change**: reloads all sections (`loadingSections = {"format_selector", HOME_TOP_POKEMON_SECTION, "Today's Top Battles"}`)
 
 #### Responsive Top Pokémon row (desktop web only)
 
@@ -141,7 +141,7 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
 - **Lookback change**: same path as format change — reloads from API (lookback affects the top pokemon list itself), clears search query
 - **Search filtering**: client-side via `setSearchQuery()`, filters stored Pokemon list by name (case-insensitive), no API call
 - `ContentListLogic.allTopPokemonItems` exposes the unfiltered loaded list as a `StateFlow` so the desktop-web Usage layout can measure left-pane width against the longest name
-- Navigated to from Home page's "See More" button on the "Top Pokemon" section, threading the current format
+- Navigated to from Home page's "See More" button on the "Today's Top Pokémon" section, threading the current format
 
 #### Desktop-web Usage layout
 On the `WindowSizeClass.Expanded` branch, the Usage tab is rendered by `webApp/.../ui/contentlist/UsageDesktopPage.kt` instead of the standard `ContentListPage`. Mobile web, Android, and iOS continue to use the standard `ContentListPage` rendering of TopPokemon mode (single column with type icons).

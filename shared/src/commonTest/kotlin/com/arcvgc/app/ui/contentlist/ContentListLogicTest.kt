@@ -176,11 +176,11 @@ class ContentListLogicTest {
 
         val state = logic.uiState.value
         assertFalse(state.isLoading)
-        // FormatSelector + Top Pokemon section + Today's Top Battles section
+        // FormatSelector + Today's Top Pokemon section + Today's Top Battles section
         assertEquals(3, state.items.size)
         assertTrue(state.items[0] is ContentListItem.FormatSelector)
         assertTrue(state.items[1] is ContentListItem.Section)
-        assertEquals("Top Pokémon", (state.items[1] as ContentListItem.Section).header)
+        assertEquals(ContentListLogic.HOME_TOP_POKEMON_SECTION, (state.items[1] as ContentListItem.Section).header)
         assertTrue(state.items[2] is ContentListItem.Section)
         assertEquals("Today's Top Battles", (state.items[2] as ContentListItem.Section).header)
     }
@@ -1235,7 +1235,7 @@ class ContentListLogicTest {
 
         val topPokemonSection = logic.uiState.value.items
             .filterIsInstance<ContentListItem.Section>()
-            .first { it.header == "Top Pokémon" }
+            .first { it.header == ContentListLogic.HOME_TOP_POKEMON_SECTION }
         assertTrue(topPokemonSection.trailingAction is ContentListItem.SectionAction.SeeMore)
     }
 
@@ -1250,7 +1250,7 @@ class ContentListLogicTest {
 
         val topPokemonSection = logic.uiState.value.items
             .filterIsInstance<ContentListItem.Section>()
-            .first { it.header == "Top Pokémon" }
+            .first { it.header == ContentListLogic.HOME_TOP_POKEMON_SECTION }
         val grid = topPokemonSection.items[0] as ContentListItem.PokemonGrid
         assertEquals("50.00%", grid.pokemon[0].usagePercent)
     }
@@ -1259,6 +1259,31 @@ class ContentListLogicTest {
     fun homeMode_formatDetailFails_omitsTopPokemonSection() {
         fakeRepo.bestPreviousDayResult = listOf(testBattle)
         fakeRepo.formatDetailError = Exception("Format error")
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val state = logic.uiState.value
+        assertFalse(state.isLoading)
+        assertNull(state.error)
+        assertEquals(2, state.items.size)
+        assertTrue(state.items[0] is ContentListItem.FormatSelector)
+        assertTrue(state.items[1] is ContentListItem.Section)
+        assertEquals("Today's Top Battles", (state.items[1] as ContentListItem.Section).header)
+    }
+
+    @Test
+    fun homeMode_emptyTopPokemon_omitsTopPokemonSection() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = FormatDetail(
+            id = 1,
+            name = "gen9vgc2026regibo3",
+            formattedName = "[Gen 9] VGC 2026 Reg I (Bo3)",
+            matchCount = 0,
+            teamCount = 0,
+            topPokemon = emptyList()
+        )
 
         val logic = createLogic(ContentListMode.Home)
         logic.initialize()
@@ -1288,7 +1313,7 @@ class ContentListLogicTest {
         assertEquals(2, state.items.size)
         assertTrue(state.items[0] is ContentListItem.FormatSelector)
         assertTrue(state.items[1] is ContentListItem.Section)
-        assertEquals("Top Pokémon", (state.items[1] as ContentListItem.Section).header)
+        assertEquals(ContentListLogic.HOME_TOP_POKEMON_SECTION, (state.items[1] as ContentListItem.Section).header)
     }
 
     @Test
@@ -1365,6 +1390,33 @@ class ContentListLogicTest {
     }
 
     @Test
+    fun homeMode_initialLoad_requestsTopPokemonWithDayLookback() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        assertEquals(LookbackWindow.Day, fakeRepo.getFormatDetailCalls[0].lookback)
+    }
+
+    @Test
+    fun homeMode_setTopPokemonFetchCount_increase_refetchesWithDayLookback() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        logic.setTopPokemonFetchCount(16)
+        testScope.advanceUntilIdle()
+
+        assertEquals(LookbackWindow.Day, fakeRepo.getFormatDetailCalls.last().lookback)
+    }
+
+    @Test
     fun homeMode_setTopPokemonFetchCount_increase_refetchesTopPokemonSectionOnly() {
         fakeRepo.bestPreviousDayResult = listOf(testBattle)
         fakeRepo.formatDetailResult = testFormatDetail()
@@ -1385,7 +1437,7 @@ class ContentListLogicTest {
         assertEquals(formatDetailCallsBefore + 1, fakeRepo.getFormatDetailCalls.size)
         assertEquals(16, fakeRepo.getFormatDetailCalls.last().topPokemonCount)
         // Loading flag cleared
-        assertFalse("Top Pokémon" in logic.uiState.value.loadingSections)
+        assertFalse(ContentListLogic.HOME_TOP_POKEMON_SECTION in logic.uiState.value.loadingSections)
         // Battles section left untouched (same reference or at least same content)
         val afterBattlesSection = logic.uiState.value.items
             .filterIsInstance<ContentListItem.Section>()
@@ -1454,11 +1506,11 @@ class ContentListLogicTest {
         logic.setTopPokemonFetchCount(16)
         testScope.advanceUntilIdle()
 
-        assertFalse("Top Pokémon" in logic.uiState.value.loadingSections)
+        assertFalse(ContentListLogic.HOME_TOP_POKEMON_SECTION in logic.uiState.value.loadingSections)
         // Initial 6-pokemon section is still there (the failed refetch didn't replace it).
         val section = logic.uiState.value.items
             .filterIsInstance<ContentListItem.Section>()
-            .first { it.header == "Top Pokémon" }
+            .first { it.header == ContentListLogic.HOME_TOP_POKEMON_SECTION }
         val grid = section.items[0] as ContentListItem.PokemonGrid
         assertTrue(grid.pokemon.isNotEmpty())
     }
