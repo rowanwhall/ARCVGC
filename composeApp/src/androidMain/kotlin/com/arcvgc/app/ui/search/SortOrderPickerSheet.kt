@@ -13,14 +13,15 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.arcvgc.app.domain.model.OrderBy
 
-private val sortOptions = listOf("rating" to "Rating", "time" to "Time")
+private val sortOptions = listOf(OrderBy.Rating to "Rating", OrderBy.Time to "Time")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SortOrderPickerSheet(
-    selectedOrderBy: String,
-    onSelect: (String) -> Unit,
+    selectedOrderBy: OrderBy,
+    onSelect: (OrderBy) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()

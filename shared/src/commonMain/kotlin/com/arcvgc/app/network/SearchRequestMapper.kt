@@ -1,5 +1,6 @@
 package com.arcvgc.app.network
 
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.network.model.RatingDto
@@ -14,7 +15,7 @@ fun buildSearchRequest(
     minimumRating: Int? = null,
     maximumRating: Int? = null,
     unratedOnly: Boolean = false,
-    orderBy: String,
+    orderBy: OrderBy,
     limit: Int,
     page: Int,
     timeRangeStart: Long? = null,

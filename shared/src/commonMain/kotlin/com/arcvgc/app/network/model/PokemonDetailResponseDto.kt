@@ -27,7 +27,28 @@ data class PokemonProfileDto(
     @SerialName("top_tera_types") val topTeraTypes: List<TopTeraTypeDto>? = null,
     @SerialName("top_moves") val topMoves: List<TopMoveDto>? = null,
     @SerialName("top_abilities") val topAbilities: List<TopAbilityDto>? = null,
-    @SerialName("top_teammates") val topTeammates: List<TopTeammateDto>? = null
+    @SerialName("top_teammates") val topTeammates: List<TopTeammateDto>? = null,
+    @SerialName("top_matches") val topMatches: List<TopMatchDto>? = null
+)
+
+@Serializable
+data class TopMatchDto(
+    val match: TopMatchSummaryDto,
+    @SerialName("winning_player") val winningPlayer: TopMatchPlayerDto
+)
+
+@Serializable
+data class TopMatchSummaryDto(
+    val id: Int,
+    @SerialName("showdown_id") val showdownId: String,
+    @SerialName("upload_time") val uploadTime: String,
+    val rating: Int? = null
+)
+
+@Serializable
+data class TopMatchPlayerDto(
+    val id: Int,
+    val name: String
 )
 
 @Serializable

@@ -1,6 +1,9 @@
 package com.arcvgc.app.network.mapper
 
 import com.arcvgc.app.domain.model.PokemonProfile
+import com.arcvgc.app.domain.model.TopMatch
+import com.arcvgc.app.domain.model.TopMatchPlayer
+import com.arcvgc.app.domain.model.TopMatchSummary
 import com.arcvgc.app.domain.model.TopStatAbility
 import com.arcvgc.app.domain.model.TopStatItem
 import com.arcvgc.app.domain.model.TopStatMove
@@ -9,6 +12,9 @@ import com.arcvgc.app.domain.model.TopStatTeraType
 import com.arcvgc.app.network.model.PokemonProfileDto
 import com.arcvgc.app.network.model.TopAbilityDto
 import com.arcvgc.app.network.model.TopItemDto
+import com.arcvgc.app.network.model.TopMatchDto
+import com.arcvgc.app.network.model.TopMatchPlayerDto
+import com.arcvgc.app.network.model.TopMatchSummaryDto
 import com.arcvgc.app.network.model.TopMoveDto
 import com.arcvgc.app.network.model.TopTeammateDto
 import com.arcvgc.app.network.model.TopTeraTypeDto
@@ -31,7 +37,8 @@ fun PokemonProfileDto.toDomain(): PokemonProfile {
         topTeraTypes = topTeraTypes.orEmpty().map { it.toDomain() },
         topMoves = topMoves.orEmpty().map { it.toDomain() },
         topAbilities = topAbilities.orEmpty().map { it.toDomain() },
-        topTeammates = topTeammates.orEmpty().map { it.toDomain() }
+        topTeammates = topTeammates.orEmpty().map { it.toDomain() },
+        topMatches = topMatches.orEmpty().map { it.toDomain() }
     )
 }
 
@@ -59,4 +66,24 @@ fun TopTeammateDto.toDomain(): TopStatTeammate {
         pokedexNumber = pokedexNumber,
         imageUrl = normalizeImageUrl(imageUrl)
     )
+}
+
+fun TopMatchDto.toDomain(): TopMatch {
+    return TopMatch(
+        match = match.toDomain(),
+        winningPlayer = winningPlayer.toDomain()
+    )
+}
+
+fun TopMatchSummaryDto.toDomain(): TopMatchSummary {
+    return TopMatchSummary(
+        id = id,
+        showdownId = showdownId,
+        uploadTime = uploadTime,
+        rating = rating
+    )
+}
+
+fun TopMatchPlayerDto.toDomain(): TopMatchPlayer {
+    return TopMatchPlayer(id = id, name = name)
 }

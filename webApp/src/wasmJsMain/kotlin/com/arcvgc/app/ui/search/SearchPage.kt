@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.di.DependencyContainer
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.domain.model.WinnerFilter
@@ -378,7 +379,7 @@ fun SearchPage(
 
         // Sort Order button
         item {
-            val orderLabel = if (uiState.selectedOrderBy == "time") "Time" else "Rating"
+            val orderLabel = if (uiState.selectedOrderBy == OrderBy.Time) "Time" else "Rating"
             SearchOptionButton(
                 text = "Sort by: $orderLabel",
                 onClick = { showSortOrderPicker = true },

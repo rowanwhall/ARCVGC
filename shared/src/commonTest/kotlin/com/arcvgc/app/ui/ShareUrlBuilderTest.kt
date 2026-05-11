@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui
 
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListMode
@@ -95,7 +96,7 @@ class ShareUrlBuilderTest {
             filters = listOf(SearchFilterSlot(pokemonId = 150, pokemonName = "Mewtwo", pokemonImageUrl = null)),
             formatId = 1,
             formatName = "Reg G",
-            orderBy = "rating"
+            orderBy = OrderBy.Rating
         )
         assertEquals(
             "https://arcvgc.com/search?p=150&f=1&order=rating",
@@ -125,7 +126,7 @@ class ShareUrlBuilderTest {
             filters = listOf(SearchFilterSlot(pokemonId = 150, pokemonName = "Mewtwo", pokemonImageUrl = null)),
             formatId = 1,
             formatName = "Reg G",
-            orderBy = "rating"
+            orderBy = OrderBy.Rating
         )
         assertEquals(
             "https://arcvgc.com/search?p=150&f=1&order=rating&battle=42",

@@ -246,7 +246,7 @@ struct SearchView: View {
 
                     // Sort Order button
                     SearchOptionButton(
-                        text: "Sort by: \(viewModel.state.selectedOrderBy == "time" ? "Time" : "Rating")"
+                        text: "Sort by: \(viewModel.state.selectedOrderBy == OrderBy.time ? "Time" : "Rating")"
                     ) {
                         activeSheet = .sortOrder
                     }

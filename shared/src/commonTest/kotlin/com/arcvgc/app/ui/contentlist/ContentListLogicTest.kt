@@ -8,6 +8,7 @@ import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.Format
 import com.arcvgc.app.domain.model.FormatDetail
 import com.arcvgc.app.domain.model.MostUsedPokemon
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.TopPokemon
 import com.arcvgc.app.domain.model.PlayerProfile
@@ -186,10 +187,10 @@ class ContentListLogicTest {
         val params = SearchParams(
             filters = listOf(testSearchFilterSlot()),
             formatId = 1,
-            orderBy = "rating"
+            orderBy = OrderBy.Rating
         )
         val logic = createLogic(ContentListMode.Search(params))
-        assertEquals("rating", logic.sortOrder.value)
+        assertEquals(OrderBy.Rating, logic.sortOrder.value)
     }
 
     @Test
@@ -286,7 +287,7 @@ class ContentListLogicTest {
         val params = SearchParams(
             filters = listOf(testSearchFilterSlot(pokemonId = 25)),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             playerName = "TestPlayer"
         )
         fakeRepo.searchMatchesResult = MatchesResult(
@@ -811,7 +812,7 @@ class ContentListLogicTest {
         assertEquals(1, fakeRepo.searchMatchesCalls.size)
         val call = fakeRepo.searchMatchesCalls.first()
         assertEquals(6, call.page)
-        assertEquals("rating", call.orderBy)
+        assertEquals(OrderBy.Rating, call.orderBy)
         assertEquals(6, logic.uiState.value.currentPage)
     }
 
@@ -900,17 +901,17 @@ class ContentListLogicTest {
         logic.initialize()
         testScope.advanceUntilIdle()
 
-        assertEquals("rating", logic.sortOrder.value)
+        assertEquals(OrderBy.Rating, logic.sortOrder.value)
 
         logic.toggleSortOrder()
         testScope.advanceUntilIdle()
 
-        assertEquals("time", logic.sortOrder.value)
+        assertEquals(OrderBy.Time, logic.sortOrder.value)
 
         logic.toggleSortOrder()
         testScope.advanceUntilIdle()
 
-        assertEquals("rating", logic.sortOrder.value)
+        assertEquals(OrderBy.Rating, logic.sortOrder.value)
     }
 
     @Test
@@ -935,7 +936,7 @@ class ContentListLogicTest {
         // Should have made a new call with page=1
         assertTrue(fakeRepo.searchMatchesCalls.isNotEmpty())
         assertEquals(1, fakeRepo.searchMatchesCalls.last().page)
-        assertEquals("time", fakeRepo.searchMatchesCalls.last().orderBy)
+        assertEquals(OrderBy.Time, fakeRepo.searchMatchesCalls.last().orderBy)
         assertEquals(1, logic.uiState.value.currentPage)
     }
 
@@ -1398,7 +1399,7 @@ class ContentListLogicTest {
         val params1 = SearchParams(
             filters = listOf(testSearchFilterSlot()),
             formatId = 1,
-            orderBy = "time"
+            orderBy = OrderBy.Time
         )
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = listOf(testBattle),
@@ -1415,7 +1416,7 @@ class ContentListLogicTest {
         val params2 = SearchParams(
             filters = emptyList(),
             formatId = 2,
-            orderBy = "rating",
+            orderBy = OrderBy.Rating,
             playerName = "NewPlayer"
         )
 
@@ -1423,7 +1424,7 @@ class ContentListLogicTest {
         logic.updateSearchParams(params2)
         testScope.advanceUntilIdle()
 
-        assertEquals("rating", logic.sortOrder.value)
+        assertEquals(OrderBy.Rating, logic.sortOrder.value)
         assertTrue(fakeRepo.searchMatchesCalls.isNotEmpty())
     }
 

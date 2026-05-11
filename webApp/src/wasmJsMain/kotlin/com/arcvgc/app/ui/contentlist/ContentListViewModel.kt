@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.arcvgc.app.data.AppConfigRepository
 import com.arcvgc.app.data.BattleRepository
 import com.arcvgc.app.domain.model.AppConfig
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.FormatCatalogRepository
@@ -38,7 +39,7 @@ class ContentListViewModel(
     )
 
     val uiState: StateFlow<ContentListUiState> = logic.uiState
-    val sortOrder: StateFlow<String> = logic.sortOrder
+    val sortOrder: StateFlow<OrderBy> = logic.sortOrder
     val selectedFormatId: StateFlow<Int> = logic.selectedFormatId
     val searchQuery: StateFlow<String> = logic.searchQuery
     val allTopPokemonItems = logic.allTopPokemonItems

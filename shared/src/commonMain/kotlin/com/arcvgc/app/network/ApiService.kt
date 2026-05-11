@@ -6,10 +6,12 @@ import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.DomainItem
 import com.arcvgc.app.domain.model.Format
 import com.arcvgc.app.domain.model.FormatDetail
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.MatchDetail
 import com.arcvgc.app.domain.model.MatchPreview
 import com.arcvgc.app.domain.model.MatchSet
 import com.arcvgc.app.domain.model.NetworkResult
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.SetDetail
 import com.arcvgc.app.domain.model.PlayerListItem
@@ -62,7 +64,7 @@ class ApiService {
     suspend fun getMatches(
         limit: Int = 50,
         page: Int = 1,
-        orderBy: String? = null,
+        orderBy: OrderBy? = null,
         ratedOnly: Boolean? = null,
         formatId: Int? = null
     ): NetworkResult<Pair<List<MatchPreview>, Pagination>> {
@@ -71,7 +73,7 @@ class ApiService {
                 .get("${ApiConstants.BASE_URL}${ApiConstants.MATCHES_ENDPOINT}") {
                     parameter("limit", limit)
                     parameter("page", page)
-                    orderBy?.let { parameter("order_by", it) }
+                    orderBy?.let { parameter("order_by", it.value) }
                     ratedOnly?.let { parameter("rated_only", it) }
                     formatId?.let { parameter("format_id", it) }
                 }
@@ -218,12 +220,14 @@ class ApiService {
 
     suspend fun getFormatDetail(
         formatId: Int,
-        topPokemonCount: Int? = null
+        topPokemonCount: Int? = null,
+        lookback: LookbackWindow? = null
     ): NetworkResult<FormatDetail> {
         return try {
             val response: FormatDetailResponseDto = client
                 .get("${ApiConstants.BASE_URL}${ApiConstants.FORMATS_ENDPOINT}$formatId") {
                     topPokemonCount?.let { parameter("top_pokemon_count", it) }
+                    lookback?.let { parameter("lookback", it.value) }
                 }
                 .body()
 
@@ -279,11 +283,16 @@ class ApiService {
         }
     }
 
-    suspend fun getPokemonById(id: Int, formatId: Int? = null): NetworkResult<PokemonProfile> {
+    suspend fun getPokemonById(
+        id: Int,
+        formatId: Int? = null,
+        lookback: LookbackWindow? = null
+    ): NetworkResult<PokemonProfile> {
         return try {
             val response: PokemonDetailResponseDto = client
                 .get("${ApiConstants.BASE_URL}${ApiConstants.POKEMON_ENDPOINT}$id") {
                     formatId?.let { parameter("format_id", it) }
+                    lookback?.let { parameter("lookback", it.value) }
                 }
                 .body()
 
@@ -397,7 +406,7 @@ class ApiService {
     suspend fun getSets(
         limit: Int = 20,
         page: Int = 1,
-        orderBy: String? = null,
+        orderBy: OrderBy? = null,
         completeOnly: Boolean? = null,
         ratedOnly: Boolean? = null,
         formatId: Int? = null
@@ -407,7 +416,7 @@ class ApiService {
                 .get("${ApiConstants.BASE_URL}${ApiConstants.SETS_ENDPOINT}") {
                     parameter("limit", limit)
                     parameter("page", page)
-                    orderBy?.let { parameter("order_by", it) }
+                    orderBy?.let { parameter("order_by", it.value) }
                     completeOnly?.let { parameter("complete_only", it) }
                     ratedOnly?.let { parameter("rated_only", it) }
                     formatId?.let { parameter("format_id", it) }

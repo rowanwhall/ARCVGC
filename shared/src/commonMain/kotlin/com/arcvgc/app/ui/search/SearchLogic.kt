@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.search
 
 import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.domain.model.AppConfig
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.mapper.FormatUiMapper
 import com.arcvgc.app.ui.model.AbilityUiModel
@@ -141,7 +142,7 @@ class SearchLogic(
         _uiState.update { SearchStateReducer.setPlayerName(it, name) }
     }
 
-    fun setOrderBy(orderBy: String) {
+    fun setOrderBy(orderBy: OrderBy) {
         _uiState.update { SearchStateReducer.setOrderBy(it, orderBy) }
     }
 

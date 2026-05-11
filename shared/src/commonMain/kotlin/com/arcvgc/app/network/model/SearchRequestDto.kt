@@ -1,5 +1,6 @@
 package com.arcvgc.app.network.model
 
+import com.arcvgc.app.domain.model.OrderBy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -23,7 +24,7 @@ data class SearchRequestDto(
     @SerialName("format_id") val formatId: Int,
     val rating: RatingDto? = null,
     val pokemon: List<SearchPokemonDto>,
-    @SerialName("order_by") val orderBy: String = "time",
+    @SerialName("order_by") val orderBy: OrderBy = OrderBy.Time,
     @SerialName("time_range") val timeRange: TimeRangeDto? = null,
     @SerialName("player_name") val playerName: String? = null,
     @SerialName("player_id") val playerId: Int? = null,

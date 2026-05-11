@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.search
 
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.Format
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import com.arcvgc.app.ui.model.TypeUiModel
@@ -113,13 +114,13 @@ class SearchLogicTest {
         val logic = SearchLogic()
         logic.setMinRating(1500)
         logic.setMaxRating(1800)
-        logic.setOrderBy("rating")
+        logic.setOrderBy(OrderBy.Rating)
 
         logic.setUnratedOnly(true)
 
         val state = logic.uiState.value
         assertNull(state.selectedMinRating)
         assertNull(state.selectedMaxRating)
-        assertEquals("time", state.selectedOrderBy)
+        assertEquals(OrderBy.Time, state.selectedOrderBy)
     }
 }

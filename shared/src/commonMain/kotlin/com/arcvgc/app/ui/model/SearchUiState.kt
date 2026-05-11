@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.model
 
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.WinnerFilter
 
 data class SearchUiState(
@@ -10,7 +11,7 @@ data class SearchUiState(
     val selectedMinRating: Int? = null,
     val selectedMaxRating: Int? = null,
     val unratedOnly: Boolean = false,
-    val selectedOrderBy: String = "rating",
+    val selectedOrderBy: OrderBy = OrderBy.Rating,
     val timeRangeStart: Long? = null,
     val timeRangeEnd: Long? = null,
     val playerName: String = "",

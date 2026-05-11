@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.contentlist
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -43,7 +44,7 @@ internal data class ContentListCallbacks(
  */
 internal data class ContentListFormatState(
     val searchParams: SearchParams? = null,
-    val sortOrder: String? = null,
+    val sortOrder: OrderBy? = null,
     val formats: List<FormatUiModel> = emptyList(),
     val selectedFormatId: Int = 0,
     val searchQuery: String = "",

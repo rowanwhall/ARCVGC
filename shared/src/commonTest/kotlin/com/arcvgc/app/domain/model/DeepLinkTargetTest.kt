@@ -145,12 +145,12 @@ class DeepLinkTargetTest {
         val params = (result.target as DeepLinkTarget.Search).params
         assertEquals(listOf(150), params.pokemonIds)
         assertEquals(1, params.formatId)
-        assertEquals("rating", params.orderBy)
+        assertEquals(OrderBy.Rating, params.orderBy)
     }
 
     @Test
     fun parseSearchFull() {
-        val result = parseDeepLink("/search?p=150,42&i=_,5&t=_,3&f=1&min=1500&max=1800&order=date&player=Wolfe&start=123&end=456&unrated")!!
+        val result = parseDeepLink("/search?p=150,42&i=_,5&t=_,3&f=1&min=1500&max=1800&order=time&player=Wolfe&start=123&end=456&unrated")!!
         assertIs<DeepLinkTarget.Search>(result.target)
         val params = (result.target as DeepLinkTarget.Search).params
         assertEquals(listOf(150, 42), params.pokemonIds)
@@ -160,10 +160,17 @@ class DeepLinkTargetTest {
         assertEquals(1500, params.minimumRating)
         assertEquals(1800, params.maximumRating)
         assertTrue(params.unratedOnly)
-        assertEquals("date", params.orderBy)
+        assertEquals(OrderBy.Time, params.orderBy)
         assertEquals("Wolfe", params.playerName)
         assertEquals(123L, params.timeRangeStart)
         assertEquals(456L, params.timeRangeEnd)
+    }
+
+    @Test
+    fun parseSearchUnknownOrderFallsBackToDefault() {
+        val result = parseDeepLink("/search?p=150&f=1&order=garbage")!!
+        val params = (result.target as DeepLinkTarget.Search).params
+        assertEquals(OrderBy.Rating, params.orderBy)
     }
 
     @Test
@@ -485,7 +492,7 @@ class DeepLinkTargetTest {
                 SearchFilterSlot(pokemonId = 25, pokemonName = "Pikachu")
             ),
             formatId = 1,
-            orderBy = "rating",
+            orderBy = OrderBy.Rating,
             winnerFilter = WinnerFilter.TEAM2
         )
         val encoded = encodeSearchPath(original)
@@ -508,7 +515,7 @@ class DeepLinkTargetTest {
             minimumRating = 1500,
             maximumRating = null,
             unratedOnly = false,
-            orderBy = "date",
+            orderBy = OrderBy.Time,
             playerName = "Wolfe Glick"
         )
         val encoded = encodeSearchPath(original)
@@ -521,7 +528,7 @@ class DeepLinkTargetTest {
         assertEquals(1, params.formatId)
         assertEquals(1500, params.minimumRating)
         assertNull(params.maximumRating)
-        assertEquals("date", params.orderBy)
+        assertEquals(OrderBy.Time, params.orderBy)
         assertEquals("Wolfe Glick", params.playerName)
     }
 
@@ -537,7 +544,7 @@ class DeepLinkTargetTest {
             ),
             formatId = 1,
             minimumRating = 1500,
-            orderBy = "date",
+            orderBy = OrderBy.Time,
             winnerFilter = WinnerFilter.TEAM1
         )
         val encoded = encodeSearchPath(original)
@@ -554,7 +561,7 @@ class DeepLinkTargetTest {
         assertEquals(listOf(12), params.team2AbilityIds)
         assertEquals(WinnerFilter.TEAM1, params.winnerFilter)
         assertEquals(1500, params.minimumRating)
-        assertEquals("date", params.orderBy)
+        assertEquals(OrderBy.Time, params.orderBy)
     }
 
     @Test

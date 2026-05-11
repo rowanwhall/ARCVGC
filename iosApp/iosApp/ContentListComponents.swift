@@ -129,7 +129,7 @@ enum ContentListHeader {
 struct SectionHeaderView: View {
     let title: String
     var isLoading: Bool = false
-    var sortOrder: String? = nil
+    var sortOrder: OrderBy? = nil
     var onToggleSortOrder: (() -> Void)? = nil
     var onSeeMore: (() -> Void)? = nil
 
@@ -161,7 +161,7 @@ struct SectionHeaderView: View {
 }
 
 struct SortToggleButton: View {
-    let sortOrder: String
+    let sortOrder: OrderBy
     var isLoading: Bool = false
     let action: () -> Void
 
@@ -176,7 +176,7 @@ struct SortToggleButton: View {
                     Image(systemName: "arrow.up.arrow.down")
                         .font(.system(size: 10, weight: .semibold))
                 }
-                Text(sortOrder == "rating" ? "Rating" : "Time")
+                Text(sortOrder == OrderBy.rating ? "Rating" : "Time")
                     .font(.system(size: 12))
             }
             .foregroundColor(Color(.label).opacity(0.75))

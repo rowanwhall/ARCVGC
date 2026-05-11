@@ -24,7 +24,7 @@ class SearchParamsTest {
         minimumRating = minimumRating,
         maximumRating = maximumRating,
         unratedOnly = unratedOnly,
-        orderBy = "date",
+        orderBy = OrderBy.Rating,
         playerName = playerName,
         timeRangeStart = timeRangeStart,
         timeRangeEnd = timeRangeEnd

@@ -1,7 +1,9 @@
 package com.arcvgc.app.data
 
 import com.arcvgc.app.domain.model.FormatDetail
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.NetworkResult
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
@@ -32,7 +34,7 @@ interface BattleRepositoryApi {
         minimumRating: Int? = null,
         maximumRating: Int? = null,
         unratedOnly: Boolean = false,
-        orderBy: String = "rating",
+        orderBy: OrderBy = OrderBy.Rating,
         limit: Int = 10,
         page: Int = 1,
         timeRangeStart: Long? = null,
@@ -46,14 +48,22 @@ interface BattleRepositoryApi {
     suspend fun getMatches(
         limit: Int = 10,
         page: Int = 1,
-        orderBy: String? = null,
+        orderBy: OrderBy? = null,
         ratedOnly: Boolean? = null,
         formatId: Int? = null
     ): MatchesResult
-    suspend fun getFormatDetail(formatId: Int, topPokemonCount: Int? = null): FormatDetail
+    suspend fun getFormatDetail(
+        formatId: Int,
+        topPokemonCount: Int? = null,
+        lookback: LookbackWindow? = null
+    ): FormatDetail
     suspend fun getMatchesByIds(ids: List<Int>): List<BattleCardUiModel>
     suspend fun getPlayerProfile(id: Int, formatId: Int? = null): PlayerProfile
-    suspend fun getPokemonProfile(id: Int, formatId: Int? = null): PokemonProfile
+    suspend fun getPokemonProfile(
+        id: Int,
+        formatId: Int? = null,
+        lookback: LookbackWindow? = null
+    ): PokemonProfile
     suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem>
     suspend fun searchPlayersByName(name: String): List<PlayerListItem>
 }
@@ -74,7 +84,7 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
     override suspend fun getMatches(
         limit: Int,
         page: Int,
-        orderBy: String?,
+        orderBy: OrderBy?,
         ratedOnly: Boolean?,
         formatId: Int?
     ): MatchesResult {
@@ -91,8 +101,12 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
         }
     }
 
-    override suspend fun getFormatDetail(formatId: Int, topPokemonCount: Int?): FormatDetail {
-        return when (val result = apiService.getFormatDetail(formatId, topPokemonCount)) {
+    override suspend fun getFormatDetail(
+        formatId: Int,
+        topPokemonCount: Int?,
+        lookback: LookbackWindow?
+    ): FormatDetail {
+        return when (val result = apiService.getFormatDetail(formatId, topPokemonCount, lookback)) {
             is NetworkResult.Success -> result.data
             is NetworkResult.Error -> {
                 val error = Exception(result.message)
@@ -102,9 +116,13 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
         }
     }
 
-    suspend fun getFormatDetailOrNull(formatId: Int, topPokemonCount: Int? = null): FormatDetail? {
+    suspend fun getFormatDetailOrNull(
+        formatId: Int,
+        topPokemonCount: Int? = null,
+        lookback: LookbackWindow? = null
+    ): FormatDetail? {
         return try {
-            getFormatDetail(formatId, topPokemonCount)
+            getFormatDetail(formatId, topPokemonCount, lookback)
         } catch (e: Exception) {
             null
         }
@@ -116,7 +134,7 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
         minimumRating: Int?,
         maximumRating: Int?,
         unratedOnly: Boolean,
-        orderBy: String,
+        orderBy: OrderBy,
         limit: Int,
         page: Int,
         timeRangeStart: Long?,
@@ -214,8 +232,12 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
         }
     }
 
-    override suspend fun getPokemonProfile(id: Int, formatId: Int?): PokemonProfile {
-        return when (val result = apiService.getPokemonById(id, formatId)) {
+    override suspend fun getPokemonProfile(
+        id: Int,
+        formatId: Int?,
+        lookback: LookbackWindow?
+    ): PokemonProfile {
+        return when (val result = apiService.getPokemonById(id, formatId, lookback)) {
             is NetworkResult.Success -> result.data
             is NetworkResult.Error -> {
                 val error = Exception(result.message)
@@ -229,9 +251,13 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
      * Non-throwing variant for iOS — returns null on error instead of throwing.
      * Errors are reported to Sentry automatically.
      */
-    suspend fun getPokemonProfileOrNull(id: Int, formatId: Int? = null): PokemonProfile? {
+    suspend fun getPokemonProfileOrNull(
+        id: Int,
+        formatId: Int? = null,
+        lookback: LookbackWindow? = null
+    ): PokemonProfile? {
         return try {
-            getPokemonProfile(id, formatId)
+            getPokemonProfile(id, formatId, lookback)
         } catch (e: Exception) {
             null
         }

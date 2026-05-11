@@ -30,7 +30,7 @@ data class SearchQueryParams(
     val minimumRating: Int? = null,
     val maximumRating: Int? = null,
     val unratedOnly: Boolean = false,
-    val orderBy: String = "rating",
+    val orderBy: OrderBy = OrderBy.Rating,
     val timeRangeStart: Long? = null,
     val timeRangeEnd: Long? = null,
     val playerName: String? = null
@@ -119,7 +119,7 @@ private fun parseSearchQuery(params: Map<String, String>): DeepLinkTarget.Search
             minimumRating = params["min"]?.toIntOrNull(),
             maximumRating = params["max"]?.toIntOrNull(),
             unratedOnly = params.containsKey("unrated"),
-            orderBy = params["order"] ?: "rating",
+            orderBy = OrderBy.fromValue(params["order"]) ?: OrderBy.Rating,
             timeRangeStart = params["start"]?.toLongOrNull(),
             timeRangeEnd = params["end"]?.toLongOrNull(),
             playerName = params["player"]
@@ -211,7 +211,7 @@ fun encodeSearchPath(params: SearchParams): String {
     params.minimumRating?.takeIf { it > 0 }?.let { parts.add("min=$it") }
     params.maximumRating?.takeIf { it > 0 }?.let { parts.add("max=$it") }
     if (params.unratedOnly) parts.add("unrated")
-    parts.add("order=${params.orderBy}")
+    parts.add("order=${params.orderBy.value}")
     params.timeRangeStart?.let { parts.add("start=$it") }
     params.timeRangeEnd?.let { parts.add("end=$it") }
     params.playerName?.takeIf { it.isNotBlank() }?.let { parts.add("player=${encodePercent(it)}") }

@@ -1,5 +1,7 @@
 package com.arcvgc.app.data.repository
 
+import com.arcvgc.app.domain.model.LookbackWindow
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
@@ -18,7 +20,7 @@ interface BattleRepository {
     suspend fun getMatches(
         limit: Int = DEFAULT_PAGE_SIZE,
         page: Int = 1,
-        orderBy: String? = null,
+        orderBy: OrderBy? = null,
         ratedOnly: Boolean? = null,
         formatId: Int? = null
     ): Result<Pair<List<BattleCardUiModel>, Pagination>>
@@ -30,7 +32,7 @@ interface BattleRepository {
         minimumRating: Int? = null,
         maximumRating: Int? = null,
         unratedOnly: Boolean = false,
-        orderBy: String = "rating",
+        orderBy: OrderBy = OrderBy.Rating,
         limit: Int = DEFAULT_PAGE_SIZE,
         page: Int = 1,
         timeRangeStart: Long? = null,
@@ -40,7 +42,11 @@ interface BattleRepository {
         team2Filters: List<SearchFilterSlot> = emptyList()
     ): Result<Pair<List<BattleCardUiModel>, Pagination>>
     suspend fun getMatchesByIds(ids: List<Int>): Result<List<BattleCardUiModel>>
-    suspend fun getPokemonProfile(id: Int, formatId: Int? = null): Result<PokemonProfile>
+    suspend fun getPokemonProfile(
+        id: Int,
+        formatId: Int? = null,
+        lookback: LookbackWindow? = null
+    ): Result<PokemonProfile>
     suspend fun getPlayerProfile(id: Int, formatId: Int? = null): Result<PlayerProfile>
     suspend fun getPlayersByNames(names: List<String>): Result<List<PlayerListItem>>
 }
@@ -55,7 +61,7 @@ class BattleRepositoryImpl @Inject constructor(
     override suspend fun getMatches(
         limit: Int,
         page: Int,
-        orderBy: String?,
+        orderBy: OrderBy?,
         ratedOnly: Boolean?,
         formatId: Int?
     ): Result<Pair<List<BattleCardUiModel>, Pagination>> {
@@ -73,7 +79,7 @@ class BattleRepositoryImpl @Inject constructor(
         minimumRating: Int?,
         maximumRating: Int?,
         unratedOnly: Boolean,
-        orderBy: String,
+        orderBy: OrderBy,
         limit: Int,
         page: Int,
         timeRangeStart: Long?,
@@ -128,9 +134,13 @@ class BattleRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPokemonProfile(id: Int, formatId: Int?): Result<PokemonProfile> {
+    override suspend fun getPokemonProfile(
+        id: Int,
+        formatId: Int?,
+        lookback: LookbackWindow?
+    ): Result<PokemonProfile> {
         return try {
-            Result.success(shared.getPokemonProfile(id, formatId))
+            Result.success(shared.getPokemonProfile(id, formatId, lookback))
         } catch (e: Exception) {
             Result.failure(e)
         }

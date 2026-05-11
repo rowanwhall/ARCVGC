@@ -7,7 +7,7 @@ data class SearchParams(
     val minimumRating: Int? = null,
     val maximumRating: Int? = null,
     val unratedOnly: Boolean = false,
-    val orderBy: String,
+    val orderBy: OrderBy,
     val timeRangeStart: Long? = null,
     val timeRangeEnd: Long? = null,
     val playerName: String? = null,

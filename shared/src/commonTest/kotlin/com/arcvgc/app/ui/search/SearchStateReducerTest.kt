@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.search
 
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -32,7 +33,7 @@ class SearchStateReducerTest {
     @Test
     fun initialState_defaultOrderByIsRating() {
         val state = SearchStateReducer.initialState()
-        assertEquals("rating", state.selectedOrderBy)
+        assertEquals(OrderBy.Rating, state.selectedOrderBy)
     }
 
     @Test
@@ -240,24 +241,24 @@ class SearchStateReducerTest {
         var state = SearchStateReducer.initialState()
         state = SearchStateReducer.setMinRating(state, 1500)
         state = SearchStateReducer.setMaxRating(state, 1800)
-        state = SearchStateReducer.setOrderBy(state, "rating")
+        state = SearchStateReducer.setOrderBy(state, OrderBy.Rating)
 
         state = SearchStateReducer.setUnratedOnly(state, true)
 
         assertTrue(state.unratedOnly)
         assertNull(state.selectedMinRating)
         assertNull(state.selectedMaxRating)
-        assertEquals("time", state.selectedOrderBy)
+        assertEquals(OrderBy.Time, state.selectedOrderBy)
     }
 
     @Test
     fun setUnratedOnly_true_doesNotSwitchNonRatingSortOrder() {
         var state = SearchStateReducer.initialState()
-        state = SearchStateReducer.setOrderBy(state, "time")
+        state = SearchStateReducer.setOrderBy(state, OrderBy.Time)
 
         state = SearchStateReducer.setUnratedOnly(state, true)
 
-        assertEquals("time", state.selectedOrderBy)
+        assertEquals(OrderBy.Time, state.selectedOrderBy)
     }
 
     @Test
@@ -301,8 +302,8 @@ class SearchStateReducerTest {
     @Test
     fun setOrderBy_updatesState() {
         val state = SearchStateReducer.initialState()
-        val result = SearchStateReducer.setOrderBy(state, "time")
-        assertEquals("time", result.selectedOrderBy)
+        val result = SearchStateReducer.setOrderBy(state, OrderBy.Time)
+        assertEquals(OrderBy.Time, result.selectedOrderBy)
     }
 
     // --- Team 2 ---

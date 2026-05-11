@@ -10,6 +10,7 @@ import com.arcvgc.app.data.repository.FavoritesRepositoryImpl
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
 import com.arcvgc.app.data.repository.SettingsRepository
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.ui.model.ContentListMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,8 +37,8 @@ class ContentListViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ContentListUiState())
     val uiState: StateFlow<ContentListUiState> = _uiState.asStateFlow()
 
-    private val _sortOrder = MutableStateFlow("time")
-    val sortOrder: StateFlow<String> = _sortOrder.asStateFlow()
+    private val _sortOrder = MutableStateFlow(OrderBy.Time)
+    val sortOrder: StateFlow<OrderBy> = _sortOrder.asStateFlow()
 
     private val _selectedFormatId = MutableStateFlow(0)
     val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()

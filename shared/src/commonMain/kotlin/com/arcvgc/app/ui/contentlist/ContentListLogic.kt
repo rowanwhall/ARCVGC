@@ -6,6 +6,7 @@ import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.data.currentTimeMillis
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.SearchFilterSlot
@@ -55,11 +56,11 @@ class ContentListLogic(
     private val _sortOrder = MutableStateFlow(
         when (mode) {
             is ContentListMode.Search -> (mode as ContentListMode.Search).params.orderBy
-            is ContentListMode.Pokemon -> "rating"
-            else -> "time"
+            is ContentListMode.Pokemon -> OrderBy.Rating
+            else -> OrderBy.Time
         }
     )
-    val sortOrder: StateFlow<String> = _sortOrder.asStateFlow()
+    val sortOrder: StateFlow<OrderBy> = _sortOrder.asStateFlow()
 
     private val _selectedFormatId = MutableStateFlow(
         when (mode) {
@@ -472,7 +473,7 @@ class ContentListLogic(
     }
 
     fun toggleSortOrder() {
-        _sortOrder.value = if (_sortOrder.value == "time") "rating" else "time"
+        _sortOrder.value = if (_sortOrder.value == OrderBy.Time) OrderBy.Rating else OrderBy.Time
         scope.launch {
             try {
                 _uiState.update { it.copy(loadingSections = setOf("Battles"), currentPage = 1, canPaginate = false) }
@@ -561,7 +562,7 @@ class ContentListLogic(
             val result = repository.searchMatches(
                 filters = emptyList(),
                 formatId = _selectedFormatId.value,
-                orderBy = "rating",
+                orderBy = OrderBy.Rating,
                 page = page,
                 timeRangeStart = nowSeconds - 86400,
                 timeRangeEnd = nowSeconds

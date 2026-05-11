@@ -4,6 +4,8 @@ import com.arcvgc.app.data.BattleRepositoryApi
 import com.arcvgc.app.data.MatchesResult
 import kotlinx.coroutines.delay
 import com.arcvgc.app.domain.model.FormatDetail
+import com.arcvgc.app.domain.model.LookbackWindow
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
@@ -47,7 +49,7 @@ class FakeBattleRepository : BattleRepositoryApi {
     data class SearchMatchesCall(
         val filters: List<SearchFilterSlot>,
         val formatId: Int,
-        val orderBy: String,
+        val orderBy: OrderBy,
         val page: Int,
         val playerName: String?,
         val team2Filters: List<SearchFilterSlot>
@@ -66,7 +68,7 @@ class FakeBattleRepository : BattleRepositoryApi {
     override suspend fun getMatches(
         limit: Int,
         page: Int,
-        orderBy: String?,
+        orderBy: OrderBy?,
         ratedOnly: Boolean?,
         formatId: Int?
     ): MatchesResult {
@@ -79,7 +81,7 @@ class FakeBattleRepository : BattleRepositoryApi {
         minimumRating: Int?,
         maximumRating: Int?,
         unratedOnly: Boolean,
-        orderBy: String,
+        orderBy: OrderBy,
         limit: Int,
         page: Int,
         timeRangeStart: Long?,
@@ -95,7 +97,11 @@ class FakeBattleRepository : BattleRepositoryApi {
         return searchMatchesResult
     }
 
-    override suspend fun getFormatDetail(formatId: Int, topPokemonCount: Int?): FormatDetail {
+    override suspend fun getFormatDetail(
+        formatId: Int,
+        topPokemonCount: Int?,
+        lookback: LookbackWindow?
+    ): FormatDetail {
         getFormatDetailCalls.add(GetFormatDetailCall(formatId, topPokemonCount))
         formatDetailError?.let { throw it }
         return formatDetailResult ?: throw Exception("No format detail configured")
@@ -111,7 +117,11 @@ class FakeBattleRepository : BattleRepositoryApi {
         return playerProfileResult ?: throw Exception("No player profile configured")
     }
 
-    override suspend fun getPokemonProfile(id: Int, formatId: Int?): PokemonProfile {
+    override suspend fun getPokemonProfile(
+        id: Int,
+        formatId: Int?,
+        lookback: LookbackWindow?
+    ): PokemonProfile {
         if (pokemonProfileDelayMs > 0) delay(pokemonProfileDelayMs)
         pokemonProfileError?.let { throw it }
         return pokemonProfileResult ?: throw Exception("No pokemon profile configured")

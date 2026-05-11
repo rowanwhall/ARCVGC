@@ -74,6 +74,7 @@ import com.arcvgc.app.ui.components.GradientToolbarHeight
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.TypeIconRow
 import com.arcvgc.app.ui.components.TypeInfo
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ReplayNavState
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
@@ -472,7 +473,7 @@ private fun ContentListContent(
     onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit = {},
     searchParams: SearchParams? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
-    sortOrder: String? = null,
+    sortOrder: OrderBy? = null,
     onToggleSortOrder: (() -> Unit)? = null,
     formats: List<FormatUiModel> = emptyList(),
     selectedFormatId: Int = 0,

@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
@@ -69,7 +70,7 @@ fun SectionHeader(
     title: String,
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
-    sortOrder: String? = null,
+    sortOrder: OrderBy? = null,
     onToggleSortOrder: (() -> Unit)? = null,
     onSeeMore: (() -> Unit)? = null
 ) {
@@ -113,7 +114,7 @@ fun SectionHeader(
 }
 
 @Composable
-fun SortToggleButton(sortOrder: String, isLoading: Boolean = false, onClick: () -> Unit) {
+fun SortToggleButton(sortOrder: OrderBy, isLoading: Boolean = false, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .height(28.dp)
@@ -138,7 +139,7 @@ fun SortToggleButton(sortOrder: String, isLoading: Boolean = false, onClick: () 
             )
         }
         Text(
-            text = if (sortOrder == "rating") "Rating" else "Time",
+            text = if (sortOrder == OrderBy.Rating) "Rating" else "Time",
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

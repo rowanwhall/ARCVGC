@@ -134,7 +134,7 @@ final class SearchViewModel: ObservableObject {
         logic.setPlayerName(name: name)
     }
 
-    func setOrderBy(_ orderBy: String) {
+    func setOrderBy(_ orderBy: OrderBy) {
         logic.setOrderBy(orderBy: orderBy)
     }
 

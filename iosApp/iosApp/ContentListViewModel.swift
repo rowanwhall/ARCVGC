@@ -54,7 +54,7 @@ enum ContentListMode {
 @MainActor
 final class ContentListViewModel: ObservableObject {
     @Published private(set) var state: ContentListUiState
-    @Published private(set) var sortOrder: String
+    @Published private(set) var sortOrder: OrderBy
     @Published private(set) var selectedFormatId: Int32
     @Published private(set) var searchQuery: String
     @Published private(set) var mode: ContentListMode
@@ -90,7 +90,7 @@ final class ContentListViewModel: ObservableObject {
         )
 
         self.state = logic.uiState.value
-        self.sortOrder = logic.sortOrder.value as String
+        self.sortOrder = (logic.sortOrder.value as? OrderBy) ?? .time
         self.selectedFormatId = (logic.selectedFormatId.value as! KotlinInt).int32Value
         self.searchQuery = logic.searchQuery.value as String
 
@@ -101,7 +101,7 @@ final class ContentListViewModel: ObservableObject {
         })
         observationTasks.append(Task { [weak self] in
             for await order in logic.sortOrder {
-                self?.sortOrder = order as String
+                self?.sortOrder = (order as? OrderBy) ?? .time
             }
         })
         observationTasks.append(Task { [weak self] in

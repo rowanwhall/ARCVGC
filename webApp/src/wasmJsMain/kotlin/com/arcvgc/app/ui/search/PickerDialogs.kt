@@ -42,6 +42,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.arcvgc.app.data.CatalogState
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.SimplePokemonRow
 import com.arcvgc.app.ui.components.TypeInfo
@@ -636,12 +637,12 @@ fun MaxRatingPickerDialog(
     }
 }
 
-private val sortOptions = listOf("rating" to "Rating", "time" to "Time")
+private val sortOptions = listOf(OrderBy.Rating to "Rating", OrderBy.Time to "Time")
 
 @Composable
 fun SortOrderPickerDialog(
-    selectedOrderBy: String,
-    onSelect: (String) -> Unit,
+    selectedOrderBy: OrderBy,
+    onSelect: (OrderBy) -> Unit,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {

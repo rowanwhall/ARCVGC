@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.search
 
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -136,7 +137,7 @@ object SearchStateReducer {
                 unratedOnly = true,
                 selectedMinRating = null,
                 selectedMaxRating = null,
-                selectedOrderBy = if (state.selectedOrderBy == "rating") "time" else state.selectedOrderBy
+                selectedOrderBy = if (state.selectedOrderBy == OrderBy.Rating) OrderBy.Time else state.selectedOrderBy
             )
         } else {
             state.copy(unratedOnly = false)
@@ -151,7 +152,7 @@ object SearchStateReducer {
         return state.copy(playerName = name)
     }
 
-    fun setOrderBy(state: SearchUiState, orderBy: String): SearchUiState {
+    fun setOrderBy(state: SearchUiState, orderBy: OrderBy): SearchUiState {
         return state.copy(selectedOrderBy = orderBy)
     }
 

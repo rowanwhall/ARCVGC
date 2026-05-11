@@ -1,14 +1,16 @@
+import Foundation
+import Shared
 import SwiftUI
 
 struct SortOrderPickerSheet: View {
-    let selectedOrderBy: String
-    let onSelect: (String) -> Void
+    let selectedOrderBy: OrderBy
+    let onSelect: (OrderBy) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
-    private let options: [(value: String, label: String)] = [
-        ("rating", "Rating"),
-        ("time", "Time")
+    private let options: [(value: OrderBy, label: String)] = [
+        (OrderBy.rating, "Rating"),
+        (OrderBy.time, "Time")
     ]
 
     var body: some View {
@@ -44,7 +46,7 @@ struct SortOrderPickerSheet: View {
 
 #Preview {
     SortOrderPickerSheet(
-        selectedOrderBy: "rating",
+        selectedOrderBy: OrderBy.rating,
         onSelect: { _ in }
     )
 }

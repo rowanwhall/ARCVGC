@@ -11,6 +11,7 @@ import com.arcvgc.app.data.AbilityCatalogRepository
 import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.data.TeraTypeCatalogRepository
 import com.arcvgc.app.domain.model.AppConfig
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -82,6 +83,6 @@ class SearchViewModel(
     fun setUnratedOnly(value: Boolean) = logic.setUnratedOnly(value)
     fun setTimeRange(start: Long?, end: Long?) = logic.setTimeRange(start, end)
     fun setPlayerName(name: String) = logic.setPlayerName(name)
-    fun setOrderBy(orderBy: String) = logic.setOrderBy(orderBy)
+    fun setOrderBy(orderBy: OrderBy) = logic.setOrderBy(orderBy)
     fun setWinnerFilter(filter: WinnerFilter) = logic.setWinnerFilter(filter)
 }

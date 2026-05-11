@@ -1,5 +1,6 @@
 package com.arcvgc.app.network
 
+import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.testutil.testSearchFilterSlot
 import kotlin.test.Test
@@ -16,13 +17,13 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = listOf(filter),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1
         )
 
         assertEquals(1, result.formatId)
-        assertEquals("time", result.orderBy)
+        assertEquals(OrderBy.Time, result.orderBy)
         assertEquals(50, result.limit)
         assertEquals(1, result.page)
         assertTrue(result.pokemon.isEmpty())
@@ -35,7 +36,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = emptyList(),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1
         )
@@ -49,7 +50,7 @@ class SearchRequestMapperTest {
             filters = emptyList(),
             formatId = 1,
             minimumRating = 1500,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1
         )
@@ -65,7 +66,7 @@ class SearchRequestMapperTest {
             filters = emptyList(),
             formatId = 1,
             maximumRating = 1800,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1
         )
@@ -81,7 +82,7 @@ class SearchRequestMapperTest {
             filters = emptyList(),
             formatId = 1,
             unratedOnly = true,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1
         )
@@ -96,7 +97,7 @@ class SearchRequestMapperTest {
             formatId = 1,
             minimumRating = 1200,
             maximumRating = 1800,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1
         )
@@ -110,7 +111,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = emptyList(),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1
         )
@@ -123,7 +124,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = emptyList(),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1,
             timeRangeStart = 1000L,
@@ -139,7 +140,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = emptyList(),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1,
             timeRangeStart = 1000L,
@@ -154,7 +155,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = emptyList(),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1,
             playerName = "   "
@@ -168,7 +169,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = emptyList(),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1,
             playerName = "Wolfe"
@@ -188,7 +189,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = filters,
             formatId = 2,
-            orderBy = "rating",
+            orderBy = OrderBy.Rating,
             limit = 25,
             page = 3
         )
@@ -218,7 +219,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = team1,
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1,
             team2Filters = team2
@@ -237,7 +238,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = listOf(testSearchFilterSlot(pokemonId = 25)),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1,
             winnerFilter = WinnerFilter.NONE
@@ -252,7 +253,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = listOf(testSearchFilterSlot(pokemonId = 25)),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1,
             winnerFilter = WinnerFilter.TEAM1
@@ -269,7 +270,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = team1,
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1,
             team2Filters = team2,
@@ -285,7 +286,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = listOf(testSearchFilterSlot(pokemonId = 25)),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1,
             winnerFilter = WinnerFilter.TEAM2
@@ -301,7 +302,7 @@ class SearchRequestMapperTest {
         val result = buildSearchRequest(
             filters = emptyList(),
             formatId = 1,
-            orderBy = "time",
+            orderBy = OrderBy.Time,
             limit = 50,
             page = 1
         )

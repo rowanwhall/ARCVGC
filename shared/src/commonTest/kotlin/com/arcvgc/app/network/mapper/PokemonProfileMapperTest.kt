@@ -3,6 +3,9 @@ package com.arcvgc.app.network.mapper
 import com.arcvgc.app.network.model.PokemonProfileDto
 import com.arcvgc.app.network.model.TopAbilityDto
 import com.arcvgc.app.network.model.TopItemDto
+import com.arcvgc.app.network.model.TopMatchDto
+import com.arcvgc.app.network.model.TopMatchPlayerDto
+import com.arcvgc.app.network.model.TopMatchSummaryDto
 import com.arcvgc.app.network.model.TopMoveDto
 import com.arcvgc.app.network.model.TopTeammateDto
 import com.arcvgc.app.network.model.TopTeraTypeDto
@@ -118,7 +121,8 @@ class PokemonProfileMapperTest {
             topTeraTypes = emptyList(),
             topMoves = emptyList(),
             topAbilities = emptyList(),
-            topTeammates = emptyList()
+            topTeammates = emptyList(),
+            topMatches = emptyList()
         )
 
         val result = dto.toDomain()
@@ -128,6 +132,60 @@ class PokemonProfileMapperTest {
         assertTrue(result.topMoves.isEmpty())
         assertTrue(result.topAbilities.isEmpty())
         assertTrue(result.topTeammates.isEmpty())
+        assertTrue(result.topMatches.isEmpty())
+    }
+
+    @Test
+    fun pokemonProfileDto_mapsTopMatches() {
+        val dto = testPokemonProfileDto()
+
+        val result = dto.toDomain()
+
+        assertEquals(2, result.topMatches.size)
+        val first = result.topMatches[0]
+        assertEquals(161755, first.match.id)
+        assertEquals("gen9championsvgc2026regmabo3-2605822168", first.match.showdownId)
+        assertEquals("2026-05-09T15:59:36", first.match.uploadTime)
+        assertEquals(1253, first.match.rating)
+        assertEquals(11594, first.winningPlayer.id)
+        assertEquals("dambro222", first.winningPlayer.name)
+    }
+
+    @Test
+    fun pokemonProfileDto_mapsTopMatches_withNullRating() {
+        val dto = testPokemonProfileDto(
+            topMatches = listOf(
+                TopMatchDto(
+                    match = TopMatchSummaryDto(
+                        id = 99,
+                        showdownId = "unrated-match-id",
+                        uploadTime = "2026-05-09T15:59:36",
+                        rating = null
+                    ),
+                    winningPlayer = TopMatchPlayerDto(id = 1, name = "anon")
+                )
+            )
+        )
+
+        val result = dto.toDomain()
+
+        assertEquals(1, result.topMatches.size)
+        assertNull(result.topMatches[0].match.rating)
+    }
+
+    @Test
+    fun pokemonProfileDto_omittedTopMatches_mapsToEmptyList() {
+        val dto = PokemonProfileDto(
+            id = 1,
+            name = "Test",
+            pokedexNumber = 1,
+            tier = "OU",
+            types = emptyList()
+        )
+
+        val result = dto.toDomain()
+
+        assertTrue(result.topMatches.isEmpty())
     }
 
     @Test
@@ -168,6 +226,26 @@ class PokemonProfileMapperTest {
         topTeammates: List<TopTeammateDto> = listOf(
             TopTeammateDto(count = 632, id = 1000, name = "Chien-Pao", pokedexNumber = 1002, imageUrl = "https://arcvgc.com/static/images/pokemon/chien-pao.png"),
             TopTeammateDto(count = 607, id = 1382, name = "Zamazenta-Crowned", pokedexNumber = 889, imageUrl = "https://arcvgc.com/static/images/pokemon/zamazenta-crowned.png")
+        ),
+        topMatches: List<TopMatchDto> = listOf(
+            TopMatchDto(
+                match = TopMatchSummaryDto(
+                    id = 161755,
+                    showdownId = "gen9championsvgc2026regmabo3-2605822168",
+                    uploadTime = "2026-05-09T15:59:36",
+                    rating = 1253
+                ),
+                winningPlayer = TopMatchPlayerDto(id = 11594, name = "dambro222")
+            ),
+            TopMatchDto(
+                match = TopMatchSummaryDto(
+                    id = 154801,
+                    showdownId = "gen9championsvgc2026regmabo3-2601590987",
+                    uploadTime = "2026-05-04T14:59:43",
+                    rating = 1534
+                ),
+                winningPlayer = TopMatchPlayerDto(id = 20, name = "darthmorton")
+            )
         )
     ) = PokemonProfileDto(
         id = 147,
@@ -186,6 +264,7 @@ class PokemonProfileMapperTest {
         topTeraTypes = topTeraTypes,
         topMoves = topMoves,
         topAbilities = topAbilities,
-        topTeammates = topTeammates
+        topTeammates = topTeammates,
+        topMatches = topMatches
     )
 }
