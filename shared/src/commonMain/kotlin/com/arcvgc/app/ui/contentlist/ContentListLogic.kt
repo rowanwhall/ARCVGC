@@ -246,12 +246,15 @@ class ContentListLogic(
 
     private suspend fun loadPokemonPage1(m: ContentListMode.Pokemon) = coroutineScope {
         val profileDeferred = async { runCatching { repository.getPokemonProfile(m.pokemonId, _selectedFormatId.value, _selectedLookback.value) } }
+        val (battlesStart, battlesEnd) = pokemonBattlesTimeRange()
         val battlesDeferred = async {
             repository.searchMatches(
                 filters = listOf(SearchFilterSlot(pokemonId = m.pokemonId)),
                 formatId = _selectedFormatId.value,
                 orderBy = _sortOrder.value,
-                page = 1
+                page = 1,
+                timeRangeStart = battlesStart,
+                timeRangeEnd = battlesEnd
             )
         }
 
@@ -671,12 +674,15 @@ class ContentListLogic(
         }
         is ContentListMode.Pokemon -> if (page == 1) coroutineScope {
             val profileDeferred = async { runCatching { repository.getPokemonProfile(m.pokemonId, _selectedFormatId.value, _selectedLookback.value) } }
+            val (battlesStart, battlesEnd) = pokemonBattlesTimeRange()
             val battlesDeferred = async {
                 repository.searchMatches(
                     filters = listOf(SearchFilterSlot(pokemonId = m.pokemonId)),
                     formatId = _selectedFormatId.value,
                     orderBy = _sortOrder.value,
-                    page = page
+                    page = page,
+                    timeRangeStart = battlesStart,
+                    timeRangeEnd = battlesEnd
                 )
             }
 
@@ -689,11 +695,14 @@ class ContentListLogic(
             }
             sections to result.pagination
         } else {
+            val (battlesStart, battlesEnd) = pokemonBattlesTimeRange()
             val result = repository.searchMatches(
                 filters = listOf(SearchFilterSlot(pokemonId = (mode as ContentListMode.Pokemon).pokemonId)),
                 formatId = _selectedFormatId.value,
                 orderBy = _sortOrder.value,
-                page = page
+                page = page,
+                timeRangeStart = battlesStart,
+                timeRangeEnd = battlesEnd
             )
             ContentListItemMapper.fromBattles(result.battles) to result.pagination
         }
@@ -824,6 +833,15 @@ class ContentListLogic(
             add(ContentListItem.SectionGroup(statSections))
         }
     }
+
+    /**
+     * Time-range window applied to the Pokemon-mode Battles `searchMatches`
+     * call so that changing the lookback dropdown narrows the battle list to
+     * the same horizon as the profile stats. `All` returns `(null, null)` —
+     * no time-range filter, full battle history.
+     */
+    private fun pokemonBattlesTimeRange(): Pair<Long?, Long?> =
+        _selectedLookback.value.timeRangeSecondsEndingAt(currentTimeMillis() / 1000)
 
     private fun formatUsagePercent(count: Int, total: Int): String? {
         if (total <= 0) return null

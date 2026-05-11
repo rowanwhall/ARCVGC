@@ -53,7 +53,9 @@ class FakeBattleRepository : BattleRepositoryApi {
         val orderBy: OrderBy,
         val page: Int,
         val playerName: String?,
-        val team2Filters: List<SearchFilterSlot>
+        val team2Filters: List<SearchFilterSlot>,
+        val timeRangeStart: Long?,
+        val timeRangeEnd: Long?
     )
 
     data class GetFormatDetailCall(
@@ -99,7 +101,7 @@ class FakeBattleRepository : BattleRepositoryApi {
         team2Filters: List<SearchFilterSlot>,
         winnerFilter: WinnerFilter
     ): MatchesResult {
-        searchMatchesCalls.add(SearchMatchesCall(filters, formatId, orderBy, page, playerName, team2Filters))
+        searchMatchesCalls.add(SearchMatchesCall(filters, formatId, orderBy, page, playerName, team2Filters, timeRangeStart, timeRangeEnd))
         if (searchMatchesDelayMs > 0) delay(searchMatchesDelayMs)
         searchMatchesError?.let { throw it }
         return searchMatchesResult

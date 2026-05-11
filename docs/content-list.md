@@ -120,8 +120,8 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
   **Edge-to-edge children on compact web**: the `StatChipRow` child of a section has `edgeToEdge = true`. On compact web, the section-children emission loop detects this flag and renders the child via a `Modifier.layout` escape (`escapeGridHorizontalPadding`) instead of wrapping it in `CenteredItem`. The helper re-measures the child at `constraints.maxWidth + 32dp` and places it at `x = -16dp`, which negates the parent `LazyVerticalGrid`'s `padding(horizontal = 16.dp)` so the chip carousel's `LazyRow` scrolls flush to the viewport edges. The layout still reports `constraints.maxWidth` back up so sibling items are unaffected.
 - **Progressive loading**: Initial load uses `loadPokemonPage1()` which handles the two parallel API calls with progressive rendering. If the profile finishes before battles, profile sections are shown immediately with the Battles section header displaying a loading indicator in the sort toggle (`loadingSections = {"Battles"}`). If battles finishes before the profile, the unified loading spinner is maintained until the profile also completes (avoids layout jumpiness). Format change and sort toggle use the standard `fetchContent()` path with section-level loading.
 - **Pages 2+**: bare `Battle` items
-- **Format change**: reloads all profile sections and battles (`loadingSections = {"format_selector", "lookback_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
-- **Lookback change**: reloads via the same path as format change (uses the same `reloadSections()` set). The pokemon profile endpoint accepts `lookback`; the battles query is re-fetched too even though it's lookback-independent (a small wasted call kept for simplicity matching the format-change path).
+- **Format change**: reloads all profile sections and battles (`loadingSections = {"format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
+- **Lookback change**: same path as format change — re-fetches both the profile and battles. The battles `searchMatches` call is given a `timeRangeStart`/`timeRangeEnd` window derived from the lookback via `LookbackWindow.timeRangeSecondsEndingAt(nowSeconds)`, so the Battles section narrows to the same horizon as the profile stats (e.g. "Today" → last 24h of battles for this Pokemon). `LookbackWindow.All` returns `(null, null)` and clears the filter (full battle history). Routed through the private helper `pokemonBattlesTimeRange()` shared by all three Pokemon-mode `searchMatches` call sites (page-1 `loadPokemonPage1`, page-1 `fetchContent`, page-2+ `fetchContent`).
 
 ### Player mode
 - **Page 1**: Up to 4 items —
@@ -137,8 +137,8 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
   2. `LookbackSelector` — lookback-window 4-segment selector (centered, directly below the format dropdown)
   3. `SearchField("")` — text field for client-side name filtering
   4. `Pokemon` items with `usagePercent` — full list filtered by search query
-- **Format change**: reloads from API (`loadingSections = {"format_selector", "lookback_selector", ""}`), clears search query
-- **Lookback change**: same path as format change — reloads from API, clears search query
+- **Format change**: reloads from API (`loadingSections = {"format_selector", ""}`), clears search query
+- **Lookback change**: same path as format change — reloads from API (lookback affects the top pokemon list itself), clears search query
 - **Search filtering**: client-side via `setSearchQuery()`, filters stored Pokemon list by name (case-insensitive), no API call
 - `ContentListLogic.allTopPokemonItems` exposes the unfiltered loaded list as a `StateFlow` so the desktop-web Usage layout can measure left-pane width against the longest name
 - Navigated to from Home page's "See More" button on the "Top Pokemon" section, threading the current format
@@ -175,7 +175,11 @@ A `FormatSelector` list item renders a format dropdown in Home, TopPokemon, Poke
 
 ## Lookback Window (Pokemon & TopPokemon Modes)
 
-A `LookbackSelector` list item renders a 4-segment selector adjacent to (directly below) the `FormatSelector` in Pokemon and TopPokemon modes. The four segments are `All` (default), `30 days`, `Week`, `Today`, mapping to the `LookbackWindow` enum values `all`/`30days`/`week`/`day` sent as the `lookback` query param to the pokemon profile / format detail endpoints.
+A `LookbackSelector` list item renders a 4-segment selector adjacent to (directly below) the `FormatSelector` in Pokemon and TopPokemon modes. The four segments are `All` (default), `30 days`, `Week`, `Today`, mapping to the `LookbackWindow` enum values `all`/`30days`/`week`/`day`.
+
+The selected window drives two distinct API surfaces:
+1. The `lookback` query param on `getPokemonProfile` / `getFormatDetail` (server-side filter on the profile/usage stats).
+2. The `timeRangeStart`/`timeRangeEnd` window on the Pokemon-mode `searchMatches` call, via `LookbackWindow.timeRangeSecondsEndingAt(nowSeconds)` — derived from `durationSeconds` on the enum (`null` for `All`, `86400` for `Day`, `7*86400` for `Week`, `30*86400` for `ThirtyDays`). The window ends at "now" and reaches back by `durationSeconds`; `All` yields `(null, null)` and disables the filter.
 
 - **State**: `ContentListLogic._selectedLookback: MutableStateFlow<LookbackWindow>` (defaults to `LookbackWindow.All`). Exposed as `selectedLookback: StateFlow<LookbackWindow>` and mutated via `selectLookback(window)`.
 - **On change**: same `reloadSections()` path as `selectFormat` — re-fetches page 1 with the new lookback. In TopPokemon mode, clears the search query (mirrors format-change behavior).

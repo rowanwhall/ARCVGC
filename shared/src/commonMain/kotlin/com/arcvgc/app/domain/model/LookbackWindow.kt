@@ -4,11 +4,20 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class LookbackWindow(val value: String, val displayName: String) {
-    @SerialName("all") All("all", "All"),
-    @SerialName("30days") ThirtyDays("30days", "30 days"),
-    @SerialName("week") Week("week", "Week"),
-    @SerialName("day") Day("day", "Today");
+enum class LookbackWindow(val value: String, val displayName: String, val durationSeconds: Long?) {
+    @SerialName("all") All("all", "All", null),
+    @SerialName("30days") ThirtyDays("30days", "30 days", 30L * 86_400L),
+    @SerialName("week") Week("week", "Week", 7L * 86_400L),
+    @SerialName("day") Day("day", "Today", 86_400L);
+
+    /**
+     * Returns `(timeRangeStart, timeRangeEnd)` epoch seconds for a time-bounded
+     * search that ends at [nowSeconds] and reaches back by [durationSeconds].
+     * Returns `(null, null)` for [All] — caller passes nulls to disable the
+     * time-range filter in `searchMatches`.
+     */
+    fun timeRangeSecondsEndingAt(nowSeconds: Long): Pair<Long?, Long?> =
+        durationSeconds?.let { (nowSeconds - it) to nowSeconds } ?: (null to null)
 
     companion object {
         fun fromValue(value: String?): LookbackWindow? =

@@ -1016,6 +1016,62 @@ class ContentListLogicTest {
     }
 
     @Test
+    fun selectLookback_pokemonMode_appliesTimeRangeToBattlesSearch() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, false)
+        )
+
+        val logic = createLogic(ContentListMode.Pokemon(
+            pokemonId = 25, name = "Pikachu", imageUrl = null,
+            typeImageUrl1 = null, typeImageUrl2 = null, formatId = 1
+        ))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        // Initial load (lookback=All) sends no time-range filter.
+        val initialCall = fakeRepo.searchMatchesCalls.last()
+        assertNull(initialCall.timeRangeStart)
+        assertNull(initialCall.timeRangeEnd)
+
+        fakeRepo.searchMatchesCalls.clear()
+
+        logic.selectLookback(LookbackWindow.Day)
+        testScope.advanceUntilIdle()
+
+        // After selecting Day, battles search reaches back exactly 86400s from
+        // the same `now`. We don't pin `now` in the test (the helper reads
+        // currentTimeMillis() directly), so just assert the window width.
+        val dayCall = fakeRepo.searchMatchesCalls.last()
+        assertEquals(86_400L, dayCall.timeRangeEnd!! - dayCall.timeRangeStart!!)
+    }
+
+    @Test
+    fun selectLookback_pokemonMode_allLookbackClearsTimeRange() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, false)
+        )
+
+        val logic = createLogic(ContentListMode.Pokemon(
+            pokemonId = 25, name = "Pikachu", imageUrl = null,
+            typeImageUrl1 = null, typeImageUrl2 = null, formatId = 1
+        ))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        logic.selectLookback(LookbackWindow.Week)
+        testScope.advanceUntilIdle()
+        assertEquals(7L * 86_400L, fakeRepo.searchMatchesCalls.last().let { it.timeRangeEnd!! - it.timeRangeStart!! })
+
+        logic.selectLookback(LookbackWindow.All)
+        testScope.advanceUntilIdle()
+        val allCall = fakeRepo.searchMatchesCalls.last()
+        assertNull(allCall.timeRangeStart)
+        assertNull(allCall.timeRangeEnd)
+    }
+
+    @Test
     fun selectLookback_topPokemonMode_passesLookbackToFormatDetailFetchAndClearsSearchQuery() {
         fakeRepo.formatDetailResult = testFormatDetail()
 
