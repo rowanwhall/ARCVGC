@@ -30,7 +30,6 @@ private fun UsageBottomBarPreview() {
             isLoadingFormat = false,
             selectedLookback = LookbackWindow.All,
             onLookbackSelected = {},
-            isLoadingLookback = false,
             searchQuery = query,
             onSearchQueryChanged = { query = it }
         )
@@ -48,7 +47,6 @@ private fun UsageBottomBarLoadingPreview() {
             isLoadingFormat = true,
             selectedLookback = LookbackWindow.Week,
             onLookbackSelected = {},
-            isLoadingLookback = false,
             searchQuery = "Inc",
             onSearchQueryChanged = {}
         )

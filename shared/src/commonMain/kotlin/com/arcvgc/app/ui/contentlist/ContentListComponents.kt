@@ -175,53 +175,33 @@ fun PlayerListRow(
 }
 
 @Composable
-fun LookbackDropdown(
+fun LookbackSegmentedSelector(
     selectedLookback: LookbackWindow,
     onLookbackSelected: (LookbackWindow) -> Unit,
-    modifier: Modifier = Modifier,
-    fillMaxWidth: Boolean = false
+    modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box(modifier = modifier) {
-        Row(
-            modifier = Modifier
-                .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)
-                .clickable { expanded = true }
-                .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(SearchButtonCornerRadius))
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = selectedLookback.displayName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = if (fillMaxWidth) Modifier.weight(1f) else Modifier
-            )
-            Icon(
-                imageVector = Icons.Default.ArrowDropDown,
-                contentDescription = "Select lookback window",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            LookbackWindow.entries.forEach { window ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = window.displayName,
-                            fontWeight = if (window == selectedLookback) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    onClick = {
-                        onLookbackSelected(window)
-                        expanded = false
-                    }
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        LookbackWindow.entries.forEach { window ->
+            val isSelected = window == selectedLookback
+            val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+            val borderWidth = if (isSelected) StandardBorderWidth * 2 else StandardBorderWidth
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(32.dp)
+                    .border(borderWidth, borderColor, RoundedCornerShape(SearchButtonCornerRadius))
+                    .clickable { onLookbackSelected(window) }
+                    .padding(horizontal = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = window.displayName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
             }
         }

@@ -202,10 +202,9 @@ internal fun UsageDesktopPage(
                     .padding(bottom = 4.dp)
             )
 
-            LookbackDropdown(
+            LookbackSegmentedSelector(
                 selectedLookback = selectedLookback,
                 onLookbackSelected = listViewModel::selectLookback,
-                fillMaxWidth = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 4.dp)

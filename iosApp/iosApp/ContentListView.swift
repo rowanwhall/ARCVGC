@@ -260,19 +260,11 @@ struct ContentListView: View {
                                         .padding(.horizontal, 16)
                                     }
                                 case .lookbackSelector:
-                                    let isLoadingLookback = viewModel.state.loadingSections.contains("lookback_selector")
-                                    HStack(spacing: 8) {
-                                        Spacer()
-                                        LookbackDropdown(
-                                            selectedLookback: viewModel.selectedLookback,
-                                            onLookbackSelected: { viewModel.selectLookback($0) }
-                                        )
-                                        if isLoadingLookback {
-                                            ProgressView()
-                                                .scaleEffect(0.7)
-                                        }
-                                        Spacer()
-                                    }
+                                    LookbackSegmentedSelector(
+                                        selectedLookback: viewModel.selectedLookback,
+                                        onLookbackSelected: { viewModel.selectLookback($0) },
+                                        accentColor: settingsStore.themeColor
+                                    )
                                     .padding(.horizontal, 16)
                                 case .searchField:
                                     TextField("", text: Binding(
@@ -351,19 +343,11 @@ struct ContentListView: View {
                                 }
                             case .lookbackSelector:
                                 if !isTopPokemonMode {
-                                    let isLoadingLookback = viewModel.state.loadingSections.contains("lookback_selector")
-                                    HStack(spacing: 8) {
-                                        Spacer()
-                                        LookbackDropdown(
-                                            selectedLookback: viewModel.selectedLookback,
-                                            onLookbackSelected: { viewModel.selectLookback($0) }
-                                        )
-                                        if isLoadingLookback {
-                                            ProgressView()
-                                                .scaleEffect(0.7)
-                                        }
-                                        Spacer()
-                                    }
+                                    LookbackSegmentedSelector(
+                                        selectedLookback: viewModel.selectedLookback,
+                                        onLookbackSelected: { viewModel.selectLookback($0) },
+                                        accentColor: settingsStore.themeColor
+                                    )
                                     .padding(.horizontal, 16)
                                 }
                             case .searchField:
@@ -417,7 +401,7 @@ struct ContentListView: View {
                         isLoadingFormat: viewModel.state.loadingSections.contains("format_selector"),
                         selectedLookback: viewModel.selectedLookback,
                         onLookbackSelected: { viewModel.selectLookback($0) },
-                        isLoadingLookback: viewModel.state.loadingSections.contains("lookback_selector"),
+                        accentColor: settingsStore.themeColor,
                         searchQuery: Binding(
                             get: { viewModel.searchQuery },
                             set: { viewModel.setSearchQuery($0) }

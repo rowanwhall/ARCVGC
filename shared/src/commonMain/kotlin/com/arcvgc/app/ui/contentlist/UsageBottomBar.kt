@@ -43,7 +43,6 @@ fun UsageBottomBar(
     isLoadingFormat: Boolean,
     selectedLookback: LookbackWindow,
     onLookbackSelected: (LookbackWindow) -> Unit,
-    isLoadingLookback: Boolean,
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -78,21 +77,11 @@ fun UsageBottomBar(
                 )
             }
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            LookbackDropdown(
-                selectedLookback = selectedLookback,
-                onLookbackSelected = onLookbackSelected
-            )
-            if (isLoadingLookback) {
-                CircularProgressIndicator(
-                    modifier = Modifier.padding(start = 8.dp).size(16.dp),
-                    strokeWidth = 2.dp
-                )
-            }
-        }
+        LookbackSegmentedSelector(
+            selectedLookback = selectedLookback,
+            onLookbackSelected = onLookbackSelected,
+            modifier = Modifier.fillMaxWidth()
+        )
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChanged,

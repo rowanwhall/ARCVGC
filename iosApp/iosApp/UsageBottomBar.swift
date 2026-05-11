@@ -8,7 +8,7 @@ struct UsageBottomBar: View {
     let isLoadingFormat: Bool
     let selectedLookback: LookbackWindow
     let onLookbackSelected: (LookbackWindow) -> Void
-    let isLoadingLookback: Bool
+    let accentColor: Color
     @Binding var searchQuery: String
     @FocusState private var isSearchFocused: Bool
 
@@ -26,17 +26,11 @@ struct UsageBottomBar: View {
                 }
                 Spacer()
             }
-            HStack(spacing: 8) {
-                Spacer()
-                LookbackDropdown(
-                    selectedLookback: selectedLookback,
-                    onLookbackSelected: onLookbackSelected
-                )
-                if isLoadingLookback {
-                    ProgressView().scaleEffect(0.7)
-                }
-                Spacer()
-            }
+            LookbackSegmentedSelector(
+                selectedLookback: selectedLookback,
+                onLookbackSelected: onLookbackSelected,
+                accentColor: accentColor
+            )
 
             TextField("", text: $searchQuery, prompt: Text("Search Pok\u{00E9}mon").foregroundColor(Color(.secondaryLabel)))
                 .focused($isSearchFocused)
@@ -79,7 +73,7 @@ struct UsageBottomBar: View {
                 isLoadingFormat: false,
                 selectedLookback: .all,
                 onLookbackSelected: { _ in },
-                isLoadingLookback: false,
+                accentColor: .blue,
                 searchQuery: $query
             )
             .padding()

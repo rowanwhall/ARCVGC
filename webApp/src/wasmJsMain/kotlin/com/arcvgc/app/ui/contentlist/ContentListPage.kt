@@ -394,7 +394,6 @@ fun ContentListPage(
                     isLoadingFormat = "format_selector" in uiState.loadingSections,
                     selectedLookback = selectedLookback,
                     onLookbackSelected = viewModel::selectLookback,
-                    isLoadingLookback = "lookback_selector" in uiState.loadingSections,
                     searchQuery = searchQuery,
                     onSearchQueryChanged = viewModel::setSearchQuery,
                     modifier = Modifier.align(Alignment.BottomCenter)

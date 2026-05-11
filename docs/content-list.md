@@ -47,7 +47,7 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 | `PokemonGrid(pokemon)` | Grid of Pokemon (home "Top Pokémon", player profile "Favorite Pokemon"). 3 columns on iPhone/Android phone, up to 6 on iPad/Android tablet/desktop web | `"pokemon_grid"` |
 | `StatChipRow(chips)` | Horizontal scrolling row of chips with name+percent and optional image (mobile), FlowRow (desktop web). Used for Top Abilities, Items, Moves, Tera Types, and pokemon profile "Top Teammates" (chips carry a `pokemonId` and render a Pokemon avatar; tapping navigates to that Pokemon). | `"stat_chip_row"` |
 | `FormatSelector` | Format dropdown rendered as a list item (Home, Pokemon, Player modes). In TopPokemon mode on mobile/mobile-web, this list item is suppressed — the dropdown is rendered instead inside an anchored `UsageBottomBar` at the bottom of the screen so it's within thumb reach. Desktop web uses `UsageDesktopPage` which has its own format dropdown. | `"format_selector"` |
-| `LookbackSelector` | Lookback window dropdown (`All time`/`Last 30 days`/`This week`/`Today`) rendered as a list item adjacent to `FormatSelector` in Pokemon and TopPokemon modes. Suppressed in TopPokemon compact (rendered inside `UsageBottomBar`) and on desktop-web Usage (rendered in `UsageDesktopPage` left pane below the format dropdown). Scopes the pokemon profile / format detail API call's `lookback` parameter. | `"lookback_selector"` |
+| `LookbackSelector` | Lookback window 4-segment selector (`All`/`30 days`/`Week`/`Today`) rendered as a list item adjacent to `FormatSelector` in Pokemon and TopPokemon modes. Suppressed in TopPokemon compact (rendered inside `UsageBottomBar`) and on desktop-web Usage (rendered in `UsageDesktopPage` left pane below the format dropdown). Selected segment is outlined in the user's accent color at 2x border width, matching the selected-pokemon outline in `UsageDesktopPage`. Scopes the pokemon profile / format detail API call's `lookback` parameter. | `"lookback_selector"` |
 | `SearchField(query)` | Text input for client-side filtering (TopPokemon mode). On mobile/mobile-web, this list item is suppressed and the field is rendered inside the anchored `UsageBottomBar` alongside the format selector. | `"search_field"` |
 
 `ContentListItemMapper` (in `shared/.../ui/mapper/`) provides factory methods: `fromBattles()`, `fromPokemon()`, `fromPlayers()`, `fromPokemonCatalog()`.
@@ -93,7 +93,7 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
 ### Pokemon mode
 - **Page 1**: Up to 3 top-level items — profile + battles fetched in parallel via `getPokemonProfile(id, formatId)` + `searchMatches(...)`. Profile errors are silently swallowed; page still shows battles.
   1. `FormatSelector` — format dropdown (rendered as a centered list item)
-  2. `LookbackSelector` — lookback-window dropdown (centered, directly below the format dropdown). Scopes the pokemon profile API call's `lookback` query param.
+  2. `LookbackSelector` — lookback-window 4-segment selector (centered, directly below the format dropdown). Scopes the pokemon profile API call's `lookback` query param.
   3. `SectionGroup([...])` — wraps the five profile stat sections (below) into a single group so desktop web can lay them out as a responsive 1/2/3-column row. Only emitted when the profile succeeds and contains at least one non-empty stat section. The group contains only non-empty sections — a section is omitted when the profile has no data for it (e.g. formats without tera types skip `Top Tera Types`).
      - `Section("Top Teammates", [StatChipRow([...])])` — chip row of top teammates with pokemon avatar, name, and usage %. Each chip carries a `pokemonId`; tapping navigates to that Pokemon's page.
      - `Section("Top Items", [StatChipRow([...])])` — chip row of items with image, name, and usage %.
@@ -134,7 +134,7 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
 ### TopPokemon mode
 - **Single page** (no pagination): Fetches top 100 Pokemon via `getFormatDetail(formatId, topPokemonCount=100, lookback=...)`.
   1. `FormatSelector` — format dropdown
-  2. `LookbackSelector` — lookback-window dropdown (centered, directly below the format dropdown)
+  2. `LookbackSelector` — lookback-window 4-segment selector (centered, directly below the format dropdown)
   3. `SearchField("")` — text field for client-side name filtering
   4. `Pokemon` items with `usagePercent` — full list filtered by search query
 - **Format change**: reloads from API (`loadingSections = {"format_selector", "lookback_selector", ""}`), clears search query
@@ -175,15 +175,16 @@ A `FormatSelector` list item renders a format dropdown in Home, TopPokemon, Poke
 
 ## Lookback Window (Pokemon & TopPokemon Modes)
 
-A `LookbackSelector` list item renders a lookback-window dropdown adjacent to (directly below) the `FormatSelector` in Pokemon and TopPokemon modes. The four options are `All time` (default), `Last 30 days`, `This week`, `Today`, mapping to the `LookbackWindow` enum values `all`/`30days`/`week`/`day` sent as the `lookback` query param to the pokemon profile / format detail endpoints.
+A `LookbackSelector` list item renders a 4-segment selector adjacent to (directly below) the `FormatSelector` in Pokemon and TopPokemon modes. The four segments are `All` (default), `30 days`, `Week`, `Today`, mapping to the `LookbackWindow` enum values `all`/`30days`/`week`/`day` sent as the `lookback` query param to the pokemon profile / format detail endpoints.
 
 - **State**: `ContentListLogic._selectedLookback: MutableStateFlow<LookbackWindow>` (defaults to `LookbackWindow.All`). Exposed as `selectedLookback: StateFlow<LookbackWindow>` and mutated via `selectLookback(window)`.
 - **On change**: same `reloadSections()` path as `selectFormat` — re-fetches page 1 with the new lookback. In TopPokemon mode, clears the search query (mirrors format-change behavior).
+- **Visual style**: equal-weight segments in a `Row` (Compose) / `HStack` (SwiftUI). The selected segment is outlined in the user's accent color (`MaterialTheme.colorScheme.primary` on Compose, `settingsStore.themeColor` on SwiftUI) at 2x `StandardBorderWidth`; unselected segments use `outlineVariant` / `opaqueSeparator` at 1x. This mirrors the selected-pokemon outline in `UsageDesktopPage`'s left-pane list.
 - **Rendering placement**:
-  - Pokemon mode: emitted as a list item directly after `FormatSelector` in `buildPokemonProfileSections()`.
-  - TopPokemon mode (compact: Android, iPhone, mobile web): suppressed from the list and rendered inside `UsageBottomBar` as a second centered row directly below the `FormatDropdown` row.
-  - TopPokemon mode (desktop web Expanded): rendered in `UsageDesktopPage` left pane via a second `LookbackDropdown` immediately below the `FormatDropdown` (both `fillMaxWidth = true`).
-- **Shared composable**: `LookbackDropdown` in `shared/.../ui/contentlist/ContentListComponents.kt` — mirrors `FormatDropdown` exactly (same `SearchButtonCornerRadius`, `StandardBorderWidth`, padding). iOS has a SwiftUI sibling `LookbackDropdown` in `iosApp/iosApp/ContentListComponents.swift` using a hardcoded `[.all, .thirtyDays, .week, .day]` options array (Kotlin enum `entries` doesn't bridge cleanly through SKIE).
+  - Pokemon mode: emitted as a list item directly after `FormatSelector` in `buildPokemonProfileSections()`. The selector fills the row width (via `Modifier.weight(1f)`).
+  - TopPokemon mode (compact: Android, iPhone, mobile web): suppressed from the list and rendered inside `UsageBottomBar` as a second row below the `FormatDropdown` row, filling the row width.
+  - TopPokemon mode (desktop web Expanded): rendered in `UsageDesktopPage` left pane directly below the `FormatDropdown` with `fillMaxWidth`.
+- **Shared composable**: `LookbackSegmentedSelector` in `shared/.../ui/contentlist/ContentListComponents.kt`. iOS has a SwiftUI sibling `LookbackSegmentedSelector` in `iosApp/iosApp/ContentListComponents.swift` that accepts an `accentColor: Color` param (passed `settingsStore.themeColor` by call sites). The Swift selector uses a hardcoded `[.all, .thirtyDays, .week, .day]` options array (Kotlin enum `entries` doesn't bridge cleanly through SKIE).
 
 ## Favorites Auto-Refresh
 

@@ -235,7 +235,7 @@ internal fun ContentListContent(
                         emitFormatSelectorItem(topItem, formats, selectedFormatId, onFormatSelected, "format_selector" in uiState.loadingSections, fullSpan)
                     }
                     if (topItem is ContentListItem.LookbackSelector) {
-                        emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, "lookback_selector" in uiState.loadingSections, fullSpan)
+                        emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, fullSpan)
                     }
                     if (topItem is ContentListItem.SearchField) {
                         emitSearchFieldItem(topItem, searchQuery, onSearchQueryChanged, fullSpan)
@@ -451,7 +451,7 @@ internal fun ContentListContent(
                             emitFormatSelectorItem(topItem, formats, selectedFormatId, onFormatSelected, "format_selector" in uiState.loadingSections, fullSpan)
                         }
                         is ContentListItem.LookbackSelector -> {
-                            emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, "lookback_selector" in uiState.loadingSections, fullSpan)
+                            emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, fullSpan)
                         }
                         is ContentListItem.SearchField -> {
                             emitSearchFieldItem(topItem, searchQuery, onSearchQueryChanged, fullSpan)
@@ -677,28 +677,16 @@ private fun LazyGridScope.emitLookbackSelectorItem(
     item: ContentListItem.LookbackSelector,
     selectedLookback: LookbackWindow,
     onLookbackSelected: ((LookbackWindow) -> Unit)?,
-    isLoading: Boolean,
     fullSpan: LazyGridItemSpanScope.() -> GridItemSpan
 ) {
     if (onLookbackSelected == null) return
     animatedItem(key = item.listKey, span = fullSpan) {
         CenteredItem {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                LookbackDropdown(
-                    selectedLookback = selectedLookback,
-                    onLookbackSelected = onLookbackSelected
-                )
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.padding(start = 8.dp).size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
-            }
+            LookbackSegmentedSelector(
+                selectedLookback = selectedLookback,
+                onLookbackSelected = onLookbackSelected,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

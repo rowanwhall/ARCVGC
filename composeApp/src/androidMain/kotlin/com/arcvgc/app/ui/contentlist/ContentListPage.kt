@@ -260,7 +260,6 @@ fun ContentListPage(
                 isLoadingFormat = "format_selector" in uiState.loadingSections,
                 selectedLookback = selectedLookback,
                 onLookbackSelected = viewModel::selectLookback,
-                isLoadingLookback = "lookback_selector" in uiState.loadingSections,
                 searchQuery = searchQuery,
                 onSearchQueryChanged = viewModel::setSearchQuery,
                 modifier = Modifier.align(Alignment.BottomCenter)
@@ -698,24 +697,12 @@ private fun ContentListContent(
                             }
                         }
                         if (topItem is ContentListItem.LookbackSelector && onLookbackSelected != null) {
-                            val isLoadingLookback = "lookback_selector" in uiState.loadingSections
                             item(key = topItem.listKey) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    LookbackDropdown(
-                                        selectedLookback = selectedLookback,
-                                        onLookbackSelected = onLookbackSelected
-                                    )
-                                    if (isLoadingLookback) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.padding(start = 8.dp).size(16.dp),
-                                            strokeWidth = 2.dp
-                                        )
-                                    }
-                                }
+                                LookbackSegmentedSelector(
+                                    selectedLookback = selectedLookback,
+                                    onLookbackSelected = onLookbackSelected,
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                                )
                             }
                         }
                     }
@@ -813,24 +800,12 @@ private fun ContentListContent(
                             }
                             is ContentListItem.LookbackSelector -> {
                                 if (onLookbackSelected != null) {
-                                    val isLoadingLookback = "lookback_selector" in uiState.loadingSections
                                     item(key = topItem.listKey) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().then(itemPadding),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            LookbackDropdown(
-                                                selectedLookback = selectedLookback,
-                                                onLookbackSelected = onLookbackSelected
-                                            )
-                                            if (isLoadingLookback) {
-                                                CircularProgressIndicator(
-                                                    modifier = Modifier.padding(start = 8.dp).size(16.dp),
-                                                    strokeWidth = 2.dp
-                                                )
-                                            }
-                                        }
+                                        LookbackSegmentedSelector(
+                                            selectedLookback = selectedLookback,
+                                            onLookbackSelected = onLookbackSelected,
+                                            modifier = Modifier.fillMaxWidth().then(itemPadding)
+                                        )
                                     }
                                 }
                             }

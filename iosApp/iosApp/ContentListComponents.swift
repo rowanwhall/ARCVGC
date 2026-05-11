@@ -192,41 +192,36 @@ struct SortToggleButton: View {
     }
 }
 
-struct LookbackDropdown: View {
+struct LookbackSegmentedSelector: View {
     let selectedLookback: LookbackWindow
     let onLookbackSelected: (LookbackWindow) -> Void
+    let accentColor: Color
 
     private let options: [LookbackWindow] = [.all, .thirtyDays, .week, .day]
 
     var body: some View {
-        Menu {
+        HStack(spacing: 6) {
             ForEach(options, id: \.value) { window in
+                let isSelected = window == selectedLookback
                 Button {
                     onLookbackSelected(window)
                 } label: {
-                    if window == selectedLookback {
-                        Label(window.displayName, systemImage: "checkmark")
-                    } else {
-                        Text(window.displayName)
-                    }
+                    Text(window.displayName)
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(.label).opacity(0.75))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 32)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(
+                                    isSelected ? accentColor : Color(.opaqueSeparator),
+                                    lineWidth: isSelected ? 2 : 1
+                                )
+                        )
                 }
+                .buttonStyle(.plain)
             }
-        } label: {
-            HStack(spacing: 4) {
-                Text(selectedLookback.displayName)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(.label).opacity(0.75))
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 10))
-                    .foregroundColor(Color(.label).opacity(0.75))
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
-            )
         }
     }
 }
