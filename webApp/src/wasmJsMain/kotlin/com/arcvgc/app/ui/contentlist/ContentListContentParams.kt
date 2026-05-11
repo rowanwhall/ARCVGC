@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.contentlist
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ContentListItem
@@ -31,6 +32,7 @@ internal data class ContentListCallbacks(
     val onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     val onToggleSortOrder: (() -> Unit)? = null,
     val onFormatSelected: ((Int) -> Unit)? = null,
+    val onLookbackSelected: ((LookbackWindow) -> Unit)? = null,
     val onSearchQueryChanged: ((String) -> Unit)? = null,
     val onSeeMore: (() -> Unit)? = null,
 )
@@ -47,6 +49,7 @@ internal data class ContentListFormatState(
     val sortOrder: OrderBy? = null,
     val formats: List<FormatUiModel> = emptyList(),
     val selectedFormatId: Int = 0,
+    val selectedLookback: LookbackWindow = LookbackWindow.All,
     val searchQuery: String = "",
 )
 

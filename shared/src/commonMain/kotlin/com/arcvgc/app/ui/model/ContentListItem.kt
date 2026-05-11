@@ -86,6 +86,11 @@ sealed class ContentListItem {
         override val isContentItem: Boolean get() = false
     }
 
+    data object LookbackSelector : ContentListItem() {
+        override val listKey get() = "lookback_selector"
+        override val isContentItem: Boolean get() = false
+    }
+
     data class SearchField(val query: String) : ContentListItem() {
         override val listKey get() = "search_field"
         override val isContentItem: Boolean get() = false

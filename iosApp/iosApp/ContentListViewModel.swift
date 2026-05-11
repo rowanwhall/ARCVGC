@@ -56,6 +56,7 @@ final class ContentListViewModel: ObservableObject {
     @Published private(set) var state: ContentListUiState
     @Published private(set) var sortOrder: OrderBy
     @Published private(set) var selectedFormatId: Int32
+    @Published private(set) var selectedLookback: LookbackWindow
     @Published private(set) var searchQuery: String
     @Published private(set) var mode: ContentListMode
 
@@ -92,6 +93,7 @@ final class ContentListViewModel: ObservableObject {
         self.state = logic.uiState.value
         self.sortOrder = (logic.sortOrder.value as? OrderBy) ?? .time
         self.selectedFormatId = (logic.selectedFormatId.value as! KotlinInt).int32Value
+        self.selectedLookback = (logic.selectedLookback.value as? LookbackWindow) ?? .all
         self.searchQuery = logic.searchQuery.value as String
 
         observationTasks.append(Task { [weak self] in
@@ -110,6 +112,11 @@ final class ContentListViewModel: ObservableObject {
             }
         })
         observationTasks.append(Task { [weak self] in
+            for await lookback in logic.selectedLookback {
+                self?.selectedLookback = (lookback as? LookbackWindow) ?? .all
+            }
+        })
+        observationTasks.append(Task { [weak self] in
             for await query in logic.searchQuery {
                 self?.searchQuery = query as String
             }
@@ -122,6 +129,7 @@ final class ContentListViewModel: ObservableObject {
     func refresh() { logic.refresh() }
     func paginate() { logic.paginate() }
     func selectFormat(_ formatId: Int32) { logic.selectFormat(formatId: formatId) }
+    func selectLookback(_ lookback: LookbackWindow) { logic.selectLookback(lookback: lookback) }
     func toggleSortOrder() { logic.toggleSortOrder() }
     func setSearchQuery(_ query: String) { logic.setSearchQuery(query: query) }
 

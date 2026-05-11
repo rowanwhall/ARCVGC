@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -169,6 +170,60 @@ fun PlayerListRow(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
+        }
+    }
+}
+
+@Composable
+fun LookbackDropdown(
+    selectedLookback: LookbackWindow,
+    onLookbackSelected: (LookbackWindow) -> Unit,
+    modifier: Modifier = Modifier,
+    fillMaxWidth: Boolean = false
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)
+                .clickable { expanded = true }
+                .border(StandardBorderWidth, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(SearchButtonCornerRadius))
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = selectedLookback.displayName,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = if (fillMaxWidth) Modifier.weight(1f) else Modifier
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Select lookback window",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            LookbackWindow.entries.forEach { window ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = window.displayName,
+                            fontWeight = if (window == selectedLookback) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    onClick = {
+                        onLookbackSelected(window)
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }

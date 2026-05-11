@@ -243,6 +243,7 @@ internal fun ContentListItemRow(
         is ContentListItem.Section -> {}
         is ContentListItem.SectionGroup -> {}
         is ContentListItem.FormatSelector -> {}
+        is ContentListItem.LookbackSelector -> {}
         is ContentListItem.SearchField -> {}
     }
 }

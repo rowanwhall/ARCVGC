@@ -81,6 +81,7 @@ internal fun UsageDesktopPage(
     val uiState by listViewModel.uiState.collectAsState()
     val searchQuery by listViewModel.searchQuery.collectAsState()
     val selectedFormatId by listViewModel.selectedFormatId.collectAsState()
+    val selectedLookback by listViewModel.selectedLookback.collectAsState()
 
     // One-shot format push from Home → See More. Each click increments
     // pendingInitialFormatTick; we apply it to the VM only when the tick
@@ -195,6 +196,15 @@ internal fun UsageDesktopPage(
                 formats = sortedFormats,
                 selectedFormatId = selectedFormatId,
                 onFormatSelected = listViewModel::selectFormat,
+                fillMaxWidth = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp)
+            )
+
+            LookbackDropdown(
+                selectedLookback = selectedLookback,
+                onLookbackSelected = listViewModel::selectLookback,
                 fillMaxWidth = true,
                 modifier = Modifier
                     .fillMaxWidth()

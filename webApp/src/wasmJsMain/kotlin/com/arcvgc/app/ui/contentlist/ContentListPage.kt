@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.arcvgc.app.di.DependencyContainer
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.domain.model.appendBattleParam
 import com.arcvgc.app.domain.model.encodeSearchPath
@@ -115,6 +116,7 @@ fun ContentListPage(
         FormatSorter.sorted(selectorFormats, pinnedFormatId)
     }
     val selectedFormatId by viewModel.selectedFormatId.collectAsState()
+    val selectedLookback by viewModel.selectedLookback.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     var selectedBattleId by remember(viewModel) { mutableStateOf(initialBattleId ?: viewModel.savedBattleId) }
     var pokemonNavTarget by remember(viewModel) { mutableStateOf<PokemonNavTarget?>(null) }
@@ -241,7 +243,9 @@ fun ContentListPage(
     val filteredUiState = remember(uiState, isTopPokemonCompact) {
         if (!isTopPokemonCompact) uiState
         else uiState.copy(items = uiState.items.filter {
-            it !is ContentListItem.FormatSelector && it !is ContentListItem.SearchField
+            it !is ContentListItem.FormatSelector &&
+            it !is ContentListItem.LookbackSelector &&
+            it !is ContentListItem.SearchField
         })
     }
 
@@ -293,6 +297,7 @@ fun ContentListPage(
         },
         formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) sortedFormats else emptyList(),
         selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
+        selectedLookback = selectedLookback,
         searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else ""
     )
 
@@ -320,6 +325,7 @@ fun ContentListPage(
                 is ContentListItem.PokemonGrid,
                 is ContentListItem.StatChipRow,
                 is ContentListItem.FormatSelector,
+                is ContentListItem.LookbackSelector,
                 is ContentListItem.SearchField -> {}
             }
         },
@@ -336,6 +342,7 @@ fun ContentListPage(
             else -> null
         },
         onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
+        onLookbackSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.TopPokemon) viewModel::selectLookback else null,
         onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
         onSeeMore = {
             val fmtId = viewModel.selectedFormatId.value
@@ -385,6 +392,9 @@ fun ContentListPage(
                     selectedFormatId = selectedFormatId,
                     onFormatSelected = viewModel::selectFormat,
                     isLoadingFormat = "format_selector" in uiState.loadingSections,
+                    selectedLookback = selectedLookback,
+                    onLookbackSelected = viewModel::selectLookback,
+                    isLoadingLookback = "lookback_selector" in uiState.loadingSections,
                     searchQuery = searchQuery,
                     onSearchQueryChanged = viewModel::setSearchQuery,
                     modifier = Modifier.align(Alignment.BottomCenter)

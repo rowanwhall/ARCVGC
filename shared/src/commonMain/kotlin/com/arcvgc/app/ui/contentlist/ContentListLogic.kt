@@ -6,6 +6,7 @@ import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.data.currentTimeMillis
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PokemonProfile
@@ -75,6 +76,9 @@ class ContentListLogic(
         }
     )
     val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()
+
+    private val _selectedLookback = MutableStateFlow(LookbackWindow.All)
+    val selectedLookback: StateFlow<LookbackWindow> = _selectedLookback.asStateFlow()
 
     private fun preferredFormatId(): Int =
         settingsRepository?.getEffectivePreferredFormatId()
@@ -241,7 +245,7 @@ class ContentListLogic(
     }
 
     private suspend fun loadPokemonPage1(m: ContentListMode.Pokemon) = coroutineScope {
-        val profileDeferred = async { runCatching { repository.getPokemonProfile(m.pokemonId, _selectedFormatId.value) } }
+        val profileDeferred = async { runCatching { repository.getPokemonProfile(m.pokemonId, _selectedFormatId.value, _selectedLookback.value) } }
         val battlesDeferred = async {
             repository.searchMatches(
                 filters = listOf(SearchFilterSlot(pokemonId = m.pokemonId)),
@@ -391,6 +395,7 @@ class ContentListLogic(
         _uiState.update {
             it.copy(items = buildList {
                 add(ContentListItem.FormatSelector)
+                add(ContentListItem.LookbackSelector)
                 add(ContentListItem.SearchField(query))
                 add(ContentListItem.Section("", filtered))
             })
@@ -472,6 +477,29 @@ class ContentListLogic(
         }
     }
 
+    fun selectLookback(lookback: LookbackWindow) {
+        if (_selectedLookback.value == lookback) return
+        _selectedLookback.value = lookback
+        if (mode is ContentListMode.TopPokemon) _searchQuery.value = ""
+        scope.launch {
+            try {
+                _uiState.update { it.copy(loadingSections = reloadSections(), currentPage = 1, canPaginate = false) }
+                val (items, pagination) = fetchContent()
+                _uiState.update {
+                    it.copy(
+                        items = items,
+                        loadingSections = emptySet(),
+                        currentPage = pagination.page,
+                        canPaginate = pagination.hasNext
+                    )
+                }
+                lastLoadedAtMs = currentTimeMillis()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(loadingSections = emptySet()) }
+            }
+        }
+    }
+
     fun toggleSortOrder() {
         _sortOrder.value = if (_sortOrder.value == OrderBy.Time) OrderBy.Rating else OrderBy.Time
         scope.launch {
@@ -495,8 +523,8 @@ class ContentListLogic(
 
     private fun reloadSections(): Set<String> = when (mode) {
         is ContentListMode.Home -> setOf("format_selector", "Top Pokémon", "Today's Top Battles")
-        is ContentListMode.TopPokemon -> setOf("format_selector", "")
-        is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles")
+        is ContentListMode.TopPokemon -> setOf("format_selector", "lookback_selector", "")
+        is ContentListMode.Pokemon -> setOf("format_selector", "lookback_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles")
         is ContentListMode.Player -> setOf("format_selector", "Battles")
         else -> setOf("Battles")
     }
@@ -642,7 +670,7 @@ class ContentListLogic(
             }
         }
         is ContentListMode.Pokemon -> if (page == 1) coroutineScope {
-            val profileDeferred = async { runCatching { repository.getPokemonProfile(m.pokemonId, _selectedFormatId.value) } }
+            val profileDeferred = async { runCatching { repository.getPokemonProfile(m.pokemonId, _selectedFormatId.value, _selectedLookback.value) } }
             val battlesDeferred = async {
                 repository.searchMatches(
                     filters = listOf(SearchFilterSlot(pokemonId = m.pokemonId)),
@@ -670,7 +698,7 @@ class ContentListLogic(
             ContentListItemMapper.fromBattles(result.battles) to result.pagination
         }
         is ContentListMode.TopPokemon -> {
-            val formatDetail = repository.getFormatDetail(_selectedFormatId.value, topPokemonCount = 100)
+            val formatDetail = repository.getFormatDetail(_selectedFormatId.value, topPokemonCount = 100, lookback = _selectedLookback.value)
             topPokemonTeamCount = formatDetail.teamCount
             val mapped = formatDetail.topPokemon.map { pokemon ->
                 ContentListItem.Pokemon(
@@ -684,6 +712,7 @@ class ContentListLogic(
             _allTopPokemonItems.value = mapped
             val items = buildList {
                 add(ContentListItem.FormatSelector)
+                add(ContentListItem.LookbackSelector)
                 add(ContentListItem.SearchField(""))
                 if (mapped.isNotEmpty()) {
                     add(ContentListItem.Section("", mapped))
@@ -752,6 +781,7 @@ class ContentListLogic(
 
     private fun buildPokemonProfileSections(profile: PokemonProfile?): List<ContentListItem> = buildList {
         add(ContentListItem.FormatSelector)
+        add(ContentListItem.LookbackSelector)
         if (profile == null) return@buildList
         val statSections = buildList {
             if (profile.topTeammates.isNotEmpty()) {

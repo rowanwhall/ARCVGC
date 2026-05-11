@@ -74,6 +74,7 @@ import com.arcvgc.app.ui.components.GradientToolbarHeight
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.TypeIconRow
 import com.arcvgc.app.ui.components.TypeInfo
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ReplayNavState
@@ -139,6 +140,7 @@ fun ContentListPage(
         FormatSorter.sorted(selectorFormats, pinnedFormatId)
     }
     val selectedFormatId by viewModel.selectedFormatId.collectAsStateWithLifecycle()
+    val selectedLookback by viewModel.selectedLookback.collectAsStateWithLifecycle()
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }
     var replayNavState by remember { mutableStateOf<ReplayNavState?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
@@ -152,7 +154,9 @@ fun ContentListPage(
     val filteredUiState = remember(uiState, isTopPokemonMode) {
         if (!isTopPokemonMode) uiState
         else uiState.copy(items = uiState.items.filter {
-            it !is ContentListItem.FormatSelector && it !is ContentListItem.SearchField
+            it !is ContentListItem.FormatSelector &&
+            it !is ContentListItem.LookbackSelector &&
+            it !is ContentListItem.SearchField
         })
     }
 
@@ -212,6 +216,7 @@ fun ContentListPage(
                     is ContentListItem.PokemonGrid -> {}
                     is ContentListItem.StatChipRow -> {}
                     is ContentListItem.FormatSelector -> {}
+                    is ContentListItem.LookbackSelector -> {}
                     is ContentListItem.SearchField -> {}
                 }
             },
@@ -240,6 +245,8 @@ fun ContentListPage(
             formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) sortedFormats else emptyList(),
             selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
             onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
+            selectedLookback = selectedLookback,
+            onLookbackSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.TopPokemon) viewModel::selectLookback else null,
             searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
             onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
             onSeeMore = { topPokemonFormatId = viewModel.selectedFormatId.value }
@@ -251,6 +258,9 @@ fun ContentListPage(
                 selectedFormatId = selectedFormatId,
                 onFormatSelected = viewModel::selectFormat,
                 isLoadingFormat = "format_selector" in uiState.loadingSections,
+                selectedLookback = selectedLookback,
+                onLookbackSelected = viewModel::selectLookback,
+                isLoadingLookback = "lookback_selector" in uiState.loadingSections,
                 searchQuery = searchQuery,
                 onSearchQueryChanged = viewModel::setSearchQuery,
                 modifier = Modifier.align(Alignment.BottomCenter)
@@ -478,6 +488,8 @@ private fun ContentListContent(
     formats: List<FormatUiModel> = emptyList(),
     selectedFormatId: Int = 0,
     onFormatSelected: ((Int) -> Unit)? = null,
+    selectedLookback: LookbackWindow = LookbackWindow.All,
+    onLookbackSelected: ((LookbackWindow) -> Unit)? = null,
     searchQuery: String = "",
     onSearchQueryChanged: ((String) -> Unit)? = null,
     onSeeMore: (() -> Unit)? = null,
@@ -685,6 +697,27 @@ private fun ContentListContent(
                                 }
                             }
                         }
+                        if (topItem is ContentListItem.LookbackSelector && onLookbackSelected != null) {
+                            val isLoadingLookback = "lookback_selector" in uiState.loadingSections
+                            item(key = topItem.listKey) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    LookbackDropdown(
+                                        selectedLookback = selectedLookback,
+                                        onLookbackSelected = onLookbackSelected
+                                    )
+                                    if (isLoadingLookback) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.padding(start = 8.dp).size(16.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                     item(key = "empty") {
                         EmptyView(
@@ -769,6 +802,29 @@ private fun ContentListContent(
                                                 onFormatSelected = onFormatSelected
                                             )
                                             if (isLoadingFormat) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.padding(start = 8.dp).size(16.dp),
+                                                    strokeWidth = 2.dp
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            is ContentListItem.LookbackSelector -> {
+                                if (onLookbackSelected != null) {
+                                    val isLoadingLookback = "lookback_selector" in uiState.loadingSections
+                                    item(key = topItem.listKey) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().then(itemPadding),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            LookbackDropdown(
+                                                selectedLookback = selectedLookback,
+                                                onLookbackSelected = onLookbackSelected
+                                            )
+                                            if (isLoadingLookback) {
                                                 CircularProgressIndicator(
                                                     modifier = Modifier.padding(start = 8.dp).size(16.dp),
                                                     strokeWidth = 2.dp

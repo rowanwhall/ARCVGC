@@ -10,6 +10,7 @@ import com.arcvgc.app.data.repository.FavoritesRepositoryImpl
 import com.arcvgc.app.data.repository.FormatCatalogRepository
 import com.arcvgc.app.data.repository.PokemonCatalogRepository
 import com.arcvgc.app.data.repository.SettingsRepository
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.ui.model.ContentListMode
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,6 +44,9 @@ class ContentListViewModel @Inject constructor(
     private val _selectedFormatId = MutableStateFlow(0)
     val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()
 
+    private val _selectedLookback = MutableStateFlow(LookbackWindow.All)
+    val selectedLookback: StateFlow<LookbackWindow> = _selectedLookback.asStateFlow()
+
     private var initialized = false
 
     fun initialize(mode: ContentListMode) {
@@ -63,6 +67,7 @@ class ContentListViewModel @Inject constructor(
         viewModelScope.launch { l.uiState.collect { _uiState.value = it } }
         viewModelScope.launch { l.sortOrder.collect { _sortOrder.value = it } }
         viewModelScope.launch { l.selectedFormatId.collect { _selectedFormatId.value = it } }
+        viewModelScope.launch { l.selectedLookback.collect { _selectedLookback.value = it } }
         viewModelScope.launch { l.searchQuery.collect { _searchQuery.value = it } }
 
         l.initialize()
@@ -72,6 +77,7 @@ class ContentListViewModel @Inject constructor(
     fun refresh() { logic?.refresh() }
     fun paginate() { logic?.paginate() }
     fun selectFormat(formatId: Int) { logic?.selectFormat(formatId) }
+    fun selectLookback(lookback: LookbackWindow) { logic?.selectLookback(lookback) }
     fun toggleSortOrder() { logic?.toggleSortOrder() }
 
     private val _searchQuery = MutableStateFlow("")

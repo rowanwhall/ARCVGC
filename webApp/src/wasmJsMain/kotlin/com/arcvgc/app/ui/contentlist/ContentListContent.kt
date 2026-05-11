@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.shared.Res
 import com.arcvgc.app.shared.logo
@@ -131,12 +132,14 @@ internal fun ContentListContent(
     val onSearchParamsChanged = callbacks.onSearchParamsChanged
     val onToggleSortOrder = callbacks.onToggleSortOrder
     val onFormatSelected = callbacks.onFormatSelected
+    val onLookbackSelected = callbacks.onLookbackSelected
     val onSearchQueryChanged = callbacks.onSearchQueryChanged
     val onSeeMore = callbacks.onSeeMore
     val searchParams = formatState.searchParams
     val sortOrder = formatState.sortOrder
     val formats = formatState.formats
     val selectedFormatId = formatState.selectedFormatId
+    val selectedLookback = formatState.selectedLookback
     val searchQuery = formatState.searchQuery
     val battleCardCellWidth = gridConfig.battleCardCellWidth
     val expandedTopPokemonMaxWidth = gridConfig.expandedTopPokemonMaxWidth
@@ -230,6 +233,9 @@ internal fun ContentListContent(
                 uiState.items.forEach { topItem ->
                     if (topItem is ContentListItem.FormatSelector) {
                         emitFormatSelectorItem(topItem, formats, selectedFormatId, onFormatSelected, "format_selector" in uiState.loadingSections, fullSpan)
+                    }
+                    if (topItem is ContentListItem.LookbackSelector) {
+                        emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, "lookback_selector" in uiState.loadingSections, fullSpan)
                     }
                     if (topItem is ContentListItem.SearchField) {
                         emitSearchFieldItem(topItem, searchQuery, onSearchQueryChanged, fullSpan)
@@ -443,6 +449,9 @@ internal fun ContentListContent(
                         }
                         is ContentListItem.FormatSelector -> {
                             emitFormatSelectorItem(topItem, formats, selectedFormatId, onFormatSelected, "format_selector" in uiState.loadingSections, fullSpan)
+                        }
+                        is ContentListItem.LookbackSelector -> {
+                            emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, "lookback_selector" in uiState.loadingSections, fullSpan)
                         }
                         is ContentListItem.SearchField -> {
                             emitSearchFieldItem(topItem, searchQuery, onSearchQueryChanged, fullSpan)
@@ -664,6 +673,36 @@ private fun LazyGridScope.emitFormatSelectorItem(
     }
 }
 
+private fun LazyGridScope.emitLookbackSelectorItem(
+    item: ContentListItem.LookbackSelector,
+    selectedLookback: LookbackWindow,
+    onLookbackSelected: ((LookbackWindow) -> Unit)?,
+    isLoading: Boolean,
+    fullSpan: LazyGridItemSpanScope.() -> GridItemSpan
+) {
+    if (onLookbackSelected == null) return
+    animatedItem(key = item.listKey, span = fullSpan) {
+        CenteredItem {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                LookbackDropdown(
+                    selectedLookback = selectedLookback,
+                    onLookbackSelected = onLookbackSelected
+                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(start = 8.dp).size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
+        }
+    }
+}
+
 private fun LazyGridScope.emitSearchFieldItem(
     item: ContentListItem.SearchField,
     searchQuery: String,
@@ -741,6 +780,7 @@ internal fun computeBattleItemIndex(
                         }
                     }
                     is ContentListItem.FormatSelector -> { if (hasFormats) index++ }
+                    is ContentListItem.LookbackSelector -> { index++ }
                     is ContentListItem.SearchField -> { if (hasSearchQuery) index++ }
                     is ContentListItem.Battle -> {}
                     else -> index++

@@ -47,7 +47,7 @@ enum AppTokens {
     /// Approximate vertical space reserved at the bottom of the Usage list so
     /// scrollable content doesn't tuck underneath the anchored `UsageBottomBar`.
     /// Mirrors `UsageBottomBarReservedHeight` in shared `UsageBottomBar.kt`.
-    static let usageBottomBarReservedHeight: CGFloat = 160
+    static let usageBottomBarReservedHeight: CGFloat = 200
 
     // Hero / Branding
     static let heroLogoHeight: CGFloat = 96

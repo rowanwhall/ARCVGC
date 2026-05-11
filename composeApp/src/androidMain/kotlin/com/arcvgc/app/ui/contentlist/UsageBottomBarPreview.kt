@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.ui.model.FormatUiModel
 
 // UsageBottomBar composable lives in the shared module at
@@ -27,6 +28,9 @@ private fun UsageBottomBarPreview() {
             selectedFormatId = 2,
             onFormatSelected = {},
             isLoadingFormat = false,
+            selectedLookback = LookbackWindow.All,
+            onLookbackSelected = {},
+            isLoadingLookback = false,
             searchQuery = query,
             onSearchQueryChanged = { query = it }
         )
@@ -42,6 +46,9 @@ private fun UsageBottomBarLoadingPreview() {
             selectedFormatId = 1,
             onFormatSelected = {},
             isLoadingFormat = true,
+            selectedLookback = LookbackWindow.Week,
+            onLookbackSelected = {},
+            isLoadingLookback = false,
             searchQuery = "Inc",
             onSearchQueryChanged = {}
         )

@@ -47,6 +47,7 @@ Sealed class for heterogeneous list rendering. Each variant has a `listKey: Stri
 | `PokemonGrid(pokemon)` | Grid of Pokemon (home "Top Pokémon", player profile "Favorite Pokemon"). 3 columns on iPhone/Android phone, up to 6 on iPad/Android tablet/desktop web | `"pokemon_grid"` |
 | `StatChipRow(chips)` | Horizontal scrolling row of chips with name+percent and optional image (mobile), FlowRow (desktop web). Used for Top Abilities, Items, Moves, Tera Types, and pokemon profile "Top Teammates" (chips carry a `pokemonId` and render a Pokemon avatar; tapping navigates to that Pokemon). | `"stat_chip_row"` |
 | `FormatSelector` | Format dropdown rendered as a list item (Home, Pokemon, Player modes). In TopPokemon mode on mobile/mobile-web, this list item is suppressed — the dropdown is rendered instead inside an anchored `UsageBottomBar` at the bottom of the screen so it's within thumb reach. Desktop web uses `UsageDesktopPage` which has its own format dropdown. | `"format_selector"` |
+| `LookbackSelector` | Lookback window dropdown (`All time`/`Last 30 days`/`This week`/`Today`) rendered as a list item adjacent to `FormatSelector` in Pokemon and TopPokemon modes. Suppressed in TopPokemon compact (rendered inside `UsageBottomBar`) and on desktop-web Usage (rendered in `UsageDesktopPage` left pane below the format dropdown). Scopes the pokemon profile / format detail API call's `lookback` parameter. | `"lookback_selector"` |
 | `SearchField(query)` | Text input for client-side filtering (TopPokemon mode). On mobile/mobile-web, this list item is suppressed and the field is rendered inside the anchored `UsageBottomBar` alongside the format selector. | `"search_field"` |
 
 `ContentListItemMapper` (in `shared/.../ui/mapper/`) provides factory methods: `fromBattles()`, `fromPokemon()`, `fromPlayers()`, `fromPokemonCatalog()`.
@@ -92,7 +93,8 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
 ### Pokemon mode
 - **Page 1**: Up to 3 top-level items — profile + battles fetched in parallel via `getPokemonProfile(id, formatId)` + `searchMatches(...)`. Profile errors are silently swallowed; page still shows battles.
   1. `FormatSelector` — format dropdown (rendered as a centered list item)
-  2. `SectionGroup([...])` — wraps the five profile stat sections (below) into a single group so desktop web can lay them out as a responsive 1/2/3-column row. Only emitted when the profile succeeds and contains at least one non-empty stat section. The group contains only non-empty sections — a section is omitted when the profile has no data for it (e.g. formats without tera types skip `Top Tera Types`).
+  2. `LookbackSelector` — lookback-window dropdown (centered, directly below the format dropdown). Scopes the pokemon profile API call's `lookback` query param.
+  3. `SectionGroup([...])` — wraps the five profile stat sections (below) into a single group so desktop web can lay them out as a responsive 1/2/3-column row. Only emitted when the profile succeeds and contains at least one non-empty stat section. The group contains only non-empty sections — a section is omitted when the profile has no data for it (e.g. formats without tera types skip `Top Tera Types`).
      - `Section("Top Teammates", [StatChipRow([...])])` — chip row of top teammates with pokemon avatar, name, and usage %. Each chip carries a `pokemonId`; tapping navigates to that Pokemon's page.
      - `Section("Top Items", [StatChipRow([...])])` — chip row of items with image, name, and usage %.
      - `Section("Top Tera Types", [StatChipRow([...])])` — chip row of tera types with image, name, and usage %.
@@ -118,7 +120,8 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
   **Edge-to-edge children on compact web**: the `StatChipRow` child of a section has `edgeToEdge = true`. On compact web, the section-children emission loop detects this flag and renders the child via a `Modifier.layout` escape (`escapeGridHorizontalPadding`) instead of wrapping it in `CenteredItem`. The helper re-measures the child at `constraints.maxWidth + 32dp` and places it at `x = -16dp`, which negates the parent `LazyVerticalGrid`'s `padding(horizontal = 16.dp)` so the chip carousel's `LazyRow` scrolls flush to the viewport edges. The layout still reports `constraints.maxWidth` back up so sibling items are unaffected.
 - **Progressive loading**: Initial load uses `loadPokemonPage1()` which handles the two parallel API calls with progressive rendering. If the profile finishes before battles, profile sections are shown immediately with the Battles section header displaying a loading indicator in the sort toggle (`loadingSections = {"Battles"}`). If battles finishes before the profile, the unified loading spinner is maintained until the profile also completes (avoids layout jumpiness). Format change and sort toggle use the standard `fetchContent()` path with section-level loading.
 - **Pages 2+**: bare `Battle` items
-- **Format change**: reloads all profile sections and battles (`loadingSections = {"format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
+- **Format change**: reloads all profile sections and battles (`loadingSections = {"format_selector", "lookback_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles"}`) since the pokemon profile endpoint accepts `format_id`
+- **Lookback change**: reloads via the same path as format change (uses the same `reloadSections()` set). The pokemon profile endpoint accepts `lookback`; the battles query is re-fetched too even though it's lookback-independent (a small wasted call kept for simplicity matching the format-change path).
 
 ### Player mode
 - **Page 1**: Up to 4 items —
@@ -129,11 +132,13 @@ On the `WindowSizeClass.Expanded` branch of `webApp/.../ui/contentlist/ContentLi
 - **Pages 2+**: bare `Battle` items
 
 ### TopPokemon mode
-- **Single page** (no pagination): Fetches top 100 Pokemon via `getFormatDetail(formatId, topPokemonCount=100)`.
+- **Single page** (no pagination): Fetches top 100 Pokemon via `getFormatDetail(formatId, topPokemonCount=100, lookback=...)`.
   1. `FormatSelector` — format dropdown
-  2. `SearchField("")` — text field for client-side name filtering
-  3. `Pokemon` items with `usagePercent` — full list filtered by search query
-- **Format change**: reloads from API (`loadingSections = {"format_selector"}`), clears search query
+  2. `LookbackSelector` — lookback-window dropdown (centered, directly below the format dropdown)
+  3. `SearchField("")` — text field for client-side name filtering
+  4. `Pokemon` items with `usagePercent` — full list filtered by search query
+- **Format change**: reloads from API (`loadingSections = {"format_selector", "lookback_selector", ""}`), clears search query
+- **Lookback change**: same path as format change — reloads from API, clears search query
 - **Search filtering**: client-side via `setSearchQuery()`, filters stored Pokemon list by name (case-insensitive), no API call
 - `ContentListLogic.allTopPokemonItems` exposes the unfiltered loaded list as a `StateFlow` so the desktop-web Usage layout can measure left-pane width against the longest name
 - Navigated to from Home page's "See More" button on the "Top Pokemon" section, threading the current format
@@ -167,6 +172,18 @@ A `FormatSelector` list item renders a format dropdown in Home, TopPokemon, Poke
   - Android: `DropdownMenu` composable
   - iOS: `Menu` with `.presentationDetents([.medium])`
   - Web: `Dialog` composable
+
+## Lookback Window (Pokemon & TopPokemon Modes)
+
+A `LookbackSelector` list item renders a lookback-window dropdown adjacent to (directly below) the `FormatSelector` in Pokemon and TopPokemon modes. The four options are `All time` (default), `Last 30 days`, `This week`, `Today`, mapping to the `LookbackWindow` enum values `all`/`30days`/`week`/`day` sent as the `lookback` query param to the pokemon profile / format detail endpoints.
+
+- **State**: `ContentListLogic._selectedLookback: MutableStateFlow<LookbackWindow>` (defaults to `LookbackWindow.All`). Exposed as `selectedLookback: StateFlow<LookbackWindow>` and mutated via `selectLookback(window)`.
+- **On change**: same `reloadSections()` path as `selectFormat` — re-fetches page 1 with the new lookback. In TopPokemon mode, clears the search query (mirrors format-change behavior).
+- **Rendering placement**:
+  - Pokemon mode: emitted as a list item directly after `FormatSelector` in `buildPokemonProfileSections()`.
+  - TopPokemon mode (compact: Android, iPhone, mobile web): suppressed from the list and rendered inside `UsageBottomBar` as a second centered row directly below the `FormatDropdown` row.
+  - TopPokemon mode (desktop web Expanded): rendered in `UsageDesktopPage` left pane via a second `LookbackDropdown` immediately below the `FormatDropdown` (both `fillMaxWidth = true`).
+- **Shared composable**: `LookbackDropdown` in `shared/.../ui/contentlist/ContentListComponents.kt` — mirrors `FormatDropdown` exactly (same `SearchButtonCornerRadius`, `StandardBorderWidth`, padding). iOS has a SwiftUI sibling `LookbackDropdown` in `iosApp/iosApp/ContentListComponents.swift` using a hardcoded `[.all, .thirtyDays, .week, .day]` options array (Kotlin enum `entries` doesn't bridge cleanly through SKIE).
 
 ## Favorites Auto-Refresh
 

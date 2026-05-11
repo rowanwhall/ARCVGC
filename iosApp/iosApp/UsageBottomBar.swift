@@ -6,6 +6,9 @@ struct UsageBottomBar: View {
     let selectedFormatId: Int32
     let onFormatSelected: (Int32) -> Void
     let isLoadingFormat: Bool
+    let selectedLookback: LookbackWindow
+    let onLookbackSelected: (LookbackWindow) -> Void
+    let isLoadingLookback: Bool
     @Binding var searchQuery: String
     @FocusState private var isSearchFocused: Bool
 
@@ -19,6 +22,17 @@ struct UsageBottomBar: View {
                     onFormatSelected: onFormatSelected
                 )
                 if isLoadingFormat {
+                    ProgressView().scaleEffect(0.7)
+                }
+                Spacer()
+            }
+            HStack(spacing: 8) {
+                Spacer()
+                LookbackDropdown(
+                    selectedLookback: selectedLookback,
+                    onLookbackSelected: onLookbackSelected
+                )
+                if isLoadingLookback {
                     ProgressView().scaleEffect(0.7)
                 }
                 Spacer()
@@ -63,6 +77,9 @@ struct UsageBottomBar: View {
                 selectedFormatId: 2,
                 onFormatSelected: { _ in },
                 isLoadingFormat: false,
+                selectedLookback: .all,
+                onLookbackSelected: { _ in },
+                isLoadingLookback: false,
                 searchQuery: $query
             )
             .padding()

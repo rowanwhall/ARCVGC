@@ -45,6 +45,7 @@ class FakeBattleRepository : BattleRepositoryApi {
 
     var searchMatchesCalls = mutableListOf<SearchMatchesCall>()
     var getFormatDetailCalls = mutableListOf<GetFormatDetailCall>()
+    var getPokemonProfileCalls = mutableListOf<GetPokemonProfileCall>()
 
     data class SearchMatchesCall(
         val filters: List<SearchFilterSlot>,
@@ -57,7 +58,14 @@ class FakeBattleRepository : BattleRepositoryApi {
 
     data class GetFormatDetailCall(
         val formatId: Int,
-        val topPokemonCount: Int?
+        val topPokemonCount: Int?,
+        val lookback: LookbackWindow?
+    )
+
+    data class GetPokemonProfileCall(
+        val id: Int,
+        val formatId: Int?,
+        val lookback: LookbackWindow?
     )
 
     override suspend fun getBestPreviousDay(formatId: Int): List<BattleCardUiModel> {
@@ -102,7 +110,7 @@ class FakeBattleRepository : BattleRepositoryApi {
         topPokemonCount: Int?,
         lookback: LookbackWindow?
     ): FormatDetail {
-        getFormatDetailCalls.add(GetFormatDetailCall(formatId, topPokemonCount))
+        getFormatDetailCalls.add(GetFormatDetailCall(formatId, topPokemonCount, lookback))
         formatDetailError?.let { throw it }
         return formatDetailResult ?: throw Exception("No format detail configured")
     }
@@ -122,6 +130,7 @@ class FakeBattleRepository : BattleRepositoryApi {
         formatId: Int?,
         lookback: LookbackWindow?
     ): PokemonProfile {
+        getPokemonProfileCalls.add(GetPokemonProfileCall(id, formatId, lookback))
         if (pokemonProfileDelayMs > 0) delay(pokemonProfileDelayMs)
         pokemonProfileError?.let { throw it }
         return pokemonProfileResult ?: throw Exception("No pokemon profile configured")

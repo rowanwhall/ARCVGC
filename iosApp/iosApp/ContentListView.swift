@@ -259,6 +259,21 @@ struct ContentListView: View {
                                         }
                                         .padding(.horizontal, 16)
                                     }
+                                case .lookbackSelector:
+                                    let isLoadingLookback = viewModel.state.loadingSections.contains("lookback_selector")
+                                    HStack(spacing: 8) {
+                                        Spacer()
+                                        LookbackDropdown(
+                                            selectedLookback: viewModel.selectedLookback,
+                                            onLookbackSelected: { viewModel.selectLookback($0) }
+                                        )
+                                        if isLoadingLookback {
+                                            ProgressView()
+                                                .scaleEffect(0.7)
+                                        }
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
                                 case .searchField:
                                     TextField("", text: Binding(
                                         get: { viewModel.searchQuery },
@@ -334,6 +349,23 @@ struct ContentListView: View {
                                     }
                                     .padding(.horizontal, 16)
                                 }
+                            case .lookbackSelector:
+                                if !isTopPokemonMode {
+                                    let isLoadingLookback = viewModel.state.loadingSections.contains("lookback_selector")
+                                    HStack(spacing: 8) {
+                                        Spacer()
+                                        LookbackDropdown(
+                                            selectedLookback: viewModel.selectedLookback,
+                                            onLookbackSelected: { viewModel.selectLookback($0) }
+                                        )
+                                        if isLoadingLookback {
+                                            ProgressView()
+                                                .scaleEffect(0.7)
+                                        }
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
+                                }
                             case .searchField:
                                 if !isTopPokemonMode {
                                     TextField("", text: Binding(
@@ -383,6 +415,9 @@ struct ContentListView: View {
                         selectedFormatId: viewModel.selectedFormatId,
                         onFormatSelected: { viewModel.selectFormat($0) },
                         isLoadingFormat: viewModel.state.loadingSections.contains("format_selector"),
+                        selectedLookback: viewModel.selectedLookback,
+                        onLookbackSelected: { viewModel.selectLookback($0) },
+                        isLoadingLookback: viewModel.state.loadingSections.contains("lookback_selector"),
                         searchQuery: Binding(
                             get: { viewModel.searchQuery },
                             set: { viewModel.setSearchQuery($0) }
@@ -683,6 +718,8 @@ struct ContentListView: View {
         case .sectionGroup:
             EmptyView()
         case .formatSelector:
+            EmptyView()
+        case .lookbackSelector:
             EmptyView()
         case .searchField:
             EmptyView()

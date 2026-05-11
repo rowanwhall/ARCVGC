@@ -192,6 +192,45 @@ struct SortToggleButton: View {
     }
 }
 
+struct LookbackDropdown: View {
+    let selectedLookback: LookbackWindow
+    let onLookbackSelected: (LookbackWindow) -> Void
+
+    private let options: [LookbackWindow] = [.all, .thirtyDays, .week, .day]
+
+    var body: some View {
+        Menu {
+            ForEach(options, id: \.value) { window in
+                Button {
+                    onLookbackSelected(window)
+                } label: {
+                    if window == selectedLookback {
+                        Label(window.displayName, systemImage: "checkmark")
+                    } else {
+                        Text(window.displayName)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(selectedLookback.displayName)
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(.label).opacity(0.75))
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 10))
+                    .foregroundColor(Color(.label).opacity(0.75))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.opaqueSeparator), lineWidth: 1)
+            )
+        }
+    }
+}
+
 struct FormatDropdown: View {
     let formats: [FormatUiModel]
     let selectedFormatId: Int32

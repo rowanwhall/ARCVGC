@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
@@ -32,7 +33,7 @@ import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
  * anchored [UsageBottomBar]. Kept as a rough upper bound — measuring the bar at
  * runtime would be more precise but adds layout complexity for little visible gain.
  */
-val UsageBottomBarReservedHeight = 160.dp
+val UsageBottomBarReservedHeight = 200.dp
 
 @Composable
 fun UsageBottomBar(
@@ -40,6 +41,9 @@ fun UsageBottomBar(
     selectedFormatId: Int,
     onFormatSelected: (Int) -> Unit,
     isLoadingFormat: Boolean,
+    selectedLookback: LookbackWindow,
+    onLookbackSelected: (LookbackWindow) -> Unit,
+    isLoadingLookback: Boolean,
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -68,6 +72,21 @@ fun UsageBottomBar(
                 onFormatSelected = onFormatSelected
             )
             if (isLoadingFormat) {
+                CircularProgressIndicator(
+                    modifier = Modifier.padding(start = 8.dp).size(16.dp),
+                    strokeWidth = 2.dp
+                )
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            LookbackDropdown(
+                selectedLookback = selectedLookback,
+                onLookbackSelected = onLookbackSelected
+            )
+            if (isLoadingLookback) {
                 CircularProgressIndicator(
                     modifier = Modifier.padding(start = 8.dp).size(16.dp),
                     strokeWidth = 2.dp

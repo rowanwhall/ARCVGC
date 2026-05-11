@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.arcvgc.app.data.AppConfigRepository
 import com.arcvgc.app.data.BattleRepository
 import com.arcvgc.app.domain.model.AppConfig
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
@@ -41,6 +42,7 @@ class ContentListViewModel(
     val uiState: StateFlow<ContentListUiState> = logic.uiState
     val sortOrder: StateFlow<OrderBy> = logic.sortOrder
     val selectedFormatId: StateFlow<Int> = logic.selectedFormatId
+    val selectedLookback: StateFlow<LookbackWindow> = logic.selectedLookback
     val searchQuery: StateFlow<String> = logic.searchQuery
     val allTopPokemonItems = logic.allTopPokemonItems
 
@@ -71,6 +73,7 @@ class ContentListViewModel(
     suspend fun watchForStaleness() = logic.watchForStaleness()
     fun paginate() = logic.paginate()
     fun selectFormat(formatId: Int) = logic.selectFormat(formatId)
+    fun selectLookback(lookback: LookbackWindow) = logic.selectLookback(lookback)
     fun toggleSortOrder() = logic.toggleSortOrder()
     fun setSearchQuery(query: String) = logic.setSearchQuery(query)
     fun setTopPokemonFetchCount(count: Int) = logic.setTopPokemonFetchCount(count)

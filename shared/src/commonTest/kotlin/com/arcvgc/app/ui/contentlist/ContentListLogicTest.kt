@@ -7,6 +7,7 @@ import com.arcvgc.app.data.MatchesResult
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.Format
 import com.arcvgc.app.domain.model.FormatDetail
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.MostUsedPokemon
 import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
@@ -330,10 +331,11 @@ class ContentListLogicTest {
         testScope.advanceUntilIdle()
 
         val items = logic.uiState.value.items
-        assertEquals(2, items.size)
+        assertEquals(3, items.size)
         assertTrue(items[0] is ContentListItem.FormatSelector)
-        assertTrue(items[1] is ContentListItem.Section)
-        assertEquals("Battles", (items[1] as ContentListItem.Section).header)
+        assertTrue(items[1] is ContentListItem.LookbackSelector)
+        assertTrue(items[2] is ContentListItem.Section)
+        assertEquals("Battles", (items[2] as ContentListItem.Section).header)
     }
 
     @Test
@@ -483,7 +485,7 @@ class ContentListLogicTest {
     }
 
     @Test
-    fun pokemonMode_page1_emptyProfile_showsOnlyFormatSelector() {
+    fun pokemonMode_page1_emptyProfile_showsOnlyFormatAndLookbackSelectors() {
         fakeRepo.searchMatchesResult = MatchesResult(
             battles = emptyList(),
             pagination = Pagination(1, 10, false)
@@ -497,8 +499,9 @@ class ContentListLogicTest {
         testScope.advanceUntilIdle()
 
         val items = logic.uiState.value.items
-        assertEquals(1, items.size)
+        assertEquals(2, items.size)
         assertTrue(items[0] is ContentListItem.FormatSelector)
+        assertTrue(items[1] is ContentListItem.LookbackSelector)
         assertTrue(items.none { it.isContentItem })
     }
 
@@ -987,6 +990,80 @@ class ContentListLogicTest {
         assertTrue(fakeRepo.searchMatchesCalls.isEmpty())
     }
 
+    @Test
+    fun selectLookback_pokemonMode_passesLookbackToProfileFetch() {
+        fakeRepo.searchMatchesResult = MatchesResult(
+            battles = listOf(testBattle),
+            pagination = Pagination(1, 10, false)
+        )
+
+        val logic = createLogic(ContentListMode.Pokemon(
+            pokemonId = 25, name = "Pikachu", imageUrl = null,
+            typeImageUrl1 = null, typeImageUrl2 = null, formatId = 1
+        ))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        fakeRepo.getPokemonProfileCalls.clear()
+
+        logic.selectLookback(LookbackWindow.Day)
+        testScope.advanceUntilIdle()
+
+        assertEquals(LookbackWindow.Day, logic.selectedLookback.value)
+        assertTrue(fakeRepo.getPokemonProfileCalls.isNotEmpty())
+        assertEquals(LookbackWindow.Day, fakeRepo.getPokemonProfileCalls.last().lookback)
+        assertTrue(logic.uiState.value.loadingSections.isEmpty())
+    }
+
+    @Test
+    fun selectLookback_topPokemonMode_passesLookbackToFormatDetailFetchAndClearsSearchQuery() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        logic.setSearchQuery("pika")
+        assertEquals("pika", logic.searchQuery.value)
+        fakeRepo.getFormatDetailCalls.clear()
+
+        logic.selectLookback(LookbackWindow.Week)
+        testScope.advanceUntilIdle()
+
+        assertEquals(LookbackWindow.Week, logic.selectedLookback.value)
+        assertEquals("", logic.searchQuery.value)
+        assertTrue(fakeRepo.getFormatDetailCalls.isNotEmpty())
+        assertEquals(LookbackWindow.Week, fakeRepo.getFormatDetailCalls.last().lookback)
+    }
+
+    @Test
+    fun selectLookback_noOpWhenSameLookback() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        fakeRepo.getFormatDetailCalls.clear()
+
+        logic.selectLookback(LookbackWindow.All) // default value
+        testScope.advanceUntilIdle()
+
+        assertTrue(fakeRepo.getFormatDetailCalls.isEmpty())
+    }
+
+    @Test
+    fun initialLoad_passesDefaultLookbackToRepoCalls() {
+        fakeRepo.formatDetailResult = testFormatDetail()
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        assertTrue(fakeRepo.getFormatDetailCalls.isNotEmpty())
+        assertEquals(LookbackWindow.All, fakeRepo.getFormatDetailCalls.last().lookback)
+    }
+
     // --- Home mode ---
 
     @Test
@@ -1271,9 +1348,10 @@ class ContentListLogicTest {
         assertFalse(state.isLoading)
         assertNull(state.error)
         assertTrue(state.items[0] is ContentListItem.FormatSelector)
-        assertTrue(state.items[1] is ContentListItem.SearchField)
-        assertTrue(state.items[2] is ContentListItem.Section)
-        val section = state.items[2] as ContentListItem.Section
+        assertTrue(state.items[1] is ContentListItem.LookbackSelector)
+        assertTrue(state.items[2] is ContentListItem.SearchField)
+        assertTrue(state.items[3] is ContentListItem.Section)
+        val section = state.items[3] as ContentListItem.Section
         assertTrue(section.header.isEmpty())
         assertTrue(section.items.first() is ContentListItem.Pokemon)
         assertFalse(state.canPaginate)
@@ -1306,18 +1384,18 @@ class ContentListLogicTest {
         logic.initialize()
         testScope.advanceUntilIdle()
 
-        // FormatSelector + SearchField + Section(2 Pokemon)
-        assertEquals(3, logic.uiState.value.items.size)
-        val fullSection = logic.uiState.value.items[2] as ContentListItem.Section
+        // FormatSelector + LookbackSelector + SearchField + Section(2 Pokemon)
+        assertEquals(4, logic.uiState.value.items.size)
+        val fullSection = logic.uiState.value.items[3] as ContentListItem.Section
         assertEquals(2, fullSection.items.size)
 
         logic.setSearchQuery("pika")
         testScope.advanceUntilIdle()
 
         val items = logic.uiState.value.items
-        // FormatSelector + SearchField + Section(1 Pokemon)
-        assertEquals(3, items.size)
-        val filteredSection = items[2] as ContentListItem.Section
+        // FormatSelector + LookbackSelector + SearchField + Section(1 Pokemon)
+        assertEquals(4, items.size)
+        val filteredSection = items[3] as ContentListItem.Section
         assertEquals(1, filteredSection.items.size)
         assertEquals("Pikachu", (filteredSection.items.first() as ContentListItem.Pokemon).name)
     }
@@ -1336,7 +1414,7 @@ class ContentListLogicTest {
         testScope.advanceUntilIdle()
 
         // Section present with content
-        assertEquals(3, logic.uiState.value.items.size)
+        assertEquals(4, logic.uiState.value.items.size)
         assertTrue(logic.uiState.value.items.any { it.isContentItem })
 
         // Filter to no matches — Section must still be present to prevent focus loss
@@ -1344,9 +1422,9 @@ class ContentListLogicTest {
         testScope.advanceUntilIdle()
 
         val items = logic.uiState.value.items
-        assertEquals(3, items.size)
-        assertTrue(items[2] is ContentListItem.Section)
-        assertEquals(0, (items[2] as ContentListItem.Section).items.size)
+        assertEquals(4, items.size)
+        assertTrue(items[3] is ContentListItem.Section)
+        assertEquals(0, (items[3] as ContentListItem.Section).items.size)
         // isContentItem remains true so the UI stays in the content branch
         assertTrue(items.any { it.isContentItem })
     }
@@ -1370,7 +1448,7 @@ class ContentListLogicTest {
     }
 
     @Test
-    fun topPokemonMode_emptyPokemon_showsFormatSelectorAndSearchFieldOnly() {
+    fun topPokemonMode_emptyPokemon_showsFormatLookbackAndSearchFieldOnly() {
         fakeRepo.formatDetailResult = FormatDetail(
             id = 1, name = "test", formattedName = null, matchCount = 0, teamCount = 0, topPokemon = emptyList()
         )
@@ -1380,9 +1458,10 @@ class ContentListLogicTest {
         testScope.advanceUntilIdle()
 
         val state = logic.uiState.value
-        assertEquals(2, state.items.size)
+        assertEquals(3, state.items.size)
         assertTrue(state.items[0] is ContentListItem.FormatSelector)
-        assertTrue(state.items[1] is ContentListItem.SearchField)
+        assertTrue(state.items[1] is ContentListItem.LookbackSelector)
+        assertTrue(state.items[2] is ContentListItem.SearchField)
         assertTrue(state.items.none { it.isContentItem })
     }
 
