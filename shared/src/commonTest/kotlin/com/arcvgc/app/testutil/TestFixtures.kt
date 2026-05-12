@@ -22,8 +22,9 @@ import com.arcvgc.app.domain.model.TeraType
 fun testFormat(
     id: Int = 1,
     name: String = "gen9vgc2024regh",
-    formattedName: String? = "Reg H"
-) = Format(id = id, name = name, formattedName = formattedName)
+    formattedName: String? = "Reg H",
+    hasSeries: Boolean = false
+) = Format(id = id, name = name, formattedName = formattedName, hasSeries = hasSeries)
 
 fun testTeraType(
     id: Int = 1,

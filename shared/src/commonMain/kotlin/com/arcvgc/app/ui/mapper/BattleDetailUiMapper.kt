@@ -24,6 +24,7 @@ object BattleDetailUiMapper {
             player2 = players.getOrNull(1)?.toUiModel() ?: emptyPlayer(),
             formatId = matchDetail.format.id,
             formatName = matchDetail.format.formattedName ?: matchDetail.format.name,
+            hasSeries = matchDetail.format.hasSeries,
             rating = rating,
             formattedTime = formatUploadTime(matchDetail.uploadTime),
             replayUrl = matchDetail.replayUrl,

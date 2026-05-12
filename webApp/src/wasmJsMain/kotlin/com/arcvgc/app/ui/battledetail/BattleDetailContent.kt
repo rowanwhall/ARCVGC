@@ -139,7 +139,9 @@ fun BattleDetailContent(
                         battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
                     }.sortedBy { it.positionInSet ?: Int.MAX_VALUE }
 
-                    Spacer(Modifier.size(InfoButtonSize))
+                    if (battleDetail.hasSeries) {
+                        Spacer(Modifier.size(InfoButtonSize))
+                    }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -172,7 +174,9 @@ fun BattleDetailContent(
                             }
                         }
                     }
-                    InfoButton(onClick = { showReplayInfo = true })
+                    if (battleDetail.hasSeries) {
+                        InfoButton(onClick = { showReplayInfo = true })
+                    }
                 }
             }
 

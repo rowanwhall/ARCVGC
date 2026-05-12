@@ -229,7 +229,9 @@ private fun BattleDetailBody(
                 battleDetail.setMatches.forEach { add(GameButton(it.positionInSet, it.replayUrl, false)) }
             }.sortedBy { it.positionInSet ?: Int.MAX_VALUE }
 
-            Spacer(Modifier.size(InfoButtonSize))
+            if (battleDetail.hasSeries) {
+                Spacer(Modifier.size(InfoButtonSize))
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -262,7 +264,9 @@ private fun BattleDetailBody(
                     }
                 }
             }
-            InfoButton(onClick = { showReplayInfo = true })
+            if (battleDetail.hasSeries) {
+                InfoButton(onClick = { showReplayInfo = true })
+            }
             }
         }
 
@@ -469,6 +473,7 @@ private fun BattleDetailPagePreview() {
         player2 = PlayerDetailUiModel(id = 2, name = "Opponent", isWinner = false, team = List(6) { samplePokemon }),
         formatId = 1,
         formatName = "VGC 2026 Reg H",
+        hasSeries = true,
         rating = 1542,
         formattedTime = "Feb 8, 5:03 PM",
         replayUrl = "https://replay.pokemonshowdown.com/example",
@@ -506,6 +511,7 @@ private fun BattleDetailPageClosedTeamsheetPreview() {
         player2 = PlayerDetailUiModel(id = 2, name = "Opponent", isWinner = false, team = List(6) { samplePokemon }),
         formatId = 1,
         formatName = "VGC 2026 Reg H",
+        hasSeries = false,
         rating = 1542,
         formattedTime = "Feb 8, 5:03 PM",
         replayUrl = "https://replay.pokemonshowdown.com/example"

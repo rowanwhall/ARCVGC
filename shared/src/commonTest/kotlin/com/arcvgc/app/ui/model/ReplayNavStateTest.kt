@@ -15,6 +15,7 @@ class ReplayNavStateTest {
         player2 = PlayerDetailUiModel(id = 2, name = "P2", isWinner = false, team = emptyList()),
         formatId = 1,
         formatName = "VGC 2026",
+        hasSeries = true,
         rating = 1500,
         formattedTime = "Mar 29",
         replayUrl = replayUrl,

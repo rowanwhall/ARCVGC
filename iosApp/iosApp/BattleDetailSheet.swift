@@ -73,7 +73,9 @@ struct BattleDetailPage: View {
                                 setMatches.map { ($0.positionInSet?.intValue, $0.replayUrl, false) }
                             ).sorted { ($0.position ?? Int.max) < ($1.position ?? Int.max) }
 
-                            Color.clear.frame(width: AppTokens.infoButtonSize, height: AppTokens.infoButtonSize)
+                            if battleDetail.hasSeries {
+                                Color.clear.frame(width: AppTokens.infoButtonSize, height: AppTokens.infoButtonSize)
+                            }
                             HStack(spacing: 8) {
                                 ForEach(Array(allGames.enumerated()), id: \.offset) { _, game in
                                     let label = game.position.map { "Game \($0)" } ?? "View Replay"
@@ -103,7 +105,9 @@ struct BattleDetailPage: View {
                                 }
                             }
 
-                            InfoButton { showReplayInfo = true }
+                            if battleDetail.hasSeries {
+                                InfoButton { showReplayInfo = true }
+                            }
                         }
 
                         let cardWidth: CGFloat = battleDetail.hasMoveData ? PlayerTeamDetailSection.openCardWidth : PlayerTeamDetailSection.closedCardWidth

@@ -172,6 +172,15 @@ class BattleDetailUiMapperTest {
     }
 
     @Test
+    fun hasSeriesMappedFromFormat() {
+        val seriesDetail = testMatchDetail(format = testFormat(hasSeries = true))
+        val nonSeriesDetail = testMatchDetail(format = testFormat(hasSeries = false))
+
+        assertTrue(BattleDetailUiMapper.map(seriesDetail).hasSeries)
+        assertFalse(BattleDetailUiMapper.map(nonSeriesDetail).hasSeries)
+    }
+
+    @Test
     fun formatFallsBackToNameWhenNoFormattedName() {
         val detail = testMatchDetail(
             format = testFormat(name = "gen9vgc2024regh", formattedName = null)

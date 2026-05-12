@@ -86,7 +86,7 @@ Any new full-screen overlay composable rendered inside `ContentListPage` must ac
 
 ## Replay buttons and set matches
 - The battle detail page always shows "Game N" buttons (even for single-game matches). The current game uses a filled `Button`; other games in a set use `OutlinedButton`.
-- An info icon next to the replay buttons opens an info dialog explaining replays and set matching (key: `"replay"` in `InfoContentProvider`).
+- An info icon next to the replay buttons opens an info dialog explaining replays and set matching (key: `"replay"` in `InfoContentProvider`). Only renders when `BattleDetailUiModel.hasSeries` is true (mirrored from `Format.hasSeries`); the centering spacer on the opposite side of the games row is hidden in lockstep so the row stays centered.
 - Clicking any replay button calls `onViewReplay(ReplayNavState)` — the callback passes the full sorted game list (via `BattleDetailUiModel.toReplayNavState(tappedUrl)`) so the overlay can navigate between games without dismissing. On web, the replay URL opens in a new browser tab instead.
 - Set match data is mapped in `BattleDetailUiMapper` — the current match is filtered out and remaining matches are sorted by position.
 
