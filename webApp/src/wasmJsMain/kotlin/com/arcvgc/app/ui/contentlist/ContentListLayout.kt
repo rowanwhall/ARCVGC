@@ -43,16 +43,44 @@ internal val BATTLE_GRID_SPACING = 12.dp
 internal val BATTLE_GRID_HORIZONTAL_PADDING = 32.dp
 
 // Minimum detail-pane width at which `BattleDetailContent`'s `PlayerTeamSection`
-// fits 3 Pokemon cards per row in each team card. Derivation:
+// fits 3 Pokemon cards per row in each team card. Sized for open-teamsheet
+// cards (260dp) — the worst case; closed-sheet cards (220dp) fit at narrower
+// widths. Derivation:
 //   - Section applies `fillMaxWidth().padding(horizontal = 16.dp)`, so the
 //     BoxWithConstraints inside sees `maxWidth = paneWidth − 32`.
 //   - Inside, `availableForCards = maxWidth − innerPadding × 2 = maxWidth − 32`.
-//   - 3 cols requires `(availableForCards + 12) / 292 ≥ 3`, i.e.
-//     `availableForCards ≥ 864` → `paneWidth ≥ 928`.
+//   - 3 cols requires `(availableForCards + 12) / 272 ≥ 3`, i.e.
+//     `availableForCards ≥ 804` → `paneWidth ≥ 868`.
 // Battle-card growth is capped so opening the pane leaves at least this much
 // room beside the grid — otherwise wider battle cards would squeeze the pane
 // below the 3-pokemon-per-row threshold.
-internal val DETAIL_PANEL_PREFERRED_MIN_WIDTH = 928.dp
+internal val DETAIL_PANEL_PREFERRED_MIN_WIDTH = 868.dp
+
+// Pane widths that exactly fit N columns of open-teamsheet cards (260dp) inside
+// `BattleDetailContent`'s `PlayerTeamSection`. Snapping the master-detail pane
+// down to one of these targets eliminates the empty horizontal gutters that
+// otherwise appear when the pane is wider than needed for the column count it
+// can actually display (e.g. a 745dp pane fits exactly 2 cards but reserves
+// ~150dp of slack on either side).
+//
+// Math per column N: `N × 260 + (N − 1) × 12 (cardSpacing) + 32 (innerPadding ×2)
+// + 32 (section outer padding ×2)`. Closed cards (220dp) always fit at least as
+// many columns at each threshold, so sizing for open is the worst case.
+//
+// 868dp is the largest snap target — beyond that, a 4-col layout would require
+// 1140dp, which is wider than we want a detail pane to grow on typical
+// monitors. If you ever want 4+ cards per row, append 1140.dp etc. here.
+internal val PANE_SNAP_WIDTHS = listOf(324.dp, 596.dp, 868.dp)
+
+/**
+ * Snaps a natural detail-pane width down to the largest [PANE_SNAP_WIDTHS]
+ * target it can contain. The leftover width is reclaimed by the master grid.
+ * Below the 1-column target (324dp) the pane uses its natural width unchanged
+ * — narrow pane content (e.g. on a small window) degrades gracefully rather
+ * than being clamped to a width that's larger than the window allows.
+ */
+internal fun snapDetailPaneWidth(naturalWidth: Dp): Dp =
+    PANE_SNAP_WIDTHS.lastOrNull { it <= naturalWidth } ?: naturalWidth
 
 internal const val DETAIL_PANE_ANIM_DURATION_MS = 300
 

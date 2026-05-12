@@ -75,7 +75,8 @@ import kotlinx.browser.window
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private val CARD_WIDTH = 280.dp
+private val OPEN_CARD_WIDTH = 260.dp
+private val CLOSED_CARD_WIDTH = 220.dp
 
 private data class GameButton(val positionInSet: Int?, val replayUrl: String, val isCurrent: Boolean)
 
@@ -187,11 +188,12 @@ fun BattleDetailContent(
                 }
             }
 
-            PlayerTeamSection(player = battleDetail.player1, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick, onTeamCopied = onTeamCopied)
+            val cardWidth = if (battleDetail.hasMoveData) OPEN_CARD_WIDTH else CLOSED_CARD_WIDTH
+            PlayerTeamSection(player = battleDetail.player1, cardWidth = cardWidth, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick, onTeamCopied = onTeamCopied)
 
             VsDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            PlayerTeamSection(player = battleDetail.player2, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick, onTeamCopied = onTeamCopied)
+            PlayerTeamSection(player = battleDetail.player2, cardWidth = cardWidth, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick, onTeamCopied = onTeamCopied)
         }
         SnackbarHost(
             hostState = snackbarHostState,
@@ -278,6 +280,7 @@ private fun PlayerTeamHeader(
 @Composable
 private fun PlayerTeamSection(
     player: PlayerDetailUiModel,
+    cardWidth: Dp,
     modifier: Modifier = Modifier,
     showWinnerHighlight: Boolean = true,
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
@@ -313,20 +316,17 @@ private fun PlayerTeamSection(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val cardWidth = maxWidth * 0.7f
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    itemsIndexed(player.team) { _, pokemon ->
-                        PokemonDetailCard(
-                            pokemon = pokemon,
-                            modifier = Modifier.width(cardWidth),
-                            onPokemonClick = onPokemonClick
-                        )
-                    }
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                itemsIndexed(player.team) { _, pokemon ->
+                    PokemonDetailCard(
+                        pokemon = pokemon,
+                        modifier = Modifier.width(cardWidth),
+                        onPokemonClick = onPokemonClick
+                    )
                 }
             }
 
@@ -341,10 +341,10 @@ private fun PlayerTeamSection(
             modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)
         ) {
             val availableForCards = maxWidth - innerPadding * 2
-            val columns = ((availableForCards + cardSpacing) / (CARD_WIDTH + cardSpacing))
+            val columns = ((availableForCards + cardSpacing) / (cardWidth + cardSpacing))
                 .toInt()
                 .coerceIn(1, player.team.size.coerceAtLeast(1))
-            val flowRowWidth = CARD_WIDTH * columns + cardSpacing * (columns - 1)
+            val flowRowWidth = cardWidth * columns + cardSpacing * (columns - 1)
             val containerWidth = flowRowWidth + innerPadding * 2
 
             Column(
@@ -369,7 +369,7 @@ private fun PlayerTeamSection(
                     player.team.forEach { pokemon ->
                         PokemonDetailCard(
                             pokemon = pokemon,
-                            modifier = Modifier.width(CARD_WIDTH),
+                            modifier = Modifier.width(cardWidth),
                             onPokemonClick = onPokemonClick
                         )
                     }

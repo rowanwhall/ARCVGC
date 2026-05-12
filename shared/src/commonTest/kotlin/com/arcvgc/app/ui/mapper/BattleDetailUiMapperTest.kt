@@ -9,6 +9,7 @@ import com.arcvgc.app.testutil.testPlayerDetail
 import com.arcvgc.app.testutil.testPokemonDetail
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -214,6 +215,56 @@ class BattleDetailUiMapperTest {
 
         assertNull(result.positionInSet)
         assertTrue(result.setMatches.isEmpty())
+    }
+
+    @Test
+    fun hasMoveDataTrueWhenAnyPokemonHasMoves() {
+        val detail = testMatchDetail()
+
+        val result = BattleDetailUiMapper.map(detail)
+
+        assertTrue(result.hasMoveData)
+    }
+
+    @Test
+    fun hasMoveDataFalseWhenAllPokemonHaveEmptyMoves() {
+        val closedPokemon = testPokemonDetail(moves = emptyList())
+        val detail = testMatchDetail(
+            players = listOf(
+                testPlayerDetail(team = listOf(closedPokemon, closedPokemon)),
+                testPlayerDetail(id = 2, name = "PlayerTwo", team = listOf(closedPokemon, closedPokemon))
+            )
+        )
+
+        val result = BattleDetailUiMapper.map(detail)
+
+        assertFalse(result.hasMoveData)
+    }
+
+    @Test
+    fun hasMoveDataTrueWhenOnlyOpponentHasMoves() {
+        // Future-proof: backend may return partial move info for only one team.
+        val closedPokemon = testPokemonDetail(moves = emptyList())
+        val openPokemon = testPokemonDetail()
+        val detail = testMatchDetail(
+            players = listOf(
+                testPlayerDetail(team = listOf(closedPokemon)),
+                testPlayerDetail(id = 2, name = "PlayerTwo", team = listOf(openPokemon))
+            )
+        )
+
+        val result = BattleDetailUiMapper.map(detail)
+
+        assertTrue(result.hasMoveData)
+    }
+
+    @Test
+    fun hasMoveDataFalseWhenBothTeamsEmpty() {
+        val detail = testMatchDetail(players = emptyList())
+
+        val result = BattleDetailUiMapper.map(detail)
+
+        assertFalse(result.hasMoveData)
     }
 
     @Test

@@ -50,7 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -165,7 +164,8 @@ fun BattleDetailPage(
     }
 }
 
-private val CARD_WIDTH = 280.dp
+private val OPEN_CARD_WIDTH = 260.dp
+private val CLOSED_CARD_WIDTH = 220.dp
 
 private data class GameButton(val positionInSet: Int?, val replayUrl: String, val isCurrent: Boolean)
 
@@ -279,11 +279,12 @@ private fun BattleDetailBody(
         }
 
         // Player teams
-        PlayerTeamSection(player = battleDetail.player1, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
+        val cardWidth = if (battleDetail.hasMoveData) OPEN_CARD_WIDTH else CLOSED_CARD_WIDTH
+        PlayerTeamSection(player = battleDetail.player1, cardWidth = cardWidth, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
 
         VsDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        PlayerTeamSection(player = battleDetail.player2, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
+        PlayerTeamSection(player = battleDetail.player2, cardWidth = cardWidth, showWinnerHighlight = showWinnerHighlight, onPokemonClick = onPokemonClick, onPlayerClick = onPlayerClick)
     }
 }
 
@@ -356,6 +357,7 @@ private fun PlayerTeamHeader(
 @Composable
 private fun PlayerTeamSection(
     player: PlayerDetailUiModel,
+    cardWidth: Dp,
     modifier: Modifier = Modifier,
     showWinnerHighlight: Boolean = true,
     onPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = null,
@@ -395,7 +397,7 @@ private fun PlayerTeamSection(
                 itemsIndexed(player.team) { _, pokemon ->
                     PokemonDetailCard(
                         pokemon = pokemon,
-                        modifier = Modifier.width(LocalConfiguration.current.screenWidthDp.dp * 0.7f),
+                        modifier = Modifier.width(cardWidth),
                         onPokemonClick = onPokemonClick
                     )
                 }
@@ -411,10 +413,10 @@ private fun PlayerTeamSection(
             modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp)
         ) {
             val availableForCards = maxWidth - innerPadding * 2
-            val columns = ((availableForCards + cardSpacing) / (CARD_WIDTH + cardSpacing))
+            val columns = ((availableForCards + cardSpacing) / (cardWidth + cardSpacing))
                 .toInt()
                 .coerceIn(1, player.team.size.coerceAtMost(3).coerceAtLeast(1))
-            val flowRowWidth = CARD_WIDTH * columns + cardSpacing * (columns - 1)
+            val flowRowWidth = cardWidth * columns + cardSpacing * (columns - 1)
             val containerWidth = flowRowWidth + innerPadding * 2
 
             Column(
@@ -438,7 +440,7 @@ private fun PlayerTeamSection(
                     player.team.forEach { pokemon ->
                         PokemonDetailCard(
                             pokemon = pokemon,
-                            modifier = Modifier.width(CARD_WIDTH),
+                            modifier = Modifier.width(cardWidth),
                             onPokemonClick = onPokemonClick
                         )
                     }
@@ -475,6 +477,38 @@ private fun BattleDetailPagePreview() {
             SetMatchUiModel(id = 2, positionInSet = 2, replayUrl = "https://replay.pokemonshowdown.com/example2"),
             SetMatchUiModel(id = 3, positionInSet = 3, replayUrl = "https://replay.pokemonshowdown.com/example3")
         )
+    )
+    MaterialTheme {
+        BattleDetailPage(
+            state = BattleDetailState(battleDetail = sampleBattle),
+            onBack = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun BattleDetailPageClosedTeamsheetPreview() {
+    val samplePokemon = PokemonDetailUiModel(
+        id = 149,
+        name = "Dragonite",
+        imageUrl = null,
+        item = null,
+        abilityName = null,
+        moves = emptyList(),
+        types = listOf(TypeUiModel("Dragon", null), TypeUiModel("Flying", null)),
+        teraType = null
+    )
+    val sampleBattle = BattleDetailUiModel(
+        id = 1,
+        player1 = PlayerDetailUiModel(id = 1, name = "Player1", isWinner = true, team = List(6) { samplePokemon }),
+        player2 = PlayerDetailUiModel(id = 2, name = "Opponent", isWinner = false, team = List(6) { samplePokemon }),
+        formatId = 1,
+        formatName = "VGC 2026 Reg H",
+        rating = 1542,
+        formattedTime = "Feb 8, 5:03 PM",
+        replayUrl = "https://replay.pokemonshowdown.com/example"
     )
     MaterialTheme {
         BattleDetailPage(

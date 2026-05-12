@@ -26,8 +26,6 @@ import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
 // PokemonNavTarget, PlayerNavTarget, PAGINATION_THRESHOLD, findBattle()
 // are in shared module: com.arcvgc.app.ui.contentlist.ContentListComponents
 
-internal val DETAIL_PANEL_MAX_WIDTH = 960.dp
-
 @Composable
 internal fun PokemonListRow(
     name: String,

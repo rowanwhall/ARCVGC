@@ -106,11 +106,12 @@ struct BattleDetailPage: View {
                             InfoButton { showReplayInfo = true }
                         }
 
-                        PlayerTeamDetailSection(player: battleDetail.player1, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
+                        let cardWidth: CGFloat = battleDetail.hasMoveData ? PlayerTeamDetailSection.openCardWidth : PlayerTeamDetailSection.closedCardWidth
+                        PlayerTeamDetailSection(player: battleDetail.player1, cardWidth: cardWidth, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
 
                         VsDivider()
 
-                        PlayerTeamDetailSection(player: battleDetail.player2, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
+                        PlayerTeamDetailSection(player: battleDetail.player2, cardWidth: cardWidth, showWinnerHighlight: showWinnerHighlight, onPokemonClick: wrappedOnPokemonClick, onPlayerClick: wrappedOnPlayerClick)
                     }
                     .padding(.bottom, 16)
                 }
@@ -157,6 +158,7 @@ struct BattleDetailPage: View {
 
 struct PlayerTeamDetailSection: View {
     let player: PlayerDetailUiModel
+    let cardWidth: CGFloat
     var showWinnerHighlight: Bool = true
     var onPokemonClick: ((Int32, String, String?, [String]) -> Void)? = nil
     var onPlayerClick: ((Int32, String) -> Void)? = nil
@@ -164,7 +166,8 @@ struct PlayerTeamDetailSection: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showCopied = false
 
-    private static let cardWidth: CGFloat = 280
+    static let openCardWidth: CGFloat = 260
+    static let closedCardWidth: CGFloat = 220
     private static let cardSpacing: CGFloat = 12
     private static let innerPadding: CGFloat = 16
 
@@ -251,7 +254,7 @@ struct PlayerTeamDetailSection: View {
                 HStack(spacing: Self.cardSpacing) {
                     ForEach(Array(player.team.enumerated()), id: \.offset) { _, pokemon in
                         PokemonDetailCard(pokemon: pokemon, onPokemonClick: onPokemonClick)
-                            .frame(width: min(UIScreen.main.bounds.width * 0.7, 320))
+                            .frame(width: cardWidth)
                     }
                 }
                 .padding(.horizontal, Self.innerPadding)
@@ -269,13 +272,13 @@ struct PlayerTeamDetailSection: View {
 
     private var expandedColumns: Int {
         let availableWidth = UIScreen.main.bounds.width - Self.innerPadding * 4
-        let fitted = Int((availableWidth + Self.cardSpacing) / (Self.cardWidth + Self.cardSpacing))
+        let fitted = Int((availableWidth + Self.cardSpacing) / (cardWidth + Self.cardSpacing))
         return max(1, min(fitted, 3, player.team.count))
     }
 
     private var expandedLayout: some View {
         let columns = expandedColumns
-        let gridWidth = Self.cardWidth * CGFloat(columns) + Self.cardSpacing * CGFloat(columns - 1)
+        let gridWidth = cardWidth * CGFloat(columns) + Self.cardSpacing * CGFloat(columns - 1)
         let containerWidth = gridWidth + Self.innerPadding * 2
         let rows = stride(from: 0, to: player.team.count, by: columns).map { startIndex in
             Array(player.team[startIndex..<min(startIndex + columns, player.team.count)])
@@ -289,11 +292,11 @@ struct PlayerTeamDetailSection: View {
                     HStack(spacing: Self.cardSpacing) {
                         ForEach(Array(row.enumerated()), id: \.offset) { _, pokemon in
                             PokemonDetailCard(pokemon: pokemon, onPokemonClick: onPokemonClick)
-                                .frame(width: Self.cardWidth)
+                                .frame(width: cardWidth)
                         }
                         if row.count < columns {
                             ForEach(0..<(columns - row.count), id: \.self) { _ in
-                                Color.clear.frame(width: Self.cardWidth)
+                                Color.clear.frame(width: cardWidth)
                             }
                         }
                     }

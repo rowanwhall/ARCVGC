@@ -469,11 +469,12 @@ fun ContentListPage(
                 // the column count changes during the transition, not the card size.
                 val battleCardCellWidth = computeBattleCardCellWidth(maxWidth)
                 // Dynamically size the pane so grid + 1dp divider + pane == maxWidth exactly.
-                // On wide viewports the pane gets its full DETAIL_PANEL_MAX_WIDTH and the grid
-                // takes the rest. On narrow viewports we shrink the pane and hold the grid at
-                // `battleCardCellWidth` so a battle card still fits in 1 column.
-                val panePostWidth = (maxWidth - battleCardCellWidth - 1.dp)
-                    .coerceIn(0.dp, DETAIL_PANEL_MAX_WIDTH)
+                // The pane is snapped down to a column-fitting threshold (see
+                // `snapDetailPaneWidth`) so it never has empty horizontal gutters beside
+                // the team-section cards; the leftover width returns to the grid.
+                val naturalPaneWidth = (maxWidth - battleCardCellWidth - 1.dp)
+                    .coerceAtLeast(0.dp)
+                val panePostWidth = snapDetailPaneWidth(naturalPaneWidth)
                 val gridWidthWhenPaneOpen = (maxWidth - panePostWidth - 1.dp)
                     .coerceAtLeast(battleCardCellWidth)
 
