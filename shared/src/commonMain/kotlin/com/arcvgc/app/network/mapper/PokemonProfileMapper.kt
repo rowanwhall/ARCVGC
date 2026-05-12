@@ -1,9 +1,8 @@
 package com.arcvgc.app.network.mapper
 
 import com.arcvgc.app.domain.model.PokemonProfile
-import com.arcvgc.app.domain.model.TopMatch
-import com.arcvgc.app.domain.model.TopMatchPlayer
-import com.arcvgc.app.domain.model.TopMatchSummary
+import com.arcvgc.app.domain.model.TopPlayer
+import com.arcvgc.app.domain.model.TopPlayerMatch
 import com.arcvgc.app.domain.model.TopStatAbility
 import com.arcvgc.app.domain.model.TopStatItem
 import com.arcvgc.app.domain.model.TopStatMove
@@ -12,10 +11,9 @@ import com.arcvgc.app.domain.model.TopStatTeraType
 import com.arcvgc.app.network.model.PokemonProfileDto
 import com.arcvgc.app.network.model.TopAbilityDto
 import com.arcvgc.app.network.model.TopItemDto
-import com.arcvgc.app.network.model.TopMatchDto
-import com.arcvgc.app.network.model.TopMatchPlayerDto
-import com.arcvgc.app.network.model.TopMatchSummaryDto
 import com.arcvgc.app.network.model.TopMoveDto
+import com.arcvgc.app.network.model.TopPlayerDto
+import com.arcvgc.app.network.model.TopPlayerMatchDto
 import com.arcvgc.app.network.model.TopTeammateDto
 import com.arcvgc.app.network.model.TopTeraTypeDto
 import com.arcvgc.app.network.normalizeImageUrl
@@ -38,7 +36,7 @@ fun PokemonProfileDto.toDomain(): PokemonProfile {
         topMoves = topMoves.orEmpty().map { it.toDomain() },
         topAbilities = topAbilities.orEmpty().map { it.toDomain() },
         topTeammates = topTeammates.orEmpty().map { it.toDomain() },
-        topMatches = topMatches.orEmpty().map { it.toDomain() }
+        topPlayers = topPlayers.orEmpty().map { it.toDomain() }
     )
 }
 
@@ -68,22 +66,23 @@ fun TopTeammateDto.toDomain(): TopStatTeammate {
     )
 }
 
-fun TopMatchDto.toDomain(): TopMatch {
-    return TopMatch(
-        match = match.toDomain(),
-        winningPlayer = winningPlayer.toDomain()
+fun TopPlayerDto.toDomain(): TopPlayer {
+    return TopPlayer(
+        id = id,
+        name = name,
+        topMatches = top5Matches.orEmpty().map { it.toDomain() },
+        rankedWinCount = rankedWinCount,
+        avgRating = avgRating,
+        maxRating = maxRating,
+        minRating = minRating
     )
 }
 
-fun TopMatchSummaryDto.toDomain(): TopMatchSummary {
-    return TopMatchSummary(
+fun TopPlayerMatchDto.toDomain(): TopPlayerMatch {
+    return TopPlayerMatch(
         id = id,
         showdownId = showdownId,
         uploadTime = uploadTime,
         rating = rating
     )
-}
-
-fun TopMatchPlayerDto.toDomain(): TopMatchPlayer {
-    return TopMatchPlayer(id = id, name = name)
 }

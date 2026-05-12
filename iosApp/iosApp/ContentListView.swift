@@ -9,6 +9,7 @@ struct ContentListView: View {
     @State private var playerNavTarget: PlayerNavTarget? = nil
     @State private var topPokemonFormatId: Int32? = nil
     @State private var showSubmitReplayDialog: Bool = false
+    @State private var topPlayerDialogTarget: ContentListItem.TopPlayerChipItem? = nil
     @FocusState private var isSearchFieldFocused: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @EnvironmentObject private var container: DependencyContainer
@@ -484,6 +485,36 @@ struct ContentListView: View {
             )
             .presentationDetents([.medium])
         }
+        .sheet(isPresented: Binding(
+            get: { topPlayerDialogTarget != nil },
+            set: { if !$0 { topPlayerDialogTarget = nil } }
+        )) {
+            if let player = topPlayerDialogTarget {
+                TopPlayerDialogView(
+                    player: player,
+                    onDismiss: { topPlayerDialogTarget = nil },
+                    onViewPlayer: { id, name in
+                        let derivedFormatId: Int32? = {
+                            switch mode {
+                            case .home: return viewModel.selectedFormatId
+                            case .topPokemon: return viewModel.selectedFormatId
+                            case .search(let params): return params.formatId
+                            case .pokemon: return viewModel.selectedFormatId
+                            case .player: return viewModel.selectedFormatId
+                            default: return nil
+                            }
+                        }()
+                        topPlayerDialogTarget = nil
+                        playerNavTarget = PlayerNavTarget(id: id, name: name, formatId: derivedFormatId)
+                    },
+                    onBattleClick: { battleId in
+                        topPlayerDialogTarget = nil
+                        selectedBattleId = battleId
+                    }
+                )
+                .presentationDetents([.medium, .large])
+            }
+        }
         .onAppear {
             if viewModel.state.items.isEmpty {
                 viewModel.loadContent()
@@ -712,6 +743,41 @@ struct ContentListView: View {
                         } else {
                             statChipBody(chip: chip)
                         }
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        case .topPlayerChipRow(let row):
+            let players = row.players as! [ContentListItem.TopPlayerChipItem]
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(players.enumerated()), id: \.element.id) { _, player in
+                        Button {
+                            topPlayerDialogTarget = player
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(player.name)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(Color(.label))
+                                    .lineLimit(1)
+                                if let rating = player.maxRating {
+                                    Text(String(rating.int32Value))
+                                        .font(.caption2)
+                                        .foregroundColor(Color(.label).opacity(0.75))
+                                        .lineLimit(1)
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(AppTokens.cardCornerRadius)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AppTokens.cardCornerRadius)
+                                    .stroke(Color(.opaqueSeparator), lineWidth: AppTokens.standardBorderWidth)
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 16)

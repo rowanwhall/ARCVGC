@@ -13,6 +13,7 @@ import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.mapper.ContentListItemMapper
+import com.arcvgc.app.ui.mapper.formatUploadTime
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.collectListKeys
 import com.arcvgc.app.ui.model.ContentListMode
@@ -532,7 +533,7 @@ class ContentListLogic(
     private fun reloadSections(): Set<String> = when (mode) {
         is ContentListMode.Home -> setOf("format_selector", HOME_TOP_POKEMON_SECTION, "Today's Top Battles")
         is ContentListMode.TopPokemon -> setOf("format_selector", "")
-        is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Battles")
+        is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Top Players", "Battles")
         is ContentListMode.Player -> setOf("format_selector", "Battles")
         else -> setOf("Battles")
     }
@@ -844,6 +845,32 @@ class ContentListLogic(
         }
         if (statSections.isNotEmpty()) {
             add(ContentListItem.SectionGroup(statSections))
+        }
+        if (profile.topPlayers.isNotEmpty()) {
+            val chips = profile.topPlayers.map { player ->
+                ContentListItem.TopPlayerChipItem(
+                    id = player.id,
+                    name = player.name,
+                    rankedWinCount = player.rankedWinCount,
+                    avgRating = player.avgRating?.toInt(),
+                    maxRating = player.maxRating,
+                    minRating = player.minRating,
+                    battles = player.topMatches.map { match ->
+                        ContentListItem.TopPlayerBattleItem(
+                            id = match.id,
+                            rating = match.rating,
+                            uploadTimeDisplay = formatUploadTime(match.uploadTime)
+                        )
+                    }
+                )
+            }
+            add(
+                ContentListItem.Section(
+                    header = "Top Players",
+                    items = listOf(ContentListItem.TopPlayerChipRow(chips)),
+                    alignContentStart = true
+                )
+            )
         }
     }
 

@@ -42,7 +42,15 @@ sealed class ContentListItem {
     data class Section(
         val header: String,
         val items: List<ContentListItem>,
-        val trailingAction: SectionAction? = null
+        val trailingAction: SectionAction? = null,
+        /**
+         * Desktop-web only. When true, header + content render flush to the
+         * left edge of the grid's content area instead of being horizontally
+         * centered on the content's natural width via `SectionContentAlignedHeader`.
+         * Other platforms always fill width + use horizontal padding so this
+         * flag is a no-op there.
+         */
+        val alignContentStart: Boolean = false
     ) : ContentListItem() {
         override val listKey get() = "section_$header"
     }
@@ -78,6 +86,27 @@ sealed class ContentListItem {
 
     data class StatChipRow(val chips: List<StatChipItem>, val id: String = "") : ContentListItem() {
         override val listKey get() = "stat_chip_row_$id"
+        override val edgeToEdge: Boolean get() = true
+    }
+
+    data class TopPlayerChipItem(
+        val id: Int,
+        val name: String,
+        val battles: List<TopPlayerBattleItem>,
+        val rankedWinCount: Int,
+        val avgRating: Int?,
+        val maxRating: Int?,
+        val minRating: Int?
+    )
+
+    data class TopPlayerBattleItem(
+        val id: Int,
+        val rating: Int?,
+        val uploadTimeDisplay: String
+    )
+
+    data class TopPlayerChipRow(val players: List<TopPlayerChipItem>) : ContentListItem() {
+        override val listKey get() = "top_player_chip_row"
         override val edgeToEdge: Boolean get() = true
     }
 

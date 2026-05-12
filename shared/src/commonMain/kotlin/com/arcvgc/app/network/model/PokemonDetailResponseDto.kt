@@ -28,27 +28,26 @@ data class PokemonProfileDto(
     @SerialName("top_moves") val topMoves: List<TopMoveDto>? = null,
     @SerialName("top_abilities") val topAbilities: List<TopAbilityDto>? = null,
     @SerialName("top_teammates") val topTeammates: List<TopTeammateDto>? = null,
-    @SerialName("top_matches") val topMatches: List<TopMatchDto>? = null
+    @SerialName("top_players") val topPlayers: List<TopPlayerDto>? = null
 )
 
 @Serializable
-data class TopMatchDto(
-    val match: TopMatchSummaryDto,
-    @SerialName("winning_player") val winningPlayer: TopMatchPlayerDto
+data class TopPlayerDto(
+    val id: Int,
+    val name: String,
+    @SerialName("top_5_matches") val top5Matches: List<TopPlayerMatchDto>? = null,
+    @SerialName("ranked_win_count") val rankedWinCount: Int = 0,
+    @SerialName("avg_rating") val avgRating: Double? = null,
+    @SerialName("max_rating") val maxRating: Int? = null,
+    @SerialName("min_rating") val minRating: Int? = null
 )
 
 @Serializable
-data class TopMatchSummaryDto(
+data class TopPlayerMatchDto(
     val id: Int,
     @SerialName("showdown_id") val showdownId: String,
     @SerialName("upload_time") val uploadTime: String,
     val rating: Int? = null
-)
-
-@Serializable
-data class TopMatchPlayerDto(
-    val id: Int,
-    val name: String
 )
 
 @Serializable

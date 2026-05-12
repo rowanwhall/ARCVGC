@@ -43,6 +43,7 @@ import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.components.BattleCard
 import com.arcvgc.app.ui.components.FillPokemonAvatar
 import com.arcvgc.app.ui.components.PokemonAvatar
+import com.arcvgc.app.ui.components.TopPlayerChip
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
@@ -54,7 +55,8 @@ internal fun ContentListItemRow(
     showWinnerHighlight: Boolean,
     onItemClick: (ContentListItem) -> Unit,
     onHighlightBattleClick: (Int) -> Unit = {},
-    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit = {}
+    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit = {},
+    onTopPlayerChipClick: (ContentListItem.TopPlayerChipItem) -> Unit = {}
 ) {
     when (item) {
         is ContentListItem.Battle -> {
@@ -235,6 +237,39 @@ internal fun ContentListItemRow(
                             imageUrl = chip.imageUrl,
                             pokemonId = chip.pokemonId,
                             onClick = chipClick(chip)
+                        )
+                    }
+                }
+            }
+        }
+        is ContentListItem.TopPlayerChipRow -> {
+            val isCompact = LocalWindowSizeClass.current == WindowSizeClass.Compact
+            if (isCompact) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    items(item.players, key = { it.id }) { player ->
+                        TopPlayerChip(
+                            name = player.name,
+                            maxRating = player.maxRating,
+                            onClick = { onTopPlayerChipClick(player) },
+                            compact = true
+                        )
+                    }
+                }
+            } else {
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item.players.forEach { player ->
+                        TopPlayerChip(
+                            name = player.name,
+                            maxRating = player.maxRating,
+                            onClick = { onTopPlayerChipClick(player) },
+                            compact = false
                         )
                     }
                 }

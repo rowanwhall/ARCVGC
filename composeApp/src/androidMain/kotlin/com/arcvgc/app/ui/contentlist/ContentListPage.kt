@@ -72,6 +72,7 @@ import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.GradientToolbar
 import com.arcvgc.app.ui.components.GradientToolbarHeight
 import com.arcvgc.app.ui.components.PokemonAvatar
+import com.arcvgc.app.ui.components.TopPlayerDialog
 import com.arcvgc.app.ui.components.TypeIconRow
 import com.arcvgc.app.ui.components.TypeInfo
 import com.arcvgc.app.domain.model.LookbackWindow
@@ -161,6 +162,7 @@ fun ContentListPage(
     var topPokemonFormatId by remember { mutableStateOf<Int?>(null) }
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
+    var topPlayerDialogTarget by remember { mutableStateOf<ContentListItem.TopPlayerChipItem?>(null) }
     var showSubmitReplayDialog by remember { mutableStateOf(false) }
 
     val statusBarHeight = if (consumeTopInsets) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
@@ -229,6 +231,7 @@ fun ContentListPage(
                     is ContentListItem.HighlightButtons -> {}
                     is ContentListItem.PokemonGrid -> {}
                     is ContentListItem.StatChipRow -> {}
+                    is ContentListItem.TopPlayerChipRow -> {}
                     is ContentListItem.FormatSelector -> {}
                     is ContentListItem.LookbackSelector -> {}
                     is ContentListItem.SearchField -> {}
@@ -246,6 +249,7 @@ fun ContentListPage(
                 }
                 pokemonNavTarget = PokemonNavTarget(pokemon.id, pokemon.name, pokemon.imageUrl, formatId = derivedFormatId)
             },
+            onTopPlayerChipClick = { player -> topPlayerDialogTarget = player },
             searchParams = (mode as? ContentListMode.Search)?.params,
             onSearchParamsChanged = onSearchParamsChanged,
             sortOrder = when (mode) {
@@ -469,6 +473,29 @@ fun ContentListPage(
         if (showSubmitReplayDialog) {
             SubmitReplayDialogHost(onDismiss = { showSubmitReplayDialog = false })
         }
+
+        topPlayerDialogTarget?.let { player ->
+            val dialogFormatId = when (mode) {
+                is ContentListMode.Home -> viewModel.selectedFormatId.value
+                is ContentListMode.TopPokemon -> viewModel.selectedFormatId.value
+                is ContentListMode.Search -> mode.params.formatId
+                is ContentListMode.Pokemon -> viewModel.selectedFormatId.value
+                is ContentListMode.Player -> viewModel.selectedFormatId.value
+                else -> null
+            }
+            TopPlayerDialog(
+                player = player,
+                onDismiss = { topPlayerDialogTarget = null },
+                onViewPlayer = { id, name ->
+                    topPlayerDialogTarget = null
+                    playerNavTarget = PlayerNavTarget(id, name, dialogFormatId)
+                },
+                onBattleClick = { battleId ->
+                    topPlayerDialogTarget = null
+                    selectedBattleId = battleId
+                }
+            )
+        }
     }
 }
 
@@ -494,6 +521,7 @@ private fun ContentListContent(
     onItemClick: (ContentListItem) -> Unit,
     onHighlightBattleClick: (Int) -> Unit = {},
     onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit = {},
+    onTopPlayerChipClick: (ContentListItem.TopPlayerChipItem) -> Unit = {},
     searchParams: SearchParams? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     sortOrder: OrderBy? = null,
@@ -758,7 +786,7 @@ private fun ContentListContent(
                                 items(items = topItem.items, key = { it.listKey }) { child ->
                                     val childModifier = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
                                     Box(modifier = childModifier.then(if (!child.edgeToEdge) itemPadding else Modifier)) {
-                                        ContentListItemRow(child, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                        ContentListItemRow(child, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick, onTopPlayerChipClick)
                                     }
                                 }
                             }
@@ -825,7 +853,7 @@ private fun ContentListContent(
                             }
                             else -> item(key = topItem.listKey) {
                                 Box(modifier = if (!topItem.edgeToEdge) itemPadding else Modifier) {
-                                    ContentListItemRow(topItem, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                    ContentListItemRow(topItem, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick, onTopPlayerChipClick)
                                 }
                             }
                         }

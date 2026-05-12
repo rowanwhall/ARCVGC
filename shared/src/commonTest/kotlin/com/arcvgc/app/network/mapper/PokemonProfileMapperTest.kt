@@ -3,10 +3,9 @@ package com.arcvgc.app.network.mapper
 import com.arcvgc.app.network.model.PokemonProfileDto
 import com.arcvgc.app.network.model.TopAbilityDto
 import com.arcvgc.app.network.model.TopItemDto
-import com.arcvgc.app.network.model.TopMatchDto
-import com.arcvgc.app.network.model.TopMatchPlayerDto
-import com.arcvgc.app.network.model.TopMatchSummaryDto
 import com.arcvgc.app.network.model.TopMoveDto
+import com.arcvgc.app.network.model.TopPlayerDto
+import com.arcvgc.app.network.model.TopPlayerMatchDto
 import com.arcvgc.app.network.model.TopTeammateDto
 import com.arcvgc.app.network.model.TopTeraTypeDto
 import com.arcvgc.app.network.model.TypeDto
@@ -122,7 +121,7 @@ class PokemonProfileMapperTest {
             topMoves = emptyList(),
             topAbilities = emptyList(),
             topTeammates = emptyList(),
-            topMatches = emptyList()
+            topPlayers = emptyList()
         )
 
         val result = dto.toDomain()
@@ -132,49 +131,59 @@ class PokemonProfileMapperTest {
         assertTrue(result.topMoves.isEmpty())
         assertTrue(result.topAbilities.isEmpty())
         assertTrue(result.topTeammates.isEmpty())
-        assertTrue(result.topMatches.isEmpty())
+        assertTrue(result.topPlayers.isEmpty())
     }
 
     @Test
-    fun pokemonProfileDto_mapsTopMatches() {
+    fun pokemonProfileDto_mapsTopPlayers() {
         val dto = testPokemonProfileDto()
 
         val result = dto.toDomain()
 
-        assertEquals(2, result.topMatches.size)
-        val first = result.topMatches[0]
-        assertEquals(161755, first.match.id)
-        assertEquals("gen9championsvgc2026regmabo3-2605822168", first.match.showdownId)
-        assertEquals("2026-05-09T15:59:36", first.match.uploadTime)
-        assertEquals(1253, first.match.rating)
-        assertEquals(11594, first.winningPlayer.id)
-        assertEquals("dambro222", first.winningPlayer.name)
+        assertEquals(2, result.topPlayers.size)
+        val first = result.topPlayers[0]
+        assertEquals(11594, first.id)
+        assertEquals("dambro222", first.name)
+        assertEquals(3, first.rankedWinCount)
+        assertEquals(1361.3, first.avgRating!!, 0.001)
+        assertEquals(1408, first.maxRating)
+        assertEquals(1314, first.minRating)
+        assertEquals(2, first.topMatches.size)
+        assertEquals(161755, first.topMatches[0].id)
+        assertEquals("gen9championsvgc2026regmabo3-2605822168", first.topMatches[0].showdownId)
+        assertEquals("2026-05-09T15:59:36", first.topMatches[0].uploadTime)
+        assertEquals(1253, first.topMatches[0].rating)
     }
 
     @Test
-    fun pokemonProfileDto_mapsTopMatches_withNullRating() {
+    fun pokemonProfileDto_mapsTopPlayers_withNullRating() {
         val dto = testPokemonProfileDto(
-            topMatches = listOf(
-                TopMatchDto(
-                    match = TopMatchSummaryDto(
-                        id = 99,
-                        showdownId = "unrated-match-id",
-                        uploadTime = "2026-05-09T15:59:36",
-                        rating = null
-                    ),
-                    winningPlayer = TopMatchPlayerDto(id = 1, name = "anon")
+            topPlayers = listOf(
+                TopPlayerDto(
+                    id = 1,
+                    name = "anon",
+                    top5Matches = listOf(
+                        TopPlayerMatchDto(
+                            id = 99,
+                            showdownId = "unrated-match-id",
+                            uploadTime = "2026-05-09T15:59:36",
+                            rating = null
+                        )
+                    )
                 )
             )
         )
 
         val result = dto.toDomain()
 
-        assertEquals(1, result.topMatches.size)
-        assertNull(result.topMatches[0].match.rating)
+        assertEquals(1, result.topPlayers.size)
+        assertEquals(1, result.topPlayers[0].topMatches.size)
+        assertNull(result.topPlayers[0].topMatches[0].rating)
+        assertNull(result.topPlayers[0].avgRating)
     }
 
     @Test
-    fun pokemonProfileDto_omittedTopMatches_mapsToEmptyList() {
+    fun pokemonProfileDto_omittedTopPlayers_mapsToEmptyList() {
         val dto = PokemonProfileDto(
             id = 1,
             name = "Test",
@@ -185,7 +194,7 @@ class PokemonProfileMapperTest {
 
         val result = dto.toDomain()
 
-        assertTrue(result.topMatches.isEmpty())
+        assertTrue(result.topPlayers.isEmpty())
     }
 
     @Test
@@ -227,24 +236,37 @@ class PokemonProfileMapperTest {
             TopTeammateDto(count = 632, id = 1000, name = "Chien-Pao", pokedexNumber = 1002, imageUrl = "https://arcvgc.com/static/images/pokemon/chien-pao.png"),
             TopTeammateDto(count = 607, id = 1382, name = "Zamazenta-Crowned", pokedexNumber = 889, imageUrl = "https://arcvgc.com/static/images/pokemon/zamazenta-crowned.png")
         ),
-        topMatches: List<TopMatchDto> = listOf(
-            TopMatchDto(
-                match = TopMatchSummaryDto(
-                    id = 161755,
-                    showdownId = "gen9championsvgc2026regmabo3-2605822168",
-                    uploadTime = "2026-05-09T15:59:36",
-                    rating = 1253
+        topPlayers: List<TopPlayerDto> = listOf(
+            TopPlayerDto(
+                id = 11594,
+                name = "dambro222",
+                top5Matches = listOf(
+                    TopPlayerMatchDto(
+                        id = 161755,
+                        showdownId = "gen9championsvgc2026regmabo3-2605822168",
+                        uploadTime = "2026-05-09T15:59:36",
+                        rating = 1253
+                    ),
+                    TopPlayerMatchDto(
+                        id = 154801,
+                        showdownId = "gen9championsvgc2026regmabo3-2601590987",
+                        uploadTime = "2026-05-04T14:59:43",
+                        rating = 1534
+                    )
                 ),
-                winningPlayer = TopMatchPlayerDto(id = 11594, name = "dambro222")
+                rankedWinCount = 3,
+                avgRating = 1361.3,
+                maxRating = 1408,
+                minRating = 1314
             ),
-            TopMatchDto(
-                match = TopMatchSummaryDto(
-                    id = 154801,
-                    showdownId = "gen9championsvgc2026regmabo3-2601590987",
-                    uploadTime = "2026-05-04T14:59:43",
-                    rating = 1534
-                ),
-                winningPlayer = TopMatchPlayerDto(id = 20, name = "darthmorton")
+            TopPlayerDto(
+                id = 20,
+                name = "darthmorton",
+                top5Matches = emptyList(),
+                rankedWinCount = 1,
+                avgRating = 1534.0,
+                maxRating = 1534,
+                minRating = 1534
             )
         )
     ) = PokemonProfileDto(
@@ -265,6 +287,6 @@ class PokemonProfileMapperTest {
         topMoves = topMoves,
         topAbilities = topAbilities,
         topTeammates = topTeammates,
-        topMatches = topMatches
+        topPlayers = topPlayers
     )
 }

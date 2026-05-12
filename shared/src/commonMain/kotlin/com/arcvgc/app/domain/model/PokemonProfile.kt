@@ -17,7 +17,7 @@ data class PokemonProfile(
     val topMoves: List<TopStatMove> = emptyList(),
     val topAbilities: List<TopStatAbility> = emptyList(),
     val topTeammates: List<TopStatTeammate> = emptyList(),
-    val topMatches: List<TopMatch> = emptyList()
+    val topPlayers: List<TopPlayer> = emptyList()
 ) {
     fun toPokemonListItem(): PokemonListItem = PokemonListItem(
         id = id,
@@ -63,19 +63,19 @@ data class TopStatTeammate(
     val imageUrl: String?
 )
 
-data class TopMatch(
-    val match: TopMatchSummary,
-    val winningPlayer: TopMatchPlayer
+data class TopPlayer(
+    val id: Int,
+    val name: String,
+    val topMatches: List<TopPlayerMatch> = emptyList(),
+    val rankedWinCount: Int = 0,
+    val avgRating: Double? = null,
+    val maxRating: Int? = null,
+    val minRating: Int? = null
 )
 
-data class TopMatchSummary(
+data class TopPlayerMatch(
     val id: Int,
     val showdownId: String,
     val uploadTime: String,
     val rating: Int?
-)
-
-data class TopMatchPlayer(
-    val id: Int,
-    val name: String
 )

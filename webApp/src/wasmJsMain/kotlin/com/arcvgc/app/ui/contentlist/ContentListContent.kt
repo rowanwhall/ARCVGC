@@ -129,6 +129,7 @@ internal fun ContentListContent(
     val onItemClick = callbacks.onItemClick
     val onHighlightBattleClick = callbacks.onHighlightBattleClick
     val onPokemonGridClick = callbacks.onPokemonGridClick
+    val onTopPlayerChipClick = callbacks.onTopPlayerChipClick
     val onSearchParamsChanged = callbacks.onSearchParamsChanged
     val onToggleSortOrder = callbacks.onToggleSortOrder
     val onFormatSelected = callbacks.onFormatSelected
@@ -269,7 +270,8 @@ internal fun ContentListContent(
                                     showWinnerHighlight = showWinnerHighlight,
                                     onItemClick = onItemClick,
                                     onHighlightBattleClick = onHighlightBattleClick,
-                                    onPokemonGridClick = onPokemonGridClick
+                                    onPokemonGridClick = onPokemonGridClick,
+                                    onTopPlayerChipClick = onTopPlayerChipClick
                                 )
                             }
                         }
@@ -394,11 +396,37 @@ internal fun ContentListContent(
                                         animatedItem(key = child.listKey, span = fullSpan) {
                                             if (child.edgeToEdge) {
                                                 Box(modifier = loadingMod.escapeGridHorizontalPadding()) {
-                                                    ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                                    ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick, onTopPlayerChipClick)
                                                 }
                                             } else {
                                                 CenteredItem(modifier = loadingMod) {
-                                                    ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                                    ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick, onTopPlayerChipClick)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (topItem.alignContentStart) {
+                                animatedItem(key = topItem.listKey, span = fullSpan) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing)
+                                    ) {
+                                        if (topItem.header.isNotEmpty()) {
+                                            Text(
+                                                text = topItem.header,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                        val loadingMod = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
+                                        if (topItem.items.isEmpty() && !isLoadingSection) {
+                                            EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
+                                        } else {
+                                            Column(modifier = loadingMod.fillMaxWidth()) {
+                                                topItem.items.forEach { child ->
+                                                    ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick, onTopPlayerChipClick)
                                                 }
                                             }
                                         }
@@ -438,7 +466,7 @@ internal fun ContentListContent(
                                                                 tileWidth = topPokemonTileWidth
                                                             )
                                                         } else {
-                                                            ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                                            ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick, onTopPlayerChipClick)
                                                         }
                                                     }
                                                 }
@@ -462,7 +490,7 @@ internal fun ContentListContent(
                         }
                         else -> animatedItem(key = topItem.listKey, span = fullSpan) {
                             CenteredItem {
-                                ContentListItemRow(topItem, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick)
+                                ContentListItemRow(topItem, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick, onTopPlayerChipClick)
                             }
                         }
                     }
@@ -894,7 +922,8 @@ private fun SectionGroupLayout(
     showWinnerHighlight: Boolean,
     onItemClick: (ContentListItem) -> Unit,
     onHighlightBattleClick: (Int) -> Unit,
-    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit
+    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit,
+    onTopPlayerChipClick: (ContentListItem.TopPlayerChipItem) -> Unit = {}
 ) {
     val cols = sectionGroupColumnCount(contentMaxWidth, group.sections.size)
     SubcomposeLayout { constraints ->
@@ -921,7 +950,8 @@ private fun SectionGroupLayout(
                     showWinnerHighlight = showWinnerHighlight,
                     onItemClick = onItemClick,
                     onHighlightBattleClick = onHighlightBattleClick,
-                    onPokemonGridClick = onPokemonGridClick
+                    onPokemonGridClick = onPokemonGridClick,
+                    onTopPlayerChipClick = onTopPlayerChipClick
                 )
             }.map { it.measure(colConstraints) }
         }
@@ -971,7 +1001,8 @@ private fun SectionGroupItem(
     showWinnerHighlight: Boolean,
     onItemClick: (ContentListItem) -> Unit,
     onHighlightBattleClick: (Int) -> Unit,
-    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit
+    onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit,
+    onTopPlayerChipClick: (ContentListItem.TopPlayerChipItem) -> Unit = {}
 ) {
     val loadingMod = if (isLoading) Modifier.alpha(0.5f) else Modifier
     Column(
@@ -994,7 +1025,8 @@ private fun SectionGroupItem(
                     showWinnerHighlight = showWinnerHighlight,
                     onItemClick = onItemClick,
                     onHighlightBattleClick = onHighlightBattleClick,
-                    onPokemonGridClick = onPokemonGridClick
+                    onPokemonGridClick = onPokemonGridClick,
+                    onTopPlayerChipClick = onTopPlayerChipClick
                 )
             }
         }

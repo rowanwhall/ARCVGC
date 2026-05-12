@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.arcvgc.app.ui.model.ContentListItem
 
 // Previews for shared module composables in com.arcvgc.app.ui.components
 
@@ -163,6 +164,64 @@ private fun SubmitReplayDialogErrorPreview() {
             error = "Replay URL is invalid",
             hasClipboardText = false,
             onPasteClipboard = { null }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TopPlayerChipCompactPreview() {
+    MaterialTheme {
+        TopPlayerChip(
+            name = "DragonClaw99",
+            maxRating = 1850,
+            onClick = {},
+            compact = true
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TopPlayerChipInlinePreview() {
+    MaterialTheme {
+        TopPlayerChip(
+            name = "DragonClaw99",
+            maxRating = 1850,
+            onClick = {},
+            compact = false
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TopPlayerDialogPreview() {
+    MaterialTheme {
+        TopPlayerDialog(
+            player = ContentListItem.TopPlayerChipItem(
+                id = 1,
+                name = "DragonClaw99",
+                battles = listOf(
+                    ContentListItem.TopPlayerBattleItem(
+                        id = 100,
+                        rating = 1850,
+                        uploadTimeDisplay = "May 9, 5:30 PM"
+                    ),
+                    ContentListItem.TopPlayerBattleItem(
+                        id = 101,
+                        rating = null,
+                        uploadTimeDisplay = "May 7, 2:15 PM"
+                    )
+                ),
+                rankedWinCount = 5,
+                avgRating = 1700,
+                maxRating = 1850,
+                minRating = 1500
+            ),
+            onDismiss = {},
+            onViewPlayer = { _, _ -> },
+            onBattleClick = {}
         )
     }
 }

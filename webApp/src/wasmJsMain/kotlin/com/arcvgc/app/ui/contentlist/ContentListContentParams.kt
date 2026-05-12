@@ -29,6 +29,7 @@ internal data class ContentListCallbacks(
     val onItemClick: (ContentListItem) -> Unit,
     val onHighlightBattleClick: (Int) -> Unit = {},
     val onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit = {},
+    val onTopPlayerChipClick: (ContentListItem.TopPlayerChipItem) -> Unit = {},
     val onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     val onToggleSortOrder: (() -> Unit)? = null,
     val onFormatSelected: ((Int) -> Unit)? = null,

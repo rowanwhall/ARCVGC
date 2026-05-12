@@ -52,6 +52,7 @@ import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.components.GradientToolbar
+import com.arcvgc.app.ui.components.TopPlayerDialog
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FavoriteContentType
@@ -125,6 +126,7 @@ fun ContentListPage(
     var pokemonNavTarget by remember(viewModel) { mutableStateOf<PokemonNavTarget?>(null) }
     var playerNavTarget by remember(viewModel) { mutableStateOf<PlayerNavTarget?>(null) }
     var topPokemonFormatId by remember { mutableStateOf<Int?>(null) }
+    var topPlayerDialogTarget by remember { mutableStateOf<ContentListItem.TopPlayerChipItem?>(null) }
     val gridState = remember(viewModel) {
         LazyGridState(
             firstVisibleItemIndex = viewModel.savedScrollIndex,
@@ -330,6 +332,7 @@ fun ContentListPage(
                 is ContentListItem.HighlightButtons,
                 is ContentListItem.PokemonGrid,
                 is ContentListItem.StatChipRow,
+                is ContentListItem.TopPlayerChipRow,
                 is ContentListItem.FormatSelector,
                 is ContentListItem.LookbackSelector,
                 is ContentListItem.SearchField -> {}
@@ -342,6 +345,7 @@ fun ContentListPage(
                 derivedFormatId(mode, viewModel.selectedFormatId.value)
             )
         },
+        onTopPlayerChipClick = { player -> topPlayerDialogTarget = player },
         onSearchParamsChanged = onSearchParamsChanged,
         onToggleSortOrder = when (mode) {
             is ContentListMode.Search, is ContentListMode.Pokemon, is ContentListMode.Player -> viewModel::toggleSortOrder
@@ -640,6 +644,26 @@ fun ContentListPage(
 
         if (showSubmitReplayDialog) {
             SubmitReplayDialogHost(onDismiss = { showSubmitReplayDialog = false })
+        }
+
+        topPlayerDialogTarget?.let { player ->
+            val dialogFormatId = derivedFormatId(mode, viewModel.selectedFormatId.value)
+            TopPlayerDialog(
+                player = player,
+                onDismiss = { topPlayerDialogTarget = null },
+                onViewPlayer = { id, name ->
+                    topPlayerDialogTarget = null
+                    navigateToPlayer(id, name, dialogFormatId)
+                },
+                onBattleClick = { battleId ->
+                    topPlayerDialogTarget = null
+                    if (isCompact && battleOverlay != null) {
+                        battleOverlay(BattleOverlayRequest(battleId = battleId))
+                    } else {
+                        selectedBattleId = battleId
+                    }
+                }
+            )
         }
     }
 }
