@@ -2,6 +2,7 @@ package com.arcvgc.app.data
 
 import com.arcvgc.app.domain.model.DeepLink
 import com.arcvgc.app.domain.model.DeepLinkTarget
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.NetworkResult
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PokemonListItem
@@ -32,13 +33,20 @@ class DeepLinkResolver(
 
     sealed class ResolvedLink {
         data object Home : ResolvedLink()
-        data class Pokemon(val item: PokemonListItem) : ResolvedLink()
+        data class Pokemon(
+            val item: PokemonListItem,
+            val lookback: LookbackWindow? = null
+        ) : ResolvedLink()
         data class Player(val item: PlayerListItem) : ResolvedLink()
         data class Favorites(val contentType: FavoriteContentType) : ResolvedLink()
         data class Search(val params: SearchParams) : ResolvedLink()
         data object SearchTab : ResolvedLink()
         data object SettingsTab : ResolvedLink()
-        data class TopPokemon(val formatId: Int?, val pokemonItem: PokemonListItem? = null) : ResolvedLink()
+        data class TopPokemon(
+            val formatId: Int?,
+            val pokemonItem: PokemonListItem? = null,
+            val lookback: LookbackWindow? = null
+        ) : ResolvedLink()
     }
 
     suspend fun resolve(deepLink: DeepLink): ResolvedLink? = resolve(deepLink.target)
@@ -47,7 +55,10 @@ class DeepLinkResolver(
         is DeepLinkTarget.Home -> ResolvedLink.Home
         is DeepLinkTarget.Pokemon -> {
             when (val result = apiService.getPokemonById(target.id)) {
-                is NetworkResult.Success -> ResolvedLink.Pokemon(result.data.toPokemonListItem())
+                is NetworkResult.Success -> ResolvedLink.Pokemon(
+                    item = result.data.toPokemonListItem(),
+                    lookback = target.lookback
+                )
                 is NetworkResult.Error -> null
             }
         }
@@ -76,7 +87,7 @@ class DeepLinkResolver(
                     is NetworkResult.Error -> null
                 }
             }
-            ResolvedLink.TopPokemon(target.formatId, pokemonItem)
+            ResolvedLink.TopPokemon(target.formatId, pokemonItem, target.lookback)
         }
     }
 

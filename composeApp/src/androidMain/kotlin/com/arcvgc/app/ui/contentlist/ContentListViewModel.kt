@@ -47,9 +47,16 @@ class ContentListViewModel @Inject constructor(
     private val _selectedLookback = MutableStateFlow(LookbackWindow.All)
     val selectedLookback: StateFlow<LookbackWindow> = _selectedLookback.asStateFlow()
 
+    // Mirrors the web `lastAppliedUsageFormatTick` pattern: each deep link that
+    // carries a lookback bumps a tick on the composition side; this counter
+    // tracks the most recent tick already applied so re-entering composition
+    // (tab switches, recomposition) with the same tick doesn't clobber a
+    // lookback the user has since changed in the UI.
+    var lastAppliedLookbackTick: Int = 0
+
     private var initialized = false
 
-    fun initialize(mode: ContentListMode) {
+    fun initialize(mode: ContentListMode, initialLookback: LookbackWindow = LookbackWindow.All) {
         if (initialized) return
         initialized = true
         val l = ContentListLogic(
@@ -60,6 +67,7 @@ class ContentListViewModel @Inject constructor(
             mode = mode,
             pokemonCatalogItems = pokemonCatalogRepository.state.value.items,
             pokemonCatalogState = pokemonCatalogRepository.state,
+            initialLookback = initialLookback,
             settingsRepository = settingsRepository.shared,
             isFormatHistoric = { id ->
                 formatCatalogRepository.state.value.items.find { it.id == id }?.isHistoric == true

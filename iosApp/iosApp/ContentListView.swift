@@ -18,6 +18,8 @@ struct ContentListView: View {
     @ObservedObject private var favoritesStore: FavoritesStore
     @ObservedObject private var settingsStore: SettingsStore
     private let onSearchParamsChanged: ((SearchParams) -> Void)?
+    private let pendingLookback: LookbackWindow?
+    private let pendingLookbackTick: Int32
 
     private var hasSortToggle: Bool {
         switch mode {
@@ -50,14 +52,16 @@ struct ContentListView: View {
         )
     }
 
-    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], onSearchParamsChanged: ((SearchParams) -> Void)? = nil) {
+    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore, settingsStore: SettingsStore, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], onSearchParamsChanged: ((SearchParams) -> Void)? = nil, initialLookback: LookbackWindow = .all, pendingLookback: LookbackWindow? = nil, pendingLookbackTick: Int32 = 0) {
         self.repository = repository
         self.mode = mode
         self.favoritesStore = favoritesStore
         self.settingsStore = settingsStore
         self.appConfigStore = appConfigStore
         self.onSearchParamsChanged = onSearchParamsChanged
-        _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems, appConfigStore: appConfigStore, formatItems: formatItems, settingsStore: settingsStore))
+        self.pendingLookback = pendingLookback
+        self.pendingLookbackTick = pendingLookbackTick
+        _viewModel = StateObject(wrappedValue: ContentListViewModel(repository: repository, mode: mode, favoritesStore: favoritesStore, pokemonCatalogItems: pokemonCatalogItems, appConfigStore: appConfigStore, formatItems: formatItems, settingsStore: settingsStore, initialLookback: initialLookback))
     }
 
     private func buildShareUrl(battleId: Int32? = nil) -> String {
@@ -484,6 +488,10 @@ struct ContentListView: View {
             if viewModel.state.items.isEmpty {
                 viewModel.loadContent()
             }
+            applyPendingLookbackIfNeeded()
+        }
+        .onChange(of: pendingLookbackTick) {
+            applyPendingLookbackIfNeeded()
         }
         .onChange(of: favoritesStore.favoritePokemonIds) {
             if case .favorites(contentType: .pokemon) = mode {
@@ -495,6 +503,18 @@ struct ContentListView: View {
                 viewModel.loadContent()
             }
         }
+    }
+
+    /// Applies a deep-link lookback at most once per tick. Re-attaching the
+    /// view (tab re-render with the same tick) is a no-op, so a deep link
+    /// without a `?lookback` param won't clobber the user's selection.
+    private func applyPendingLookbackIfNeeded() {
+        guard let lookback = pendingLookback,
+              pendingLookbackTick > viewModel.lastAppliedLookbackTick else {
+            return
+        }
+        viewModel.lastAppliedLookbackTick = pendingLookbackTick
+        viewModel.selectLookback(lookback)
     }
 
     @ViewBuilder

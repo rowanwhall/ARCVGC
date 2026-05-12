@@ -25,6 +25,13 @@ private struct ThemedContentView: View {
     @State private var deepLinkReplayNavState: ReplayNavState?
     @State private var deepLinkFavoritesSubTab: Int?
     @State private var deepLinkSearchParams: SearchParams?
+    // Pending lookback to apply on the Usage tab from a deep link. The tick
+    // increments on each new fire so `ContentListView` applies it exactly once
+    // per fire (comparing against `viewModel.lastAppliedLookbackTick`). Nil
+    // means the deep link carried no `?lookback` — in that case we leave the
+    // user's existing selection alone.
+    @State private var deepLinkTopPokemonLookback: LookbackWindow?
+    @State private var deepLinkTopPokemonLookbackTick: Int32 = 0
 
     private var requiresUpgrade: Bool {
         guard let config = appConfigStore.config else { return false }
@@ -53,7 +60,8 @@ private struct ThemedContentView: View {
                                 mode: .pokemon(id: target.id, name: target.name, imageUrl: target.imageUrl, typeImageUrl1: target.typeImageUrl1, typeImageUrl2: target.typeImageUrl2, formatId: target.formatId),
                                 favoritesStore: container.favoritesStore,
                                 settingsStore: container.settingsStore,
-                                appConfigStore: container.appConfigStore
+                                appConfigStore: container.appConfigStore,
+                                initialLookback: target.lookback ?? .all
                             )
                         case .player(let target):
                             ContentListView(
@@ -98,7 +106,10 @@ private struct ThemedContentView: View {
                     mode: .topPokemon(),
                     favoritesStore: container.favoritesStore,
                     settingsStore: container.settingsStore,
-                    appConfigStore: container.appConfigStore
+                    appConfigStore: container.appConfigStore,
+                    initialLookback: deepLinkTopPokemonLookback ?? .all,
+                    pendingLookback: deepLinkTopPokemonLookback,
+                    pendingLookbackTick: deepLinkTopPokemonLookbackTick
                 )
             }
             .tabItem {
@@ -173,8 +184,17 @@ private struct ThemedContentView: View {
                 selectedTab = 2
             case .settingsTab:
                 selectedTab = 4
-            case .topPokemon:
+            case .topPokemon(_, let lookback):
                 selectedTab = 1
+                // Bump the tick so `ContentListView` re-applies the lookback
+                // even if the Usage VM is already constructed (otherwise the
+                // idempotent `initialLookback` ctor seed would be ignored).
+                // No tick bump when the deep link carries no lookback — that
+                // preserves the user's current selection.
+                deepLinkTopPokemonLookback = lookback
+                if lookback != nil {
+                    deepLinkTopPokemonLookbackTick += 1
+                }
             }
         }
         .fullScreenCover(isPresented: Binding(

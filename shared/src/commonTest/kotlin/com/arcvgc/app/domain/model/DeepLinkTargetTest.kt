@@ -306,6 +306,109 @@ class DeepLinkTargetTest {
         assertNull(parseDeepLink("/top-pokemon"))
     }
 
+    // Lookback query param
+
+    @Test
+    fun parsePokemonWithLookback() {
+        val result = parseDeepLink("/pokemon/150?lookback=day")!!
+        val target = result.target as DeepLinkTarget.Pokemon
+        assertEquals(150, target.id)
+        assertEquals(LookbackWindow.Day, target.lookback)
+    }
+
+    @Test
+    fun parsePokemonWithLookbackAndBattle() {
+        val result = parseDeepLink("/pokemon/150?lookback=week&battle=42")!!
+        val target = result.target as DeepLinkTarget.Pokemon
+        assertEquals(150, target.id)
+        assertEquals(LookbackWindow.Week, target.lookback)
+        assertEquals(42, result.battleId)
+    }
+
+    @Test
+    fun parsePokemonWithBogusLookbackIgnoresIt() {
+        val result = parseDeepLink("/pokemon/150?lookback=forever")!!
+        val target = result.target as DeepLinkTarget.Pokemon
+        assertEquals(150, target.id)
+        assertNull(target.lookback)
+    }
+
+    @Test
+    fun parseTopPokemonWithLookback() {
+        val result = parseDeepLink("/usage?f=5&lookback=week")!!
+        val target = result.target as DeepLinkTarget.TopPokemon
+        assertEquals(5, target.formatId)
+        assertNull(target.pokemonId)
+        assertEquals(LookbackWindow.Week, target.lookback)
+    }
+
+    @Test
+    fun parseTopPokemonWithAllFields() {
+        val result = parseDeepLink("/usage?f=5&pokemon=150&lookback=30days")!!
+        val target = result.target as DeepLinkTarget.TopPokemon
+        assertEquals(5, target.formatId)
+        assertEquals(150, target.pokemonId)
+        assertEquals(LookbackWindow.ThirtyDays, target.lookback)
+    }
+
+    @Test
+    fun encodePokemonPathNoLookback() {
+        assertEquals("/pokemon/150", encodePokemonPath(150))
+        assertEquals("/pokemon/150", encodePokemonPath(150, lookback = LookbackWindow.All))
+    }
+
+    @Test
+    fun encodePokemonPathWithLookbackRoundTrip() {
+        val encoded = encodePokemonPath(150, lookback = LookbackWindow.Week)
+        assertEquals("/pokemon/150?lookback=week", encoded)
+        val parsed = parseDeepLink(encoded)!!
+        val target = parsed.target as DeepLinkTarget.Pokemon
+        assertEquals(150, target.id)
+        assertEquals(LookbackWindow.Week, target.lookback)
+    }
+
+    @Test
+    fun encodeTopPokemonPathWithLookback() {
+        val encoded = encodeTopPokemonPath(formatId = 5, lookback = LookbackWindow.ThirtyDays)
+        assertEquals("/usage?f=5&lookback=30days", encoded)
+        val parsed = parseDeepLink(encoded)!!
+        val target = parsed.target as DeepLinkTarget.TopPokemon
+        assertEquals(5, target.formatId)
+        assertEquals(LookbackWindow.ThirtyDays, target.lookback)
+    }
+
+    @Test
+    fun encodeTopPokemonPathOmitsLookbackWhenAll() {
+        val encoded = encodeTopPokemonPath(formatId = 5, lookback = LookbackWindow.All)
+        assertEquals("/usage?f=5", encoded)
+    }
+
+    @Test
+    fun parseTopPokemonLookbackOnlyNoFormat() {
+        val result = parseDeepLink("/usage?lookback=week")!!
+        val target = result.target as DeepLinkTarget.TopPokemon
+        assertNull(target.formatId)
+        assertNull(target.pokemonId)
+        assertEquals(LookbackWindow.Week, target.lookback)
+    }
+
+    @Test
+    fun parseTopPokemonLookbackAllExplicit() {
+        // Encoder omits `lookback=all`, but the parser still accepts it explicitly.
+        // Pins the intentional encode/parse asymmetry.
+        val result = parseDeepLink("/usage?lookback=all")!!
+        val target = result.target as DeepLinkTarget.TopPokemon
+        assertEquals(LookbackWindow.All, target.lookback)
+    }
+
+    @Test
+    fun parsePokemonLookbackAllExplicit() {
+        val result = parseDeepLink("/pokemon/150?lookback=all")!!
+        val target = result.target as DeepLinkTarget.Pokemon
+        assertEquals(150, target.id)
+        assertEquals(LookbackWindow.All, target.lookback)
+    }
+
     // Tab deep links
 
     @Test

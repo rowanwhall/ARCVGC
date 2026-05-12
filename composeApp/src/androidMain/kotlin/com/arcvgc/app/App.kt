@@ -59,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arcvgc.app.data.DeepLinkResolver
 import com.arcvgc.app.data.repository.AppConfigRepository
 import com.arcvgc.app.domain.model.DeepLink
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.battledetail.BattleDetailPage
 import com.arcvgc.app.ui.battledetail.BattleDetailViewModel
@@ -234,6 +235,14 @@ fun App(deepLink: DeepLink? = null) {
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
         var searchOverlayParams by remember { mutableStateOf<SearchParams?>(null) }
         var deepLinkOverlay by remember { mutableStateOf<ContentListMode?>(null) }
+        var deepLinkOverlayLookback by remember { mutableStateOf(LookbackWindow.All) }
+        // Pending lookback to apply to the Usage tab from a deep link. The tick
+        // increments on each new fire so `ContentListPage` applies it exactly
+        // once per fire (comparing against `viewModel.lastAppliedLookbackTick`).
+        // Null means the deep link carried no `?lookback` — in that case we
+        // leave the user's existing selection alone.
+        var deepLinkTopPokemonLookback by remember { mutableStateOf<LookbackWindow?>(null) }
+        var deepLinkTopPokemonLookbackTick by remember { mutableIntStateOf(0) }
         var deepLinkBattleDetailId by remember { mutableStateOf<Int?>(null) }
         var deepLinkReplayNavState by remember { mutableStateOf<ReplayNavState?>(null) }
         var deepLinkFavoritesType by remember { mutableStateOf<FavoriteContentType?>(null) }
@@ -256,6 +265,7 @@ fun App(deepLink: DeepLink? = null) {
                             is DeepLinkResolver.ResolvedLink.Home -> { /* default tab */ }
                             is DeepLinkResolver.ResolvedLink.Pokemon -> {
                                 val item = resolved.item
+                                deepLinkOverlayLookback = resolved.lookback ?: LookbackWindow.All
                                 deepLinkOverlay = ContentListMode.Pokemon(
                                     pokemonId = item.id,
                                     name = item.name,
@@ -286,6 +296,7 @@ fun App(deepLink: DeepLink? = null) {
                             is DeepLinkResolver.ResolvedLink.TopPokemon -> {
                                 val item = resolved.pokemonItem
                                 if (item != null) {
+                                    deepLinkOverlayLookback = resolved.lookback ?: LookbackWindow.All
                                     deepLinkOverlay = ContentListMode.Pokemon(
                                         pokemonId = item.id,
                                         name = item.name,
@@ -294,6 +305,13 @@ fun App(deepLink: DeepLink? = null) {
                                         typeImageUrl2 = item.types.getOrNull(1)?.imageUrl
                                     )
                                 } else {
+                                    // Bump the tick so the Usage VM applies this even if
+                                    // the tab is already on screen (otherwise `initialize`
+                                    // is idempotent and the new lookback would be ignored).
+                                    deepLinkTopPokemonLookback = resolved.lookback
+                                    if (resolved.lookback != null) {
+                                        deepLinkTopPokemonLookbackTick++
+                                    }
                                     selectedTab = 1
                                 }
                             }
@@ -350,7 +368,10 @@ fun App(deepLink: DeepLink? = null) {
                         Tab.Usage -> ContentListPage(
                             mode = ContentListMode.TopPokemon(),
                             modifier = Modifier.padding(innerPadding),
-                            consumeTopInsets = false
+                            consumeTopInsets = false,
+                            initialLookback = deepLinkTopPokemonLookback ?: LookbackWindow.All,
+                            pendingLookback = deepLinkTopPokemonLookback,
+                            pendingLookbackTick = deepLinkTopPokemonLookbackTick
                         )
                         Tab.Search -> SearchPage(
                             modifier = Modifier.padding(innerPadding),
@@ -398,7 +419,8 @@ fun App(deepLink: DeepLink? = null) {
                 lastDeepLinkOverlay?.let { mode ->
                     ContentListPage(
                         mode = mode,
-                        onBack = { deepLinkOverlay = null }
+                        onBack = { deepLinkOverlay = null },
+                        initialLookback = deepLinkOverlayLookback
                     )
                 }
             }

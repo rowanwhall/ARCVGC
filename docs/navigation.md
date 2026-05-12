@@ -127,12 +127,12 @@ All three platforms support deep links. Every page in the app is addressable via
 |---|---|---|
 | Home | `/` | `arcvgc.com` |
 | Battle detail (legacy) | `/battle/{id}` | `arcvgc.com/battle/42` |
-| Pokemon battles | `/pokemon/{id}` | `arcvgc.com/pokemon/150` |
+| Pokemon battles | `/pokemon/{id}` (with optional `?lookback={all\|30days\|week\|day}`) | `arcvgc.com/pokemon/150?lookback=week` |
 | Player battles | `/player/{name}` | `arcvgc.com/player/Wolfe%20Glick` |
 | Favorites sub-tab | `/favorites/{type}` | `arcvgc.com/favorites/pokemon` |
 | Search tab | `/search` | `arcvgc.com/search` |
 | Search results | `/search?p=...&f=...&order=...` | see search params below |
-| Usage (Top Pokémon) | `/usage` (with optional `?f={formatId}` and `?pokemon={id}`) | `arcvgc.com/usage?f=5&pokemon=150` |
+| Usage (Top Pokémon) | `/usage` (with optional `?f={formatId}`, `?pokemon={id}`, `?lookback={all\|30days\|week\|day}`) | `arcvgc.com/usage?f=5&pokemon=150&lookback=week` |
 | Settings | `/settings` | `arcvgc.com/settings` |
 
 **Battle detail as query param:** Any root URL can have `?battle={id}` appended. On all mobile platforms (Android, iOS, mobile web), the `?battle=X` param navigates directly to battle detail, ignoring the root page context. On desktop web, the root page renders in the left pane and the battle detail in the right pane. Examples:
@@ -141,6 +141,8 @@ All three platforms support deep links. Every page in the app is addressable via
 - `/?battle=42` — Opens battle 42 directly
 
 **Usage Pokemon as query param:** `/usage?pokemon={id}` selects a specific Pokemon on the right side of the desktop-web Usage layout. On mobile platforms (Android, iOS, mobile web) the same URL navigates directly to the Pokemon page (`/pokemon/{id}`) since they don't have the two-pane Usage layout. The resolver fetches the Pokemon item once and lets each platform decide how to act on it.
+
+**Lookback as query param:** `/pokemon/{id}` and `/usage` accept `?lookback={value}` where value is one of `all`, `30days`, `week`, `day` (matching `LookbackWindow.value`). The param is omitted from generated URLs when the value is `All` (the default). On historic formats the lookback selector is hidden and forced to `All`, so the param is not emitted for those formats. An invalid `lookback=` value is silently ignored. Deep-link delivery into the Usage tab uses the **tick pattern** so a second `/usage?lookback=…` deep link applies even when the tab's VM is already cached — see "Tick pattern" in `.claude/rules/coding-conventions.md`.
 
 **Search query parameters:** Team 1: `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `a` (ability IDs per slot). Team 2: `p2`, `i2`, `t2`, `a2` (same format). General: `f` (format ID), `w` (winner filter: `1`=team1, `2`=team2), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping. Team 2 and winner params are additive — old clients ignore unknown params gracefully.
 

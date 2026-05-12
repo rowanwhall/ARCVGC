@@ -43,6 +43,7 @@ import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.domain.model.appendBattleParam
+import com.arcvgc.app.domain.model.encodePokemonPath
 import com.arcvgc.app.domain.model.encodeSearchPath
 import com.arcvgc.app.domain.model.encodeTopPokemonPath
 import com.arcvgc.app.ui.BattleOverlayRequest
@@ -70,6 +71,7 @@ fun ContentListPage(
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null,
     onTopPokemonClick: ((formatId: Int?) -> Unit)? = null,
     initialBattleId: Int? = null,
+    initialLookback: LookbackWindow = LookbackWindow.All,
     showToolbarWithoutBack: Boolean = false,
     mirrorUrl: Boolean = true
 ) {
@@ -92,7 +94,8 @@ fun ContentListPage(
             appConfigRepository = DependencyContainer.appConfigRepository,
             formatCatalogRepository = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) DependencyContainer.formatCatalogRepository else null,
             pokemonCatalogRepository = DependencyContainer.pokemonCatalogRepository,
-            settingsRepository = DependencyContainer.settingsRepository
+            settingsRepository = DependencyContainer.settingsRepository,
+            initialLookback = initialLookback
         )
     }
 
@@ -156,7 +159,7 @@ fun ContentListPage(
 
     // Mirror page URL in the browser address bar
     val modePath = when (mode) {
-        is ContentListMode.Pokemon -> "/pokemon/${mode.pokemonId}"
+        is ContentListMode.Pokemon -> encodePokemonPath(mode.pokemonId, selectedLookback)
         is ContentListMode.Player -> "/player/${mode.playerName}"
         is ContentListMode.Favorites -> when (mode.contentType) {
             FavoriteContentType.Battles -> "/favorites/battles"
@@ -165,10 +168,13 @@ fun ContentListPage(
         }
         is ContentListMode.Search -> encodeSearchPath(mode.params)
         is ContentListMode.Home -> "/"
-        is ContentListMode.TopPokemon -> encodeTopPokemonPath(mode.formatId)
+        is ContentListMode.TopPokemon -> encodeTopPokemonPath(
+            formatId = mode.formatId,
+            lookback = selectedLookback
+        )
     }
     if (mirrorUrl) {
-        LaunchedEffect(selectedBattleId) {
+        LaunchedEffect(selectedBattleId, modePath) {
             val path = if (mode is ContentListMode.Home && selectedBattleId != null) {
                 "/battle/$selectedBattleId"
             } else {

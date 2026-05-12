@@ -106,6 +106,9 @@ fun ContentListPage(
     onBack: (() -> Unit)? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     consumeTopInsets: Boolean = true,
+    initialLookback: LookbackWindow = LookbackWindow.All,
+    pendingLookback: LookbackWindow? = null,
+    pendingLookbackTick: Int = 0,
     viewModel: ContentListViewModel = hiltViewModel(
         key = when (mode) {
             is ContentListMode.Home -> "content_list_home"
@@ -118,7 +121,18 @@ fun ContentListPage(
     )
 ) {
     LaunchedEffect(viewModel) {
-        viewModel.initialize(mode)
+        viewModel.initialize(mode, initialLookback)
+    }
+
+    // Apply a fresh deep-link lookback exactly once per tick. Re-entering
+    // composition with the same tick is a no-op so we never clobber a user-
+    // driven lookback change.
+    LaunchedEffect(pendingLookbackTick) {
+        val lb = pendingLookback
+        if (lb != null && pendingLookbackTick > viewModel.lastAppliedLookbackTick) {
+            viewModel.lastAppliedLookbackTick = pendingLookbackTick
+            viewModel.selectLookback(lb)
+        }
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

@@ -64,6 +64,31 @@ The app uses **Orbitron** (variable weight, OFL license) as its brand font for "
 - **iOS**: Manual `DependencyContainer` with `@StateObject` ViewModels. Swift stores (`FavoritesStore`, `SettingsStore`, `AppConfigStore`) wrap shared repos as `@MainActor ObservableObject`.
 - **Web**: Manual `DependencyContainer` singleton with `rememberViewModel(key) { ViewModel(deps...) }`. ViewModels are cached in a `ViewModelStore` (provided via `ProvideViewModelStore` at the app root) so they survive tab switches and back navigation. Uses shared repos directly with try/catch (no Result<T> wrapper).
 
+## Tick pattern (apply-once-to-a-cached-ViewModel)
+
+ViewModels survive composition exit/re-entry (tab switches, back navigation) — see DI Patterns above. To apply a one-shot value from composition state into a long-lived VM (e.g., a deep link wants to set lookback, Home → "See More" wants to set the Usage format), use a monotonic tick counter rather than relying on the constructor seed or `LaunchedEffect(pendingValue)` directly.
+
+**Naive approaches and why they fail:**
+- *Constructor seed*: only fires on first construction. Second deep link → VM already cached → ignored.
+- *`LaunchedEffect(pendingValue)`*: re-fires every time the view re-enters composition with the same value, clobbering any user-driven change made in between.
+- *Clear-after-applying*: requires a callback up to the parent and races with the parent re-setting it.
+
+**The pattern:**
+- A monotonically-increasing `Int` (or `Int32` on iOS) tick lives in *composition state* (App/WebApp/ContentView). It increments each time the outer state wants to push a fresh value.
+- A matching `lastAppliedXxxTick` lives on the *VM* (a plain `var`, not a `StateFlow` — it's a delivery receipt, not state).
+- Apply condition: `if pendingTick > lastAppliedXxxTick { vm.apply(pendingValue); vm.lastAppliedXxxTick = pendingTick }`. Re-entering composition with the same tick is a no-op; a fresh request (incremented tick) applies exactly once.
+
+**Invariants:**
+- Tick is *monotonic* — never reset, never compared to a specific value, only `>` against the last-applied.
+- The two pieces of state live in *different lifecycles* deliberately: tick on composition state, lastApplied on VM. Either side can reset without breaking the other.
+- *Don't bump the tick* when the outer state has nothing to push (e.g., a `/usage` deep link with no `?lookback` query param). Bumping unconditionally would clobber the user's in-VM state with a default value.
+
+**Where this pattern lives:**
+- Web Home → See More for Usage format: `usagePendingFormatTick` in `WebApp.kt` + `lastAppliedUsageFormatTick` on `ContentListViewModel` (web), applied in `UsageDesktopPage.kt`'s `LaunchedEffect(pendingInitialFormatTick)`.
+- Deep-link lookback for the Usage tab (all three platforms): `deepLinkTopPokemonLookbackTick` in `App.kt`/`ContentView.swift`/`WebApp.kt` paired with `lastAppliedLookbackTick` on each platform's `ContentListViewModel`. Applied via `LaunchedEffect(pendingLookbackTick)` (Android/web) or `.onChange(of: pendingLookbackTick)` + `.onAppear` (iOS).
+
+**When to reach for this pattern:** any time you want to push a value into a cached VM from a higher-up state change *and* the user can also modify that same value from inside the VM's UI. If only one side ever writes, a simpler approach suffices.
+
 ## Pagination
 
 - Pagination triggers when user is within 5 items of the list end.

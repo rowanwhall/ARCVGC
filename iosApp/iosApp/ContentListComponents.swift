@@ -8,14 +8,16 @@ struct PokemonNavTarget: Hashable {
     let typeImageUrl1: String?
     let typeImageUrl2: String?
     let formatId: Int32?
+    let lookback: LookbackWindow?
 
-    init(id: Int32, name: String, imageUrl: String?, typeImageUrl1: String?, typeImageUrl2: String?, formatId: Int32? = nil) {
+    init(id: Int32, name: String, imageUrl: String?, typeImageUrl1: String?, typeImageUrl2: String?, formatId: Int32? = nil, lookback: LookbackWindow? = nil) {
         self.id = id
         self.name = name
         self.imageUrl = imageUrl
         self.typeImageUrl1 = typeImageUrl1
         self.typeImageUrl2 = typeImageUrl2
         self.formatId = formatId
+        self.lookback = lookback
     }
 }
 

@@ -60,13 +60,20 @@ final class ContentListViewModel: ObservableObject {
     @Published private(set) var searchQuery: String
     @Published private(set) var mode: ContentListMode
 
+    // Mirrors the Android/web `lastAppliedLookbackTick` pattern: each deep
+    // link that carries a lookback bumps a tick in `ContentView`; this counter
+    // tracks the most recent tick already applied so re-attaching the view
+    // (tab re-render with the same tick) doesn't clobber a lookback the user
+    // has since changed in the UI.
+    var lastAppliedLookbackTick: Int32 = 0
+
     let formatItems: [FormatUiModel]
 
     private let logic: ContentListLogic
     private let logicScope: Kotlinx_coroutines_coreCoroutineScope
     private var observationTasks: [Task<Void, Never>] = []
 
-    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore? = nil, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], settingsStore: SettingsStore? = nil) {
+    init(repository: BattleRepository, mode: ContentListMode = .home, favoritesStore: FavoritesStore? = nil, pokemonCatalogItems: [PokemonPickerUiModel] = [], appConfigStore: AppConfigStore? = nil, formatItems: [FormatUiModel] = [], settingsStore: SettingsStore? = nil, initialLookback: LookbackWindow = .all) {
         self.mode = mode
         self.formatItems = formatItems
 
@@ -88,6 +95,7 @@ final class ContentListViewModel: ObservableObject {
             pokemonCatalogItems: pokemonCatalogItems,
             pokemonCatalogState: nil,
             initialTopPokemonFetchCount: 6,
+            initialLookback: initialLookback,
             settingsRepository: settingsStore?.repo,
             isFormatHistoric: { id in
                 let isHistoric = formatItemsCopy.first(where: { $0.id == id.int32Value })?.isHistoric ?? false

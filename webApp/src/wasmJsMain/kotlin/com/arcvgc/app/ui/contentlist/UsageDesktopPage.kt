@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.arcvgc.app.NavEntry
 import com.arcvgc.app.di.DependencyContainer
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
@@ -60,11 +61,12 @@ internal fun UsageDesktopPage(
     pendingInitialFormatId: Int?,
     pendingInitialFormatTick: Int,
     initialSelectedPokemonId: Int?,
+    initialLookback: LookbackWindow = LookbackWindow.All,
     nestedStack: List<NavEntry>,
     onPushNestedEntry: (NavEntry) -> Unit,
     onPopNestedEntry: () -> Unit,
     onClearNestedStack: () -> Unit,
-    onSelectedPokemonChanged: (formatId: Int?, pokemonId: Int?) -> Unit,
+    onSelectedPokemonChanged: (formatId: Int?, pokemonId: Int?, lookback: LookbackWindow) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val viewModelKey = "usage_desktop_top_pokemon"
@@ -76,7 +78,8 @@ internal fun UsageDesktopPage(
             appConfigRepository = DependencyContainer.appConfigRepository,
             formatCatalogRepository = DependencyContainer.formatCatalogRepository,
             pokemonCatalogRepository = DependencyContainer.pokemonCatalogRepository,
-            settingsRepository = DependencyContainer.settingsRepository
+            settingsRepository = DependencyContainer.settingsRepository,
+            initialLookback = initialLookback
         )
     }
 
@@ -131,8 +134,8 @@ internal fun UsageDesktopPage(
         }
     }
 
-    LaunchedEffect(selectedPokemon?.id, formatAtSelection) {
-        onSelectedPokemonChanged(formatAtSelection, selectedPokemon?.id)
+    LaunchedEffect(selectedPokemon?.id, formatAtSelection, selectedLookback) {
+        onSelectedPokemonChanged(formatAtSelection, selectedPokemon?.id, selectedLookback)
     }
 
     val isReady = !uiState.isLoading && allItems.isNotEmpty() && sortedFormats.isNotEmpty() && selectedPokemon != null

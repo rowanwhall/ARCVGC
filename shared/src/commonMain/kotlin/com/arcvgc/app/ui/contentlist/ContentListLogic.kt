@@ -43,6 +43,7 @@ class ContentListLogic(
     private val pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
     private val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null,
     initialTopPokemonFetchCount: Int = DEFAULT_TOP_POKEMON_COUNT,
+    initialLookback: LookbackWindow = LookbackWindow.All,
     private val settingsRepository: SettingsRepository? = null,
     private val isFormatHistoric: (Int) -> Boolean = { false }
 ) {
@@ -78,7 +79,7 @@ class ContentListLogic(
     )
     val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()
 
-    private val _selectedLookback = MutableStateFlow(LookbackWindow.All)
+    private val _selectedLookback = MutableStateFlow(initialLookback)
     val selectedLookback: StateFlow<LookbackWindow> = _selectedLookback.asStateFlow()
 
     private fun preferredFormatId(): Int =

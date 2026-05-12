@@ -25,7 +25,8 @@ class ContentListViewModel(
     private val appConfigRepository: AppConfigRepository,
     private val formatCatalogRepository: FormatCatalogRepository? = null,
     pokemonCatalogRepository: PokemonCatalogRepository? = null,
-    settingsRepository: SettingsRepository? = null
+    settingsRepository: SettingsRepository? = null,
+    initialLookback: LookbackWindow = LookbackWindow.All
 ) : ViewModel() {
 
     private val logic = ContentListLogic(
@@ -36,6 +37,7 @@ class ContentListViewModel(
         mode = mode,
         pokemonCatalogItems = pokemonCatalogItems,
         pokemonCatalogState = pokemonCatalogRepository?.state,
+        initialLookback = initialLookback,
         settingsRepository = settingsRepository,
         isFormatHistoric = { id ->
             formatCatalogRepository?.state?.value?.items?.find { it.id == id }?.isHistoric == true

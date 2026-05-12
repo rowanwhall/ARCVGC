@@ -7,13 +7,17 @@ data class DeepLink(
 
 sealed class DeepLinkTarget {
     data object Home : DeepLinkTarget()
-    data class Pokemon(val id: Int) : DeepLinkTarget()
+    data class Pokemon(val id: Int, val lookback: LookbackWindow? = null) : DeepLinkTarget()
     data class Player(val name: String) : DeepLinkTarget()
     data class Favorites(val contentType: String) : DeepLinkTarget()
     data class Search(val params: SearchQueryParams) : DeepLinkTarget()
     data object SearchTab : DeepLinkTarget()
     data object SettingsTab : DeepLinkTarget()
-    data class TopPokemon(val formatId: Int? = null, val pokemonId: Int? = null) : DeepLinkTarget()
+    data class TopPokemon(
+        val formatId: Int? = null,
+        val pokemonId: Int? = null,
+        val lookback: LookbackWindow? = null
+    ) : DeepLinkTarget()
 }
 
 data class SearchQueryParams(
@@ -56,7 +60,12 @@ fun parseDeepLink(path: String): DeepLink? {
             return DeepLink(target = DeepLinkTarget.Home, battleId = id)
         }
         segments.size == 2 && segments[0] == "pokemon" ->
-            segments[1].toIntOrNull()?.let { DeepLinkTarget.Pokemon(it) }
+            segments[1].toIntOrNull()?.let {
+                DeepLinkTarget.Pokemon(
+                    id = it,
+                    lookback = LookbackWindow.fromValue(queryParams["lookback"])
+                )
+            }
         segments.size >= 2 && segments[0] == "player" -> {
             val name = segments.drop(1).joinToString("/") { decodePercent(it) }
             name.takeIf { it.isNotBlank() }?.let { DeepLinkTarget.Player(it) }
@@ -72,7 +81,8 @@ fun parseDeepLink(path: String): DeepLink? {
         segments.size == 1 && segments[0] == "usage" ->
             DeepLinkTarget.TopPokemon(
                 formatId = queryParams["f"]?.toIntOrNull(),
-                pokemonId = queryParams["pokemon"]?.toIntOrNull()
+                pokemonId = queryParams["pokemon"]?.toIntOrNull(),
+                lookback = LookbackWindow.fromValue(queryParams["lookback"])
             )
         // Root path (/) or /?battle=X
         segments.size == 1 && segments[0].isEmpty() ->
@@ -219,11 +229,27 @@ fun encodeSearchPath(params: SearchParams): String {
     return "/search?${parts.joinToString("&")}"
 }
 
-fun encodeTopPokemonPath(formatId: Int?, pokemonId: Int? = null): String {
+fun encodeTopPokemonPath(
+    formatId: Int?,
+    pokemonId: Int? = null,
+    lookback: LookbackWindow? = null
+): String {
     val parts = mutableListOf<String>()
     if (formatId != null) parts.add("f=$formatId")
     if (pokemonId != null) parts.add("pokemon=$pokemonId")
+    if (lookback != null && lookback != LookbackWindow.All) {
+        parts.add("lookback=${lookback.value}")
+    }
     return if (parts.isEmpty()) "/usage" else "/usage?${parts.joinToString("&")}"
+}
+
+fun encodePokemonPath(pokemonId: Int, lookback: LookbackWindow? = null): String {
+    val base = "/pokemon/$pokemonId"
+    return if (lookback != null && lookback != LookbackWindow.All) {
+        "$base?lookback=${lookback.value}"
+    } else {
+        base
+    }
 }
 
 fun appendBattleParam(basePath: String, battleId: Int?): String {

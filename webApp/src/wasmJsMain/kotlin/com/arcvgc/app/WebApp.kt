@@ -71,6 +71,7 @@ import com.arcvgc.app.shared.logo
 import org.jetbrains.compose.resources.painterResource
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.di.DependencyContainer
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.BattleOverlayRequest
 import com.arcvgc.app.ui.LocalBattleOverlay
@@ -283,6 +284,8 @@ fun WebApp() {
         // is the same as before, but only applies it once per new click.
         var usagePendingFormatId by remember { mutableStateOf<Int?>(null) }
         var usagePendingFormatTick by remember { mutableIntStateOf(0) }
+        // Lookback parsed from a /usage deep link, applied once on Usage entry.
+        var usagePendingLookback by remember { mutableStateOf<LookbackWindow?>(null) }
         val historyDepthState = remember { mutableIntStateOf(0) }
         var historyDepth by historyDepthState
         val popStatesToIgnoreState = remember { mutableIntStateOf(0) }
@@ -329,7 +332,8 @@ fun WebApp() {
                                 id = item.id,
                                 name = item.name,
                                 imageUrl = normalizeImageUrl(item.imageUrl),
-                                typeImageUrls = item.types.mapNotNull { normalizeImageUrl(it.imageUrl) }
+                                typeImageUrls = item.types.mapNotNull { normalizeImageUrl(it.imageUrl) },
+                                lookback = resolved.lookback
                             )
                             navStack = navStack + entry
                             desktopNavStack = listOf(entry)
@@ -361,6 +365,7 @@ fun WebApp() {
                         }
                         is DeepLinkResolver.ResolvedLink.TopPokemon -> {
                             selectedTab = 1
+                            usagePendingLookback = resolved.lookback
                             val item = resolved.pokemonItem
                             if (item != null) {
                                 usageSelectedPokemon = item
@@ -370,7 +375,8 @@ fun WebApp() {
                                     id = item.id,
                                     name = item.name,
                                     imageUrl = normalizeImageUrl(item.imageUrl),
-                                    typeImageUrls = item.types.mapNotNull { normalizeImageUrl(it.imageUrl) }
+                                    typeImageUrls = item.types.mapNotNull { normalizeImageUrl(it.imageUrl) },
+                                    lookback = resolved.lookback
                                 )
                                 navStack = navStack + entry
                             }
@@ -598,14 +604,16 @@ fun WebApp() {
                                     usageSelectedPokemon = usageSelectedPokemon,
                                     usagePendingFormatId = usagePendingFormatId,
                                     usagePendingFormatTick = usagePendingFormatTick,
+                                    usagePendingLookback = usagePendingLookback,
                                     onPushUsageNestedEntry = handlePushUsageNestedEntry,
                                     onPopUsageNestedEntry = handlePopUsageNestedEntry,
                                     onClearUsageNestedStack = handleClearUsageNestedStack,
-                                    onUsageSelectedPokemonIdChanged = { fmtId, pokemonId ->
+                                    onUsageSelectedPokemonIdChanged = { fmtId, pokemonId, lookback ->
                                         replaceHistoryStateWithPath(
                                             encodeTopPokemonPath(
                                                 formatId = fmtId,
-                                                pokemonId = pokemonId
+                                                pokemonId = pokemonId,
+                                                lookback = lookback
                                             )
                                         )
                                     },
@@ -637,10 +645,11 @@ private fun DesktopLayout(
     usageSelectedPokemon: PokemonListItem?,
     usagePendingFormatId: Int?,
     usagePendingFormatTick: Int,
+    usagePendingLookback: LookbackWindow?,
     onPushUsageNestedEntry: (NavEntry) -> Unit,
     onPopUsageNestedEntry: () -> Unit,
     onClearUsageNestedStack: () -> Unit,
-    onUsageSelectedPokemonIdChanged: (formatId: Int?, pokemonId: Int?) -> Unit,
+    onUsageSelectedPokemonIdChanged: (formatId: Int?, pokemonId: Int?, lookback: LookbackWindow) -> Unit,
     initialBattleId: Int? = null,
     initialFavoritesSubTab: Int? = null
 ) {
@@ -719,7 +728,8 @@ private fun DesktopLayout(
                     modifier = contentModifier,
                     onPokemonClick = desktopPokemonClick,
                     onPlayerClick = desktopPlayerClick,
-                    initialBattleId = initialBattleId
+                    initialBattleId = initialBattleId,
+                    initialLookback = entry.lookback ?: LookbackWindow.All
                 )
                 is NavEntry.Player -> ContentListPage(
                     mode = ContentListMode.Player(entry.id, entry.name, entry.formatId),
@@ -755,6 +765,7 @@ private fun DesktopLayout(
                     pendingInitialFormatId = usagePendingFormatId,
                     pendingInitialFormatTick = usagePendingFormatTick,
                     initialSelectedPokemonId = usageSelectedPokemon?.id,
+                    initialLookback = usagePendingLookback ?: LookbackWindow.All,
                     nestedStack = usageNestedStack,
                     onPushNestedEntry = onPushUsageNestedEntry,
                     onPopNestedEntry = onPopUsageNestedEntry,
@@ -1001,7 +1012,8 @@ private fun NavEntryContent(
                     onBack = { onPopEntry() },
                     modifier = Modifier.fillMaxSize(),
                     onPokemonClick = onPokemonClick,
-                    onPlayerClick = onPlayerClick
+                    onPlayerClick = onPlayerClick,
+                    initialLookback = entry.lookback ?: LookbackWindow.All
                 )
             }
         }
@@ -1026,7 +1038,8 @@ private fun NavEntryContent(
                 onBack = { onPopEntry() },
                 modifier = Modifier.fillMaxSize(),
                 onPokemonClick = onPokemonClick,
-                onPlayerClick = onPlayerClick
+                onPlayerClick = onPlayerClick,
+                initialLookback = entry.lookback ?: LookbackWindow.All
             )
         }
     }

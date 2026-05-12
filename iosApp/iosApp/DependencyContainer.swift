@@ -9,7 +9,7 @@ enum ResolvedDeepLink: Equatable {
     case search(params: SearchParams)
     case searchTab
     case settingsTab
-    case topPokemon(formatId: Int32?)
+    case topPokemon(formatId: Int32?, lookback: LookbackWindow?)
 }
 
 @MainActor
@@ -71,7 +71,8 @@ final class DependencyContainer: ObservableObject {
                     name: item.name,
                     imageUrl: item.imageUrl,
                     typeImageUrl1: item.types.first?.imageUrl,
-                    typeImageUrl2: item.types.count > 1 ? item.types[1].imageUrl : nil
+                    typeImageUrl2: item.types.count > 1 ? item.types[1].imageUrl : nil,
+                    lookback: pokemon.lookback
                 ))
             case .player(let player):
                 pendingDeepLink = .player(target: PlayerNavTarget(
@@ -102,10 +103,14 @@ final class DependencyContainer: ObservableObject {
                         name: item.name,
                         imageUrl: item.imageUrl,
                         typeImageUrl1: item.types.first?.imageUrl,
-                        typeImageUrl2: item.types.count > 1 ? item.types[1].imageUrl : nil
+                        typeImageUrl2: item.types.count > 1 ? item.types[1].imageUrl : nil,
+                        lookback: topPokemon.lookback
                     ))
                 } else {
-                    pendingDeepLink = .topPokemon(formatId: topPokemon.formatId?.int32Value)
+                    pendingDeepLink = .topPokemon(
+                        formatId: topPokemon.formatId?.int32Value,
+                        lookback: topPokemon.lookback
+                    )
                 }
             }
         }
