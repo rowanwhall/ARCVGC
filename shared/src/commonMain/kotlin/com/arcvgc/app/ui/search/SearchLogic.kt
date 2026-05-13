@@ -63,10 +63,18 @@ class SearchLogic(
         preferredFormatId: Int,
         catalog: List<FormatUiModel>
     ): FormatUiModel {
-        if (preferredFormatId != SettingsRepository.USE_DEFAULT_FORMAT) {
-            catalog.firstOrNull { it.id == preferredFormatId }?.let { return it }
+        // Prefer catalog data even for the config's default format. The cached
+        // AppConfig only persists id/name/formattedName, so its Format has
+        // isOpenTeamsheet/isOfficial/isHistoric/hasSeries stuck at false until
+        // the network refresh lands — which would otherwise hide item/tera/ability
+        // controls on first paint.
+        val targetId = if (preferredFormatId != SettingsRepository.USE_DEFAULT_FORMAT) {
+            preferredFormatId
+        } else {
+            config.defaultFormat.id
         }
-        return FormatUiMapper.map(config.defaultFormat)
+        return catalog.firstOrNull { it.id == targetId }
+            ?: FormatUiMapper.map(config.defaultFormat)
     }
 
     fun addPokemon(pokemon: PokemonPickerUiModel) {

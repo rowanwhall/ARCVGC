@@ -26,7 +26,6 @@ class SearchRequestMapperTest {
         assertEquals(OrderBy.Time, result.orderBy)
         assertEquals(50, result.limit)
         assertEquals(1, result.page)
-        assertTrue(result.pokemon.isEmpty())
         assertEquals(1, result.team1?.pokemon?.size)
         assertEquals(25, result.team1?.pokemon?.get(0)?.id)
     }
@@ -194,7 +193,6 @@ class SearchRequestMapperTest {
             page = 3
         )
 
-        assertTrue(result.pokemon.isEmpty())
         val team1Pokemon = result.team1?.pokemon!!
         assertEquals(3, team1Pokemon.size)
 
@@ -225,7 +223,6 @@ class SearchRequestMapperTest {
             team2Filters = team2
         )
 
-        assertTrue(result.pokemon.isEmpty())
         assertEquals(1, result.team1?.pokemon?.size)
         assertEquals(25, result.team1?.pokemon?.get(0)?.id)
         assertEquals(1, result.team2?.pokemon?.size)
@@ -307,7 +304,6 @@ class SearchRequestMapperTest {
             page = 1
         )
 
-        assertTrue(result.pokemon.isEmpty())
         assertNull(result.team1)
         assertNull(result.team2)
     }

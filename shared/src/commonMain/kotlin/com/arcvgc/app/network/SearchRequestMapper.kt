@@ -62,7 +62,6 @@ fun buildSearchRequest(
         formatId = formatId,
         rating = ratingDto,
         orderBy = orderBy,
-        pokemon = emptyList(),
         timeRange = timeRangeDto,
         playerName = resolvedPlayerName,
         playerId = playerId,

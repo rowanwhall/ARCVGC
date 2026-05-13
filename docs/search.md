@@ -7,7 +7,7 @@
 - **UI models**: `PokemonPickerUiModel`, `SearchFilterSlotUiModel`, `FormatUiModel` (id + displayName), `ItemUiModel`, `TeraTypeUiModel`, `AbilityUiModel` (id + name, no imageUrl)
 - **UI mappers**: `PokemonPickerUiMapper`, `ItemUiMapper`, `TeraTypeUiMapper`, `AbilityUiMapper`, `FormatUiMapper` — all singleton objects with `map()` / `mapList()`
 - **Shared utilities**:
-  - `SearchRequestMapper.kt` — `buildSearchRequest()` converts team1 (`filters`) and team2 (`team2Filters`) into `SearchTeamDto` objects on the `SearchRequestDto`. The legacy top-level `pokemon` field is deprecated and sent as an empty list
+  - `SearchRequestMapper.kt` — `buildSearchRequest()` converts team1 (`filters`) and team2 (`team2Filters`) into `SearchTeamDto` objects on the `SearchRequestDto`
   - `CatalogLoader.kt` — `loadFullCatalog()` generic pagination loop + typed loaders (`loadPokemonCatalog()`, `loadItemCatalog()`, `loadTeraTypeCatalog()`, `loadAbilityCatalog()`, `loadFormatCatalog()`) for iOS interop
   - `AbilityInitials.kt` — `abilityInitials()` helper for rendering ability initials in filter badges/circles (first letter of first 1-2 words, ignoring parentheticals)
   - `TimeFormatter.kt` — `formatUploadTime()` shared by `BattleCardUiMapper` and `BattleDetailUiMapper`

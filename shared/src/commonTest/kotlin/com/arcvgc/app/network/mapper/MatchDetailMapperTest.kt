@@ -155,7 +155,7 @@ class MatchDetailMapperTest {
     }
 
     @Test
-    fun pokemonDetailDto_withNullTier_mapsToEmptyString() {
+    fun pokemonDetailDto_withNullTier_mapsToNull() {
         val dto = PokemonDetailDto(
             id = 6,
             name = "Charizard",
@@ -172,7 +172,7 @@ class MatchDetailMapperTest {
 
         val result = dto.toDomain()
 
-        assertEquals("", result.tier)
+        assertNull(result.tier)
     }
 
     @Test

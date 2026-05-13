@@ -345,7 +345,9 @@ internal fun ContentListContent(
                                                     sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                                     onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
                                                     onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
-                                                    centerTitle = topItem.centerHeader
+                                                    // Mobile/compact layouts don't have the screen real estate to support
+                                                    // our existing centered header section designs — revisit if this changes.
+                                                    centerTitle = false
                                                 )
                                             }
                                         }

@@ -95,6 +95,31 @@ class SearchLogicTest {
     }
 
     @Test
+    fun init_preferredFormat_prefersCatalogFlagsOverCachedConfig() = runTest(UnconfinedTestDispatcher()) {
+        // Same as the config-default case but for the preferred-format path:
+        // the catalog's isOpenTeamsheet flag should flow through, not whatever
+        // the cached AppConfig held.
+        val configFlow = MutableStateFlow<AppConfig?>(testConfig())
+        val catalogFlow = MutableStateFlow(listOf(
+            FormatUiModel(id = 42, displayName = "Reg M-A", isOpenTeamsheet = true)
+        ))
+        val settingsStorage = com.arcvgc.app.testutil.FakeSettingsStorage().apply {
+            putInt("preferred_format", 42)
+        }
+        val settings = com.arcvgc.app.data.SettingsRepository(settingsStorage)
+        val logic = SearchLogic(
+            scope = backgroundScope,
+            appConfigFlow = configFlow,
+            settingsRepository = settings,
+            formatCatalogFlow = catalogFlow
+        )
+
+        val format = logic.uiState.value.selectedFormat
+        assertEquals(42, format?.id)
+        assertEquals(true, format?.isOpenTeamsheet)
+    }
+
+    @Test
     fun init_preferredFormatUnset_usesConfigDefault() = runTest(UnconfinedTestDispatcher()) {
         val configFlow = MutableStateFlow<AppConfig?>(testConfig())
         val catalogFlow = MutableStateFlow(listOf(FormatUiModel(id = 5, displayName = "Reg G")))
@@ -107,6 +132,28 @@ class SearchLogicTest {
         )
 
         assertEquals(5, logic.uiState.value.selectedFormat?.id)
+    }
+
+    @Test
+    fun init_defaultFormat_prefersCatalogFlagsOverCachedConfig() = runTest(UnconfinedTestDispatcher()) {
+        // Simulates cached AppConfig: id/name persisted, isOpenTeamsheet stuck at false.
+        // The catalog (loaded separately) has the correct flag. Default-format users
+        // should still see isOpenTeamsheet = true, not the cached false.
+        val configFlow = MutableStateFlow<AppConfig?>(testConfig())
+        val catalogFlow = MutableStateFlow(listOf(
+            FormatUiModel(id = 5, displayName = "Reg G", isOpenTeamsheet = true)
+        ))
+        val settings = com.arcvgc.app.data.SettingsRepository(com.arcvgc.app.testutil.FakeSettingsStorage())
+        val logic = SearchLogic(
+            scope = backgroundScope,
+            appConfigFlow = configFlow,
+            settingsRepository = settings,
+            formatCatalogFlow = catalogFlow
+        )
+
+        val format = logic.uiState.value.selectedFormat
+        assertEquals(5, format?.id)
+        assertEquals(true, format?.isOpenTeamsheet)
     }
 
     @Test

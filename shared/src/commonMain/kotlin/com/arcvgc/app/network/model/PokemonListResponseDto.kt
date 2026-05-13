@@ -15,7 +15,7 @@ data class PokemonListItemDto(
     val id: Int,
     val name: String,
     @SerialName("pokedex_number") val pokedexNumber: Int?,
-    val tier: String,
+    val tier: String?,
     val types: List<TypeDto>,
     @SerialName("image_url") val imageUrl: String? = null
 )

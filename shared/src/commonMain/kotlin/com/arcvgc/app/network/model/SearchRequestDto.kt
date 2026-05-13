@@ -23,7 +23,6 @@ data class SearchRequestDto(
     val page: Int = 1,
     @SerialName("format_id") val formatId: Int,
     val rating: RatingDto? = null,
-    val pokemon: List<SearchPokemonDto>,
     @SerialName("order_by") val orderBy: OrderBy = OrderBy.Time,
     @SerialName("time_range") val timeRange: TimeRangeDto? = null,
     @SerialName("player_name") val playerName: String? = null,
