@@ -57,6 +57,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -292,7 +293,8 @@ internal fun ContentListContent(
                                                 isLoading = isLoadingSection,
                                                 sortOrder = null,
                                                 onToggleSortOrder = null,
-                                                onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                                                onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
+                                                centerTitle = topItem.centerHeader
                                             )
                                             Spacer(modifier = Modifier.height(ContentListItemSpacing))
                                         }
@@ -330,7 +332,8 @@ internal fun ContentListContent(
                                                         isLoading = isLoadingSection,
                                                         sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                                         onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                                        onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                                                        onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
+                                                        centerTitle = topItem.centerHeader
                                                     )
                                                 }
                                             }
@@ -341,7 +344,8 @@ internal fun ContentListContent(
                                                     isLoading = isLoadingSection,
                                                     sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                                     onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                                    onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                                                    onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
+                                                    centerTitle = topItem.centerHeader
                                                 )
                                             }
                                         }
@@ -406,32 +410,6 @@ internal fun ContentListContent(
                                         }
                                     }
                                 }
-                            } else if (topItem.alignContentStart) {
-                                animatedItem(key = topItem.listKey, span = fullSpan) {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing)
-                                    ) {
-                                        if (topItem.header.isNotEmpty()) {
-                                            Text(
-                                                text = topItem.header,
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
-                                        val loadingMod = if (isLoadingSection) Modifier.alpha(0.5f) else Modifier
-                                        if (topItem.items.isEmpty() && !isLoadingSection) {
-                                            EmptyView(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp))
-                                        } else {
-                                            Column(modifier = loadingMod.fillMaxWidth()) {
-                                                topItem.items.forEach { child ->
-                                                    ContentListItemRow(child, selectedBattleId, showWinnerHighlight, onItemClick, onHighlightBattleClick, onPokemonGridClick, onTopPlayerChipClick)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
                             } else {
                                 animatedItem(key = topItem.listKey, span = fullSpan) {
                                     SectionContentAlignedHeader(
@@ -443,7 +421,8 @@ internal fun ContentListContent(
                                                     isLoading = isLoadingSection,
                                                     sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                                     onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                                    onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null
+                                                    onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
+                                                    centerTitle = topItem.centerHeader
                                                 )
                                             }
                                         } else null,
@@ -1014,7 +993,9 @@ private fun SectionGroupItem(
                 text = section.header,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = if (section.centerHeader) TextAlign.Center else TextAlign.Start,
+                modifier = Modifier.fillMaxWidth()
             )
         }
         Column(modifier = loadingMod) {

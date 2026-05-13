@@ -210,7 +210,7 @@ struct LookbackSegmentedSelector: View {
                 } label: {
                     Text(window.displayName)
                         .font(.system(size: 13))
-                        .foregroundColor(Color(.label).opacity(0.75))
+                        .foregroundColor(isSelected ? accentColor : Color(.label).opacity(0.75))
                         .lineLimit(1)
                         .frame(maxWidth: .infinity)
                         .frame(height: 32)

@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -373,12 +374,11 @@ private fun UsagePokemonRow(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outlineVariant
-    }
+    val accentColor = MaterialTheme.colorScheme.primary
+    val borderColor = if (isSelected) accentColor else MaterialTheme.colorScheme.outlineVariant
     val borderWidth = if (isSelected) StandardBorderWidth * 2 else StandardBorderWidth
+    val nameColor = if (isSelected) accentColor else Color.Unspecified
+    val percentColor = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -401,6 +401,7 @@ private fun UsagePokemonRow(
                 text = name,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
+                color = nameColor,
                 maxLines = 1,
                 modifier = Modifier.weight(1f)
             )
@@ -408,7 +409,7 @@ private fun UsagePokemonRow(
             Text(
                 text = usagePercent,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = percentColor
             )
         }
     }

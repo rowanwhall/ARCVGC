@@ -44,13 +44,12 @@ sealed class ContentListItem {
         val items: List<ContentListItem>,
         val trailingAction: SectionAction? = null,
         /**
-         * Desktop-web only. When true, header + content render flush to the
-         * left edge of the grid's content area instead of being horizontally
-         * centered on the content's natural width via `SectionContentAlignedHeader`.
-         * Other platforms always fill width + use horizontal padding so this
-         * flag is a no-op there.
+         * Desktop-web only. When true, the header text is centered within its
+         * available width instead of being left-aligned. Only honored when the
+         * section has no trailing controls (sort toggle / see-more). Android
+         * and iOS don't read this flag.
          */
-        val alignContentStart: Boolean = false
+        val centerHeader: Boolean = false
     ) : ContentListItem() {
         override val listKey get() = "section_$header"
     }

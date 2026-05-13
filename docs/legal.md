@@ -5,7 +5,7 @@ The app's public name is **ARC** (Automatic Replay Compiler). Legal documents li
 - `legal/terms-of-service.html` — Terms of service (hosted as a web page, linked from Settings)
 - `legal/TODO.md` — Pre-launch checklist and ongoing maintenance reminders
 
-Hosted URLs are defined in `SettingsRepository.companion` (`URL_PRIVACY_POLICY`, `URL_TERMS_OF_SERVICE`) — currently placeholders that must be updated before launch.
+Hosted URLs are defined in `SettingsRepository.companion` (`URL_PRIVACY_POLICY`, `URL_TERMS_OF_SERVICE`) — currently placeholders that must be updated before launch. On desktop web, the NavigationRail footer also exposes these links as "Privacy Policy" / "Terms of Service" rows separated by a horizontal divider (each opens in a new tab via `window.open(..., "_blank")`).
 
 ## Key legal claims (must stay accurate)
 - No personal data is collected or transmitted to any server

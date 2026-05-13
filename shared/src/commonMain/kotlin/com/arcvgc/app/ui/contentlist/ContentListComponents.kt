@@ -73,11 +73,14 @@ fun SectionHeader(
     isLoading: Boolean = false,
     sortOrder: OrderBy? = null,
     onToggleSortOrder: (() -> Unit)? = null,
-    onSeeMore: (() -> Unit)? = null
+    onSeeMore: (() -> Unit)? = null,
+    centerTitle: Boolean = false
 ) {
+    val hasTrailing = (sortOrder != null && onToggleSortOrder != null) || onSeeMore != null
     Row(
         modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (centerTitle && !hasTrailing) Arrangement.Center else Arrangement.Start
     ) {
         Text(
             text = title,
@@ -186,8 +189,10 @@ fun LookbackSegmentedSelector(
     ) {
         LookbackWindow.entries.forEach { window ->
             val isSelected = window == selectedLookback
-            val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+            val accentColor = MaterialTheme.colorScheme.primary
+            val borderColor = if (isSelected) accentColor else MaterialTheme.colorScheme.outlineVariant
             val borderWidth = if (isSelected) StandardBorderWidth * 2 else StandardBorderWidth
+            val textColor = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -200,7 +205,7 @@ fun LookbackSegmentedSelector(
                 Text(
                     text = window.displayName,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = textColor,
                     maxLines = 1
                 )
             }

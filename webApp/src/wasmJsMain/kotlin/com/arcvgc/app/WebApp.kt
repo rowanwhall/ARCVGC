@@ -6,7 +6,10 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.SizeTransform
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -14,8 +17,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
@@ -54,8 +57,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -701,14 +704,35 @@ private fun DesktopLayout(
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = SharedSettingsRepository.DISCLAIMER_TEXT,
-                fontSize = 9.sp,
-                fontStyle = FontStyle.Italic,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
                     .widthIn(max = 80.dp)
-            )
+            ) {
+                Text(
+                    text = "Privacy Policy",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable {
+                        window.open(SharedSettingsRepository.URL_PRIVACY_POLICY, "_blank")
+                    }
+                )
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                )
+                Text(
+                    text = "Terms of Service",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable {
+                        window.open(SharedSettingsRepository.URL_TERMS_OF_SERVICE, "_blank")
+                    }
+                )
+            }
         }
         VerticalDivider(modifier = Modifier.fillMaxHeight())
 
