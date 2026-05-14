@@ -68,7 +68,7 @@ fun ContentListPage(
     mode: ContentListMode = ContentListMode.Home,
     onBack: (() -> Unit)? = null,
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
-    onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?) -> Unit)? = null,
+    onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?, lookback: LookbackWindow?) -> Unit)? = null,
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null,
     onTopPokemonClick: ((formatId: Int?) -> Unit)? = null,
     initialBattleId: Int? = null,
@@ -82,7 +82,7 @@ fun ContentListPage(
         is ContentListMode.Home -> "content_list_home"
         is ContentListMode.Favorites -> "content_list_favorites_${mode.contentType.name}"
         is ContentListMode.Search -> "content_list_search_${mode.params}"
-        is ContentListMode.Pokemon -> "content_list_pokemon_${mode.pokemonId}_${mode.formatId}"
+        is ContentListMode.Pokemon -> "content_list_pokemon_${mode.pokemonId}_${mode.formatId}_${mode.lookback?.value}"
         is ContentListMode.Player -> "content_list_player_${mode.playerId}_${mode.formatId}"
         is ContentListMode.TopPokemon -> "content_list_top_pokemon_${mode.formatId}"
     }
@@ -193,11 +193,11 @@ fun ContentListPage(
             }
     }
 
-    val navigateToPokemon: (Int, String, String?, List<String>, Int?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId ->
+    val navigateToPokemon: (Int, String, String?, List<String>, Int?, LookbackWindow?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId, lookback ->
         if (onPokemonClick != null) {
-            onPokemonClick(id, name, imageUrl, typeImageUrls, formatId)
+            onPokemonClick(id, name, imageUrl, typeImageUrls, formatId, lookback)
         } else {
-            pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId)
+            pokemonNavTarget = PokemonNavTarget(id, name, imageUrl, typeImageUrls, formatId, lookback)
         }
     }
 
@@ -226,7 +226,8 @@ fun ContentListPage(
                 currentPokemonNav.id, currentPokemonNav.name, currentPokemonNav.imageUrl,
                 currentPokemonNav.typeImageUrls.getOrNull(0),
                 currentPokemonNav.typeImageUrls.getOrNull(1),
-                currentPokemonNav.formatId
+                currentPokemonNav.formatId,
+                currentPokemonNav.lookback
             ),
             onBack = { pokemonNavTarget = null },
             modifier = modifier
@@ -321,7 +322,8 @@ fun ContentListPage(
                 is ContentListItem.Pokemon -> navigateToPokemon(
                     item.id, item.name, item.imageUrl,
                     item.types.mapNotNull { it.imageUrl },
-                    derivedFormatId(mode, viewModel.selectedFormatId.value)
+                    derivedFormatId(mode, viewModel.selectedFormatId.value),
+                    derivedLookback(mode, viewModel.selectedLookback.value)
                 )
                 is ContentListItem.Player -> navigateToPlayer(
                     item.id, item.name,
@@ -342,7 +344,8 @@ fun ContentListPage(
         onPokemonGridClick = { pokemon ->
             navigateToPokemon(
                 pokemon.id, pokemon.name, pokemon.imageUrl, emptyList(),
-                derivedFormatId(mode, viewModel.selectedFormatId.value)
+                derivedFormatId(mode, viewModel.selectedFormatId.value),
+                derivedLookback(mode, viewModel.selectedLookback.value)
             )
         },
         onTopPlayerChipClick = { player -> topPlayerDialogTarget = player },
@@ -627,8 +630,8 @@ fun ContentListPage(
                                     onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
                                     onClose = { selectedBattleId = null },
                                     showWinnerHighlight = showWinnerHighlight,
-                                    onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId ->
-                                        navigateToPokemon(id, name, imageUrl, typeImageUrls, formatId)
+                                    onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId, lookback ->
+                                        navigateToPokemon(id, name, imageUrl, typeImageUrls, formatId, lookback)
                                     },
                                     onPlayerClick = { id, name, formatId ->
                                         navigateToPlayer(id, name, formatId)

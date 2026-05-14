@@ -117,11 +117,12 @@ internal fun UsageDesktopPage(
     }
 
     var selectedPokemon by remember { mutableStateOf<ContentListItem.Pokemon?>(null) }
-    // Usage format captured at the moment the pokemon was selected. The nested
-    // Pokemon page is keyed on this so each (pokemon, usage-format) pair gets
-    // its own session — re-clicking the same pokemon after changing the usage
-    // format re-initializes the page with the new format.
+    // Usage format/lookback captured at the moment the pokemon was selected.
+    // The nested Pokemon page is keyed on these so each (pokemon, usage-format,
+    // usage-lookback) tuple gets its own session — re-clicking the same pokemon
+    // after changing either selector re-initializes the page with the new values.
     var formatAtSelection by remember { mutableStateOf<Int?>(null) }
+    var lookbackAtSelection by remember { mutableStateOf(initialLookback) }
 
     LaunchedEffect(allItems, initialSelectedPokemonId, uiState.loadingSections) {
         if (allItems.isEmpty()) return@LaunchedEffect
@@ -132,6 +133,7 @@ internal fun UsageDesktopPage(
             val initial = initialSelectedPokemonId?.let { id -> allItems.find { it.id == id } }
             selectedPokemon = initial ?: allItems.first()
             formatAtSelection = selectedFormatId
+            lookbackAtSelection = selectedLookback
         }
     }
 
@@ -291,10 +293,12 @@ internal fun UsageDesktopPage(
                             isSelected = pokemon.id == selectedPokemon?.id,
                             onClick = {
                                 val sameSelection = pokemon.id == selectedPokemon?.id &&
-                                    selectedFormatId == formatAtSelection
+                                    selectedFormatId == formatAtSelection &&
+                                    selectedLookback == lookbackAtSelection
                                 if (!sameSelection) {
                                     selectedPokemon = pokemon
                                     formatAtSelection = selectedFormatId
+                                    lookbackAtSelection = selectedLookback
                                     onClearNestedStack()
                                 }
                             }
@@ -314,9 +318,9 @@ internal fun UsageDesktopPage(
 
         Box(modifier = Modifier.fillMaxSize()) {
             val nestedTop = nestedStack.lastOrNull()
-            val nestedPokemonClick: (Int, String, String?, List<String>, Int?) -> Unit =
-                { id, name, imageUrl, typeImageUrls, fmt ->
-                    onPushNestedEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, fmt))
+            val nestedPokemonClick: (Int, String, String?, List<String>, Int?, LookbackWindow?) -> Unit =
+                { id, name, imageUrl, typeImageUrls, fmt, lookback ->
+                    onPushNestedEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, fmt, lookback))
                 }
             val nestedPlayerClick: (Int, String, Int?) -> Unit = { id, name, fmt ->
                 onPushNestedEntry(NavEntry.Player(id, name, fmt))
@@ -332,7 +336,8 @@ internal fun UsageDesktopPage(
                             imageUrl = sel.imageUrl,
                             typeImageUrl1 = sel.types.getOrNull(0)?.imageUrl,
                             typeImageUrl2 = sel.types.getOrNull(1)?.imageUrl,
-                            formatId = formatAtSelection
+                            formatId = formatAtSelection,
+                            lookback = lookbackAtSelection
                         ),
                         modifier = Modifier.fillMaxSize(),
                         onPokemonClick = nestedPokemonClick,
@@ -348,7 +353,8 @@ internal fun UsageDesktopPage(
                         imageUrl = nestedTop.imageUrl,
                         typeImageUrl1 = nestedTop.typeImageUrls.getOrNull(0),
                         typeImageUrl2 = nestedTop.typeImageUrls.getOrNull(1),
-                        formatId = nestedTop.formatId
+                        formatId = nestedTop.formatId,
+                        lookback = nestedTop.lookback
                     ),
                     onBack = onPopNestedEntry,
                     modifier = Modifier.fillMaxSize(),

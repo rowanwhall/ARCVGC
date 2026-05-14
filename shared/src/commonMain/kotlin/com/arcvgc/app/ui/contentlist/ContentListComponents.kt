@@ -48,7 +48,8 @@ data class PokemonNavTarget(
     val name: String,
     val imageUrl: String?,
     val typeImageUrls: List<String> = emptyList(),
-    val formatId: Int? = null
+    val formatId: Int? = null,
+    val lookback: LookbackWindow? = null
 )
 
 data class PlayerNavTarget(val id: Int, val name: String, val formatId: Int? = null)

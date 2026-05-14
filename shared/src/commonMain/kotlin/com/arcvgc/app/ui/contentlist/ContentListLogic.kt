@@ -80,7 +80,12 @@ class ContentListLogic(
     )
     val selectedFormatId: StateFlow<Int> = _selectedFormatId.asStateFlow()
 
-    private val _selectedLookback = MutableStateFlow(initialLookback)
+    private val _selectedLookback = MutableStateFlow(
+        when (val m = mode) {
+            is ContentListMode.Pokemon -> m.lookback ?: initialLookback
+            else -> initialLookback
+        }
+    )
     val selectedLookback: StateFlow<LookbackWindow> = _selectedLookback.asStateFlow()
 
     private fun preferredFormatId(): Int =

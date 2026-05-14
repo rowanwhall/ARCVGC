@@ -29,6 +29,15 @@ struct ContentListView: View {
         }
     }
 
+    /// Mirrors Android/web `derivedLookback`: only TopPokemon and Pokemon modes
+    /// propagate their current lookback selection to the next Pokemon drill-down.
+    private var derivedLookback: LookbackWindow? {
+        switch mode {
+        case .topPokemon, .pokemon: return viewModel.selectedLookback
+        default: return nil
+        }
+    }
+
     private let appConfigStore: AppConfigStore?
 
     /// Live format items from the catalog store, sorted with the user's preferred format pinned
@@ -446,7 +455,8 @@ struct ContentListView: View {
                     mode: .pokemon(id: target.id, name: target.name, imageUrl: target.imageUrl, typeImageUrl1: target.typeImageUrl1, typeImageUrl2: target.typeImageUrl2, formatId: target.formatId),
                     favoritesStore: favoritesStore,
                     settingsStore: settingsStore,
-                    appConfigStore: appConfigStore
+                    appConfigStore: appConfigStore,
+                    initialLookback: target.lookback ?? .all
                 )
             }
         }
@@ -574,7 +584,8 @@ struct ContentListView: View {
                     imageUrl: pokemonItem.imageUrl,
                     typeImageUrl1: typeUrls.first,
                     typeImageUrl2: typeUrls.count > 1 ? typeUrls[1] : nil,
-                    formatId: derivedFormatId
+                    formatId: derivedFormatId,
+                    lookback: derivedLookback
                 )
             } label: {
                 HStack(spacing: 12) {
@@ -691,7 +702,8 @@ struct ContentListView: View {
                                     imageUrl: pokemon.imageUrl,
                                     typeImageUrl1: nil,
                                     typeImageUrl2: nil,
-                                    formatId: viewModel.selectedFormatId
+                                    formatId: viewModel.selectedFormatId,
+                                    lookback: derivedLookback
                                 )
                             } label: {
                                 VStack(spacing: 0) {
@@ -739,7 +751,8 @@ struct ContentListView: View {
                                     imageUrl: chip.imageUrl,
                                     typeImageUrl1: nil,
                                     typeImageUrl2: nil,
-                                    formatId: viewModel.selectedFormatId
+                                    formatId: viewModel.selectedFormatId,
+                                    lookback: derivedLookback
                                 )
                             } label: {
                                 statChipBody(chip: chip)

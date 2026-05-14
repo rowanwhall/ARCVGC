@@ -35,7 +35,8 @@ enum ContentListMode {
                 imageUrl: imageUrl,
                 typeImageUrl1: typeImageUrl1,
                 typeImageUrl2: typeImageUrl2,
-                formatId: formatId.map { KotlinInt(int: $0) }
+                formatId: formatId.map { KotlinInt(int: $0) },
+                lookback: nil
             )
         case .player(let id, let name, let formatId):
             return Shared.ContentListMode.Player(

@@ -214,6 +214,33 @@ class ContentListLogicTest {
         assertEquals(appConfigRepo.getDefaultFormatId(), logic.selectedFormatId.value)
     }
 
+    @Test
+    fun pokemonMode_initializesLookbackFromMode() {
+        val logic = createLogic(ContentListMode.Pokemon(
+            pokemonId = 25, name = "Pikachu", imageUrl = null,
+            typeImageUrl1 = null, typeImageUrl2 = null,
+            formatId = null, lookback = LookbackWindow.Week
+        ))
+        assertEquals(LookbackWindow.Week, logic.selectedLookback.value)
+    }
+
+    @Test
+    fun pokemonMode_fallsToInitialLookbackWhenModeLookbackNull() {
+        val logic = ContentListLogic(
+            scope = testScope,
+            repository = fakeRepo,
+            favoritesRepository = favoritesRepo,
+            appConfigRepository = appConfigRepo,
+            mode = ContentListMode.Pokemon(
+                pokemonId = 25, name = "Pikachu", imageUrl = null,
+                typeImageUrl1 = null, typeImageUrl2 = null,
+                formatId = null, lookback = null
+            ),
+            initialLookback = LookbackWindow.Day
+        )
+        assertEquals(LookbackWindow.Day, logic.selectedLookback.value)
+    }
+
     // --- fetchContent per mode ---
 
     @Test

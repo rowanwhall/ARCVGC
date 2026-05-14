@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.arcvgc.app.di.DependencyContainer
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.ui.components.ErrorView
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.GradientToolbarScaffold
@@ -31,7 +32,7 @@ fun BattleDetailPanel(
     modifier: Modifier = Modifier,
     showBackArrow: Boolean = false,
     showWinnerHighlight: Boolean = true,
-    onPokemonClick: ((Int, String, String?, List<String>, Int?) -> Unit)? = null,
+    onPokemonClick: ((Int, String, String?, List<String>, Int?, LookbackWindow?) -> Unit)? = null,
     onPlayerClick: ((Int, String, Int?) -> Unit)? = null
 ) {
     val viewModel = rememberViewModel("battle_detail_$battleId") {
@@ -46,7 +47,7 @@ fun BattleDetailPanel(
 
     val wrappedOnPokemonClick: ((Int, String, String?, List<String>) -> Unit)? = onPokemonClick?.let { callback ->
         { id: Int, name: String, imageUrl: String?, typeImageUrls: List<String> ->
-            callback(id, name, imageUrl, typeImageUrls, displayDetail?.formatId)
+            callback(id, name, imageUrl, typeImageUrls, displayDetail?.formatId, null)
         }
     }
 

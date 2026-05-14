@@ -212,7 +212,8 @@ fun ContentListPage(
                         pokemonNavTarget = PokemonNavTarget(
                             item.id, item.name, item.imageUrl,
                             item.types.mapNotNull { it.imageUrl },
-                            derivedFormatId
+                            derivedFormatId,
+                            derivedLookback(mode, viewModel.selectedLookback.value)
                         )
                     }
                     is ContentListItem.Player -> {
@@ -247,7 +248,11 @@ fun ContentListPage(
                     is ContentListMode.Player -> viewModel.selectedFormatId.value
                     else -> null
                 }
-                pokemonNavTarget = PokemonNavTarget(pokemon.id, pokemon.name, pokemon.imageUrl, formatId = derivedFormatId)
+                pokemonNavTarget = PokemonNavTarget(
+                    pokemon.id, pokemon.name, pokemon.imageUrl,
+                    formatId = derivedFormatId,
+                    lookback = derivedLookback(mode, viewModel.selectedLookback.value)
+                )
             },
             onTopPlayerChipClick = { player -> topPlayerDialogTarget = player },
             searchParams = (mode as? ContentListMode.Search)?.params,
@@ -444,7 +449,8 @@ fun ContentListPage(
                         target.id, target.name, target.imageUrl,
                         target.typeImageUrls.getOrNull(0),
                         target.typeImageUrls.getOrNull(1),
-                        target.formatId
+                        target.formatId,
+                        target.lookback
                     ),
                     onBack = { pokemonNavTarget = null },
                     consumeTopInsets = consumeTopInsets,
@@ -504,6 +510,15 @@ private fun <T> rememberLastNonNull(value: T?): T? {
     var last by remember { mutableStateOf(value) }
     if (value != null) last = value
     return last
+}
+
+private fun derivedLookback(
+    mode: ContentListMode,
+    selectedLookback: LookbackWindow
+): LookbackWindow? = when (mode) {
+    is ContentListMode.TopPokemon,
+    is ContentListMode.Pokemon -> selectedLookback
+    else -> null
 }
 
 

@@ -1,12 +1,13 @@
 package com.arcvgc.app.ui.model
 
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.SearchParams
 
 sealed class ContentListMode {
     data object Home : ContentListMode()
     data class Favorites(val contentType: FavoriteContentType = FavoriteContentType.Battles) : ContentListMode()
     data class Search(val params: SearchParams) : ContentListMode()
-    data class Pokemon(val pokemonId: Int, val name: String, val imageUrl: String?, val typeImageUrl1: String?, val typeImageUrl2: String?, val formatId: Int? = null) : ContentListMode()
+    data class Pokemon(val pokemonId: Int, val name: String, val imageUrl: String?, val typeImageUrl1: String?, val typeImageUrl2: String?, val formatId: Int? = null, val lookback: LookbackWindow? = null) : ContentListMode()
     data class Player(val playerId: Int, val playerName: String, val formatId: Int? = null) : ContentListMode()
     data class TopPokemon(val formatId: Int? = null) : ContentListMode()
 

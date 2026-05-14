@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.contentlist
 
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.ui.model.ContentListMode
 
 /**
@@ -24,4 +25,19 @@ internal fun derivedFormatId(
     is ContentListMode.Pokemon,
     is ContentListMode.Player -> selectedFormatId
     is ContentListMode.Favorites -> null
+}
+
+/**
+ * Mirrors [derivedFormatId] for the lookback window. Only modes that expose a
+ * lookback selector (TopPokemon, Pokemon) propagate their current selection;
+ * every other mode returns `null` so the destination page falls back to its
+ * own default.
+ */
+internal fun derivedLookback(
+    mode: ContentListMode,
+    selectedLookback: LookbackWindow
+): LookbackWindow? = when (mode) {
+    is ContentListMode.TopPokemon,
+    is ContentListMode.Pokemon -> selectedLookback
+    else -> null
 }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.ui.contentlist.ContentListPage
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FavoriteContentType
@@ -31,7 +32,7 @@ fun FavoritesPage(
     modifier: Modifier = Modifier,
     initialSubTab: Int? = null,
     initialBattleId: Int? = null,
-    onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?) -> Unit)? = null,
+    onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?, lookback: LookbackWindow?) -> Unit)? = null,
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null
 ) {
     val viewModel = rememberViewModel("favorites") { FavoritesViewModel() }

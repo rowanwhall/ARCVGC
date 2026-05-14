@@ -656,8 +656,8 @@ private fun DesktopLayout(
     initialBattleId: Int? = null,
     initialFavoritesSubTab: Int? = null
 ) {
-    val desktopPokemonClick: (Int, String, String?, List<String>, Int?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId ->
-        onPushDesktopEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
+    val desktopPokemonClick: (Int, String, String?, List<String>, Int?, LookbackWindow?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId, lookback ->
+        onPushDesktopEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId, lookback))
     }
     val desktopPlayerClick: (Int, String, Int?) -> Unit = { id, name, formatId ->
         onPushDesktopEntry(NavEntry.Player(id, name, formatId))
@@ -746,7 +746,8 @@ private fun DesktopLayout(
                         entry.id, entry.name, entry.imageUrl,
                         entry.typeImageUrls.getOrNull(0),
                         entry.typeImageUrls.getOrNull(1),
-                        entry.formatId
+                        entry.formatId,
+                        entry.lookback
                     ),
                     onBack = onPopDesktopEntry,
                     modifier = contentModifier,
@@ -829,8 +830,8 @@ private fun MobileLayout(
     val favoriteBattleIds by DependencyContainer.favoritesRepository.favoriteBattleIds.collectAsState()
     val showWinnerHighlight by DependencyContainer.settingsRepository.showWinnerHighlight.collectAsState()
 
-    val pokemonClick: (Int, String, String?, List<String>, Int?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId ->
-        onPushEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId))
+    val pokemonClick: (Int, String, String?, List<String>, Int?, LookbackWindow?) -> Unit = { id, name, imageUrl, typeImageUrls, formatId, lookback ->
+        onPushEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, formatId, lookback))
     }
     val playerClick: (Int, String, Int?) -> Unit = { id, name, formatId ->
         onPushEntry(NavEntry.Player(id, name, formatId))
@@ -997,7 +998,7 @@ private fun NavEntryContent(
     showWinnerHighlight: Boolean,
     onPushEntry: (NavEntry) -> Unit,
     onPopEntry: () -> Unit,
-    onPokemonClick: (Int, String, String?, List<String>, Int?) -> Unit,
+    onPokemonClick: (Int, String, String?, List<String>, Int?, LookbackWindow?) -> Unit,
     onPlayerClick: (Int, String, Int?) -> Unit
 ) {
     when (entry) {
@@ -1031,7 +1032,8 @@ private fun NavEntryContent(
                         entry.id, entry.name, entry.imageUrl,
                         entry.typeImageUrls.getOrNull(0),
                         entry.typeImageUrls.getOrNull(1),
-                        entry.formatId
+                        entry.formatId,
+                        entry.lookback
                     ),
                     onBack = { onPopEntry() },
                     modifier = Modifier.fillMaxSize(),
