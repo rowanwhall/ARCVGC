@@ -583,18 +583,23 @@ struct ContentListView: View {
                         circleSize: 40,
                         spriteSize: 56
                     )
-                    VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 6) {
+                        if let rank = pokemonItem.rank {
+                            Text("#\(rank.int32Value)")
+                                .font(.subheadline)
+                                .foregroundColor(Color(.secondaryLabel))
+                        }
                         Text(pokemonItem.name)
                             .font(.body)
                             .fontWeight(.medium)
                             .foregroundColor(Color(.label))
-                        if let pct = pokemonItem.usagePercent {
-                            Text(pct)
-                                .font(.subheadline)
-                                .foregroundColor(Color(.label).opacity(0.75))
-                        }
                     }
                     Spacer()
+                    if let pct = pokemonItem.usagePercent {
+                        Text(pct)
+                            .font(.subheadline)
+                            .foregroundColor(Color(.secondaryLabel))
+                    }
                     TypeIconRow(types: pokemonItem.types.map { (name: $0.name, imageUrl: $0.imageUrl) })
                 }
                 .contentShape(Rectangle())

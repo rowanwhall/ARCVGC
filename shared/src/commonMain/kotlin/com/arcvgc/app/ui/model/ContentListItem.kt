@@ -26,7 +26,8 @@ sealed class ContentListItem {
         val name: String,
         val imageUrl: String?,
         val types: List<TypeUiModel>,
-        val usagePercent: String? = null
+        val usagePercent: String? = null,
+        val rank: Int? = null
     ) : ContentListItem() {
         override val listKey get() = "pokemon_$id"
     }

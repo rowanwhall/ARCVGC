@@ -723,13 +723,14 @@ class ContentListLogic(
         is ContentListMode.TopPokemon -> {
             val formatDetail = repository.getFormatDetail(_selectedFormatId.value, topPokemonCount = 100, lookback = _selectedLookback.value)
             topPokemonTeamCount = formatDetail.teamCount
-            val mapped = formatDetail.topPokemon.map { pokemon ->
+            val mapped = formatDetail.topPokemon.mapIndexed { index, pokemon ->
                 ContentListItem.Pokemon(
                     id = pokemon.id,
                     name = pokemon.name,
                     imageUrl = pokemon.imageUrl,
                     types = pokemon.types.map { TypeUiModel(it.name, it.imageUrl) },
-                    usagePercent = formatUsagePercent(pokemon.count, formatDetail.teamCount)
+                    usagePercent = formatUsagePercent(pokemon.count, formatDetail.teamCount),
+                    rank = index + 1
                 )
             }
             _allTopPokemonItems.value = mapped

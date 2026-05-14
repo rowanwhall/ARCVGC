@@ -156,7 +156,8 @@ internal fun UsageDesktopPage(
     val rowAvatarSize = 40.dp
     val rowSpriteSize = 56.dp
     val rowInnerHorizontalPadding = 12.dp
-    val avatarToTextSpacing = 12.dp
+    val avatarToTextSpacing = 8.dp
+    val rankToNameSpacing = 6.dp
     val nameToPercentSpacing = 12.dp
     val leftPanePadding = 16.dp
     val minLeftPaneWidth = 260.dp
@@ -167,17 +168,29 @@ internal fun UsageDesktopPage(
 
     val leftPaneWidth = remember(allItems, sortedFormats, selectedFormatId) {
         with(density) {
-            val maxNameWidthPx = allItems.maxOf { item ->
-                textMeasurer.measure(item.name, nameStyle).size.width
-            }
+            // Use a percentile of name widths rather than the absolute max — a handful
+            // of long form names (e.g. "Tauros-Paldea-Blaze") would otherwise widen the
+            // column for all 100 rows. Outliers wrap to 2 lines below.
+            val sortedNameWidthsPx = allItems
+                .map { textMeasurer.measure(it.name, nameStyle).size.width }
+                .sorted()
+            val nameBudgetIndex = ((sortedNameWidthsPx.size - 1) * 0.9).toInt()
+                .coerceAtLeast(0)
+            val maxNameWidthPx = sortedNameWidthsPx.getOrElse(nameBudgetIndex) { 0 }
             val maxPercentWidthPx = allItems.maxOf { item ->
                 textMeasurer.measure(item.usagePercent ?: "", percentStyle).size.width
             }
+            // Ranks are 1..N — the widest is always the last item.
+            val maxRankWidthPx = allItems.lastOrNull()?.rank
+                ?.let { textMeasurer.measure("#$it", percentStyle).size.width }
+                ?: 0
             val maxFormatNameWidthPx = sortedFormats.maxOf { fmt ->
                 textMeasurer.measure(fmt.displayName, formatNameStyle).size.width
             }
+            val rankSlotWidth = if (maxRankWidthPx > 0) maxRankWidthPx.toDp() + rankToNameSpacing else 0.dp
             val rowContentWidth = rowAvatarSize +
                 avatarToTextSpacing +
+                rankSlotWidth +
                 maxNameWidthPx.toDp() +
                 nameToPercentSpacing +
                 maxPercentWidthPx.toDp() +
@@ -268,10 +281,12 @@ internal fun UsageDesktopPage(
                             name = pokemon.name,
                             imageUrl = pokemon.imageUrl,
                             usagePercent = pokemon.usagePercent ?: "",
+                            rank = pokemon.rank,
                             avatarSize = rowAvatarSize,
                             spriteSize = rowSpriteSize,
                             horizontalPadding = rowInnerHorizontalPadding,
                             avatarToTextSpacing = avatarToTextSpacing,
+                            rankToNameSpacing = rankToNameSpacing,
                             nameToPercentSpacing = nameToPercentSpacing,
                             isSelected = pokemon.id == selectedPokemon?.id,
                             onClick = {
@@ -366,10 +381,12 @@ private fun UsagePokemonRow(
     name: String,
     imageUrl: String?,
     usagePercent: String,
+    rank: Int?,
     avatarSize: Dp,
     spriteSize: Dp,
     horizontalPadding: Dp,
     avatarToTextSpacing: Dp,
+    rankToNameSpacing: Dp,
     nameToPercentSpacing: Dp,
     isSelected: Boolean,
     onClick: () -> Unit
@@ -378,6 +395,7 @@ private fun UsagePokemonRow(
     val borderColor = if (isSelected) accentColor else MaterialTheme.colorScheme.outlineVariant
     val borderWidth = if (isSelected) StandardBorderWidth * 2 else StandardBorderWidth
     val nameColor = if (isSelected) accentColor else Color.Unspecified
+    val rankColor = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
     val percentColor = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
     Surface(
         onClick = onClick,
@@ -397,12 +415,20 @@ private fun UsagePokemonRow(
                 spriteSize = spriteSize
             )
             Spacer(modifier = Modifier.width(avatarToTextSpacing))
+            if (rank != null) {
+                Text(
+                    text = "#$rank",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = rankColor
+                )
+                Spacer(modifier = Modifier.width(rankToNameSpacing))
+            }
             Text(
                 text = name,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color = nameColor,
-                maxLines = 1,
+                maxLines = 2,
                 modifier = Modifier.weight(1f)
             )
             Spacer(modifier = Modifier.width(nameToPercentSpacing))

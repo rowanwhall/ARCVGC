@@ -2,7 +2,6 @@ package com.arcvgc.app.ui.contentlist
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,7 +32,8 @@ internal fun PokemonListRow(
     types: List<TypeUiModel>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    usagePercent: String? = null
+    usagePercent: String? = null,
+    rank: Int? = null
 ) {
     Surface(
         onClick = onClick,
@@ -54,19 +54,32 @@ internal fun PokemonListRow(
                 spriteSize = 56.dp
             )
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-                if (usagePercent != null) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (rank != null) {
                     Text(
-                        text = usagePercent,
+                        text = "#$rank",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (usagePercent != null) {
+                Text(
+                    text = usagePercent,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             TypeIconRow(

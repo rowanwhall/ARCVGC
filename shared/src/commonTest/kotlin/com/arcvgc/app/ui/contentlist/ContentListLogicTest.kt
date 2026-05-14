@@ -1074,6 +1074,32 @@ class ContentListLogicTest {
     }
 
     @Test
+    fun topPokemonMode_populatesRankBasedOnListPosition() {
+        fakeRepo.formatDetailResult = FormatDetail(
+            id = 1,
+            name = "gen9vgc2026regibo3",
+            formattedName = "[Gen 9] VGC 2026 Reg I (Bo3)",
+            matchCount = 100,
+            teamCount = 200,
+            topPokemon = listOf(
+                TopPokemon(id = 1, name = "First", pokedexNumber = 1, types = emptyList(), imageUrl = null, count = 100),
+                TopPokemon(id = 2, name = "Second", pokedexNumber = 2, types = emptyList(), imageUrl = null, count = 80),
+                TopPokemon(id = 3, name = "Third", pokedexNumber = 3, types = emptyList(), imageUrl = null, count = 60)
+            )
+        )
+
+        val logic = createLogic(ContentListMode.TopPokemon(formatId = 1))
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val items = logic.allTopPokemonItems.value
+        assertEquals(3, items.size)
+        assertEquals(1, items[0].rank)
+        assertEquals(2, items[1].rank)
+        assertEquals(3, items[2].rank)
+    }
+
+    @Test
     fun selectLookback_topPokemonMode_passesLookbackToFormatDetailFetchAndClearsSearchQuery() {
         fakeRepo.formatDetailResult = testFormatDetail()
 

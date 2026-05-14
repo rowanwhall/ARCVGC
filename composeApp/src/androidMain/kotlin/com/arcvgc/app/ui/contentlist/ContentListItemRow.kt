@@ -58,6 +58,7 @@ internal fun ContentListItemRow(
             imageUrl = item.imageUrl,
             types = item.types,
             usagePercent = item.usagePercent,
+            rank = item.rank,
             onClick = { onItemClick(item) }
         )
         is ContentListItem.Player -> PlayerListRow(
