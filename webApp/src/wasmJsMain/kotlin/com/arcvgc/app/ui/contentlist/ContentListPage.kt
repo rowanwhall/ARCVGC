@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.AddLink
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -53,6 +54,7 @@ import com.arcvgc.app.ui.WindowSizeClass
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.components.GradientToolbar
 import com.arcvgc.app.ui.components.TopPlayerDialog
+import com.arcvgc.app.ui.components.TutorialDialog
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FavoriteContentType
@@ -78,6 +80,7 @@ fun ContentListPage(
 ) {
     val hasToolbar = onBack != null || showToolbarWithoutBack || mode is ContentListMode.Home
     var showSubmitReplayDialog by remember { mutableStateOf(false) }
+    var showTutorialDialog by remember { mutableStateOf(false) }
     val viewModelKey = when (mode) {
         is ContentListMode.Home -> "content_list_home"
         is ContentListMode.Favorites -> "content_list_favorites_${mode.contentType.name}"
@@ -436,6 +439,13 @@ fun ContentListPage(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+                            IconButton(onClick = { showTutorialDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                                    contentDescription = "Help",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                         if (mode is ContentListMode.Pokemon) {
                             val pId = mode.pokemonId
@@ -573,6 +583,13 @@ fun ContentListPage(
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
+                                        IconButton(onClick = { showTutorialDialog = true }) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                                                contentDescription = "Help",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
                                     if (mode is ContentListMode.Pokemon) {
                                         val pId = mode.pokemonId
@@ -647,6 +664,13 @@ fun ContentListPage(
 
         if (showSubmitReplayDialog) {
             SubmitReplayDialogHost(onDismiss = { showSubmitReplayDialog = false })
+        }
+
+        if (showTutorialDialog) {
+            TutorialDialog(
+                onDismiss = { showTutorialDialog = false },
+                showArrows = !isCompact
+            )
         }
 
         topPlayerDialogTarget?.let { player ->

@@ -124,6 +124,7 @@ Feature-specific architecture docs. **You MUST read the relevant doc(s) before s
 | [`docs/sentry.md`](docs/sentry.md) | Crash reporting setup |
 | [`docs/deployment.md`](docs/deployment.md) | Web deployment, nginx, CORS, image URL handling |
 | [`docs/info-dialogs.md`](docs/info-dialogs.md) | Info dialog system — shared content registry, per-platform components, adding new info content |
+| [`docs/tutorial.md`](docs/tutorial.md) | Tutorial dialog — shared page config, per-platform images, per-platform string overrides |
 | [`docs/legal.md`](docs/legal.md) | Legal documents, key claims, hosted URLs |
 
 Coding conventions and quality rules are in `.claude/rules/` (automatically loaded).

@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.AddLink
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
@@ -88,6 +89,7 @@ import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.excludeHistoric
 import com.arcvgc.app.ui.shareBattleUrl
 import com.arcvgc.app.ui.shareUrlForMode
+import com.arcvgc.app.ui.components.TutorialDialog
 import com.arcvgc.app.ui.submitreplay.SubmitReplayDialogHost
 import com.arcvgc.app.ui.tokens.AppTokens.ContentListItemSpacing
 import com.arcvgc.app.ui.tokens.AppTokens.BrandFontFamily
@@ -164,6 +166,7 @@ fun ContentListPage(
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
     var topPlayerDialogTarget by remember { mutableStateOf<ContentListItem.TopPlayerChipItem?>(null) }
     var showSubmitReplayDialog by remember { mutableStateOf(false) }
+    var showTutorialDialog by remember { mutableStateOf(false) }
 
     val statusBarHeight = if (consumeTopInsets) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
     val isTopPokemonMode = mode is ContentListMode.TopPokemon
@@ -308,6 +311,13 @@ fun ContentListPage(
                             Icon(
                                 imageVector = Icons.Default.AddLink,
                                 contentDescription = "Submit replay",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(onClick = { showTutorialDialog = true }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                                contentDescription = "Help",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -478,6 +488,10 @@ fun ContentListPage(
 
         if (showSubmitReplayDialog) {
             SubmitReplayDialogHost(onDismiss = { showSubmitReplayDialog = false })
+        }
+
+        if (showTutorialDialog) {
+            TutorialDialog(onDismiss = { showTutorialDialog = false })
         }
 
         topPlayerDialogTarget?.let { player ->

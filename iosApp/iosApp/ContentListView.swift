@@ -9,6 +9,7 @@ struct ContentListView: View {
     @State private var playerNavTarget: PlayerNavTarget? = nil
     @State private var topPokemonFormatId: Int32? = nil
     @State private var showSubmitReplayDialog: Bool = false
+    @State private var showTutorialDialog: Bool = false
     @State private var topPlayerDialogTarget: ContentListItem.TopPlayerChipItem? = nil
     @FocusState private var isSearchFieldFocused: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -99,6 +100,14 @@ struct ContentListView: View {
                     showSubmitReplayDialog = true
                 } label: {
                     Image(systemName: "link.badge.plus")
+                        .foregroundColor(Color(.secondaryLabel))
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showTutorialDialog = true
+                } label: {
+                    Image(systemName: "questionmark.circle")
                         .foregroundColor(Color(.secondaryLabel))
                 }
             }
@@ -494,6 +503,10 @@ struct ContentListView: View {
                 onDismiss: { showSubmitReplayDialog = false }
             )
             .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showTutorialDialog) {
+            TutorialDialog(onDismiss: { showTutorialDialog = false })
+                .presentationDetents([.large])
         }
         .sheet(isPresented: Binding(
             get: { topPlayerDialogTarget != nil },
