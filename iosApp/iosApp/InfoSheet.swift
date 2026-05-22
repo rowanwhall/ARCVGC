@@ -7,6 +7,13 @@ struct InfoSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            Image("Info")
+                .resizable()
+                .scaledToFit()
+                .frame(height: AppTokens.infoDialogImageSize)
+                .ifSilhouette()
+                .frame(maxWidth: .infinity, alignment: .center)
+
             Text(content.title)
                 .font(.headline)
 

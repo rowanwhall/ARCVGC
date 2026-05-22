@@ -187,7 +187,15 @@ struct ContentListView: View {
                         .padding(.horizontal, 16)
                     }
 
-                    // TODO: Replace with branded favorites asset when ready
+                    if case .favoritesHero = header {
+                        Image("Favorite")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: AppTokens.heroLogoHeight)
+                            .ifSilhouette()
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 16)
+                    }
 
                     if case .pokemonHero(let name, let imageUrl, let typeImageUrls) = header {
                         VStack(spacing: 0) {

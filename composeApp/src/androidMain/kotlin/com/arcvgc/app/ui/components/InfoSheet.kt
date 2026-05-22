@@ -1,5 +1,6 @@
 package com.arcvgc.app.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.info
 import com.arcvgc.app.ui.model.InfoContent
+import com.arcvgc.app.ui.tokens.AppTokens.InfoDialogImageSize
+import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,24 +45,36 @@ fun InfoSheet(
         modifier = modifier
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 40.dp)
-                    .padding(top = 16.dp, bottom = 32.dp)
-            ) {
-                Text(
-                    text = content.title,
-                    style = MaterialTheme.typography.titleMedium
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Image(
+                    painter = painterResource(Res.drawable.info),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 16.dp)
+                        .height(InfoDialogImageSize)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = content.body,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 40.dp, bottom = 32.dp)
+                ) {
+                    Text(
+                        text = content.title,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = content.body,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             IconButton(

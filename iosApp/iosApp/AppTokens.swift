@@ -52,6 +52,9 @@ enum AppTokens {
     // Hero / Branding
     static let heroLogoHeight: CGFloat = 96
 
+    // Info Dialog
+    static let infoDialogImageSize: CGFloat = 72
+
     // Separators
     static let bulletSeparator = "\u{2022}"
 

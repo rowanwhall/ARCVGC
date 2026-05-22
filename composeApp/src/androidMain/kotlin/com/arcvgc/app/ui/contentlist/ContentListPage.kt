@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.favorite
 import com.arcvgc.app.shared.logo
 import org.jetbrains.compose.resources.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -632,7 +633,20 @@ private fun ContentListContent(
                     }
                 }
                 is ContentListHeaderUiModel.FavoritesHero -> {
-                    // TODO: Replace with branded favorites asset when ready
+                    item(key = "favorites_hero") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(Res.drawable.favorite),
+                                contentDescription = "Favorites",
+                                modifier = Modifier.height(HeroLogoHeight)
+                            )
+                        }
+                    }
                 }
                 is ContentListHeaderUiModel.SearchFilters -> {
                     item(key = "search_filters") {

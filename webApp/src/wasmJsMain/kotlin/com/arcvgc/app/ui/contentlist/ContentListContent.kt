@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.shared.Res
+import com.arcvgc.app.shared.favorite
 import com.arcvgc.app.shared.logo
 import com.arcvgc.app.ui.LocalWindowSizeClass
 import com.arcvgc.app.ui.WindowSizeClass
@@ -578,7 +579,20 @@ private fun LazyGridScope.emitPageHeader(
             }
         }
         is ContentListHeaderUiModel.FavoritesHero -> {
-            // TODO: Replace with branded favorites asset when ready
+            animatedItem(key = "favorites_hero", span = fullSpan) {
+                CenteredItem {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Image(
+                            painter = painterResource(Res.drawable.favorite),
+                            contentDescription = "Favorites",
+                            modifier = Modifier.height(HeroLogoHeight)
+                        )
+                    }
+                }
+            }
         }
         is ContentListHeaderUiModel.SearchFilters -> {
             animatedItem(key = "search_filters", span = fullSpan) {
@@ -748,7 +762,6 @@ internal fun computeBattleItemIndex(
 
     when (header) {
         is ContentListHeaderUiModel.None -> {}
-        is ContentListHeaderUiModel.FavoritesHero -> {}
         else -> index++
     }
 

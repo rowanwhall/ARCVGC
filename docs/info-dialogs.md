@@ -33,11 +33,12 @@ InfoContentProvider (shared)  →  InfoButton + InfoSheet (Android)
 | iOS | `InfoButton.swift` (`info.circle` SF Symbol, 16pt) | `InfoSheet.swift` (`.sheet` with `.presentationDetents([.medium])`, hidden drag indicator, X close button) | Sheet |
 
 All dialogs have:
+- A centered brand "info" mascot image at the top (`info` drawable / iOS `Info` asset), sized via the shared `InfoDialogImageSize` (72) token. This is a fixed decorative element on every info dialog, distinct from the per-content `imageUrl` field (which remains unused).
 - Title (headline/titleMedium)
 - Body text (body/bodyMedium, secondary color)
 - X close button in top-right corner (no drag handle)
 - Content column has extra end padding (40dp / 12pt) to avoid title/close-button overlap
-- Future: optional image via `imageUrl` field (not yet rendered by any platform)
+- Future: optional per-content image via the `imageUrl` field (not yet rendered by any platform)
 
 ### Key files
 

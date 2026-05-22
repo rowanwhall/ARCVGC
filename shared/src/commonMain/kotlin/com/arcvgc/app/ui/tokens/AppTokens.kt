@@ -62,6 +62,9 @@ object AppTokens {
     // --- Dialog (Web) ---
     val DialogWidth = 480.dp
 
+    // --- Info Dialog ---
+    val InfoDialogImageSize = 72.dp
+
     // --- Hero / Branding ---
     val HeroLogoHeight = 96.dp
     val BrandFontFamily: FontFamily
