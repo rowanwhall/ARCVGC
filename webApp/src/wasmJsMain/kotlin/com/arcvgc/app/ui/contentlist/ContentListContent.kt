@@ -137,7 +137,6 @@ internal fun ContentListContent(
     val onFormatSelected = callbacks.onFormatSelected
     val onLookbackSelected = callbacks.onLookbackSelected
     val onSearchQueryChanged = callbacks.onSearchQueryChanged
-    val onSeeMore = callbacks.onSeeMore
     val searchParams = formatState.searchParams
     val sortOrder = formatState.sortOrder
     val formats = formatState.formats
@@ -294,7 +293,6 @@ internal fun ContentListContent(
                                                 isLoading = isLoadingSection,
                                                 sortOrder = null,
                                                 onToggleSortOrder = null,
-                                                onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
                                                 centerTitle = topItem.centerHeader
                                             )
                                             Spacer(modifier = Modifier.height(ContentListItemSpacing))
@@ -333,7 +331,6 @@ internal fun ContentListContent(
                                                         isLoading = isLoadingSection,
                                                         sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                                         onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                                        onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
                                                         centerTitle = topItem.centerHeader
                                                     )
                                                 }
@@ -345,7 +342,6 @@ internal fun ContentListContent(
                                                     isLoading = isLoadingSection,
                                                     sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                                     onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                                    onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
                                                     // Mobile/compact layouts don't have the screen real estate to support
                                                     // our existing centered header section designs — revisit if this changes.
                                                     centerTitle = false
@@ -424,7 +420,6 @@ internal fun ContentListContent(
                                                     isLoading = isLoadingSection,
                                                     sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                                     onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                                    onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
                                                     centerTitle = topItem.centerHeader
                                                 )
                                             }
@@ -924,13 +919,31 @@ private fun SectionGroupLayout(
         val contentMaxWidthPx = contentMaxWidth.roundToPx()
             .coerceAtLeast(constraints.maxWidth)
         val spacingPx = ContentListItemSpacing.roundToPx()
-        val availablePerColPx =
-            (contentMaxWidthPx + spacingPx) / cols.coerceAtLeast(1) - spacingPx
-        val slotMaxPx = SECTION_GROUP_ITEM_WIDTH.roundToPx()
-            .coerceAtMost(availablePerColPx.coerceAtLeast(1))
+        val reportedWidth = constraints.maxWidth.coerceAtMost(contentMaxWidthPx)
+
+        // fillWidth (Home): columns stretch to fill the full-span item's own box width
+        // (`reportedWidth`) evenly so the chip rows span it (~3-4 chips per row). That box
+        // is the grid's cell-pack — the same width and centered position as the battle-card
+        // row below — so the chip block inherits the battles' dynamic horizontal margin
+        // automatically (baseX ≈ 0), aligning edge-to-edge with the cards.
+        // Default (Pokemon profile): each column capped at SECTION_GROUP_ITEM_WIDTH and the
+        // packed block centered within the cell-pack with side gutters.
+        val itemWidthPx: Int
+        val itemWidthDp: Dp
+        if (group.fillWidth) {
+            itemWidthPx = ((reportedWidth - (cols - 1) * spacingPx) / cols.coerceAtLeast(1))
+                .coerceAtLeast(1)
+            itemWidthDp = itemWidthPx.toDp()
+        } else {
+            val availablePerColPx =
+                (contentMaxWidthPx + spacingPx) / cols.coerceAtLeast(1) - spacingPx
+            itemWidthPx = SECTION_GROUP_ITEM_WIDTH.roundToPx()
+                .coerceAtMost(availablePerColPx.coerceAtLeast(1))
+            itemWidthDp = SECTION_GROUP_ITEM_WIDTH
+        }
         val colConstraints = Constraints(
             minWidth = 0,
-            maxWidth = slotMaxPx,
+            maxWidth = itemWidthPx,
             minHeight = 0,
             maxHeight = Constraints.Infinity
         )
@@ -942,6 +955,7 @@ private fun SectionGroupLayout(
                     isLoading = section.header in loadingSections,
                     selectedBattleId = selectedBattleId,
                     showWinnerHighlight = showWinnerHighlight,
+                    itemWidth = itemWidthDp,
                     onItemClick = onItemClick,
                     onHighlightBattleClick = onHighlightBattleClick,
                     onPokemonGridClick = onPokemonGridClick,
@@ -950,10 +964,14 @@ private fun SectionGroupLayout(
             }.map { it.measure(colConstraints) }
         }
 
-        val colWidthPx = sectionPlaceables
-            .maxOfOrNull { placeables -> placeables.maxOfOrNull { it.width } ?: 0 }
-            ?.coerceAtLeast(1)
-            ?: SECTION_GROUP_ITEM_WIDTH.roundToPx()
+        val colWidthPx = if (group.fillWidth) {
+            itemWidthPx
+        } else {
+            sectionPlaceables
+                .maxOfOrNull { placeables -> placeables.maxOfOrNull { it.width } ?: 0 }
+                ?.coerceAtLeast(1)
+                ?: SECTION_GROUP_ITEM_WIDTH.roundToPx()
+        }
 
         val colHeights = IntArray(cols)
         val colAssignments = List(cols) { mutableListOf<Int>() }
@@ -967,8 +985,11 @@ private fun SectionGroupLayout(
         }
 
         val totalHeight = colHeights.maxOrNull() ?: 0
-        val reportedWidth = constraints.maxWidth.coerceAtMost(contentMaxWidthPx)
         val totalContentWidth = cols * colWidthPx + (cols - 1) * spacingPx
+        // Centers the packed block within the full-span item's box. Default mode: the block
+        // is narrower than the box, so it sits centered with side gutters. fillWidth mode:
+        // the block ≈ the box, so baseX ≈ 0 and the columns align with the box edges (= the
+        // battle-card cell-pack edges).
         val baseX = (reportedWidth - totalContentWidth) / 2
 
         layout(reportedWidth, totalHeight) {
@@ -993,6 +1014,7 @@ private fun SectionGroupItem(
     isLoading: Boolean,
     selectedBattleId: Int?,
     showWinnerHighlight: Boolean,
+    itemWidth: Dp = SECTION_GROUP_ITEM_WIDTH,
     onItemClick: (ContentListItem) -> Unit,
     onHighlightBattleClick: (Int) -> Unit,
     onPokemonGridClick: (ContentListItem.PokemonGridItem) -> Unit,
@@ -1000,10 +1022,12 @@ private fun SectionGroupItem(
 ) {
     val loadingMod = if (isLoading) Modifier.alpha(0.5f) else Modifier
     Column(
-        modifier = Modifier.width(SECTION_GROUP_ITEM_WIDTH),
+        modifier = Modifier.width(itemWidth),
         verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing)
     ) {
         if (section.header.isNotEmpty()) {
+            // Inline header (not the shared SectionHeader, which fillMaxWidth's) so the
+            // column can shrink to content width.
             Text(
                 text = section.header,
                 style = MaterialTheme.typography.titleSmall,

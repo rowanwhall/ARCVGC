@@ -35,7 +35,6 @@ internal data class ContentListCallbacks(
     val onFormatSelected: ((Int) -> Unit)? = null,
     val onLookbackSelected: ((LookbackWindow) -> Unit)? = null,
     val onSearchQueryChanged: ((String) -> Unit)? = null,
-    val onSeeMore: (() -> Unit)? = null,
 )
 
 /**

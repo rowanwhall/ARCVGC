@@ -7,7 +7,6 @@ struct ContentListView: View {
     @State private var replayNavState: ReplayNavState? = nil
     @State private var pokemonNavTarget: PokemonNavTarget? = nil
     @State private var playerNavTarget: PlayerNavTarget? = nil
-    @State private var topPokemonFormatId: Int32? = nil
     @State private var showSubmitReplayDialog: Bool = false
     @State private var showTutorialDialog: Bool = false
     @State private var topPlayerDialogTarget: ContentListItem.TopPlayerChipItem? = nil
@@ -331,14 +330,12 @@ struct ContentListView: View {
                             case .section(let section):
                                 let showSort = section.header == "Battles" && hasSortToggle
                                 let isLoadingSection = viewModel.state.loadingSections.contains(section.header)
-                                let hasSeeMore = section.trailingAction is ContentListItem.SectionActionSeeMore
                                 if !section.header.isEmpty {
                                     SectionHeaderView(
                                         title: section.header,
                                         isLoading: isLoadingSection,
                                         sortOrder: showSort ? viewModel.sortOrder : nil,
-                                        onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil,
-                                        onSeeMore: hasSeeMore ? { topPokemonFormatId = viewModel.selectedFormatId } : nil
+                                        onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil
                                     )
                                     .padding(.horizontal, 16)
                                 }
@@ -485,20 +482,6 @@ struct ContentListView: View {
                 ContentListView(
                     repository: repository,
                     mode: .player(id: target.id, name: target.name, formatId: target.formatId),
-                    favoritesStore: favoritesStore,
-                    settingsStore: settingsStore,
-                    appConfigStore: appConfigStore
-                )
-            }
-        }
-        .navigationDestination(isPresented: Binding(
-            get: { topPokemonFormatId != nil },
-            set: { if !$0 { topPokemonFormatId = nil } }
-        )) {
-            if let formatId = topPokemonFormatId {
-                ContentListView(
-                    repository: repository,
-                    mode: .topPokemon(formatId: formatId),
                     favoritesStore: favoritesStore,
                     settingsStore: settingsStore,
                     appConfigStore: appConfigStore

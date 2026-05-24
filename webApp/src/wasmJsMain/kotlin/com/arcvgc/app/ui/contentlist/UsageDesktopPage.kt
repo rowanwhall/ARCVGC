@@ -59,8 +59,6 @@ import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
 
 @Composable
 internal fun UsageDesktopPage(
-    pendingInitialFormatId: Int?,
-    pendingInitialFormatTick: Int,
     initialSelectedPokemonId: Int?,
     initialLookback: LookbackWindow = LookbackWindow.All,
     nestedStack: List<NavEntry>,
@@ -75,7 +73,7 @@ internal fun UsageDesktopPage(
         ContentListViewModel(
             repository = DependencyContainer.battleRepository,
             favoritesRepository = DependencyContainer.favoritesRepository,
-            mode = ContentListMode.TopPokemon(formatId = pendingInitialFormatId),
+            mode = ContentListMode.TopPokemon(),
             appConfigRepository = DependencyContainer.appConfigRepository,
             formatCatalogRepository = DependencyContainer.formatCatalogRepository,
             pokemonCatalogRepository = DependencyContainer.pokemonCatalogRepository,
@@ -90,21 +88,6 @@ internal fun UsageDesktopPage(
     val selectedFormatId by listViewModel.selectedFormatId.collectAsState()
     val selectedLookback by listViewModel.selectedLookback.collectAsState()
 
-    // One-shot format push from Home → See More. Each click increments
-    // pendingInitialFormatTick; we apply it to the VM only when the tick
-    // exceeds the last applied one, so tab switches back to Usage don't
-    // re-reset any format the user has since picked via the dropdown.
-    LaunchedEffect(pendingInitialFormatTick) {
-        val fmt = pendingInitialFormatId
-        if (fmt != null &&
-            pendingInitialFormatTick > listViewModel.lastAppliedUsageFormatTick
-        ) {
-            listViewModel.lastAppliedUsageFormatTick = pendingInitialFormatTick
-            if (fmt != listViewModel.selectedFormatId.value) {
-                listViewModel.selectFormat(fmt)
-            }
-        }
-    }
     val formatCatalogState by DependencyContainer.formatCatalogRepository.state.collectAsState()
     val appConfig by DependencyContainer.appConfigRepository.config.collectAsState()
     val preferredFormatId by DependencyContainer.settingsRepository.preferredFormatId.collectAsState()
@@ -374,7 +357,7 @@ internal fun UsageDesktopPage(
                     onPlayerClick = nestedPlayerClick,
                     mirrorUrl = false
                 )
-                is NavEntry.BattleDetail, is NavEntry.TopPokemon -> {
+                is NavEntry.BattleDetail -> {
                     // Not used in the usage nested stack
                 }
             }

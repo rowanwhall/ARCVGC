@@ -133,7 +133,6 @@ struct SectionHeaderView: View {
     var isLoading: Bool = false
     var sortOrder: OrderBy? = nil
     var onToggleSortOrder: (() -> Void)? = nil
-    var onSeeMore: (() -> Void)? = nil
 
     var body: some View {
         HStack {
@@ -144,19 +143,6 @@ struct SectionHeaderView: View {
             Spacer()
             if let sortOrder = sortOrder, let toggle = onToggleSortOrder {
                 SortToggleButton(sortOrder: sortOrder, isLoading: isLoading, action: toggle)
-            } else if let seeMore = onSeeMore {
-                Button(action: seeMore) {
-                    HStack(spacing: 2) {
-                        Text("See More")
-                            .font(.caption)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
-                    }
-                    .foregroundColor(Color(.label).opacity(0.75))
-                    .padding(.horizontal, 8)
-                    .frame(height: 28)
-                    .contentShape(Rectangle())
-                }
             }
         }
     }

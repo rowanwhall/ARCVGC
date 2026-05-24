@@ -162,7 +162,6 @@ fun ContentListPage(
     var selectedBattleId by remember { mutableStateOf<Int?>(null) }
     var replayNavState by remember { mutableStateOf<ReplayNavState?>(null) }
     var pokemonNavTarget by remember { mutableStateOf<PokemonNavTarget?>(null) }
-    var topPokemonFormatId by remember { mutableStateOf<Int?>(null) }
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var playerNavTarget by remember { mutableStateOf<PlayerNavTarget?>(null) }
     var topPlayerDialogTarget by remember { mutableStateOf<ContentListItem.TopPlayerChipItem?>(null) }
@@ -180,7 +179,7 @@ fun ContentListPage(
         })
     }
 
-    if (onBack != null && selectedBattleId == null && pokemonNavTarget == null && playerNavTarget == null && topPokemonFormatId == null) {
+    if (onBack != null && selectedBattleId == null && pokemonNavTarget == null && playerNavTarget == null) {
         BackHandler { onBack() }
     }
 
@@ -275,8 +274,7 @@ fun ContentListPage(
             selectedLookback = selectedLookback,
             onLookbackSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.TopPokemon) viewModel::selectLookback else null,
             searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
-            onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
-            onSeeMore = { topPokemonFormatId = viewModel.selectedFormatId.value }
+            onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null
         )
 
         if (isTopPokemonMode) {
@@ -430,23 +428,6 @@ fun ContentListPage(
             }
         }
 
-        val lastTopPokemonFormatId = rememberLastNonNull(topPokemonFormatId)
-        AnimatedVisibility(
-            visible = topPokemonFormatId != null,
-            enter = slideInHorizontally { it },
-            exit = slideOutHorizontally { it }
-        ) {
-            lastTopPokemonFormatId?.let { formatId ->
-                BackHandler { topPokemonFormatId = null }
-                ContentListPage(
-                    mode = ContentListMode.TopPokemon(formatId = formatId),
-                    onBack = { topPokemonFormatId = null },
-                    consumeTopInsets = consumeTopInsets,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        }
-
         val lastPokemonNavTarget = rememberLastNonNull(pokemonNavTarget)
         AnimatedVisibility(
             visible = pokemonNavTarget != null,
@@ -563,7 +544,6 @@ private fun ContentListContent(
     onLookbackSelected: ((LookbackWindow) -> Unit)? = null,
     searchQuery: String = "",
     onSearchQueryChanged: ((String) -> Unit)? = null,
-    onSeeMore: (() -> Unit)? = null,
     extraBottomPadding: Dp = 0.dp
 ) {
     val listState = rememberLazyListState()
@@ -816,7 +796,6 @@ private fun ContentListContent(
                                             isLoading = isLoadingSection,
                                             sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                             onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                            onSeeMore = if (topItem.trailingAction is ContentListItem.SectionAction.SeeMore) onSeeMore else null,
                                             modifier = itemPadding
                                         )
                                     }

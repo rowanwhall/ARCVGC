@@ -10,6 +10,7 @@ import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonProfile
+import com.arcvgc.app.domain.model.PokemonUsageStats
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.BattleCardUiModel
@@ -37,6 +38,9 @@ class FakeBattleRepository : BattleRepositoryApi {
     var formatDetailResult: FormatDetail? = null
     var formatDetailError: Exception? = null
 
+    var pokemonUsageResult: PokemonUsageStats? = null
+    var pokemonUsageError: Exception? = null
+
     var playersByNamesResult: List<PlayerListItem> = emptyList()
     var playersByNamesError: Exception? = null
 
@@ -46,6 +50,7 @@ class FakeBattleRepository : BattleRepositoryApi {
     var searchMatchesCalls = mutableListOf<SearchMatchesCall>()
     var getFormatDetailCalls = mutableListOf<GetFormatDetailCall>()
     var getPokemonProfileCalls = mutableListOf<GetPokemonProfileCall>()
+    var getPokemonUsageCalls = mutableListOf<GetPokemonUsageCall>()
 
     data class SearchMatchesCall(
         val filters: List<SearchFilterSlot>,
@@ -68,6 +73,11 @@ class FakeBattleRepository : BattleRepositoryApi {
         val id: Int,
         val formatId: Int?,
         val lookback: LookbackWindow?
+    )
+
+    data class GetPokemonUsageCall(
+        val formatId: Int?,
+        val lookback: LookbackWindow
     )
 
     override suspend fun getBestPreviousDay(formatId: Int): List<BattleCardUiModel> {
@@ -136,6 +146,15 @@ class FakeBattleRepository : BattleRepositoryApi {
         if (pokemonProfileDelayMs > 0) delay(pokemonProfileDelayMs)
         pokemonProfileError?.let { throw it }
         return pokemonProfileResult ?: throw Exception("No pokemon profile configured")
+    }
+
+    override suspend fun getPokemonUsage(
+        formatId: Int?,
+        lookback: LookbackWindow
+    ): PokemonUsageStats {
+        getPokemonUsageCalls.add(GetPokemonUsageCall(formatId, lookback))
+        pokemonUsageError?.let { throw it }
+        return pokemonUsageResult ?: throw Exception("No pokemon usage configured")
     }
 
     override suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem> {

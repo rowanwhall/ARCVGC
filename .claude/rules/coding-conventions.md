@@ -84,7 +84,6 @@ ViewModels survive composition exit/re-entry (tab switches, back navigation) —
 - *Don't bump the tick* when the outer state has nothing to push (e.g., a `/usage` deep link with no `?lookback` query param). Bumping unconditionally would clobber the user's in-VM state with a default value.
 
 **Where this pattern lives:**
-- Web Home → See More for Usage format: `usagePendingFormatTick` in `WebApp.kt` + `lastAppliedUsageFormatTick` on `ContentListViewModel` (web), applied in `UsageDesktopPage.kt`'s `LaunchedEffect(pendingInitialFormatTick)`.
 - Deep-link lookback for the Usage tab (all three platforms): `deepLinkTopPokemonLookbackTick` in `App.kt`/`ContentView.swift`/`WebApp.kt` paired with `lastAppliedLookbackTick` on each platform's `ContentListViewModel`. Applied via `LaunchedEffect(pendingLookbackTick)` (Android/web) or `.onChange(of: pendingLookbackTick)` + `.onAppear` (iOS).
 
 **When to reach for this pattern:** any time you want to push a value into a cached VM from a higher-up state change *and* the user can also modify that same value from inside the VM's UI. If only one side ever writes, a simpler approach suffices.

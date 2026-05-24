@@ -8,6 +8,7 @@ import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonProfile
+import com.arcvgc.app.domain.model.PokemonUsageStats
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.network.ApiService
@@ -64,6 +65,10 @@ interface BattleRepositoryApi {
         formatId: Int? = null,
         lookback: LookbackWindow? = null
     ): PokemonProfile
+    suspend fun getPokemonUsage(
+        formatId: Int? = null,
+        lookback: LookbackWindow = LookbackWindow.Week
+    ): PokemonUsageStats
     suspend fun getPlayersByNames(names: List<String>): List<PlayerListItem>
     suspend fun searchPlayersByName(name: String): List<PlayerListItem>
 }
@@ -258,6 +263,35 @@ class BattleRepository(private val apiService: ApiService) : BattleRepositoryApi
     ): PokemonProfile? {
         return try {
             getPokemonProfile(id, formatId, lookback)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override suspend fun getPokemonUsage(
+        formatId: Int?,
+        lookback: LookbackWindow
+    ): PokemonUsageStats {
+        return when (val result = apiService.getPokemonUsage(formatId, lookback)) {
+            is NetworkResult.Success -> result.data
+            is NetworkResult.Error -> {
+                val error = Exception(result.message)
+                captureException(error)
+                throw error
+            }
+        }
+    }
+
+    /**
+     * Non-throwing variant for iOS — returns null on error instead of throwing.
+     * Errors are reported to Sentry automatically.
+     */
+    suspend fun getPokemonUsageOrNull(
+        formatId: Int? = null,
+        lookback: LookbackWindow = LookbackWindow.Week
+    ): PokemonUsageStats? {
+        return try {
+            getPokemonUsage(formatId, lookback)
         } catch (e: Exception) {
             null
         }

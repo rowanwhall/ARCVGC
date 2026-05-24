@@ -2,7 +2,6 @@ package com.arcvgc.app
 
 import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.encodePokemonPath
-import com.arcvgc.app.domain.model.encodeTopPokemonPath
 import com.arcvgc.app.ui.BattleOverlayRequest
 
 internal sealed class NavEntry {
@@ -16,15 +15,10 @@ internal sealed class NavEntry {
         val lookback: LookbackWindow? = null
     ) : NavEntry()
     data class Player(val id: Int, val name: String, val formatId: Int? = null) : NavEntry()
-    data class TopPokemon(
-        val formatId: Int? = null,
-        val lookback: LookbackWindow? = null
-    ) : NavEntry()
 }
 
 internal fun navEntryToPath(entry: NavEntry): String = when (entry) {
     is NavEntry.BattleDetail -> "/battle/${entry.request.battleId}"
     is NavEntry.Pokemon -> encodePokemonPath(entry.id, entry.lookback)
     is NavEntry.Player -> "/player/${entry.name}"
-    is NavEntry.TopPokemon -> encodeTopPokemonPath(entry.formatId, lookback = entry.lookback)
 }

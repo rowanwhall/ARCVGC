@@ -36,19 +36,14 @@ sealed class ContentListItem {
         override val listKey get() = "player_$id"
     }
 
-    sealed class SectionAction {
-        data object SeeMore : SectionAction()
-    }
-
     data class Section(
         val header: String,
         val items: List<ContentListItem>,
-        val trailingAction: SectionAction? = null,
         /**
          * Desktop-web only. When true, the header text is centered within its
          * available width instead of being left-aligned. Only honored when the
-         * section has no trailing controls (sort toggle / see-more). Android
-         * and iOS don't read this flag.
+         * section has no trailing controls (sort toggle). Android and iOS don't
+         * read this flag.
          */
         val centerHeader: Boolean = false
     ) : ContentListItem() {
@@ -60,8 +55,19 @@ sealed class ContentListItem {
      * them out as a responsive 1/2/3-column row; every other platform flattens the
      * group back to top-level sections via [unwrapSectionGroups] at the rendering
      * boundary and sees no visual change.
+     *
+     * [fillWidth] (desktop web only): when true, the columns stretch to evenly fill the
+     * full-span grid item's own box (the battle-card cell-pack width, which is centered to
+     * the same horizontal margins as the battle row below) instead of being capped at a
+     * fixed 320dp and centered. Used by the Home page so its three single-chip-row sections
+     * flow ~3-4 chips per row and align edge-to-edge with "Today's Top Battles"; the
+     * Pokemon-profile group keeps the default capped/centered layout. Ignored by platforms
+     * that flatten the group.
      */
-    data class SectionGroup(val sections: List<Section>) : ContentListItem() {
+    data class SectionGroup(
+        val sections: List<Section>,
+        val fillWidth: Boolean = false
+    ) : ContentListItem() {
         override val listKey get() = "section_group_${sections.joinToString("_") { it.header }}"
     }
 

@@ -18,6 +18,7 @@ import com.arcvgc.app.domain.model.PlayerListItem
 import com.arcvgc.app.domain.model.PlayerProfile
 import com.arcvgc.app.domain.model.PokemonListItem
 import com.arcvgc.app.domain.model.PokemonProfile
+import com.arcvgc.app.domain.model.PokemonUsageStats
 import com.arcvgc.app.domain.model.TeraType
 import com.arcvgc.app.network.mapper.toDomain
 import com.arcvgc.app.network.model.AbilityListResponseDto
@@ -32,6 +33,7 @@ import com.arcvgc.app.network.model.PlayerListResponseDto
 import com.arcvgc.app.network.model.PlayerProfileResponseDto
 import com.arcvgc.app.network.model.PokemonDetailResponseDto
 import com.arcvgc.app.network.model.PokemonListResponseDto
+import com.arcvgc.app.network.model.PokemonUsageResponseDto
 import com.arcvgc.app.network.model.SetDetailResponseDto
 import com.arcvgc.app.network.model.SetListResponseDto
 import com.arcvgc.app.network.model.TeraTypeListResponseDto
@@ -309,6 +311,29 @@ class ApiService : AppConfigApi {
                 NetworkResult.Success(response.data.toDomain())
             } else {
                 NetworkResult.Error("Pokémon not found")
+            }
+        } catch (e: Exception) {
+            captureException(e)
+            NetworkResult.Error(e.message ?: "Unknown error", e)
+        }
+    }
+
+    suspend fun getPokemonUsage(
+        formatId: Int? = null,
+        lookback: LookbackWindow = LookbackWindow.Week
+    ): NetworkResult<PokemonUsageStats> {
+        return try {
+            val response: PokemonUsageResponseDto = client
+                .get("${ApiConstants.BASE_URL}${ApiConstants.POKEMON_USAGE_ENDPOINT}") {
+                    formatId?.let { parameter("format_id", it) }
+                    parameter("lookback", lookback.value)
+                }
+                .body()
+
+            if (response.success) {
+                NetworkResult.Success(response.data.toDomain())
+            } else {
+                NetworkResult.Error("API returned success=false")
             }
         } catch (e: Exception) {
             captureException(e)

@@ -282,11 +282,6 @@ fun WebApp() {
         var usageNestedStack by usageNestedStackState
         val usageSelectedPokemonState = remember { mutableStateOf<PokemonListItem?>(null) }
         var usageSelectedPokemon by usageSelectedPokemonState
-        // One-shot format "push" from Home → See More. The tick increments each
-        // click so UsageDesktopPage's LaunchedEffect fires even when the format
-        // is the same as before, but only applies it once per new click.
-        var usagePendingFormatId by remember { mutableStateOf<Int?>(null) }
-        var usagePendingFormatTick by remember { mutableIntStateOf(0) }
         // Lookback parsed from a /usage deep link, applied once on Usage entry.
         var usagePendingLookback by remember { mutableStateOf<LookbackWindow?>(null) }
         val historyDepthState = remember { mutableIntStateOf(0) }
@@ -592,11 +587,6 @@ fun WebApp() {
                                     tabs = tabs,
                                     selectedTab = selectedTab,
                                     onTabSelected = handleTabSelected,
-                                    onHomeSeeMoreTopPokemon = { fmt ->
-                                        usagePendingFormatId = fmt
-                                        usagePendingFormatTick++
-                                        handleTabSelected(1)
-                                    },
                                     searchOverlayParams = searchOverlayParams,
                                     onSearch = handleSearch,
                                     onSearchBack = handleSearchBack,
@@ -605,8 +595,6 @@ fun WebApp() {
                                     onPopDesktopEntry = handlePopDesktopEntry,
                                     usageNestedStack = usageNestedStack,
                                     usageSelectedPokemon = usageSelectedPokemon,
-                                    usagePendingFormatId = usagePendingFormatId,
-                                    usagePendingFormatTick = usagePendingFormatTick,
                                     usagePendingLookback = usagePendingLookback,
                                     onPushUsageNestedEntry = handlePushUsageNestedEntry,
                                     onPopUsageNestedEntry = handlePopUsageNestedEntry,
@@ -637,7 +625,6 @@ private fun DesktopLayout(
     tabs: List<Tab>,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
-    onHomeSeeMoreTopPokemon: (formatId: Int?) -> Unit,
     searchOverlayParams: SearchParams?,
     onSearch: (SearchParams) -> Unit,
     onSearchBack: () -> Unit,
@@ -646,8 +633,6 @@ private fun DesktopLayout(
     onPopDesktopEntry: () -> Unit,
     usageNestedStack: List<NavEntry>,
     usageSelectedPokemon: PokemonListItem?,
-    usagePendingFormatId: Int?,
-    usagePendingFormatTick: Int,
     usagePendingLookback: LookbackWindow?,
     onPushUsageNestedEntry: (NavEntry) -> Unit,
     onPopUsageNestedEntry: () -> Unit,
@@ -764,7 +749,6 @@ private fun DesktopLayout(
                     onPlayerClick = desktopPlayerClick,
                     initialBattleId = initialBattleId
                 )
-                is NavEntry.TopPokemon -> {} // Desktop routes Home "See More" to Tab.Usage
                 is NavEntry.BattleDetail -> {} // Desktop doesn't use BattleDetail entries
             }
         } else if (searchOverlayParams != null) {
@@ -783,12 +767,9 @@ private fun DesktopLayout(
                     modifier = contentModifier,
                     onPokemonClick = desktopPokemonClick,
                     onPlayerClick = desktopPlayerClick,
-                    onTopPokemonClick = onHomeSeeMoreTopPokemon,
                     initialBattleId = initialBattleId
                 )
                 Tab.Usage -> com.arcvgc.app.ui.contentlist.UsageDesktopPage(
-                    pendingInitialFormatId = usagePendingFormatId,
-                    pendingInitialFormatTick = usagePendingFormatTick,
                     initialSelectedPokemonId = usageSelectedPokemon?.id,
                     initialLookback = usagePendingLookback ?: LookbackWindow.All,
                     nestedStack = usageNestedStack,
@@ -836,9 +817,6 @@ private fun MobileLayout(
     val playerClick: (Int, String, Int?) -> Unit = { id, name, formatId ->
         onPushEntry(NavEntry.Player(id, name, formatId))
     }
-    val topPokemonClick: (Int?) -> Unit = { formatId ->
-        onPushEntry(NavEntry.TopPokemon(formatId))
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         CompositionLocalProvider(
@@ -881,8 +859,7 @@ private fun MobileLayout(
                     Tab.Home -> ContentListPage(
                         modifier = Modifier.fillMaxSize().padding(innerPadding),
                         onPokemonClick = pokemonClick,
-                        onPlayerClick = playerClick,
-                        onTopPokemonClick = topPokemonClick
+                        onPlayerClick = playerClick
                     )
                     Tab.Usage -> ContentListPage(
                         mode = ContentListMode.TopPokemon(),
@@ -1057,16 +1034,6 @@ private fun NavEntryContent(
                     onPlayerClick = onPlayerClick
                 )
             }
-        }
-        is NavEntry.TopPokemon -> {
-            ContentListPage(
-                mode = ContentListMode.TopPokemon(formatId = entry.formatId),
-                onBack = { onPopEntry() },
-                modifier = Modifier.fillMaxSize(),
-                onPokemonClick = onPokemonClick,
-                onPlayerClick = onPlayerClick,
-                initialLookback = entry.lookback ?: LookbackWindow.All
-            )
         }
     }
 }

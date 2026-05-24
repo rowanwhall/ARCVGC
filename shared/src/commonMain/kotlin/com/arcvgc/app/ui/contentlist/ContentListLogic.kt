@@ -10,6 +10,7 @@ import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PokemonProfile
+import com.arcvgc.app.domain.model.PokemonUsage
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.mapper.ContentListItemMapper
@@ -43,17 +44,10 @@ class ContentListLogic(
     private var mode: ContentListMode,
     private val pokemonCatalogItems: List<PokemonPickerUiModel> = emptyList(),
     private val pokemonCatalogState: StateFlow<CatalogState<PokemonPickerUiModel>>? = null,
-    initialTopPokemonFetchCount: Int = DEFAULT_TOP_POKEMON_COUNT,
     initialLookback: LookbackWindow = LookbackWindow.All,
     private val settingsRepository: SettingsRepository? = null,
     private val isFormatHistoric: (Int) -> Boolean = { false }
 ) {
-    // Count the next fetch should request.
-    private var topPokemonFetchCount: Int = initialTopPokemonFetchCount
-    // Count most recently fetched from the backend. Tracked separately so that
-    // decrease-then-increase-below-peak (e.g., 6 → 14 → 10 → 12) doesn't re-fetch
-    // when we still have 14 cached on the screen.
-    private var topPokemonFetchedCount: Int = 0
     private val _uiState = MutableStateFlow(ContentListUiState())
     val uiState: StateFlow<ContentListUiState> = _uiState.asStateFlow()
 
@@ -413,60 +407,6 @@ class ContentListLogic(
         }
     }
 
-    /**
-     * Updates the Top Pokémon fetch count for Home mode. On increase, re-fetches the
-     * Top Pokémon section in-place (leaving battles and other sections untouched) so the
-     * wider row is populated before the user closes the battle detail pane. On decrease,
-     * just stores the new value — the UI re-slices the already-fetched list.
-     * No-op for modes other than Home.
-     */
-    fun setTopPokemonFetchCount(count: Int) {
-        if (mode !is ContentListMode.Home) return
-        topPokemonFetchCount = count
-        // Only re-fetch when the requested count exceeds what we've already fetched.
-        // Smaller/equal values don't need a network round-trip — the UI re-slices the
-        // already-loaded list to display what currently fits.
-        if (count <= topPokemonFetchedCount) return
-        scope.launch {
-            // Wait for any in-flight initial load to finish first. Otherwise the initial
-            // load — which captured topPokemonFetchCount at async-launch time — would
-            // complete after our re-fetch and overwrite our state update.
-            _uiState.first { !it.isLoading }
-            // Re-check after suspending: the initial load may have already fetched at
-            // or above `count`, or the target may have changed again meanwhile.
-            if (count <= topPokemonFetchedCount) return@launch
-            if (count != topPokemonFetchCount) return@launch
-            try {
-                _uiState.update { it.copy(loadingSections = it.loadingSections + HOME_TOP_POKEMON_SECTION) }
-                val formatDetail = repository.getFormatDetail(
-                    _selectedFormatId.value,
-                    topPokemonCount = count,
-                    lookback = LookbackWindow.Day
-                )
-                topPokemonFetchedCount = count
-                val gridItems = formatDetail.topPokemon.map {
-                    ContentListItem.PokemonGridItem(
-                        it.id, it.name, it.imageUrl,
-                        formatUsagePercent(it.count, formatDetail.teamCount)
-                    )
-                }
-                _uiState.update { state ->
-                    val newItems = state.items.map { item ->
-                        if (item is ContentListItem.Section && item.header == HOME_TOP_POKEMON_SECTION) {
-                            item.copy(items = listOf(ContentListItem.PokemonGrid(gridItems)))
-                        } else item
-                    }
-                    state.copy(
-                        items = newItems,
-                        loadingSections = state.loadingSections - HOME_TOP_POKEMON_SECTION
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(loadingSections = it.loadingSections - HOME_TOP_POKEMON_SECTION) }
-            }
-        }
-    }
-
     fun selectFormat(formatId: Int) {
         if (_selectedFormatId.value == formatId) return
         _selectedFormatId.value = formatId
@@ -536,7 +476,7 @@ class ContentListLogic(
     }
 
     private fun reloadSections(): Set<String> = when (mode) {
-        is ContentListMode.Home -> setOf("format_selector", HOME_TOP_POKEMON_SECTION, "Today's Top Battles")
+        is ContentListMode.Home -> setOf("format_selector", HOME_TOP_POKEMON_SECTION, HOME_WEEKLY_WINNERS_SECTION, HOME_WEEKLY_LOSERS_SECTION, "Today's Top Battles")
         is ContentListMode.TopPokemon -> setOf("format_selector", "")
         is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Top Players", "Battles")
         is ContentListMode.Player -> setOf("format_selector", "Battles")
@@ -553,47 +493,68 @@ class ContentListLogic(
     private suspend fun fetchContent(page: Int = 1): Pair<List<ContentListItem>, Pagination> = when (val m = mode) {
         is ContentListMode.Home -> if (page == 1) coroutineScope {
             val formatId = _selectedFormatId.value
-            val fetchCount = topPokemonFetchCount
 
             val formatDeferred = async {
                 runCatching {
                     repository.getFormatDetail(
                         formatId,
-                        topPokemonCount = fetchCount,
-                        lookback = LookbackWindow.Day
+                        topPokemonCount = HOME_CHIP_SECTION_COUNT,
+                        lookback = LookbackWindow.Week
                     )
                 }
+            }
+            val usageDeferred = async {
+                runCatching { repository.getPokemonUsage(formatId, LookbackWindow.Week) }
             }
             val battlesDeferred = async {
                 runCatching { repository.getBestPreviousDay(formatId) }
             }
 
             val formatResult = formatDeferred.await()
+            val usageResult = usageDeferred.await()
             val battlesResult = battlesDeferred.await()
 
-            if (formatResult.isFailure && battlesResult.isFailure) {
+            if (formatResult.isFailure && usageResult.isFailure && battlesResult.isFailure) {
                 throw battlesResult.exceptionOrNull()!!
             }
 
             val formatDetail = formatResult.getOrNull()
-            if (formatDetail != null) topPokemonFetchedCount = fetchCount
+            val usage = usageResult.getOrNull()
             val battles = battlesResult.getOrNull().orEmpty()
             val battleItems = ContentListItemMapper.fromBattles(battles)
 
             val sections = buildList {
                 add(ContentListItem.FormatSelector)
-                if (formatDetail != null && formatDetail.topPokemon.isNotEmpty()) {
-                    val gridItems = formatDetail.topPokemon.map {
-                        ContentListItem.PokemonGridItem(
-                            it.id, it.name, it.imageUrl,
-                            formatUsagePercent(it.count, formatDetail.teamCount)
-                        )
+                val groupSections = buildList {
+                    if (formatDetail != null && formatDetail.topPokemon.isNotEmpty()) {
+                        val chips = formatDetail.topPokemon.map {
+                            ContentListItem.StatChipItem(
+                                name = it.name,
+                                usagePercent = formatUsagePercent(it.count, formatDetail.teamCount),
+                                imageUrl = it.imageUrl,
+                                pokemonId = it.id
+                            )
+                        }
+                        add(ContentListItem.Section(
+                            HOME_TOP_POKEMON_SECTION,
+                            listOf(ContentListItem.StatChipRow(chips, "top_pokemon"))
+                        ))
                     }
-                    add(ContentListItem.Section(
-                        HOME_TOP_POKEMON_SECTION,
-                        listOf(ContentListItem.PokemonGrid(gridItems)),
-                        trailingAction = ContentListItem.SectionAction.SeeMore
-                    ))
+                    if (usage != null && usage.increased.isNotEmpty()) {
+                        add(ContentListItem.Section(
+                            HOME_WEEKLY_WINNERS_SECTION,
+                            listOf(ContentListItem.StatChipRow(usage.increased.toChips(), "weekly_winners"))
+                        ))
+                    }
+                    if (usage != null && usage.decreased.isNotEmpty()) {
+                        add(ContentListItem.Section(
+                            HOME_WEEKLY_LOSERS_SECTION,
+                            listOf(ContentListItem.StatChipRow(usage.decreased.toChips(), "weekly_losers"))
+                        ))
+                    }
+                }
+                if (groupSections.isNotEmpty()) {
+                    add(ContentListItem.SectionGroup(groupSections, fillWidth = true))
                 }
                 if (battleItems.isNotEmpty()) {
                     add(ContentListItem.Section("Today's Top Battles", battleItems))
@@ -897,9 +858,33 @@ class ContentListLogic(
         return "$intPart.$decPart%"
     }
 
+    /**
+     * Formats a usage-change value (already a percentage, e.g. `5.09` / `-6.74`)
+     * as a signed string: `"+5.09%"` for gains, `"-6.74%"` for losses.
+     */
+    private fun formatSignedPercent(value: Double): String {
+        val hundredths = (value * 100).roundToLong()
+        val sign = if (hundredths >= 0) "+" else "-"
+        val abs = if (hundredths < 0) -hundredths else hundredths
+        val intPart = abs / 100
+        val decPart = (abs % 100).toString().padStart(2, '0')
+        return "$sign$intPart.$decPart%"
+    }
+
+    private fun List<PokemonUsage>.toChips(): List<ContentListItem.StatChipItem> = map {
+        ContentListItem.StatChipItem(
+            name = it.name,
+            usagePercent = formatSignedPercent(it.usageChangePercent),
+            imageUrl = it.imageUrl,
+            pokemonId = it.id
+        )
+    }
+
     companion object {
-        const val DEFAULT_TOP_POKEMON_COUNT = 6
-        const val HOME_TOP_POKEMON_SECTION = "Today's Top Pokémon"
+        const val HOME_CHIP_SECTION_COUNT = 10
+        const val HOME_TOP_POKEMON_SECTION = "Weekly Top Pokémon"
+        const val HOME_WEEKLY_WINNERS_SECTION = "Weekly Winners"
+        const val HOME_WEEKLY_LOSERS_SECTION = "Weekly Losers"
 
         // How often `watchForStaleness` re-checks while waiting for the
         // initial load to complete. Once `lastLoadedAtMs` is non-null, polling

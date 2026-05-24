@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.CircularProgressIndicator
@@ -74,10 +73,9 @@ fun SectionHeader(
     isLoading: Boolean = false,
     sortOrder: OrderBy? = null,
     onToggleSortOrder: (() -> Unit)? = null,
-    onSeeMore: (() -> Unit)? = null,
     centerTitle: Boolean = false
 ) {
-    val hasTrailing = (sortOrder != null && onToggleSortOrder != null) || onSeeMore != null
+    val hasTrailing = sortOrder != null && onToggleSortOrder != null
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -92,28 +90,6 @@ fun SectionHeader(
         if (sortOrder != null && onToggleSortOrder != null) {
             Spacer(modifier = Modifier.weight(1f))
             SortToggleButton(sortOrder = sortOrder, isLoading = isLoading, onClick = onToggleSortOrder)
-        } else if (onSeeMore != null) {
-            Spacer(modifier = Modifier.weight(1f))
-            Row(
-                modifier = Modifier
-                    .height(28.dp)
-                    .clickable(onClick = onSeeMore)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = "See More",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "See more",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     }
 }

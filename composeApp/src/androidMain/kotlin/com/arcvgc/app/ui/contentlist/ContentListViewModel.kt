@@ -47,7 +47,7 @@ class ContentListViewModel @Inject constructor(
     private val _selectedLookback = MutableStateFlow(LookbackWindow.All)
     val selectedLookback: StateFlow<LookbackWindow> = _selectedLookback.asStateFlow()
 
-    // Mirrors the web `lastAppliedUsageFormatTick` pattern: each deep link that
+    // Apply-once tick pattern for deep-linked lookback: each deep link that
     // carries a lookback bumps a tick on the composition side; this counter
     // tracks the most recent tick already applied so re-entering composition
     // (tab switches, recomposition) with the same tick doesn't clobber a

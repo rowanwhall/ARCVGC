@@ -95,7 +95,6 @@ final class ContentListViewModel: ObservableObject {
             mode: sharedMode,
             pokemonCatalogItems: pokemonCatalogItems,
             pokemonCatalogState: nil,
-            initialTopPokemonFetchCount: 6,
             initialLookback: initialLookback,
             settingsRepository: settingsStore?.repo,
             isFormatHistoric: { id in

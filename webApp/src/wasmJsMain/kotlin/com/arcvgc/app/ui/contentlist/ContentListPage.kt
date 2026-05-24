@@ -72,7 +72,6 @@ fun ContentListPage(
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?, lookback: LookbackWindow?) -> Unit)? = null,
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null,
-    onTopPokemonClick: ((formatId: Int?) -> Unit)? = null,
     initialBattleId: Int? = null,
     initialLookback: LookbackWindow = LookbackWindow.All,
     showToolbarWithoutBack: Boolean = false,
@@ -128,7 +127,6 @@ fun ContentListPage(
     var selectedBattleId by remember(viewModel) { mutableStateOf(initialBattleId ?: viewModel.savedBattleId) }
     var pokemonNavTarget by remember(viewModel) { mutableStateOf<PokemonNavTarget?>(null) }
     var playerNavTarget by remember(viewModel) { mutableStateOf<PlayerNavTarget?>(null) }
-    var topPokemonFormatId by remember { mutableStateOf<Int?>(null) }
     var topPlayerDialogTarget by remember { mutableStateOf<ContentListItem.TopPlayerChipItem?>(null) }
     val gridState = remember(viewModel) {
         LazyGridState(
@@ -210,16 +208,6 @@ fun ContentListPage(
         } else {
             playerNavTarget = PlayerNavTarget(id, name, formatId)
         }
-    }
-
-    topPokemonFormatId?.let { formatId ->
-        ContentListPage(
-            mode = ContentListMode.TopPokemon(formatId = formatId),
-            onBack = { topPokemonFormatId = null },
-            onPokemonClick = onPokemonClick,
-            onPlayerClick = onPlayerClick
-        )
-        return
     }
 
     val currentPokemonNav = pokemonNavTarget
@@ -360,10 +348,6 @@ fun ContentListPage(
         onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
         onLookbackSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.TopPokemon) viewModel::selectLookback else null,
         onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
-        onSeeMore = {
-            val fmtId = viewModel.selectedFormatId.value
-            if (onTopPokemonClick != null) onTopPokemonClick(fmtId) else { topPokemonFormatId = fmtId }
-        }
     )
 
     Box(
@@ -501,20 +485,8 @@ fun ContentListPage(
                 val gridWidthWhenPaneOpen = (maxWidth - panePostWidth - 1.dp)
                     .coerceAtLeast(battleCardCellWidth)
 
-                // Top Pokémon row — sized to match the battle grid's rendered width so
-                // both sections align visually.
-                // Fetch capacity uses the pane-closed rendered width so closing the pane
-                // has enough tiles ready without a re-fetch.
-                val paneClosedGridRendered =
-                    computeBattleGridRenderedWidth(maxWidth, battleCardCellWidth)
-                val paneClosedInner =
-                    (paneClosedGridRendered - TOP_POKEMON_CARD_INNER_PADDING_TOTAL)
-                        .coerceAtLeast(0.dp)
-                val paneClosedTileCapacity = computeTopPokemonTileCount(paneClosedInner)
-                LaunchedEffect(paneClosedTileCapacity) {
-                    viewModel.setTopPokemonFetchCount(paneClosedTileCapacity)
-                }
-
+                // Pokémon grid row (Player "Favorite Pokémon") — sized to match the battle
+                // grid's rendered width so both sections align visually.
                 val currentGridBoxWidth =
                     if (selectedBattleId != null) gridWidthWhenPaneOpen else maxWidth
                 val topPokemonDisplayMaxWidth =
