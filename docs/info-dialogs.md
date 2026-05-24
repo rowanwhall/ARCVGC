@@ -17,12 +17,21 @@ InfoContentProvider (shared)  →  InfoButton + InfoSheet (Android)
 - **File**: `shared/.../ui/model/InfoContent.kt`
 - `InfoContent(title, body, imageUrl?)` — data class for dialog content. `imageUrl` is nullable, reserved for future image support.
 - `InfoContentProvider` — singleton object with a `Map<String, InfoContent>`. Lookup via `get(key)` returns `InfoContent?`.
-- Current keys: `"replay"` (replay/set explanation), `"unrated"` (unrated battle explanation)
+- Current keys: `"replay"` (replay/set explanation), `"unrated"` (unrated battle explanation), `"trending_lookback"` (home Trending lookback-window explanation), `"top_players"` (Pokemon-profile Top Players explanation)
 
 ### Adding new info content
 
 1. Add a new entry to the `content` map in `InfoContentProvider` with a descriptive string key
 2. At the call site on each platform, add `showXxxInfo` state + `InfoButton` + conditional dialog/sheet rendering with `InfoContentProvider.get("your_key")`
+
+### Content-list info hooks (lookback selector + section headers)
+
+The ContentListPage exposes two reusable info-button hooks so a single `infoKeyToShow` state (hosted per platform in the content composable / view) drives any number of info dialogs:
+
+- **Section headers**: `ContentListItem.Section` carries an optional `infoKey`. The shared `SectionHeader` (Android/Web) and iOS `SectionHeaderView` take an `onInfoClick` callback that renders an `InfoButton` after the title. Each platform's section-rendering path passes `onInfoClick = section.infoKey?.let { … }`. Set `infoKey` on a section in `ContentListLogic` to attach a dialog (e.g. `"top_players"` on the Pokemon profile's Top Players section).
+- **Lookback selector**: the shared `LookbackSegmentedSelector` (Android/Web) and iOS `LookbackSegmentedSelector` take an `onInfoClick` callback that appends an `InfoButton` to the row. The Home page passes it (gated by `showLookbackInfo` / `isHomeMode`); other modes leave it `null` so no button appears.
+
+State lives in: Android `ContentListContent` (`infoKeyToShow` + `InfoSheet`), Web `ContentListContent` (`infoKeyToShow` + `InfoDialog`), iOS `ContentListView` (`@State infoKeyToShow` + `.sheet`).
 
 ### Platform components
 

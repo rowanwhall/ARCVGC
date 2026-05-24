@@ -25,6 +25,22 @@ class InfoContentProviderTest {
     }
 
     @Test
+    fun trendingLookbackKeyReturnsContent() {
+        val content = InfoContentProvider.get("trending_lookback")
+        assertNotNull(content)
+        assertEquals("Trending Lookback Window", content.title)
+        assertTrue(content.body.isNotBlank())
+    }
+
+    @Test
+    fun topPlayersKeyReturnsContent() {
+        val content = InfoContentProvider.get("top_players")
+        assertNotNull(content)
+        assertEquals("Top Players", content.title)
+        assertTrue(content.body.isNotBlank())
+    }
+
+    @Test
     fun unknownKeyReturnsNull() {
         assertNull(InfoContentProvider.get("nonexistent"))
     }

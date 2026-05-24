@@ -15,6 +15,14 @@ object InfoContentProvider {
         "unrated" to InfoContent(
             title = "Unrated Battle",
             body = "Showdown did not associate a rating with this battle. This usually happens when the battle was played outside the ladder or was an early game in a best-of-3. Try watching the replay or checking later games in the set if you think this is incorrect."
+        ),
+        "trending_lookback" to InfoContent(
+            title = "Trending Lookback Window",
+            body = "For the \"Trending\" sections, this is the period of time used to determine the percent rise/drop. For example, \"7 days\" will compare the last week to the week before it. We default to 7 days since it best reflects current meta shifts, but month-to-month and day-to-day can still be valuable!"
+        ),
+        "top_players" to InfoContent(
+            title = "Top Players",
+            body = "The players who have won the highest rated games/sets with this Pok\u00e9mon. If you want to be on the leaderboard but we don't have your replay because it's private, you can submit it from the top right of the home page!"
         )
     )
 

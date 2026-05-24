@@ -47,8 +47,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -73,6 +75,7 @@ import com.arcvgc.app.ui.components.BattleCard
 import com.arcvgc.app.ui.components.EmptyView
 import com.arcvgc.app.ui.components.ErrorView
 import com.arcvgc.app.ui.components.GradientToolbarHeight
+import com.arcvgc.app.ui.components.InfoDialog
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
@@ -82,6 +85,7 @@ import com.arcvgc.app.ui.hasFinePointer
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.FormatUiModel
+import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.unwrapSectionGroups
 import com.arcvgc.app.ui.model.unwrapSingletonSectionGroups
 import com.arcvgc.app.ui.tokens.AppTokens.BrandFontFamily
@@ -143,7 +147,9 @@ internal fun ContentListContent(
     val selectedFormatId = formatState.selectedFormatId
     val selectedLookback = formatState.selectedLookback
     val lookbackOptions = formatState.lookbackOptions
+    val showLookbackInfo = formatState.showLookbackInfo
     val searchQuery = formatState.searchQuery
+    var infoKeyToShow by remember { mutableStateOf<String?>(null) }
     val battleCardCellWidth = gridConfig.battleCardCellWidth
     val expandedTopPokemonMaxWidth = gridConfig.expandedTopPokemonMaxWidth
     val topPokemonTargetWidth = gridConfig.topPokemonTargetWidth
@@ -239,7 +245,7 @@ internal fun ContentListContent(
                         emitFormatSelectorItem(topItem, formats, selectedFormatId, onFormatSelected, "format_selector" in uiState.loadingSections, fullSpan)
                     }
                     if (topItem is ContentListItem.LookbackSelector) {
-                        emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, lookbackOptions, fullSpan)
+                        emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, lookbackOptions, fullSpan, onInfoClick = if (showLookbackInfo) ({ infoKeyToShow = "trending_lookback" }) else null)
                     }
                     if (topItem is ContentListItem.SearchField) {
                         emitSearchFieldItem(topItem, searchQuery, onSearchQueryChanged, fullSpan)
@@ -294,7 +300,8 @@ internal fun ContentListContent(
                                                 isLoading = isLoadingSection,
                                                 sortOrder = null,
                                                 onToggleSortOrder = null,
-                                                centerTitle = topItem.centerHeader
+                                                centerTitle = topItem.centerHeader,
+                                                onInfoClick = topItem.infoKey?.let { key -> { infoKeyToShow = key } }
                                             )
                                             Spacer(modifier = Modifier.height(ContentListItemSpacing))
                                         }
@@ -332,7 +339,8 @@ internal fun ContentListContent(
                                                         isLoading = isLoadingSection,
                                                         sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                                         onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                                        centerTitle = topItem.centerHeader
+                                                        centerTitle = topItem.centerHeader,
+                                                        onInfoClick = topItem.infoKey?.let { key -> { infoKeyToShow = key } }
                                                     )
                                                 }
                                             }
@@ -345,7 +353,8 @@ internal fun ContentListContent(
                                                     onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
                                                     // Mobile/compact layouts don't have the screen real estate to support
                                                     // our existing centered header section designs — revisit if this changes.
-                                                    centerTitle = false
+                                                    centerTitle = false,
+                                                    onInfoClick = topItem.infoKey?.let { key -> { infoKeyToShow = key } }
                                                 )
                                             }
                                         }
@@ -421,7 +430,8 @@ internal fun ContentListContent(
                                                     isLoading = isLoadingSection,
                                                     sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                                     onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
-                                                    centerTitle = topItem.centerHeader
+                                                    centerTitle = topItem.centerHeader,
+                                                    onInfoClick = topItem.infoKey?.let { key -> { infoKeyToShow = key } }
                                                 )
                                             }
                                         } else null,
@@ -458,7 +468,7 @@ internal fun ContentListContent(
                             emitFormatSelectorItem(topItem, formats, selectedFormatId, onFormatSelected, "format_selector" in uiState.loadingSections, fullSpan)
                         }
                         is ContentListItem.LookbackSelector -> {
-                            emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, lookbackOptions, fullSpan)
+                            emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, lookbackOptions, fullSpan, onInfoClick = if (showLookbackInfo) ({ infoKeyToShow = "trending_lookback" }) else null)
                         }
                         is ContentListItem.SearchField -> {
                             emitSearchFieldItem(topItem, searchQuery, onSearchQueryChanged, fullSpan)
@@ -534,6 +544,12 @@ internal fun ContentListContent(
             gridState = gridState,
             modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight()
         )
+    }
+
+    infoKeyToShow?.let { key ->
+        InfoContentProvider.get(key)?.let { content ->
+            InfoDialog(content = content, onDismiss = { infoKeyToShow = null })
+        }
     }
     }
 }
@@ -698,7 +714,8 @@ private fun LazyGridScope.emitLookbackSelectorItem(
     selectedLookback: LookbackWindow,
     onLookbackSelected: ((LookbackWindow) -> Unit)?,
     lookbackOptions: List<LookbackWindow>,
-    fullSpan: LazyGridItemSpanScope.() -> GridItemSpan
+    fullSpan: LazyGridItemSpanScope.() -> GridItemSpan,
+    onInfoClick: (() -> Unit)? = null
 ) {
     if (onLookbackSelected == null) return
     animatedItem(key = item.listKey, span = fullSpan) {
@@ -707,7 +724,8 @@ private fun LazyGridScope.emitLookbackSelectorItem(
                 selectedLookback = selectedLookback,
                 onLookbackSelected = onLookbackSelected,
                 modifier = Modifier.fillMaxWidth(),
-                options = lookbackOptions
+                options = lookbackOptions,
+                onInfoClick = onInfoClick
             )
         }
     }

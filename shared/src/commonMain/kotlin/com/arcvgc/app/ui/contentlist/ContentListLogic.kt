@@ -899,7 +899,8 @@ class ContentListLogic(
                 ContentListItem.Section(
                     header = "Top Players",
                     items = listOf(ContentListItem.TopPlayerChipRow(chips)),
-                    centerHeader = true
+                    centerHeader = true,
+                    infoKey = "top_players"
                 )
             )
         }

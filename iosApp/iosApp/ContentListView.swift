@@ -10,6 +10,7 @@ struct ContentListView: View {
     @State private var showSubmitReplayDialog: Bool = false
     @State private var showTutorialDialog: Bool = false
     @State private var topPlayerDialogTarget: ContentListItem.TopPlayerChipItem? = nil
+    @State private var infoKeyToShow: String? = nil
     @FocusState private var isSearchFieldFocused: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @EnvironmentObject private var container: DependencyContainer
@@ -164,6 +165,11 @@ struct ContentListView: View {
         return false
     }
 
+    private var isHomeMode: Bool {
+        if case .home = mode { return true }
+        return false
+    }
+
     // Home excludes the "All" option (the usage endpoint doesn't support it) and
     // defaults to the middle 7-day window; other modes offer all four.
     private var lookbackOptions: [LookbackWindow] {
@@ -300,7 +306,8 @@ struct ContentListView: View {
                                         selectedLookback: viewModel.selectedLookback,
                                         onLookbackSelected: { viewModel.selectLookback($0) },
                                         accentColor: settingsStore.themeColor,
-                                        options: lookbackOptions
+                                        options: lookbackOptions,
+                                        onInfoClick: isHomeMode ? { infoKeyToShow = "trending_lookback" } : nil
                                     )
                                     .padding(.horizontal, 16)
                                 case .searchField:
@@ -343,7 +350,8 @@ struct ContentListView: View {
                                         title: section.header,
                                         isLoading: isLoadingSection,
                                         sortOrder: showSort ? viewModel.sortOrder : nil,
-                                        onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil
+                                        onToggleSortOrder: showSort ? { viewModel.toggleSortOrder() } : nil,
+                                        onInfoClick: section.infoKey != nil ? { infoKeyToShow = section.infoKey } : nil
                                     )
                                     .padding(.horizontal, 16)
                                 }
@@ -382,7 +390,8 @@ struct ContentListView: View {
                                         selectedLookback: viewModel.selectedLookback,
                                         onLookbackSelected: { viewModel.selectLookback($0) },
                                         accentColor: settingsStore.themeColor,
-                                        options: lookbackOptions
+                                        options: lookbackOptions,
+                                        onInfoClick: isHomeMode ? { infoKeyToShow = "trending_lookback" } : nil
                                     )
                                     .padding(.horizontal, 16)
                                 }
@@ -507,6 +516,14 @@ struct ContentListView: View {
         .sheet(isPresented: $showTutorialDialog) {
             TutorialDialog(onDismiss: { showTutorialDialog = false })
                 .presentationDetents([.large])
+        }
+        .sheet(isPresented: Binding(
+            get: { infoKeyToShow != nil },
+            set: { if !$0 { infoKeyToShow = nil } }
+        )) {
+            if let key = infoKeyToShow, let content = InfoContentProvider.shared.get(key: key) {
+                InfoSheet(content: content)
+            }
         }
         .sheet(isPresented: Binding(
             get: { topPlayerDialogTarget != nil },

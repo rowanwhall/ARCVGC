@@ -45,7 +45,12 @@ sealed class ContentListItem {
          * section has no trailing controls (sort toggle). Android and iOS don't
          * read this flag.
          */
-        val centerHeader: Boolean = false
+        val centerHeader: Boolean = false,
+        /**
+         * When non-null, the section header renders an info button that opens the
+         * [InfoContentProvider] dialog for this key. Used by all platforms.
+         */
+        val infoKey: String? = null
     ) : ContentListItem() {
         override val listKey get() = "section_$header"
     }

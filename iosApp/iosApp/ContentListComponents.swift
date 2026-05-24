@@ -133,6 +133,7 @@ struct SectionHeaderView: View {
     var isLoading: Bool = false
     var sortOrder: OrderBy? = nil
     var onToggleSortOrder: (() -> Void)? = nil
+    var onInfoClick: (() -> Void)? = nil
 
     var body: some View {
         HStack {
@@ -140,6 +141,9 @@ struct SectionHeaderView: View {
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(Color(.label))
+            if let onInfoClick = onInfoClick {
+                InfoButton(action: onInfoClick)
+            }
             Spacer()
             if let sortOrder = sortOrder, let toggle = onToggleSortOrder {
                 SortToggleButton(sortOrder: sortOrder, isLoading: isLoading, action: toggle)
@@ -185,9 +189,15 @@ struct LookbackSegmentedSelector: View {
     let onLookbackSelected: (LookbackWindow) -> Void
     let accentColor: Color
     var options: [LookbackWindow] = [.all, .thirtyDays, .week, .day]
+    var onInfoClick: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 6) {
+            // Leading gutter mirroring the trailing info button so the segments
+            // stay centered relative to the rest of the page.
+            if onInfoClick != nil {
+                Color.clear.frame(width: AppTokens.infoButtonSize, height: AppTokens.infoButtonSize)
+            }
             ForEach(options, id: \.value) { window in
                 let isSelected = window == selectedLookback
                 Button {
@@ -208,6 +218,9 @@ struct LookbackSegmentedSelector: View {
                         )
                 }
                 .buttonStyle(.plain)
+            }
+            if let onInfoClick = onInfoClick {
+                InfoButton(action: onInfoClick)
             }
         }
     }

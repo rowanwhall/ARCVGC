@@ -73,6 +73,7 @@ import com.arcvgc.app.ui.components.ErrorView
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.GradientToolbar
 import com.arcvgc.app.ui.components.GradientToolbarHeight
+import com.arcvgc.app.ui.components.InfoSheet
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.TopPlayerDialog
 import com.arcvgc.app.ui.components.TypeIconRow
@@ -83,6 +84,7 @@ import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.model.ReplayNavState
 import com.arcvgc.app.ui.model.ContentListHeaderUiModel
 import com.arcvgc.app.ui.model.ContentListItem
+import com.arcvgc.app.ui.model.InfoContentProvider
 import com.arcvgc.app.ui.model.unwrapSectionGroups
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.FormatSorter
@@ -274,6 +276,7 @@ fun ContentListPage(
             selectedLookback = selectedLookback,
             onLookbackSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.TopPokemon || mode is ContentListMode.Home) viewModel::selectLookback else null,
             lookbackOptions = if (mode is ContentListMode.Home) LookbackWindow.homeOptions else LookbackWindow.entries,
+            showLookbackInfo = mode is ContentListMode.Home,
             searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
             onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null
         )
@@ -544,11 +547,13 @@ private fun ContentListContent(
     selectedLookback: LookbackWindow = LookbackWindow.All,
     onLookbackSelected: ((LookbackWindow) -> Unit)? = null,
     lookbackOptions: List<LookbackWindow> = LookbackWindow.entries,
+    showLookbackInfo: Boolean = false,
     searchQuery: String = "",
     onSearchQueryChanged: ((String) -> Unit)? = null,
     extraBottomPadding: Dp = 0.dp
 ) {
     val listState = rememberLazyListState()
+    var infoKeyToShow by remember { mutableStateOf<String?>(null) }
 
     val shouldPaginate by remember {
         derivedStateOf {
@@ -769,7 +774,8 @@ private fun ContentListContent(
                                     selectedLookback = selectedLookback,
                                     onLookbackSelected = onLookbackSelected,
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                                    options = lookbackOptions
+                                    options = lookbackOptions,
+                                    onInfoClick = if (showLookbackInfo) ({ infoKeyToShow = "trending_lookback" }) else null
                                 )
                             }
                         }
@@ -799,6 +805,7 @@ private fun ContentListContent(
                                             isLoading = isLoadingSection,
                                             sortOrder = if (topItem.header == "Battles") sortOrder else null,
                                             onToggleSortOrder = if (topItem.header == "Battles") onToggleSortOrder else null,
+                                            onInfoClick = topItem.infoKey?.let { key -> { infoKeyToShow = key } },
                                             modifier = itemPadding
                                         )
                                     }
@@ -872,7 +879,8 @@ private fun ContentListContent(
                                             selectedLookback = selectedLookback,
                                             onLookbackSelected = onLookbackSelected,
                                             modifier = Modifier.fillMaxWidth().then(itemPadding),
-                                            options = lookbackOptions
+                                            options = lookbackOptions,
+                                            onInfoClick = if (showLookbackInfo) ({ infoKeyToShow = "trending_lookback" }) else null
                                         )
                                     }
                                 }
@@ -898,6 +906,12 @@ private fun ContentListContent(
                         }
                     }
                 }
+            }
+        }
+
+        infoKeyToShow?.let { key ->
+            InfoContentProvider.get(key)?.let { content ->
+                InfoSheet(content = content, onDismiss = { infoKeyToShow = null })
             }
         }
     }

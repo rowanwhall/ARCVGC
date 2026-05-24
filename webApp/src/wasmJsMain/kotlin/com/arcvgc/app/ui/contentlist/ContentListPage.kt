@@ -299,6 +299,7 @@ fun ContentListPage(
         selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
         selectedLookback = selectedLookback,
         lookbackOptions = if (mode is ContentListMode.Home) LookbackWindow.homeOptions else LookbackWindow.entries,
+        showLookbackInfo = mode is ContentListMode.Home,
         searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else ""
     )
 

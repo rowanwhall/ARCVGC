@@ -35,10 +35,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.OrderBy
+import com.arcvgc.app.ui.components.InfoButton
 import com.arcvgc.app.ui.model.ContentListItem
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.tokens.AppTokens.CardCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.FilterChipCornerRadius
+import com.arcvgc.app.ui.tokens.AppTokens.InfoButtonSize
 import com.arcvgc.app.ui.tokens.AppTokens.SearchButtonCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.StandardBorderWidth
 
@@ -73,20 +75,31 @@ fun SectionHeader(
     isLoading: Boolean = false,
     sortOrder: OrderBy? = null,
     onToggleSortOrder: (() -> Unit)? = null,
-    centerTitle: Boolean = false
+    centerTitle: Boolean = false,
+    onInfoClick: (() -> Unit)? = null
 ) {
     val hasTrailing = sortOrder != null && onToggleSortOrder != null
+    val isCentered = centerTitle && !hasTrailing
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = if (centerTitle && !hasTrailing) Arrangement.Center else Arrangement.Start
+        horizontalArrangement = if (isCentered) Arrangement.Center else Arrangement.Start
     ) {
+        // When the title is centered and carries an info button, balance the
+        // trailing button with an equal leading gutter so the title text itself
+        // stays centered rather than the title+button group.
+        if (isCentered && onInfoClick != null) {
+            Spacer(modifier = Modifier.size(InfoButtonSize))
+        }
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
+        if (onInfoClick != null) {
+            InfoButton(onClick = onInfoClick)
+        }
         if (sortOrder != null && onToggleSortOrder != null) {
             Spacer(modifier = Modifier.weight(1f))
             SortToggleButton(sortOrder = sortOrder, isLoading = isLoading, onClick = onToggleSortOrder)
@@ -159,12 +172,19 @@ fun LookbackSegmentedSelector(
     selectedLookback: LookbackWindow,
     onLookbackSelected: (LookbackWindow) -> Unit,
     modifier: Modifier = Modifier,
-    options: List<LookbackWindow> = LookbackWindow.entries
+    options: List<LookbackWindow> = LookbackWindow.entries,
+    onInfoClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        // Leading gutter mirroring the trailing info button so the segments stay
+        // centered relative to the rest of the page.
+        if (onInfoClick != null) {
+            Spacer(modifier = Modifier.size(InfoButtonSize))
+        }
         options.forEach { window ->
             val isSelected = window == selectedLookback
             val accentColor = MaterialTheme.colorScheme.primary
@@ -187,6 +207,9 @@ fun LookbackSegmentedSelector(
                     maxLines = 1
                 )
             }
+        }
+        if (onInfoClick != null) {
+            InfoButton(onClick = onInfoClick)
         }
     }
 }
