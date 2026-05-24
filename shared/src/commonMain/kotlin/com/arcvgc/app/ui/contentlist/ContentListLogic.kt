@@ -6,11 +6,13 @@ import com.arcvgc.app.data.CatalogState
 import com.arcvgc.app.data.FavoritesRepository
 import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.data.currentTimeMillis
+import com.arcvgc.app.domain.model.FormatDetail
 import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.OrderBy
 import com.arcvgc.app.domain.model.Pagination
 import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.PokemonUsage
+import com.arcvgc.app.domain.model.PokemonUsageStats
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.ui.mapper.ContentListItemMapper
@@ -77,6 +79,8 @@ class ContentListLogic(
     private val _selectedLookback = MutableStateFlow(
         when (val m = mode) {
             is ContentListMode.Pokemon -> m.lookback ?: initialLookback
+            // Home defaults to the middle 7-day window; its selector excludes All.
+            is ContentListMode.Home -> LookbackWindow.Week
             else -> initialLookback
         }
     )
@@ -434,6 +438,13 @@ class ContentListLogic(
     fun selectLookback(lookback: LookbackWindow) {
         if (_selectedLookback.value == lookback) return
         _selectedLookback.value = lookback
+        // Home reloads only its three stat sections (Most Used / Trending Up /
+        // Trending Down) — Today's Top Battles is daily and lookback-independent,
+        // and pagination/battles stay untouched.
+        if (mode is ContentListMode.Home) {
+            reloadHomeStatSections()
+            return
+        }
         if (mode is ContentListMode.TopPokemon) _searchQuery.value = ""
         scope.launch {
             try {
@@ -446,6 +457,48 @@ class ContentListLogic(
                         currentPage = pagination.page,
                         canPaginate = pagination.hasNext
                     )
+                }
+                lastLoadedAtMs = currentTimeMillis()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(loadingSections = emptySet()) }
+            }
+        }
+    }
+
+    /**
+     * Home-only lookback reload. Fades and re-fetches just the three stat
+     * sections (format-detail + usage on the new lookback); leaves the
+     * FormatSelector, LookbackSelector, Today's Top Battles section and any
+     * paginated battle tail in place, and does not touch pagination state.
+     */
+    private fun reloadHomeStatSections() {
+        scope.launch {
+            _uiState.update {
+                it.copy(loadingSections = setOf(HOME_MOST_USED_SECTION, HOME_TRENDING_UP_SECTION, HOME_TRENDING_DOWN_SECTION))
+            }
+            try {
+                val formatId = _selectedFormatId.value
+                val lookback = _selectedLookback.value
+                val group = coroutineScope {
+                    val formatDeferred = async {
+                        runCatching {
+                            repository.getFormatDetail(formatId, topPokemonCount = HOME_CHIP_SECTION_COUNT, lookback = lookback)
+                        }
+                    }
+                    val usageDeferred = async { runCatching { repository.getPokemonUsage(formatId, lookback) } }
+                    buildHomeStatGroup(formatDeferred.await().getOrNull(), usageDeferred.await().getOrNull())
+                }
+                _uiState.update { state ->
+                    // Drop the old stat group, then re-insert the fresh one right
+                    // after the LookbackSelector (omitted entirely if now empty).
+                    val rebuilt = buildList {
+                        for (item in state.items) {
+                            if (item is ContentListItem.SectionGroup) continue
+                            add(item)
+                            if (item is ContentListItem.LookbackSelector && group != null) add(group)
+                        }
+                    }
+                    state.copy(items = rebuilt, loadingSections = emptySet())
                 }
                 lastLoadedAtMs = currentTimeMillis()
             } catch (e: Exception) {
@@ -476,7 +529,7 @@ class ContentListLogic(
     }
 
     private fun reloadSections(): Set<String> = when (mode) {
-        is ContentListMode.Home -> setOf("format_selector", HOME_TOP_POKEMON_SECTION, HOME_WEEKLY_WINNERS_SECTION, HOME_WEEKLY_LOSERS_SECTION, "Today's Top Battles")
+        is ContentListMode.Home -> setOf("format_selector", HOME_MOST_USED_SECTION, HOME_TRENDING_UP_SECTION, HOME_TRENDING_DOWN_SECTION, HOME_TOP_BATTLES_SECTION)
         is ContentListMode.TopPokemon -> setOf("format_selector", "")
         is ContentListMode.Pokemon -> setOf("format_selector", "Top Teammates", "Top Items", "Top Moves", "Top Abilities", "Top Tera Types", "Top Players", "Battles")
         is ContentListMode.Player -> setOf("format_selector", "Battles")
@@ -493,18 +546,19 @@ class ContentListLogic(
     private suspend fun fetchContent(page: Int = 1): Pair<List<ContentListItem>, Pagination> = when (val m = mode) {
         is ContentListMode.Home -> if (page == 1) coroutineScope {
             val formatId = _selectedFormatId.value
+            val lookback = _selectedLookback.value
 
             val formatDeferred = async {
                 runCatching {
                     repository.getFormatDetail(
                         formatId,
                         topPokemonCount = HOME_CHIP_SECTION_COUNT,
-                        lookback = LookbackWindow.Week
+                        lookback = lookback
                     )
                 }
             }
             val usageDeferred = async {
-                runCatching { repository.getPokemonUsage(formatId, LookbackWindow.Week) }
+                runCatching { repository.getPokemonUsage(formatId, lookback) }
             }
             val battlesDeferred = async {
                 runCatching { repository.getBestPreviousDay(formatId) }
@@ -518,46 +572,16 @@ class ContentListLogic(
                 throw battlesResult.exceptionOrNull()!!
             }
 
-            val formatDetail = formatResult.getOrNull()
-            val usage = usageResult.getOrNull()
+            val statGroup = buildHomeStatGroup(formatResult.getOrNull(), usageResult.getOrNull())
             val battles = battlesResult.getOrNull().orEmpty()
             val battleItems = ContentListItemMapper.fromBattles(battles)
 
             val sections = buildList {
                 add(ContentListItem.FormatSelector)
-                val groupSections = buildList {
-                    if (formatDetail != null && formatDetail.topPokemon.isNotEmpty()) {
-                        val chips = formatDetail.topPokemon.map {
-                            ContentListItem.StatChipItem(
-                                name = it.name,
-                                usagePercent = formatUsagePercent(it.count, formatDetail.teamCount),
-                                imageUrl = it.imageUrl,
-                                pokemonId = it.id
-                            )
-                        }
-                        add(ContentListItem.Section(
-                            HOME_TOP_POKEMON_SECTION,
-                            listOf(ContentListItem.StatChipRow(chips, "top_pokemon"))
-                        ))
-                    }
-                    if (usage != null && usage.increased.isNotEmpty()) {
-                        add(ContentListItem.Section(
-                            HOME_WEEKLY_WINNERS_SECTION,
-                            listOf(ContentListItem.StatChipRow(usage.increased.toChips(), "weekly_winners"))
-                        ))
-                    }
-                    if (usage != null && usage.decreased.isNotEmpty()) {
-                        add(ContentListItem.Section(
-                            HOME_WEEKLY_LOSERS_SECTION,
-                            listOf(ContentListItem.StatChipRow(usage.decreased.toChips(), "weekly_losers"))
-                        ))
-                    }
-                }
-                if (groupSections.isNotEmpty()) {
-                    add(ContentListItem.SectionGroup(groupSections, fillWidth = true))
-                }
+                add(ContentListItem.LookbackSelector)
+                if (statGroup != null) add(statGroup)
                 if (battleItems.isNotEmpty()) {
-                    add(ContentListItem.Section("Today's Top Battles", battleItems))
+                    add(ContentListItem.Section(HOME_TOP_BATTLES_SECTION, battleItems))
                 }
             }
             // best_previous_day returns N items without pagination metadata.
@@ -769,6 +793,46 @@ class ContentListLogic(
         }
     }
 
+    /**
+     * Builds the Home page's stat `SectionGroup` (Most Used / Trending Up /
+     * Trending Down) from a format detail + usage-movers fetch. Each section is
+     * omitted when its source data is empty; returns null when all are empty.
+     */
+    private fun buildHomeStatGroup(
+        formatDetail: FormatDetail?,
+        usage: PokemonUsageStats?
+    ): ContentListItem.SectionGroup? {
+        val groupSections = buildList {
+            if (formatDetail != null && formatDetail.topPokemon.isNotEmpty()) {
+                val chips = formatDetail.topPokemon.map {
+                    ContentListItem.StatChipItem(
+                        name = it.name,
+                        usagePercent = formatUsagePercent(it.count, formatDetail.teamCount),
+                        imageUrl = it.imageUrl,
+                        pokemonId = it.id
+                    )
+                }
+                add(ContentListItem.Section(
+                    HOME_MOST_USED_SECTION,
+                    listOf(ContentListItem.StatChipRow(chips, "top_pokemon"))
+                ))
+            }
+            if (usage != null && usage.increased.isNotEmpty()) {
+                add(ContentListItem.Section(
+                    HOME_TRENDING_UP_SECTION,
+                    listOf(ContentListItem.StatChipRow(usage.increased.toChips(), "trending_up"))
+                ))
+            }
+            if (usage != null && usage.decreased.isNotEmpty()) {
+                add(ContentListItem.Section(
+                    HOME_TRENDING_DOWN_SECTION,
+                    listOf(ContentListItem.StatChipRow(usage.decreased.toChips(), "trending_down"))
+                ))
+            }
+        }
+        return if (groupSections.isNotEmpty()) ContentListItem.SectionGroup(groupSections, fillWidth = true) else null
+    }
+
     private fun buildPokemonProfileSections(profile: PokemonProfile?): List<ContentListItem> = buildList {
         add(ContentListItem.FormatSelector)
         if (!isFormatHistoric(_selectedFormatId.value)) add(ContentListItem.LookbackSelector)
@@ -882,9 +946,10 @@ class ContentListLogic(
 
     companion object {
         const val HOME_CHIP_SECTION_COUNT = 10
-        const val HOME_TOP_POKEMON_SECTION = "Weekly Top Pokémon"
-        const val HOME_WEEKLY_WINNERS_SECTION = "Weekly Winners"
-        const val HOME_WEEKLY_LOSERS_SECTION = "Weekly Losers"
+        const val HOME_MOST_USED_SECTION = "Most Used"
+        const val HOME_TRENDING_UP_SECTION = "Trending Up"
+        const val HOME_TRENDING_DOWN_SECTION = "Trending Down"
+        const val HOME_TOP_BATTLES_SECTION = "Today's Top Battles"
 
         // How often `watchForStaleness` re-checks while waiting for the
         // initial load to complete. Once `lastLoadedAtMs` is non-null, polling

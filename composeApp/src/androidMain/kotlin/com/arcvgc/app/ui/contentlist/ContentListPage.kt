@@ -272,7 +272,8 @@ fun ContentListPage(
             selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
             onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
             selectedLookback = selectedLookback,
-            onLookbackSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.TopPokemon) viewModel::selectLookback else null,
+            onLookbackSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.TopPokemon || mode is ContentListMode.Home) viewModel::selectLookback else null,
+            lookbackOptions = if (mode is ContentListMode.Home) LookbackWindow.homeOptions else LookbackWindow.entries,
             searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else "",
             onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null
         )
@@ -542,6 +543,7 @@ private fun ContentListContent(
     onFormatSelected: ((Int) -> Unit)? = null,
     selectedLookback: LookbackWindow = LookbackWindow.All,
     onLookbackSelected: ((LookbackWindow) -> Unit)? = null,
+    lookbackOptions: List<LookbackWindow> = LookbackWindow.entries,
     searchQuery: String = "",
     onSearchQueryChanged: ((String) -> Unit)? = null,
     extraBottomPadding: Dp = 0.dp
@@ -766,7 +768,8 @@ private fun ContentListContent(
                                 LookbackSegmentedSelector(
                                     selectedLookback = selectedLookback,
                                     onLookbackSelected = onLookbackSelected,
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                    options = lookbackOptions
                                 )
                             }
                         }
@@ -868,7 +871,8 @@ private fun ContentListContent(
                                         LookbackSegmentedSelector(
                                             selectedLookback = selectedLookback,
                                             onLookbackSelected = onLookbackSelected,
-                                            modifier = Modifier.fillMaxWidth().then(itemPadding)
+                                            modifier = Modifier.fillMaxWidth().then(itemPadding),
+                                            options = lookbackOptions
                                         )
                                     }
                                 }

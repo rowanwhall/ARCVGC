@@ -47,6 +47,7 @@ class FakeBattleRepository : BattleRepositoryApi {
     var searchMatchesDelayMs: Long = 0
     var pokemonProfileDelayMs: Long = 0
 
+    var bestPreviousDayCallCount = 0
     var searchMatchesCalls = mutableListOf<SearchMatchesCall>()
     var getFormatDetailCalls = mutableListOf<GetFormatDetailCall>()
     var getPokemonProfileCalls = mutableListOf<GetPokemonProfileCall>()
@@ -81,6 +82,7 @@ class FakeBattleRepository : BattleRepositoryApi {
     )
 
     override suspend fun getBestPreviousDay(formatId: Int): List<BattleCardUiModel> {
+        bestPreviousDayCallCount++
         bestPreviousDayError?.let { throw it }
         return bestPreviousDayResult
     }

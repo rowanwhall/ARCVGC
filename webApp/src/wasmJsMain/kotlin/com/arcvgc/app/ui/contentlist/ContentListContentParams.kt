@@ -50,6 +50,7 @@ internal data class ContentListFormatState(
     val formats: List<FormatUiModel> = emptyList(),
     val selectedFormatId: Int = 0,
     val selectedLookback: LookbackWindow = LookbackWindow.All,
+    val lookbackOptions: List<LookbackWindow> = LookbackWindow.entries,
     val searchQuery: String = "",
 )
 

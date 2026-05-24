@@ -178,21 +178,24 @@ class ContentListLogicTest {
 
         val state = logic.uiState.value
         assertFalse(state.isLoading)
-        // FormatSelector + SectionGroup(top pokemon / winners / losers) + Today's Top Battles
-        assertEquals(3, state.items.size)
+        // FormatSelector + LookbackSelector + SectionGroup(most used / trending up / trending down) + Today's Top Battles
+        assertEquals(4, state.items.size)
         assertTrue(state.items[0] is ContentListItem.FormatSelector)
-        val group = state.items[1] as ContentListItem.SectionGroup
+        assertTrue(state.items[1] is ContentListItem.LookbackSelector)
+        val group = state.items[2] as ContentListItem.SectionGroup
         assertEquals(
             listOf(
-                ContentListLogic.HOME_TOP_POKEMON_SECTION,
-                ContentListLogic.HOME_WEEKLY_WINNERS_SECTION,
-                ContentListLogic.HOME_WEEKLY_LOSERS_SECTION
+                ContentListLogic.HOME_MOST_USED_SECTION,
+                ContentListLogic.HOME_TRENDING_UP_SECTION,
+                ContentListLogic.HOME_TRENDING_DOWN_SECTION
             ),
             group.sections.map { it.header }
         )
         // Home group fills the content width (desktop web spreads chips across it)
         assertTrue(group.fillWidth)
-        assertEquals("Today's Top Battles", (state.items[2] as ContentListItem.Section).header)
+        assertEquals(ContentListLogic.HOME_TOP_BATTLES_SECTION, (state.items[3] as ContentListItem.Section).header)
+        // Home defaults to the middle 7-day window.
+        assertEquals(LookbackWindow.Week, logic.selectedLookback.value)
     }
 
     @Test
@@ -1299,7 +1302,7 @@ class ContentListLogicTest {
         val topPokemonSection = logic.uiState.value.items
             .unwrapSectionGroups()
             .filterIsInstance<ContentListItem.Section>()
-            .first { it.header == ContentListLogic.HOME_TOP_POKEMON_SECTION }
+            .first { it.header == ContentListLogic.HOME_MOST_USED_SECTION }
         val chipRow = topPokemonSection.items[0] as ContentListItem.StatChipRow
         assertEquals("50.00%", chipRow.chips[0].usagePercent)
     }
@@ -1316,10 +1319,11 @@ class ContentListLogicTest {
         val state = logic.uiState.value
         assertFalse(state.isLoading)
         assertNull(state.error)
-        assertEquals(2, state.items.size)
+        assertEquals(3, state.items.size)
         assertTrue(state.items[0] is ContentListItem.FormatSelector)
-        assertTrue(state.items[1] is ContentListItem.Section)
-        assertEquals("Today's Top Battles", (state.items[1] as ContentListItem.Section).header)
+        assertTrue(state.items[1] is ContentListItem.LookbackSelector)
+        assertTrue(state.items[2] is ContentListItem.Section)
+        assertEquals(ContentListLogic.HOME_TOP_BATTLES_SECTION, (state.items[2] as ContentListItem.Section).header)
     }
 
     @Test
@@ -1341,10 +1345,11 @@ class ContentListLogicTest {
         val state = logic.uiState.value
         assertFalse(state.isLoading)
         assertNull(state.error)
-        assertEquals(2, state.items.size)
+        assertEquals(3, state.items.size)
         assertTrue(state.items[0] is ContentListItem.FormatSelector)
-        assertTrue(state.items[1] is ContentListItem.Section)
-        assertEquals("Today's Top Battles", (state.items[1] as ContentListItem.Section).header)
+        assertTrue(state.items[1] is ContentListItem.LookbackSelector)
+        assertTrue(state.items[2] is ContentListItem.Section)
+        assertEquals(ContentListLogic.HOME_TOP_BATTLES_SECTION, (state.items[2] as ContentListItem.Section).header)
     }
 
     @Test
@@ -1360,11 +1365,12 @@ class ContentListLogicTest {
         val state = logic.uiState.value
         assertFalse(state.isLoading)
         assertNull(state.error)
-        // FormatSelector + SectionGroup (no Battles section)
-        assertEquals(2, state.items.size)
+        // FormatSelector + LookbackSelector + SectionGroup (no Battles section)
+        assertEquals(3, state.items.size)
         assertTrue(state.items[0] is ContentListItem.FormatSelector)
-        val group = state.items[1] as ContentListItem.SectionGroup
-        assertEquals(ContentListLogic.HOME_TOP_POKEMON_SECTION, group.sections[0].header)
+        assertTrue(state.items[1] is ContentListItem.LookbackSelector)
+        val group = state.items[2] as ContentListItem.SectionGroup
+        assertEquals(ContentListLogic.HOME_MOST_USED_SECTION, group.sections[0].header)
     }
 
     @Test
@@ -1443,12 +1449,12 @@ class ContentListLogicTest {
             .unwrapSectionGroups()
             .filterIsInstance<ContentListItem.Section>()
 
-        val winners = sections.first { it.header == ContentListLogic.HOME_WEEKLY_WINNERS_SECTION }
+        val winners = sections.first { it.header == ContentListLogic.HOME_TRENDING_UP_SECTION }
         val winnerChips = (winners.items[0] as ContentListItem.StatChipRow).chips
         assertEquals("Whimsicott", winnerChips[0].name)
         assertEquals(545, winnerChips[0].pokemonId)
 
-        val losers = sections.first { it.header == ContentListLogic.HOME_WEEKLY_LOSERS_SECTION }
+        val losers = sections.first { it.header == ContentListLogic.HOME_TRENDING_DOWN_SECTION }
         val loserChips = (losers.items[0] as ContentListItem.StatChipRow).chips
         assertEquals("Aerodactyl", loserChips[0].name)
         assertEquals(140, loserChips[0].pokemonId)
@@ -1468,11 +1474,11 @@ class ContentListLogicTest {
             .unwrapSectionGroups()
             .filterIsInstance<ContentListItem.Section>()
 
-        val winnerChips = (sections.first { it.header == ContentListLogic.HOME_WEEKLY_WINNERS_SECTION }
+        val winnerChips = (sections.first { it.header == ContentListLogic.HOME_TRENDING_UP_SECTION }
             .items[0] as ContentListItem.StatChipRow).chips
         assertEquals("+5.09%", winnerChips[0].usagePercent)
 
-        val loserChips = (sections.first { it.header == ContentListLogic.HOME_WEEKLY_LOSERS_SECTION }
+        val loserChips = (sections.first { it.header == ContentListLogic.HOME_TRENDING_DOWN_SECTION }
             .items[0] as ContentListItem.StatChipRow).chips
         assertEquals("-6.74%", loserChips[0].usagePercent)
     }
@@ -1488,7 +1494,7 @@ class ContentListLogicTest {
         testScope.advanceUntilIdle()
 
         val group = logic.uiState.value.items.filterIsInstance<ContentListItem.SectionGroup>().single()
-        assertEquals(listOf(ContentListLogic.HOME_TOP_POKEMON_SECTION), group.sections.map { it.header })
+        assertEquals(listOf(ContentListLogic.HOME_MOST_USED_SECTION), group.sections.map { it.header })
     }
 
     @Test
@@ -1504,11 +1510,70 @@ class ContentListLogicTest {
         val group = logic.uiState.value.items.filterIsInstance<ContentListItem.SectionGroup>().single()
         assertEquals(
             listOf(
-                ContentListLogic.HOME_WEEKLY_WINNERS_SECTION,
-                ContentListLogic.HOME_WEEKLY_LOSERS_SECTION
+                ContentListLogic.HOME_TRENDING_UP_SECTION,
+                ContentListLogic.HOME_TRENDING_DOWN_SECTION
             ),
             group.sections.map { it.header }
         )
+    }
+
+    @Test
+    fun homeMode_selectLookback_refetchesStatsWithNewLookbackWithoutRefetchingBattles() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+        fakeRepo.pokemonUsageResult = testPokemonUsage()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        // Initial load: one battles fetch, stats requested on the default Week window.
+        assertEquals(1, fakeRepo.bestPreviousDayCallCount)
+        assertEquals(LookbackWindow.Week, logic.selectedLookback.value)
+
+        logic.selectLookback(LookbackWindow.Day)
+        testScope.advanceUntilIdle()
+
+        assertEquals(LookbackWindow.Day, logic.selectedLookback.value)
+        // Stats refetched with the new lookback...
+        assertEquals(LookbackWindow.Day, fakeRepo.getFormatDetailCalls.last().lookback)
+        assertEquals(LookbackWindow.Day, fakeRepo.getPokemonUsageCalls.last().lookback)
+        // ...but Today's Top Battles was NOT refetched (still daily / lookback-independent).
+        assertEquals(1, fakeRepo.bestPreviousDayCallCount)
+        assertTrue(logic.uiState.value.loadingSections.isEmpty())
+
+        // Structure is preserved: format + lookback selectors, the stat group, then battles.
+        val items = logic.uiState.value.items
+        assertEquals(4, items.size)
+        assertTrue(items[0] is ContentListItem.FormatSelector)
+        assertTrue(items[1] is ContentListItem.LookbackSelector)
+        assertTrue(items[2] is ContentListItem.SectionGroup)
+        assertEquals(ContentListLogic.HOME_TOP_BATTLES_SECTION, (items[3] as ContentListItem.Section).header)
+    }
+
+    @Test
+    fun homeMode_selectLookback_emptyMovers_dropsStatGroupButKeepsBattles() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+        fakeRepo.pokemonUsageResult = testPokemonUsage()
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+        assertTrue(logic.uiState.value.items.any { it is ContentListItem.SectionGroup })
+
+        // New window returns no stat data — the group should be removed entirely.
+        fakeRepo.formatDetailResult = testFormatDetail().copy(topPokemon = emptyList())
+        fakeRepo.pokemonUsageResult = testPokemonUsage().copy(increased = emptyList(), decreased = emptyList())
+
+        logic.selectLookback(LookbackWindow.ThirtyDays)
+        testScope.advanceUntilIdle()
+
+        val items = logic.uiState.value.items
+        assertFalse(items.any { it is ContentListItem.SectionGroup })
+        assertTrue(items[0] is ContentListItem.FormatSelector)
+        assertTrue(items[1] is ContentListItem.LookbackSelector)
+        assertEquals(ContentListLogic.HOME_TOP_BATTLES_SECTION, (items[2] as ContentListItem.Section).header)
     }
 
     // --- TopPokemon mode ---

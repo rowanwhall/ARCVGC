@@ -8,7 +8,7 @@ enum class LookbackWindow(val value: String, val displayName: String, val durati
     @SerialName("all") All("all", "All", null),
     @SerialName("30days") ThirtyDays("30days", "30 days", 30L * 86_400L),
     @SerialName("week") Week("week", "7 days", 7L * 86_400L),
-    @SerialName("day") Day("day", "Today", 86_400L);
+    @SerialName("day") Day("day", "24 hours", 86_400L);
 
     /**
      * Returns `(timeRangeStart, timeRangeEnd)` epoch seconds for a time-bounded
@@ -22,5 +22,12 @@ enum class LookbackWindow(val value: String, val displayName: String, val durati
     companion object {
         fun fromValue(value: String?): LookbackWindow? =
             value?.let { v -> entries.firstOrNull { it.value == v } }
+
+        /**
+         * Lookback options offered on the Home page. Excludes [All] because the
+         * `/pokemon/usage` endpoint feeding the Home mover sections returns 500
+         * for `all`. [Week] is the middle (default) option.
+         */
+        val homeOptions: List<LookbackWindow> = listOf(ThirtyDays, Week, Day)
     }
 }

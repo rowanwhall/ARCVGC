@@ -158,13 +158,14 @@ fun PlayerListRow(
 fun LookbackSegmentedSelector(
     selectedLookback: LookbackWindow,
     onLookbackSelected: (LookbackWindow) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    options: List<LookbackWindow> = LookbackWindow.entries
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        LookbackWindow.entries.forEach { window ->
+        options.forEach { window ->
             val isSelected = window == selectedLookback
             val accentColor = MaterialTheme.colorScheme.primary
             val borderColor = if (isSelected) accentColor else MaterialTheme.colorScheme.outlineVariant

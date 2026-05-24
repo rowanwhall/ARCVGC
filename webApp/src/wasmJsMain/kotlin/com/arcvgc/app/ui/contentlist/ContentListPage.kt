@@ -298,6 +298,7 @@ fun ContentListPage(
         formats = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) sortedFormats else emptyList(),
         selectedFormatId = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) selectedFormatId else 0,
         selectedLookback = selectedLookback,
+        lookbackOptions = if (mode is ContentListMode.Home) LookbackWindow.homeOptions else LookbackWindow.entries,
         searchQuery = if (mode is ContentListMode.TopPokemon) searchQuery else ""
     )
 
@@ -346,7 +347,7 @@ fun ContentListPage(
             else -> null
         },
         onFormatSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) viewModel::selectFormat else null,
-        onLookbackSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.TopPokemon) viewModel::selectLookback else null,
+        onLookbackSelected = if (mode is ContentListMode.Pokemon || mode is ContentListMode.TopPokemon || mode is ContentListMode.Home) viewModel::selectLookback else null,
         onSearchQueryChanged = if (mode is ContentListMode.TopPokemon) viewModel::setSearchQuery else null,
     )
 

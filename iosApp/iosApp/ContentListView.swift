@@ -164,6 +164,13 @@ struct ContentListView: View {
         return false
     }
 
+    // Home excludes the "All" option (the usage endpoint doesn't support it) and
+    // defaults to the middle 7-day window; other modes offer all four.
+    private var lookbackOptions: [LookbackWindow] {
+        if case .home = mode { return [.thirtyDays, .week, .day] }
+        return [.all, .thirtyDays, .week, .day]
+    }
+
     var body: some View {
         let header = ContentListHeader(mode: viewModel.mode)
 
@@ -292,7 +299,8 @@ struct ContentListView: View {
                                     LookbackSegmentedSelector(
                                         selectedLookback: viewModel.selectedLookback,
                                         onLookbackSelected: { viewModel.selectLookback($0) },
-                                        accentColor: settingsStore.themeColor
+                                        accentColor: settingsStore.themeColor,
+                                        options: lookbackOptions
                                     )
                                     .padding(.horizontal, 16)
                                 case .searchField:
@@ -373,7 +381,8 @@ struct ContentListView: View {
                                     LookbackSegmentedSelector(
                                         selectedLookback: viewModel.selectedLookback,
                                         onLookbackSelected: { viewModel.selectLookback($0) },
-                                        accentColor: settingsStore.themeColor
+                                        accentColor: settingsStore.themeColor,
+                                        options: lookbackOptions
                                     )
                                     .padding(.horizontal, 16)
                                 }

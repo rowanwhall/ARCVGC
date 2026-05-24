@@ -184,8 +184,7 @@ struct LookbackSegmentedSelector: View {
     let selectedLookback: LookbackWindow
     let onLookbackSelected: (LookbackWindow) -> Void
     let accentColor: Color
-
-    private let options: [LookbackWindow] = [.all, .thirtyDays, .week, .day]
+    var options: [LookbackWindow] = [.all, .thirtyDays, .week, .day]
 
     var body: some View {
         HStack(spacing: 6) {

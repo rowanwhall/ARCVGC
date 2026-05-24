@@ -142,6 +142,7 @@ internal fun ContentListContent(
     val formats = formatState.formats
     val selectedFormatId = formatState.selectedFormatId
     val selectedLookback = formatState.selectedLookback
+    val lookbackOptions = formatState.lookbackOptions
     val searchQuery = formatState.searchQuery
     val battleCardCellWidth = gridConfig.battleCardCellWidth
     val expandedTopPokemonMaxWidth = gridConfig.expandedTopPokemonMaxWidth
@@ -238,7 +239,7 @@ internal fun ContentListContent(
                         emitFormatSelectorItem(topItem, formats, selectedFormatId, onFormatSelected, "format_selector" in uiState.loadingSections, fullSpan)
                     }
                     if (topItem is ContentListItem.LookbackSelector) {
-                        emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, fullSpan)
+                        emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, lookbackOptions, fullSpan)
                     }
                     if (topItem is ContentListItem.SearchField) {
                         emitSearchFieldItem(topItem, searchQuery, onSearchQueryChanged, fullSpan)
@@ -457,7 +458,7 @@ internal fun ContentListContent(
                             emitFormatSelectorItem(topItem, formats, selectedFormatId, onFormatSelected, "format_selector" in uiState.loadingSections, fullSpan)
                         }
                         is ContentListItem.LookbackSelector -> {
-                            emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, fullSpan)
+                            emitLookbackSelectorItem(topItem, selectedLookback, onLookbackSelected, lookbackOptions, fullSpan)
                         }
                         is ContentListItem.SearchField -> {
                             emitSearchFieldItem(topItem, searchQuery, onSearchQueryChanged, fullSpan)
@@ -696,6 +697,7 @@ private fun LazyGridScope.emitLookbackSelectorItem(
     item: ContentListItem.LookbackSelector,
     selectedLookback: LookbackWindow,
     onLookbackSelected: ((LookbackWindow) -> Unit)?,
+    lookbackOptions: List<LookbackWindow>,
     fullSpan: LazyGridItemSpanScope.() -> GridItemSpan
 ) {
     if (onLookbackSelected == null) return
@@ -704,7 +706,8 @@ private fun LazyGridScope.emitLookbackSelectorItem(
             LookbackSegmentedSelector(
                 selectedLookback = selectedLookback,
                 onLookbackSelected = onLookbackSelected,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                options = lookbackOptions
             )
         }
     }
