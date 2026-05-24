@@ -53,8 +53,8 @@ android {
         applicationId = "com.arcvgc.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 9
-        versionName = "3.0"
+        versionCode = 10
+        versionName = "3.1"
     }
     packaging {
         resources {
