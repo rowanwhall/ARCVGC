@@ -49,7 +49,16 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
-class ApiService {
+/**
+ * Narrow interface over the remote config fetch so [com.arcvgc.app.data.AppConfigRepository]
+ * can be unit-tested without a real [ApiService] hitting the network. Mirrors the
+ * `BattleRepositoryApi` testability pattern.
+ */
+interface AppConfigApi {
+    suspend fun getConfig(): NetworkResult<AppConfig>
+}
+
+class ApiService : AppConfigApi {
 
     private val client: HttpClient = createPlatformHttpClient().config {
         install(ContentNegotiation) {
@@ -363,7 +372,7 @@ class ApiService {
         }
     }
 
-    suspend fun getConfig(): NetworkResult<AppConfig> {
+    override suspend fun getConfig(): NetworkResult<AppConfig> {
         return try {
             val response: AppConfigResponseDto = client
                 .get("${ApiConstants.BASE_URL}${ApiConstants.CONFIG_ENDPOINT}")

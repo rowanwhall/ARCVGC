@@ -90,12 +90,13 @@ class ContentListLogicTest {
         fakeRepo = FakeBattleRepository()
         favoritesRepo = FavoritesRepository(FakeFavoritesStorage())
         appConfigRepo = AppConfigRepository(
-            apiService = com.arcvgc.app.network.ApiService(),
+            apiService = com.arcvgc.app.testutil.FakeAppConfigApi(),
             storage = FakeAppConfigStorage().apply {
                 putInt("format_id", 1)
                 putString("format_name", "gen9vgc2024regh")
             },
-            catalogCacheStorage = FakeCatalogCacheStorage()
+            catalogCacheStorage = FakeCatalogCacheStorage(),
+            scope = testScope
         )
     }
 

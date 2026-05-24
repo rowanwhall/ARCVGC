@@ -3,19 +3,30 @@ package com.arcvgc.app.data
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.Format
 import com.arcvgc.app.domain.model.NetworkResult
-import com.arcvgc.app.network.ApiService
+import com.arcvgc.app.network.AppConfigApi
 import com.arcvgc.app.util.createSafeScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AppConfigRepository(
-    private val apiService: ApiService,
+    private val apiService: AppConfigApi,
     private val storage: AppConfigStorageApi,
-    private val catalogCacheStorage: CatalogCacheStorageApi
+    private val catalogCacheStorage: CatalogCacheStorageApi,
+    private val scope: CoroutineScope
 ) {
-    private val scope = createSafeScope()
+    // 3-arg form used by all production platforms (Android/iOS/Web). Kept as an
+    // explicit secondary constructor — not a default arg — because Kotlin
+    // default parameter values do not bridge to Swift, so a default would force
+    // every Swift call site to pass `scope`. Tests call the 4-arg primary
+    // constructor with a TestScope for deterministic, offline init.
+    constructor(
+        apiService: AppConfigApi,
+        storage: AppConfigStorageApi,
+        catalogCacheStorage: CatalogCacheStorageApi
+    ) : this(apiService, storage, catalogCacheStorage, createSafeScope())
 
     private val _config = MutableStateFlow<AppConfig?>(null)
     val config: StateFlow<AppConfig?> = _config.asStateFlow()
