@@ -796,7 +796,9 @@ class ContentListLogic(
     /**
      * Builds the Home page's stat `SectionGroup` (Most Used / Trending Up /
      * Trending Down) from a format detail + usage-movers fetch. Each section is
-     * omitted when its source data is empty; returns null when all are empty.
+     * omitted when its source data is empty. Trending Up/Down additionally drop
+     * any entries with `usageChangePercent == 0.0` before deciding whether the
+     * section has content. Returns null when all sections are empty.
      */
     private fun buildHomeStatGroup(
         formatDetail: FormatDetail?,
@@ -817,17 +819,21 @@ class ContentListLogic(
                     listOf(ContentListItem.StatChipRow(chips, "top_pokemon"))
                 ))
             }
-            if (usage != null && usage.increased.isNotEmpty()) {
-                add(ContentListItem.Section(
-                    HOME_TRENDING_UP_SECTION,
-                    listOf(ContentListItem.StatChipRow(usage.increased.toChips(), "trending_up"))
-                ))
-            }
-            if (usage != null && usage.decreased.isNotEmpty()) {
-                add(ContentListItem.Section(
-                    HOME_TRENDING_DOWN_SECTION,
-                    listOf(ContentListItem.StatChipRow(usage.decreased.toChips(), "trending_down"))
-                ))
+            if (usage != null) {
+                val increased = usage.increased.filter { it.usageChangePercent != 0.0 }
+                if (increased.isNotEmpty()) {
+                    add(ContentListItem.Section(
+                        HOME_TRENDING_UP_SECTION,
+                        listOf(ContentListItem.StatChipRow(increased.toChips(), "trending_up"))
+                    ))
+                }
+                val decreased = usage.decreased.filter { it.usageChangePercent != 0.0 }
+                if (decreased.isNotEmpty()) {
+                    add(ContentListItem.Section(
+                        HOME_TRENDING_DOWN_SECTION,
+                        listOf(ContentListItem.StatChipRow(decreased.toChips(), "trending_down"))
+                    ))
+                }
             }
         }
         return if (groupSections.isNotEmpty()) ContentListItem.SectionGroup(groupSections, fillWidth = true) else null

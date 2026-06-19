@@ -1562,7 +1562,8 @@ class ContentListLogicTest {
         testScope.advanceUntilIdle()
         assertTrue(logic.uiState.value.items.any { it is ContentListItem.SectionGroup })
 
-        // New window returns no stat data — the group should be removed entirely.
+        // New window: topPokemon empty + trending lists empty — every candidate
+        // section is empty, so the whole group is dropped.
         fakeRepo.formatDetailResult = testFormatDetail().copy(topPokemon = emptyList())
         fakeRepo.pokemonUsageResult = testPokemonUsage().copy(increased = emptyList(), decreased = emptyList())
 
@@ -1574,6 +1575,56 @@ class ContentListLogicTest {
         assertTrue(items[0] is ContentListItem.FormatSelector)
         assertTrue(items[1] is ContentListItem.LookbackSelector)
         assertEquals(ContentListLogic.HOME_TOP_BATTLES_SECTION, (items[2] as ContentListItem.Section).header)
+    }
+
+    @Test
+    fun homeMode_buildStatGroup_filtersZeroPercentMovers() {
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+        fakeRepo.pokemonUsageResult = testPokemonUsage().copy(
+            increased = listOf(
+                testPokemonUsage().increased[0].copy(id = 1, name = "RealMover", usageChangePercent = 5.09),
+                testPokemonUsage().increased[0].copy(id = 2, name = "ZeroMover", usageChangePercent = 0.0)
+            ),
+            decreased = listOf(
+                testPokemonUsage().decreased[0].copy(id = 3, name = "ZeroLoser", usageChangePercent = 0.0),
+                testPokemonUsage().decreased[0].copy(id = 4, name = "RealLoser", usageChangePercent = -6.74)
+            )
+        )
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val sections = logic.uiState.value.items
+            .unwrapSectionGroups()
+            .filterIsInstance<ContentListItem.Section>()
+        val upChips = (sections.first { it.header == ContentListLogic.HOME_TRENDING_UP_SECTION }
+            .items[0] as ContentListItem.StatChipRow).chips
+        val downChips = (sections.first { it.header == ContentListLogic.HOME_TRENDING_DOWN_SECTION }
+            .items[0] as ContentListItem.StatChipRow).chips
+
+        assertEquals(listOf("RealMover"), upChips.map { it.name })
+        assertEquals(listOf("RealLoser"), downChips.map { it.name })
+    }
+
+    @Test
+    fun homeMode_buildStatGroup_allEntriesZeroPercent_omitsTrendingSections() {
+        // All movers are filtered out as 0% → trending sections are hidden
+        // entirely; only Most Used survives.
+        fakeRepo.bestPreviousDayResult = listOf(testBattle)
+        fakeRepo.formatDetailResult = testFormatDetail()
+        fakeRepo.pokemonUsageResult = testPokemonUsage().copy(
+            increased = listOf(testPokemonUsage().increased[0].copy(usageChangePercent = 0.0)),
+            decreased = listOf(testPokemonUsage().decreased[0].copy(usageChangePercent = 0.0))
+        )
+
+        val logic = createLogic(ContentListMode.Home)
+        logic.initialize()
+        testScope.advanceUntilIdle()
+
+        val group = logic.uiState.value.items.filterIsInstance<ContentListItem.SectionGroup>().single()
+        assertEquals(listOf(ContentListLogic.HOME_MOST_USED_SECTION), group.sections.map { it.header })
     }
 
     // --- TopPokemon mode ---
