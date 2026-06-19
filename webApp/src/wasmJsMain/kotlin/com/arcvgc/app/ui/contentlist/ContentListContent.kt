@@ -51,7 +51,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -165,9 +164,18 @@ internal fun ContentListContent(
         }
     }
 
-    LaunchedEffect(shouldPaginate) {
-        snapshotFlow { shouldPaginate }
-            .collect { if (it) onPaginate() }
+    // Keyed on `isPaginating` as well as `shouldPaginate` so that after a page
+    // load completes (isPaginating flips true → false) the effect re-evaluates
+    // and fires again if the user is still inside the threshold. Without the
+    // extra key, a viewport that stays past the threshold across the page-load
+    // boundary (e.g. desktop web with 3 cards per row, where page 2's first
+    // cells fill the orphan slots of page 1's partial row and keep
+    // `lastVisibleIndex` pinned above `totalItems - PAGINATION_THRESHOLD`)
+    // produces no false→true edge and pagination stalls at page 2. `paginate()`
+    // is idempotent (guarded on isPaginating/canPaginate), so the extra
+    // invocation while paginating is a harmless no-op.
+    LaunchedEffect(shouldPaginate, uiState.isPaginating) {
+        if (shouldPaginate) onPaginate()
     }
 
     val windowSizeClass = LocalWindowSizeClass.current

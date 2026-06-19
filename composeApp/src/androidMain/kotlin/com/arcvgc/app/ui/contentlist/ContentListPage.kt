@@ -51,7 +51,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
@@ -564,9 +563,15 @@ private fun ContentListContent(
         }
     }
 
-    LaunchedEffect(shouldPaginate) {
-        snapshotFlow { shouldPaginate }
-            .collect { if (it) onPaginate() }
+    // Keyed on `isPaginating` as well as `shouldPaginate` so that after a page
+    // load completes the effect re-evaluates and fires again if the user is
+    // still inside the threshold. Without this, a tall viewport that stays past
+    // the threshold across the page-load boundary produces no false→true edge
+    // and pagination stalls. `paginate()` is idempotent (guarded on
+    // isPaginating/canPaginate), so the extra invocation while paginating is a
+    // harmless no-op.
+    LaunchedEffect(shouldPaginate, uiState.isPaginating) {
+        if (shouldPaginate) onPaginate()
     }
 
     val statusBarHeight = if (consumeTopInsets) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
