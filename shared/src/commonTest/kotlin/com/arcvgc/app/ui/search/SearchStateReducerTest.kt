@@ -1,6 +1,8 @@
 package com.arcvgc.app.ui.search
 
 import com.arcvgc.app.domain.model.OrderBy
+import com.arcvgc.app.domain.model.SearchFilterSlot
+import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -11,6 +13,7 @@ import com.arcvgc.app.ui.model.TypeUiModel
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -520,6 +523,162 @@ class SearchStateReducerTest {
 
         assertEquals(WinnerFilter.TEAM2, state.winnerFilter)
     }
+
+    // --- hydrateFromParams ---
+
+    @Test
+    fun hydrateFromParams_copiesAllScalarFields() {
+        val params = SearchParams(
+            filters = emptyList(),
+            formatId = 42,
+            minimumRating = 1500,
+            maximumRating = 1900,
+            unratedOnly = false,
+            orderBy = OrderBy.Time,
+            timeRangeStart = 100L,
+            timeRangeEnd = 200L,
+            playerName = "Wolfey",
+            formatName = "VGC 2024 Reg G",
+            winnerFilter = WinnerFilter.TEAM1
+        )
+
+        val state = SearchStateReducer.hydrateFromParams(params, resolvedFormat = null)
+
+        assertEquals(1500, state.selectedMinRating)
+        assertEquals(1900, state.selectedMaxRating)
+        assertFalse(state.unratedOnly)
+        assertEquals(OrderBy.Time, state.selectedOrderBy)
+        assertEquals(100L, state.timeRangeStart)
+        assertEquals(200L, state.timeRangeEnd)
+        assertEquals("Wolfey", state.playerName)
+        assertEquals(WinnerFilter.TEAM1, state.winnerFilter)
+    }
+
+    @Test
+    fun hydrateFromParams_nullPlayerName_becomesEmptyString() {
+        val params = baseParams().copy(playerName = null)
+
+        val state = SearchStateReducer.hydrateFromParams(params, resolvedFormat = null)
+
+        assertEquals("", state.playerName)
+    }
+
+    @Test
+    fun hydrateFromParams_mapsTeam1FilterSlots() {
+        val params = baseParams().copy(
+            filters = listOf(
+                SearchFilterSlot(
+                    pokemonId = 25,
+                    itemId = 7,
+                    teraTypeId = 3,
+                    abilityId = 11,
+                    pokemonName = "Pikachu",
+                    pokemonImageUrl = "pika.png",
+                    itemName = "Light Ball",
+                    itemImageUrl = "lightball.png",
+                    teraTypeName = "Electric",
+                    teraTypeImageUrl = "electric.png",
+                    abilityName = "Static"
+                )
+            )
+        )
+
+        val state = SearchStateReducer.hydrateFromParams(params, resolvedFormat = null)
+
+        assertEquals(1, state.filterSlots.size)
+        val slot = state.filterSlots[0]
+        assertEquals(25, slot.pokemonId)
+        assertEquals("Pikachu", slot.pokemonName)
+        assertEquals("pika.png", slot.pokemonImageUrl)
+        assertNotNull(slot.item)
+        assertEquals(7, slot.item.id)
+        assertEquals("Light Ball", slot.item.name)
+        assertNotNull(slot.teraType)
+        assertEquals(3, slot.teraType.id)
+        assertEquals("Electric", slot.teraType.name)
+        assertEquals("electric.png", slot.teraType.imageUrl)
+        assertNotNull(slot.ability)
+        assertEquals(11, slot.ability.id)
+        assertEquals("Static", slot.ability.name)
+    }
+
+    @Test
+    fun hydrateFromParams_slotWithNoSubFilters_leavesItemTeraAbilityNull() {
+        val params = baseParams().copy(
+            filters = listOf(SearchFilterSlot(pokemonId = 1, pokemonName = "Bulbasaur"))
+        )
+
+        val state = SearchStateReducer.hydrateFromParams(params, resolvedFormat = null)
+
+        val slot = state.filterSlots[0]
+        assertNull(slot.item)
+        assertNull(slot.teraType)
+        assertNull(slot.ability)
+    }
+
+    @Test
+    fun hydrateFromParams_mapsTeam2FilterSlots() {
+        val params = baseParams().copy(
+            team2Filters = listOf(
+                SearchFilterSlot(pokemonId = 4, pokemonName = "Charmander"),
+                SearchFilterSlot(pokemonId = 7, pokemonName = "Squirtle")
+            )
+        )
+
+        val state = SearchStateReducer.hydrateFromParams(params, resolvedFormat = null)
+
+        assertEquals(2, state.team2FilterSlots.size)
+        assertEquals(4, state.team2FilterSlots[0].pokemonId)
+        assertEquals(7, state.team2FilterSlots[1].pokemonId)
+    }
+
+    @Test
+    fun hydrateFromParams_useResolvedFormatWhenProvided() {
+        val params = baseParams().copy(formatId = 42, formatName = "Stale Name")
+        val resolved = FormatUiModel(id = 42, displayName = "VGC 2024 Reg G", isOpenTeamsheet = true)
+
+        val state = SearchStateReducer.hydrateFromParams(params, resolvedFormat = resolved)
+
+        assertEquals(resolved, state.selectedFormat)
+    }
+
+    @Test
+    fun hydrateFromParams_nullResolvedFormat_buildsMinimalFromParams() {
+        val params = baseParams().copy(formatId = 42, formatName = "VGC 2024 Reg G")
+
+        val state = SearchStateReducer.hydrateFromParams(params, resolvedFormat = null)
+
+        assertNotNull(state.selectedFormat)
+        assertEquals(42, state.selectedFormat.id)
+        assertEquals("VGC 2024 Reg G", state.selectedFormat.displayName)
+        assertFalse(state.selectedFormat.isOpenTeamsheet)
+    }
+
+    @Test
+    fun hydrateFromParams_setsUserSelectedFormatFlag() {
+        val params = baseParams()
+
+        val state = SearchStateReducer.hydrateFromParams(params, resolvedFormat = null)
+
+        // Critical: blocks setDefaultFormat from clobbering hydrated format
+        assertTrue(state.userSelectedFormat)
+    }
+
+    @Test
+    fun hydrateFromParams_unratedOnly_carriesThrough() {
+        val params = baseParams().copy(unratedOnly = true, orderBy = OrderBy.Time)
+
+        val state = SearchStateReducer.hydrateFromParams(params, resolvedFormat = null)
+
+        assertTrue(state.unratedOnly)
+        assertEquals(OrderBy.Time, state.selectedOrderBy)
+    }
+
+    private fun baseParams() = SearchParams(
+        filters = emptyList(),
+        formatId = 1,
+        orderBy = OrderBy.Rating
+    )
 
     // --- Helpers ---
 

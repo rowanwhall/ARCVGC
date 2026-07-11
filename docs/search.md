@@ -35,8 +35,27 @@
 
 ## Web
 - **Catalog repos**: 5 shared catalog repos added to `DependencyContainer` (lazy singletons), eagerly initialized in `WebApp()` via `remember {}` block at app startup
-- **SearchViewModel**: Plain `ViewModel()` constructor-injecting all 5 catalog repos + optional `AppConfigRepository`. Delegates to shared `SearchLogic` (passes `viewModelScope` + config flow for automatic default format observation).
+- **SearchViewModel**: Plain `ViewModel()` constructor-injecting all 5 catalog repos + optional `AppConfigRepository`. Delegates to shared `SearchLogic` (passes `viewModelScope` + config flow for automatic default format observation). Exposes `hydrate(params: SearchParams)` for deep-link hydration (forwards to `SearchLogic.hydrate(params, formatCatalog)` using the current format-catalog snapshot) and `var lastAppliedHydrationTick: Int` for the apply-once tick pattern.
 - **Compose UI**: `SearchFilterCard` has two layout modes based on window size. **Mobile web** (`Compact` window): same as Android — badges + context menu, name in non-compact only. **Desktop web** (`Expanded` window): inline Item/Tera/Ability buttons with `SmallFilterButton` text buttons (uses shared `AppTokens` for padding). All pickers include a "None" row for clearing. `PickerDialogs.kt` consolidates all 7 pickers as `Dialog` composables (search field at TOP, web convention). `PokemonPickerDialog`, `ItemPickerDialog`, `TeraTypePickerDialog`, `AbilityPickerDialog`, `FormatPickerDialog`, `MinRatingPickerDialog`, `SortOrderPickerDialog`. Picker state tracks team for routing.
+
+### Desktop-web three-pane layout (`SearchDesktopPage`)
+
+On `WindowSizeClass.Expanded`, `Tab.Search` renders `SearchDesktopPage` (a `Row` of filter pane | results pane) instead of the mobile-style two-screen flow:
+
+- **Left pane** (fixed 440dp): `SearchFiltersPane` extracted from `SearchPage.kt` — the same LazyColumn form body + picker dialogs, hosted in a narrow column. The Search button still runs the search via `onSearch(params)` (no auto-run on filter edit). Width is tuned so long format strings ("[Gen 9 Champions] VGC 2026 Reg M-B (Bo3)") don't wrap and two-team filter cards fit their sub-filter controls.
+- **Right pane** (`fillMaxSize`): renders `SearchEmptyHint` ("Configure filters and tap Search") when `searchOverlayParams == null`; renders `ContentListPage(mode = Search(params))` when populated. The existing master-detail wiring inside `ContentListPage` provides the optional third pane (`BattleDetailPanel`) when the user clicks a battle.
+- **Filter chips stay visible** at the top of the results grid (`SearchFilterChips`) even though the left pane shows the same filters — explicit summary above results.
+- **Mobile web is unchanged** — `MobileLayout` still uses `SearchPage` as a full-screen form and renders `ContentListPage(Search)` as a separate full-screen overlay when `searchOverlayParams != null`.
+- **`SearchPage` is now a thin wrapper** around `SearchFiltersPane` (centered with `widthIn(max = 900.dp)`). Both layouts share the same form composable.
+
+### Deep-link hydration (`/search?...`)
+
+When the user lands on `/search?...`, the left-pane filters reflect the active search. Implemented with the [Tick pattern](../CLAUDE.md#tick-pattern-apply-once-to-a-cached-viewmodel):
+
+- **`SearchStateReducer.hydrateFromParams(params, resolvedFormat)`**: pure function mapping `SearchParams` → `SearchUiState`. Sets `userSelectedFormat = true` so the default-format watcher in `SearchLogic.init` cannot clobber the hydrated format. Domain `SearchFilterSlot` carries `pokemonName`/`pokemonImageUrl`/`itemName`/`itemImageUrl`/`teraTypeName`/`teraTypeImageUrl`/`abilityName`, so no catalog lookup is needed for display. All producers (search buttons on Android/iOS/web + `DeepLinkResolver.resolveSearch`) populate these display fields when constructing a `SearchFilterSlot`.
+- **`SearchLogic.hydrate(params, formatCatalog)`**: looks up the rich `FormatUiModel` from the catalog, falls back to a minimal `FormatUiModel(formatId, formatName)` if the catalog hasn't loaded yet.
+- **Tick state**: `pendingSearchHydrationTick: Int` in `WebApp.kt` composition state, bumped *only* in the `DeepLinkResolver.ResolvedLink.Search` branch of the initial `LaunchedEffect(Unit)` (not in `handleSearch` — user-initiated searches own their VM state). `SearchViewModel.lastAppliedHydrationTick: Int` is the delivery receipt.
+- **Apply site**: `SearchDesktopPage`'s `LaunchedEffect(pendingHydrationTick)` calls `viewModel.hydrate(params)` and bumps `lastAppliedHydrationTick` when `pendingHydrationTick > lastAppliedHydrationTick`. Re-entries with the same tick are no-ops.
 
 ### Desktop-web search results layout
 

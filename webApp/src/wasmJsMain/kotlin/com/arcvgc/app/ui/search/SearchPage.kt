@@ -59,9 +59,33 @@ import com.arcvgc.app.ui.rememberViewModel
 import com.arcvgc.app.ui.tokens.AppTokens.SearchButtonCornerRadius
 import com.arcvgc.app.ui.tokens.AppTokens.SecondaryIconAlpha
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchPage(
+    modifier: Modifier = Modifier,
+    onSearch: (SearchParams) -> Unit = {}
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        Box(
+            modifier = Modifier
+                .widthIn(max = 900.dp)
+                .fillMaxHeight()
+                .align(Alignment.TopCenter)
+        ) {
+            SearchFiltersPane(
+                onSearch = onSearch,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchFiltersPane(
     modifier: Modifier = Modifier,
     onSearch: (SearchParams) -> Unit = {}
 ) {
@@ -108,17 +132,7 @@ fun SearchPage(
 
     val windowSizeClass = LocalWindowSizeClass.current
     val listState = rememberLazyListState()
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-    ) {
-    Box(
-        modifier = Modifier
-            .widthIn(max = 900.dp)
-            .fillMaxHeight()
-            .align(Alignment.TopCenter)
-    ) {
+    Box(modifier = modifier) {
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
@@ -409,6 +423,7 @@ fun SearchPage(
                             pokemonImageUrl = slot.pokemonImageUrl,
                             itemName = slot.item?.name,
                             itemImageUrl = slot.item?.imageUrl,
+                            teraTypeName = slot.teraType?.name,
                             teraTypeImageUrl = slot.teraType?.imageUrl
                         )
                     }
@@ -449,7 +464,6 @@ fun SearchPage(
             listState = listState,
             modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight()
         )
-    }
     }
     }
 

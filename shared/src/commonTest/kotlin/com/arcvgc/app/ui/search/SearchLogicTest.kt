@@ -3,6 +3,9 @@ package com.arcvgc.app.ui.search
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.Format
 import com.arcvgc.app.domain.model.OrderBy
+import com.arcvgc.app.domain.model.SearchFilterSlot
+import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.FormatUiModel
 import com.arcvgc.app.ui.model.PokemonPickerUiModel
 import com.arcvgc.app.ui.model.TypeUiModel
@@ -13,6 +16,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchLogicTest {
@@ -154,6 +158,94 @@ class SearchLogicTest {
         val format = logic.uiState.value.selectedFormat
         assertEquals(5, format?.id)
         assertEquals(true, format?.isOpenTeamsheet)
+    }
+
+    @Test
+    fun hydrate_appliesAllParamsAtomically() {
+        val logic = SearchLogic()
+        val params = SearchParams(
+            filters = listOf(SearchFilterSlot(pokemonId = 25, pokemonName = "Pikachu")),
+            team2Filters = listOf(SearchFilterSlot(pokemonId = 6, pokemonName = "Charizard")),
+            formatId = 42,
+            minimumRating = 1500,
+            maximumRating = 1900,
+            orderBy = OrderBy.Time,
+            playerName = "Wolfey",
+            formatName = "Reg G",
+            winnerFilter = WinnerFilter.TEAM2
+        )
+
+        logic.hydrate(params)
+
+        val state = logic.uiState.value
+        assertEquals(1, state.filterSlots.size)
+        assertEquals(25, state.filterSlots[0].pokemonId)
+        assertEquals(1, state.team2FilterSlots.size)
+        assertEquals(6, state.team2FilterSlots[0].pokemonId)
+        assertEquals(42, state.selectedFormat?.id)
+        assertEquals(1500, state.selectedMinRating)
+        assertEquals(1900, state.selectedMaxRating)
+        assertEquals(OrderBy.Time, state.selectedOrderBy)
+        assertEquals("Wolfey", state.playerName)
+        assertEquals(WinnerFilter.TEAM2, state.winnerFilter)
+    }
+
+    @Test
+    fun hydrate_resolvesFormatFromCatalog() {
+        val logic = SearchLogic()
+        val params = SearchParams(
+            filters = emptyList(),
+            formatId = 42,
+            orderBy = OrderBy.Rating,
+            formatName = "Stale Name"
+        )
+        val catalog = listOf(
+            FormatUiModel(id = 42, displayName = "VGC 2024 Reg G", isOpenTeamsheet = true)
+        )
+
+        logic.hydrate(params, catalog)
+
+        val format = logic.uiState.value.selectedFormat
+        assertEquals(42, format?.id)
+        assertEquals("VGC 2024 Reg G", format?.displayName)
+        assertEquals(true, format?.isOpenTeamsheet)
+    }
+
+    @Test
+    fun hydrate_emptyCatalog_buildsMinimalFormatFromParams() {
+        val logic = SearchLogic()
+        val params = SearchParams(
+            filters = emptyList(),
+            formatId = 42,
+            orderBy = OrderBy.Rating,
+            formatName = "VGC 2024 Reg G"
+        )
+
+        logic.hydrate(params, formatCatalog = emptyList())
+
+        val format = logic.uiState.value.selectedFormat
+        assertEquals(42, format?.id)
+        assertEquals("VGC 2024 Reg G", format?.displayName)
+    }
+
+    @Test
+    fun hydrate_setsUserSelectedFormat_blocksDefaultFormatWatcher() = runTest(UnconfinedTestDispatcher()) {
+        val configFlow = MutableStateFlow<AppConfig?>(null)
+        val logic = SearchLogic(scope = backgroundScope, appConfigFlow = configFlow)
+        val params = SearchParams(
+            filters = emptyList(),
+            formatId = 42,
+            orderBy = OrderBy.Rating,
+            formatName = "Hydrated"
+        )
+
+        logic.hydrate(params)
+        // Later: config flow emits with a different default format.
+        configFlow.value = testConfig(formatId = 99, formattedName = "Default")
+
+        // Hydrated format must stick.
+        assertEquals(42, logic.uiState.value.selectedFormat?.id)
+        assertTrue(logic.uiState.value.userSelectedFormat)
     }
 
     @Test

@@ -142,6 +142,8 @@ class DeepLinkResolver(
                 pokemonName = pokemon.name,
                 pokemonImageUrl = pokemon.imageUrl,
                 itemName = item?.name,
+                itemImageUrl = item?.imageUrl,
+                teraTypeName = teraType?.name,
                 teraTypeImageUrl = teraType?.imageUrl,
                 abilityName = ability?.name
             )
@@ -167,6 +169,8 @@ class DeepLinkResolver(
                 pokemonName = pokemon.name,
                 pokemonImageUrl = pokemon.imageUrl,
                 itemName = item?.name,
+                itemImageUrl = item?.imageUrl,
+                teraTypeName = teraType?.name,
                 teraTypeImageUrl = teraType?.imageUrl,
                 abilityName = ability?.name
             )

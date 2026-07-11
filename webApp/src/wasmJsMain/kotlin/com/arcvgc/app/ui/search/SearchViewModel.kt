@@ -12,6 +12,7 @@ import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.data.TeraTypeCatalogRepository
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.OrderBy
+import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -85,4 +86,11 @@ class SearchViewModel(
     fun setPlayerName(name: String) = logic.setPlayerName(name)
     fun setOrderBy(orderBy: OrderBy) = logic.setOrderBy(orderBy)
     fun setWinnerFilter(filter: WinnerFilter) = logic.setWinnerFilter(filter)
+
+    fun hydrate(params: SearchParams) {
+        logic.hydrate(params, formatCatalogState.value.items)
+    }
+
+    // Delivery receipt for deep-link hydration. See "Tick pattern" in CLAUDE.md.
+    var lastAppliedHydrationTick: Int = 0
 }

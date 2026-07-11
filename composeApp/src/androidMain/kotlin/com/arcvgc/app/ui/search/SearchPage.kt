@@ -400,6 +400,7 @@ fun SearchPage(
                             pokemonImageUrl = slot.pokemonImageUrl,
                             itemName = slot.item?.name,
                             itemImageUrl = slot.item?.imageUrl,
+                            teraTypeName = slot.teraType?.name,
                             teraTypeImageUrl = slot.teraType?.imageUrl
                         )
                     }

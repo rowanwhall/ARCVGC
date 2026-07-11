@@ -74,14 +74,16 @@ fun SearchFilterCard(
         ),
         border = CardDefaults.outlinedCardBorder()
     ) {
-        val isMobile = LocalWindowSizeClass.current == WindowSizeClass.Compact
+        // Use the compact (badges + menu) layout in two-team mode regardless of window
+        // class — even on desktop, half-pane-width cards can't fit the inline buttons.
+        val useCompactLayout = LocalWindowSizeClass.current == WindowSizeClass.Compact || compact
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(if (isMobile && compact) 8.dp else 12.dp),
+                .padding(if (useCompactLayout && compact) 8.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isMobile) {
+            if (useCompactLayout) {
                 PokemonAvatar(
                     imageUrl = slot.pokemonImageUrl,
                     contentDescription = slot.pokemonName,

@@ -42,7 +42,7 @@
 
 ### Web browser History API integration (`BrowserHistory.kt`)
 - `@JsFun` wrappers for `history.pushState()` and `history.go()` in `BrowserHistory.kt`
-- Browser back button pops one navigation level: `navStack` entries first (mobile), then `desktopNavStack` (desktop), then `searchOverlayParams`
+- Browser back button pops one navigation level: `navStack` entries first (mobile), then `desktopNavStack` (desktop), then `searchOverlayParams`. On desktop, clearing `searchOverlayParams` reverts the right pane of `SearchDesktopPage` to the empty hint while the left-pane filters stay populated.
 - `WebApp()` tracks `historyDepth` (entries pushed) and `popStatesToIgnore` (skips popstate events from programmatic `historyGo` calls)
 - History entries are pushed imperatively at each navigation site (not reactively via `LaunchedEffect`)
 - Navigation callbacks (`handleSearch`, `handlePushEntry`, etc.) manage both app state and browser history together

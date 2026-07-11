@@ -190,7 +190,7 @@ internal fun ContentListContent(
         else -> 16.dp
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier.then(
             if (windowSizeClass == WindowSizeClass.Expanded && hasFinePointer()) {
                 Modifier.scrollable(
@@ -207,6 +207,10 @@ internal fun ContentListContent(
     ) {
 
     val fullSpan: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
+    // Full grid content width (pane width minus the LazyVerticalGrid's 16dp*2
+    // horizontal padding). SearchFilterChips uses this to escape the narrower
+    // full-span slot the grid otherwise reports when few columns fit.
+    val gridInnerWidth = (maxWidth - 32.dp).coerceAtLeast(0.dp)
 
     CompositionLocalProvider(LocalContentListAnimateItems provides gridConfig.animateListItems) {
     LazyVerticalGrid(
@@ -220,7 +224,7 @@ internal fun ContentListContent(
         horizontalArrangement = Arrangement.spacedBy(BATTLE_GRID_SPACING, Alignment.CenterHorizontally),
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)
     ) {
-        emitPageHeader(header, windowSizeClass, searchParams, onSearchParamsChanged, fullSpan)
+        emitPageHeader(header, windowSizeClass, searchParams, onSearchParamsChanged, fullSpan, gridInnerWidth)
 
         when {
             uiState.isLoading -> {
@@ -571,7 +575,8 @@ private fun LazyGridScope.emitPageHeader(
     windowSizeClass: WindowSizeClass,
     searchParams: SearchParams?,
     onSearchParamsChanged: ((SearchParams) -> Unit)?,
-    fullSpan: LazyGridItemSpanScope.() -> GridItemSpan
+    fullSpan: LazyGridItemSpanScope.() -> GridItemSpan,
+    gridInnerWidth: Dp
 ) {
     when (val h = header) {
         is ContentListHeaderUiModel.None -> {}
@@ -617,11 +622,13 @@ private fun LazyGridScope.emitPageHeader(
         is ContentListHeaderUiModel.SearchFilters -> {
             animatedItem(key = "search_filters", span = fullSpan) {
                 if (windowSizeClass == WindowSizeClass.Expanded) {
-                    SearchFilterChips(
-                        filters = h,
-                        searchParams = searchParams,
-                        onSearchParamsChanged = onSearchParamsChanged
-                    )
+                    Box(modifier = Modifier.escapeToGridWidth(gridInnerWidth)) {
+                        SearchFilterChips(
+                            filters = h,
+                            searchParams = searchParams,
+                            onSearchParamsChanged = onSearchParamsChanged
+                        )
+                    }
                 } else {
                     CenteredItem {
                         SearchFilterChips(
@@ -873,6 +880,29 @@ internal fun CenteredItem(
         }
     }
 }
+
+/**
+ * Overrides the width constraint the LazyVerticalGrid gives a full-span item and
+ * re-measures the child at [targetWidth], placing it centered on the item's slot.
+ *
+ * With `GridCells.FixedSize`, a full-span item is only as wide as the packed
+ * column area — when only 1 or 2 battle-card columns fit, that leaves the pane's
+ * remaining horizontal space unused. This lets a header (currently just the
+ * SearchFilters chips) reach into that space and span the full grid content
+ * width. Requires the child to render outside its reported bounds without being
+ * clipped (default for Compose layouts).
+ */
+private fun Modifier.escapeToGridWidth(targetWidth: Dp): Modifier =
+    this.layout { measurable, constraints ->
+        val targetPx = targetWidth.roundToPx().coerceAtLeast(0)
+        val placeable = measurable.measure(
+            constraints.copy(minWidth = targetPx, maxWidth = targetPx)
+        )
+        val offsetX = (constraints.maxWidth - targetPx) / 2
+        layout(constraints.maxWidth, placeable.height) {
+            placeable.place(offsetX, 0)
+        }
+    }
 
 private fun Modifier.escapeGridHorizontalPadding(extraPadding: Dp = 16.dp): Modifier =
     this.layout { measurable, constraints ->

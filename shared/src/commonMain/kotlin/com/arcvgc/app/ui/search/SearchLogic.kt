@@ -3,6 +3,7 @@ package com.arcvgc.app.ui.search
 import com.arcvgc.app.data.SettingsRepository
 import com.arcvgc.app.domain.model.AppConfig
 import com.arcvgc.app.domain.model.OrderBy
+import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.mapper.FormatUiMapper
 import com.arcvgc.app.ui.model.AbilityUiModel
@@ -156,5 +157,16 @@ class SearchLogic(
 
     fun setWinnerFilter(filter: WinnerFilter) {
         _uiState.update { SearchStateReducer.setWinnerFilter(it, filter) }
+    }
+
+    /**
+     * Hydrates state from a [SearchParams] snapshot — used when the user arrives via a
+     * /search?... deep link so the left-pane filters reflect the active search. Sets
+     * [SearchUiState.userSelectedFormat] = true, which blocks the default-format watcher
+     * in [init] from clobbering the hydrated format.
+     */
+    fun hydrate(params: SearchParams, formatCatalog: List<FormatUiModel> = emptyList()) {
+        val resolved = formatCatalog.firstOrNull { it.id == params.formatId }
+        _uiState.update { SearchStateReducer.hydrateFromParams(params, resolved) }
     }
 }

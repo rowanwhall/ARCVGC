@@ -1,6 +1,8 @@
 package com.arcvgc.app.ui.search
 
 import com.arcvgc.app.domain.model.OrderBy
+import com.arcvgc.app.domain.model.SearchFilterSlot
+import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.domain.model.WinnerFilter
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -13,6 +15,49 @@ import com.arcvgc.app.ui.model.TeraTypeUiModel
 object SearchStateReducer {
 
     fun initialState(): SearchUiState = SearchUiState()
+
+    fun hydrateFromParams(
+        params: SearchParams,
+        resolvedFormat: FormatUiModel?
+    ): SearchUiState {
+        return SearchUiState(
+            filterSlots = params.filters.map { it.toUiModel() },
+            team2FilterSlots = params.team2Filters.map { it.toUiModel() },
+            selectedFormat = resolvedFormat ?: FormatUiModel(
+                id = params.formatId,
+                displayName = params.formatName ?: ""
+            ),
+            userSelectedFormat = true,
+            selectedMinRating = params.minimumRating,
+            selectedMaxRating = params.maximumRating,
+            unratedOnly = params.unratedOnly,
+            selectedOrderBy = params.orderBy,
+            timeRangeStart = params.timeRangeStart,
+            timeRangeEnd = params.timeRangeEnd,
+            playerName = params.playerName.orEmpty(),
+            winnerFilter = params.winnerFilter
+        )
+    }
+
+    private fun SearchFilterSlot.toUiModel(): SearchFilterSlotUiModel {
+        val item = if (itemId != null) {
+            ItemUiModel(id = itemId, name = itemName.orEmpty(), imageUrl = itemImageUrl)
+        } else null
+        val teraType = if (teraTypeId != null) {
+            TeraTypeUiModel(id = teraTypeId, name = teraTypeName.orEmpty(), imageUrl = teraTypeImageUrl)
+        } else null
+        val ability = if (abilityId != null) {
+            AbilityUiModel(id = abilityId, name = abilityName.orEmpty())
+        } else null
+        return SearchFilterSlotUiModel(
+            pokemonId = pokemonId,
+            pokemonName = pokemonName,
+            pokemonImageUrl = pokemonImageUrl,
+            item = item,
+            teraType = teraType,
+            ability = ability
+        )
+    }
 
     fun addPokemon(state: SearchUiState, pokemon: PokemonPickerUiModel): SearchUiState {
         if (!state.canAddMoreTeam1) return state

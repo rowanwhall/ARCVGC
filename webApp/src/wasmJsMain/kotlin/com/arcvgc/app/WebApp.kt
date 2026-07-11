@@ -304,6 +304,10 @@ fun WebApp() {
         var deepLinkLoading by remember { mutableStateOf(false) }
         var deepLinkBattleId by remember { mutableStateOf<Int?>(null) }
         var deepLinkFavoritesSubTab by remember { mutableStateOf<Int?>(null) }
+        // Monotonic tick — bumped only when a /search?... deep link arrives. Drives
+        // one-shot hydration of the cached SearchViewModel in SearchDesktopPage. Do not
+        // bump on user-initiated searches (handleSearch); the VM already owns that state.
+        var pendingSearchHydrationTick by remember { mutableIntStateOf(0) }
 
         // Resolve deep link from URL on initial load
         LaunchedEffect(Unit) {
@@ -353,7 +357,9 @@ fun WebApp() {
                             }
                         }
                         is DeepLinkResolver.ResolvedLink.Search -> {
+                            selectedTab = 2
                             searchOverlayParams = resolved.params
+                            pendingSearchHydrationTick++
                         }
                         is DeepLinkResolver.ResolvedLink.SearchTab -> {
                             selectedTab = 2
@@ -588,6 +594,7 @@ fun WebApp() {
                                     selectedTab = selectedTab,
                                     onTabSelected = handleTabSelected,
                                     searchOverlayParams = searchOverlayParams,
+                                    pendingSearchHydrationTick = pendingSearchHydrationTick,
                                     onSearch = handleSearch,
                                     onSearchBack = handleSearchBack,
                                     desktopNavStack = desktopNavStack,
@@ -626,6 +633,7 @@ private fun DesktopLayout(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
     searchOverlayParams: SearchParams?,
+    pendingSearchHydrationTick: Int,
     onSearch: (SearchParams) -> Unit,
     onSearchBack: () -> Unit,
     desktopNavStack: List<NavEntry>,
@@ -751,16 +759,6 @@ private fun DesktopLayout(
                 )
                 is NavEntry.BattleDetail -> {} // Desktop doesn't use BattleDetail entries
             }
-        } else if (searchOverlayParams != null) {
-            ContentListPage(
-                mode = ContentListMode.Search(searchOverlayParams),
-                onBack = onSearchBack,
-                onSearchParamsChanged = onSearch,
-                modifier = contentModifier,
-                onPokemonClick = desktopPokemonClick,
-                onPlayerClick = desktopPlayerClick,
-                initialBattleId = initialBattleId
-            )
         } else {
             when (tabs[selectedTab]) {
                 Tab.Home -> ContentListPage(
@@ -779,7 +777,16 @@ private fun DesktopLayout(
                     onSelectedPokemonChanged = onUsageSelectedPokemonIdChanged,
                     modifier = contentModifier
                 )
-                Tab.Search -> SearchPage(modifier = contentModifier, onSearch = onSearch)
+                Tab.Search -> com.arcvgc.app.ui.search.SearchDesktopPage(
+                    searchOverlayParams = searchOverlayParams,
+                    pendingHydrationTick = pendingSearchHydrationTick,
+                    onSearch = onSearch,
+                    onSearchBack = onSearchBack,
+                    onPokemonClick = desktopPokemonClick,
+                    onPlayerClick = desktopPlayerClick,
+                    initialBattleId = initialBattleId,
+                    modifier = contentModifier
+                )
                 Tab.Favorites -> FavoritesPage(
                     modifier = contentModifier,
                     initialSubTab = initialFavoritesSubTab,
