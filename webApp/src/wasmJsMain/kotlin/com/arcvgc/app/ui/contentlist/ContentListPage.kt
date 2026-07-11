@@ -72,6 +72,7 @@ fun ContentListPage(
     onSearchParamsChanged: ((SearchParams) -> Unit)? = null,
     onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?, lookback: LookbackWindow?) -> Unit)? = null,
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null,
+    onBattleDetailOpenChanged: ((Boolean) -> Unit)? = null,
     initialBattleId: Int? = null,
     initialLookback: LookbackWindow = LookbackWindow.All,
     showToolbarWithoutBack: Boolean = false,
@@ -138,6 +139,7 @@ fun ContentListPage(
     // Persist selectedBattleId and scroll position in ViewModel for restoration on back navigation
     LaunchedEffect(selectedBattleId) {
         viewModel.savedBattleId = selectedBattleId
+        onBattleDetailOpenChanged?.invoke(selectedBattleId != null)
     }
 
     // The ViewModelStore caches this VM across tab switches so cached state

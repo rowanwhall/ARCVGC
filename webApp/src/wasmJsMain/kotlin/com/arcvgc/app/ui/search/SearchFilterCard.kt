@@ -80,7 +80,7 @@ fun SearchFilterCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(if (useCompactLayout && compact) 8.dp else 12.dp),
+                .padding(if (compact) 8.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (useCompactLayout) {
@@ -158,9 +158,9 @@ private fun FilterBadges(
 ) {
     val itemUrl = slot.item?.imageUrl
     val teraUrl = slot.teraType?.imageUrl
-    val hasAbility = slot.ability != null
+    val ability = slot.ability
 
-    val badgeCount = listOfNotNull(itemUrl, teraUrl).size + (if (hasAbility) 1 else 0)
+    val badgeCount = listOfNotNull(itemUrl, teraUrl).size + (if (ability != null) 1 else 0)
     if (badgeCount == 0) return
 
     val badgeSize = 24.dp
@@ -185,9 +185,9 @@ private fun FilterBadges(
                 modifier = Modifier.offset(x = offsetX))
             offsetX += badgeSize - badgeOverlap
         }
-        if (hasAbility) {
+        if (ability != null) {
             AbilityBadge(
-                name = slot.ability!!.name,
+                name = ability.name,
                 badgeSize = badgeSize,
                 borderColor = borderColor,
                 modifier = Modifier.offset(x = offsetX)

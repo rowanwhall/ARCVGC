@@ -47,7 +47,9 @@ import androidx.compose.ui.unit.dp
 import com.arcvgc.app.NavEntry
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.LookbackWindow
+import com.arcvgc.app.ui.components.CollapsibleSidePane
 import com.arcvgc.app.ui.components.LoadingIndicator
+import com.arcvgc.app.ui.components.PaneDividerWidth
 import com.arcvgc.app.ui.components.PokemonAvatar
 import com.arcvgc.app.ui.components.ThemedVerticalScrollbar
 import com.arcvgc.app.ui.model.ContentListItem
@@ -98,6 +100,12 @@ internal fun UsageDesktopPage(
     val selectedFormatIsHistoric = remember(sortedFormats, selectedFormatId) {
         sortedFormats.find { it.id == selectedFormatId }?.isHistoric == true
     }
+
+    val enableAnimations by DependencyContainer.settingsRepository.enableAnimations.collectAsState()
+    // Whether any ContentListPage in the right pane (base Pokemon page or a
+    // nested drill-down) has a battle detail pane open. While open, the
+    // rankings pane slides offscreen-left so the battle detail has room.
+    var battleDetailOpen by remember { mutableStateOf(false) }
 
     var selectedPokemon by remember { mutableStateOf<ContentListItem.Pokemon?>(null) }
     // Usage format/lookback captured at the moment the pokemon was selected.
@@ -188,116 +196,124 @@ internal fun UsageDesktopPage(
     }
 
     Row(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .width(leftPaneWidth)
-                .fillMaxHeight()
-                .padding(top = leftPanePadding)
+        CollapsibleSidePane(
+            visible = !battleDetailOpen,
+            paneWidth = leftPaneWidth + PaneDividerWidth,
+            animate = enableAnimations
         ) {
-            Column(modifier = Modifier.padding(horizontal = leftPanePadding)) {
-                FormatDropdown(
-                    formats = sortedFormats,
-                    selectedFormatId = selectedFormatId,
-                    onFormatSelected = listViewModel::selectFormat,
-                    fillMaxWidth = true,
+            Row(modifier = Modifier.fillMaxHeight()) {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 4.dp)
-                )
+                        .width(leftPaneWidth)
+                        .fillMaxHeight()
+                        .padding(top = leftPanePadding)
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = leftPanePadding)) {
+                        FormatDropdown(
+                            formats = sortedFormats,
+                            selectedFormatId = selectedFormatId,
+                            onFormatSelected = listViewModel::selectFormat,
+                            fillMaxWidth = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 4.dp)
+                        )
 
-                if (!selectedFormatIsHistoric) {
-                    LookbackSegmentedSelector(
-                        selectedLookback = selectedLookback,
-                        onLookbackSelected = listViewModel::selectLookback,
+                        if (!selectedFormatIsHistoric) {
+                            LookbackSegmentedSelector(
+                                selectedLookback = selectedLookback,
+                                onLookbackSelected = listViewModel::selectLookback,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp)
+                            )
+                        }
+
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = listViewModel::setSearchQuery,
+                            label = { Text("Search Pok\u00E9mon") },
+                            singleLine = true,
+                            trailingIcon = if (searchQuery.isNotEmpty()) {
+                                {
+                                    IconButton(onClick = { listViewModel.setSearchQuery("") }) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                    }
+                                }
+                            } else null,
+                            shape = RoundedCornerShape(CardCornerRadius),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    HorizontalDivider(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 4.dp)
+                            .padding(top = 8.dp)
                     )
-                }
 
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = listViewModel::setSearchQuery,
-                    label = { Text("Search Pok\u00E9mon") },
-                    singleLine = true,
-                    trailingIcon = if (searchQuery.isNotEmpty()) {
-                        {
-                            IconButton(onClick = { listViewModel.setSearchQuery("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                    val visibleItems = if (searchQuery.isBlank()) {
+                        allItems
+                    } else {
+                        allItems.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                    }
+                    val listState = rememberLazyListState()
+                    val isReloading = uiState.loadingSections.isNotEmpty()
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(if (isReloading) Modifier.alpha(0.5f) else Modifier),
+                            contentPadding = PaddingValues(
+                                start = leftPanePadding,
+                                end = leftPanePadding,
+                                top = 8.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(visibleItems, key = { it.listKey }) { pokemon ->
+                                UsagePokemonRow(
+                                    name = pokemon.name,
+                                    imageUrl = pokemon.imageUrl,
+                                    usagePercent = pokemon.usagePercent ?: "",
+                                    rank = pokemon.rank,
+                                    avatarSize = rowAvatarSize,
+                                    spriteSize = rowSpriteSize,
+                                    horizontalPadding = rowInnerHorizontalPadding,
+                                    avatarToTextSpacing = avatarToTextSpacing,
+                                    rankToNameSpacing = rankToNameSpacing,
+                                    nameToPercentSpacing = nameToPercentSpacing,
+                                    isSelected = pokemon.id == selectedPokemon?.id,
+                                    onClick = {
+                                        val sameSelection = pokemon.id == selectedPokemon?.id &&
+                                            selectedFormatId == formatAtSelection &&
+                                            selectedLookback == lookbackAtSelection
+                                        if (!sameSelection) {
+                                            selectedPokemon = pokemon
+                                            formatAtSelection = selectedFormatId
+                                            lookbackAtSelection = selectedLookback
+                                            onClearNestedStack()
+                                        }
+                                    }
+                                )
                             }
                         }
-                    } else null,
-                    shape = RoundedCornerShape(CardCornerRadius),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            HorizontalDivider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
-
-            val visibleItems = if (searchQuery.isBlank()) {
-                allItems
-            } else {
-                allItems.filter { it.name.contains(searchQuery, ignoreCase = true) }
-            }
-            val listState = rememberLazyListState()
-            val isReloading = uiState.loadingSections.isNotEmpty()
-            Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .then(if (isReloading) Modifier.alpha(0.5f) else Modifier),
-                    contentPadding = PaddingValues(
-                        start = leftPanePadding,
-                        end = leftPanePadding,
-                        top = 8.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    items(visibleItems, key = { it.listKey }) { pokemon ->
-                        UsagePokemonRow(
-                            name = pokemon.name,
-                            imageUrl = pokemon.imageUrl,
-                            usagePercent = pokemon.usagePercent ?: "",
-                            rank = pokemon.rank,
-                            avatarSize = rowAvatarSize,
-                            spriteSize = rowSpriteSize,
-                            horizontalPadding = rowInnerHorizontalPadding,
-                            avatarToTextSpacing = avatarToTextSpacing,
-                            rankToNameSpacing = rankToNameSpacing,
-                            nameToPercentSpacing = nameToPercentSpacing,
-                            isSelected = pokemon.id == selectedPokemon?.id,
-                            onClick = {
-                                val sameSelection = pokemon.id == selectedPokemon?.id &&
-                                    selectedFormatId == formatAtSelection &&
-                                    selectedLookback == lookbackAtSelection
-                                if (!sameSelection) {
-                                    selectedPokemon = pokemon
-                                    formatAtSelection = selectedFormatId
-                                    lookbackAtSelection = selectedLookback
-                                    onClearNestedStack()
-                                }
-                            }
+                        ThemedVerticalScrollbar(
+                            listState = listState,
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .fillMaxHeight()
                         )
                     }
                 }
-                ThemedVerticalScrollbar(
-                    listState = listState,
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .fillMaxHeight()
-                )
+
+                VerticalDivider()
             }
         }
-
-        VerticalDivider()
 
         Box(modifier = Modifier.fillMaxSize()) {
             val nestedTop = nestedStack.lastOrNull()
@@ -325,6 +341,7 @@ internal fun UsageDesktopPage(
                         modifier = Modifier.fillMaxSize(),
                         onPokemonClick = nestedPokemonClick,
                         onPlayerClick = nestedPlayerClick,
+                        onBattleDetailOpenChanged = { battleDetailOpen = it },
                         showToolbarWithoutBack = true,
                         mirrorUrl = false
                     )
@@ -343,6 +360,7 @@ internal fun UsageDesktopPage(
                     modifier = Modifier.fillMaxSize(),
                     onPokemonClick = nestedPokemonClick,
                     onPlayerClick = nestedPlayerClick,
+                    onBattleDetailOpenChanged = { battleDetailOpen = it },
                     mirrorUrl = false
                 )
                 is NavEntry.Player -> ContentListPage(
@@ -355,6 +373,7 @@ internal fun UsageDesktopPage(
                     modifier = Modifier.fillMaxSize(),
                     onPokemonClick = nestedPokemonClick,
                     onPlayerClick = nestedPlayerClick,
+                    onBattleDetailOpenChanged = { battleDetailOpen = it },
                     mirrorUrl = false
                 )
                 is NavEntry.BattleDetail -> {

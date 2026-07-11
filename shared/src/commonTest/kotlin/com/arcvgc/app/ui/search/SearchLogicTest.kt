@@ -249,6 +249,42 @@ class SearchLogicTest {
     }
 
     @Test
+    fun hydrate_beforeCatalogLoads_upgradesFormatWhenCatalogArrives() = runTest(UnconfinedTestDispatcher()) {
+        // Hydration ran before the format catalog loaded, so the selected format is a
+        // minimal fallback (isOpenTeamsheet stuck false) and userSelectedFormat = true
+        // blocks the default-format watcher. The catalog collector must upgrade the
+        // same-id format in place once the catalog arrives.
+        val configFlow = MutableStateFlow<AppConfig?>(null)
+        val catalogFlow = MutableStateFlow(emptyList<FormatUiModel>())
+        val settings = com.arcvgc.app.data.SettingsRepository(com.arcvgc.app.testutil.FakeSettingsStorage())
+        val logic = SearchLogic(
+            scope = backgroundScope,
+            appConfigFlow = configFlow,
+            settingsRepository = settings,
+            formatCatalogFlow = catalogFlow
+        )
+        val params = SearchParams(
+            filters = emptyList(),
+            formatId = 42,
+            orderBy = OrderBy.Rating,
+            formatName = "Reg M-B"
+        )
+
+        logic.hydrate(params, formatCatalog = emptyList())
+        assertEquals(false, logic.uiState.value.selectedFormat?.isOpenTeamsheet)
+
+        catalogFlow.value = listOf(
+            FormatUiModel(id = 42, displayName = "VGC 2026 Reg M-B", isOpenTeamsheet = true)
+        )
+
+        val format = logic.uiState.value.selectedFormat
+        assertEquals(42, format?.id)
+        assertEquals(true, format?.isOpenTeamsheet)
+        assertEquals("VGC 2026 Reg M-B", format?.displayName)
+        assertTrue(logic.uiState.value.userSelectedFormat)
+    }
+
+    @Test
     fun setUnratedOnly_clearsRatingsAndSwitchesSortOrder() {
         val logic = SearchLogic()
         logic.setMinRating(1500)

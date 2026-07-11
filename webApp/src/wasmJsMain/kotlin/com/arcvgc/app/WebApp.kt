@@ -88,6 +88,7 @@ import com.arcvgc.app.ui.pushHistoryStateWithPath
 import com.arcvgc.app.ui.replaceHistoryStateWithPath
 import com.arcvgc.app.ui.battledetail.BattleDetailPanel
 import com.arcvgc.app.ui.contentlist.ContentListPage
+import com.arcvgc.app.ui.contentlist.UsageDesktopPage
 import com.arcvgc.app.data.DeepLinkResolver
 import com.arcvgc.app.domain.model.appendBattleParam
 import com.arcvgc.app.domain.model.encodeSearchPath
@@ -102,6 +103,7 @@ import com.arcvgc.app.ui.favorites.FavoritesPage
 import com.arcvgc.app.ui.model.AppTheme
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.model.DarkModeOption
+import com.arcvgc.app.ui.search.SearchDesktopPage
 import com.arcvgc.app.ui.search.SearchPage
 import com.arcvgc.app.ui.settings.SettingsPage
 import androidx.compose.ui.Alignment
@@ -427,6 +429,8 @@ fun WebApp() {
         val handleSearch: (SearchParams) -> Unit = { params ->
             val isNewSearch = searchOverlayParams == null
             searchOverlayParams = params
+            // A new results page must not re-seed the deep link's battle selection
+            deepLinkBattleId = null
             desktopNavStack = emptyList()
             usageNestedStack = emptyList()
             usageSelectedPokemon = null
@@ -767,7 +771,7 @@ private fun DesktopLayout(
                     onPlayerClick = desktopPlayerClick,
                     initialBattleId = initialBattleId
                 )
-                Tab.Usage -> com.arcvgc.app.ui.contentlist.UsageDesktopPage(
+                Tab.Usage -> UsageDesktopPage(
                     initialSelectedPokemonId = usageSelectedPokemon?.id,
                     initialLookback = usagePendingLookback ?: LookbackWindow.All,
                     nestedStack = usageNestedStack,
@@ -777,7 +781,7 @@ private fun DesktopLayout(
                     onSelectedPokemonChanged = onUsageSelectedPokemonIdChanged,
                     modifier = contentModifier
                 )
-                Tab.Search -> com.arcvgc.app.ui.search.SearchDesktopPage(
+                Tab.Search -> SearchDesktopPage(
                     searchOverlayParams = searchOverlayParams,
                     pendingHydrationTick = pendingSearchHydrationTick,
                     onSearch = onSearch,

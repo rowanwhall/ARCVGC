@@ -39,6 +39,20 @@ object SearchStateReducer {
         )
     }
 
+    /**
+     * Replaces [SearchUiState.selectedFormat] with the catalog's model for the same id.
+     * Recovers the rich format flags (isOpenTeamsheet etc.) when the current selection
+     * is a minimal fallback created before the format catalog loaded — e.g. deep-link
+     * hydration via [hydrateFromParams] with a null resolvedFormat, which also sets
+     * userSelectedFormat = true and thereby blocks the default-format watcher from
+     * ever correcting it. No-op when nothing is selected or the catalog has no match.
+     */
+    fun upgradeSelectedFormat(state: SearchUiState, catalog: List<FormatUiModel>): SearchUiState {
+        val current = state.selectedFormat ?: return state
+        val match = catalog.firstOrNull { it.id == current.id } ?: return state
+        return if (match == current) state else state.copy(selectedFormat = match)
+    }
+
     private fun SearchFilterSlot.toUiModel(): SearchFilterSlotUiModel {
         val item = if (itemId != null) {
             ItemUiModel(id = itemId, name = itemName.orEmpty(), imageUrl = itemImageUrl)

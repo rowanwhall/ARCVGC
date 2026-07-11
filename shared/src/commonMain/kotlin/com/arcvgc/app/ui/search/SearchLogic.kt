@@ -57,6 +57,19 @@ class SearchLogic(
                 }
             }
         }
+        // Upgrade the selected format to its rich catalog model once the catalog
+        // loads. hydrate() may run before the catalog is available and fall back
+        // to a minimal FormatUiModel (isOpenTeamsheet stuck false) while also
+        // setting userSelectedFormat = true — which blocks the default-format
+        // watcher above from ever correcting it. Same-id replacement only, so a
+        // user's explicit pick is never changed to a different format.
+        if (scope != null && formatCatalogFlow != null) {
+            scope.launch {
+                formatCatalogFlow.collect { catalog ->
+                    _uiState.update { SearchStateReducer.upgradeSelectedFormat(it, catalog) }
+                }
+            }
+        }
     }
 
     private fun resolveDefaultFormat(

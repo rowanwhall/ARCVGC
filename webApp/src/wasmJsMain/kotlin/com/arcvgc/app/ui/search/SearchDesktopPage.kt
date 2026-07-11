@@ -12,6 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -19,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.ui.components.CollapsibleSidePane
+import com.arcvgc.app.ui.components.PaneDividerWidth
 import com.arcvgc.app.ui.contentlist.ContentListPage
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.rememberViewModel
@@ -26,7 +33,7 @@ import com.arcvgc.app.ui.rememberViewModel
 private val LeftPaneWidth = 440.dp
 
 @Composable
-fun SearchDesktopPage(
+internal fun SearchDesktopPage(
     searchOverlayParams: SearchParams?,
     pendingHydrationTick: Int,
     onSearch: (SearchParams) -> Unit,
@@ -59,22 +66,42 @@ fun SearchDesktopPage(
         }
     }
 
+    val enableAnimations by DependencyContainer.settingsRepository.enableAnimations.collectAsState()
+    // Whether the results page has a battle detail pane open. While open, the
+    // filter pane slides offscreen-left so the battle detail has room to render.
+    // Seeded true for ?battle= deep links so the page composes with the pane
+    // already hidden instead of flashing an exit animation on load.
+    var battleDetailOpen by remember { mutableStateOf(initialBattleId != null) }
+    // The results page (the only thing that can report an open battle) is gone —
+    // without this reset the pane would stay hidden beside the empty hint.
+    LaunchedEffect(searchOverlayParams) {
+        if (searchOverlayParams == null) battleDetailOpen = false
+    }
+
     Row(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        Box(
-            modifier = Modifier
-                .width(LeftPaneWidth)
-                .fillMaxHeight()
+        CollapsibleSidePane(
+            visible = !battleDetailOpen,
+            paneWidth = LeftPaneWidth + PaneDividerWidth,
+            animate = enableAnimations
         ) {
-            SearchFiltersPane(
-                onSearch = onSearch,
-                modifier = Modifier.fillMaxSize()
-            )
+            Row(modifier = Modifier.fillMaxHeight()) {
+                Box(
+                    modifier = Modifier
+                        .width(LeftPaneWidth)
+                        .fillMaxHeight()
+                ) {
+                    SearchFiltersPane(
+                        onSearch = onSearch,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                VerticalDivider(modifier = Modifier.fillMaxHeight())
+            }
         }
-        VerticalDivider(modifier = Modifier.fillMaxHeight())
         Box(modifier = Modifier.fillMaxSize()) {
             if (searchOverlayParams == null) {
                 SearchEmptyHint(modifier = Modifier.fillMaxSize())
@@ -86,6 +113,7 @@ fun SearchDesktopPage(
                     modifier = Modifier.fillMaxSize(),
                     onPokemonClick = onPokemonClick,
                     onPlayerClick = onPlayerClick,
+                    onBattleDetailOpenChanged = { battleDetailOpen = it },
                     initialBattleId = initialBattleId
                 )
             }

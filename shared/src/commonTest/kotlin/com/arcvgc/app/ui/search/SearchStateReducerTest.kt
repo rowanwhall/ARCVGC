@@ -674,6 +674,44 @@ class SearchStateReducerTest {
         assertEquals(OrderBy.Time, state.selectedOrderBy)
     }
 
+    @Test
+    fun upgradeSelectedFormat_replacesMinimalFallbackWithCatalogModel() {
+        val state = SearchStateReducer.hydrateFromParams(baseParams(), resolvedFormat = null)
+        val catalog = listOf(FormatUiModel(id = 1, displayName = "Reg G", isOpenTeamsheet = true))
+
+        val upgraded = SearchStateReducer.upgradeSelectedFormat(state, catalog)
+
+        assertEquals(true, upgraded.selectedFormat?.isOpenTeamsheet)
+        assertEquals("Reg G", upgraded.selectedFormat?.displayName)
+        assertTrue(upgraded.userSelectedFormat)
+    }
+
+    @Test
+    fun upgradeSelectedFormat_noSelection_isNoOp() {
+        val state = SearchStateReducer.initialState()
+        val catalog = listOf(FormatUiModel(id = 1, displayName = "Reg G"))
+
+        assertEquals(state, SearchStateReducer.upgradeSelectedFormat(state, catalog))
+    }
+
+    @Test
+    fun upgradeSelectedFormat_noCatalogMatch_isNoOp() {
+        val state = SearchStateReducer.hydrateFromParams(baseParams(), resolvedFormat = null)
+        val catalog = listOf(FormatUiModel(id = 99, displayName = "Other"))
+
+        assertEquals(state, SearchStateReducer.upgradeSelectedFormat(state, catalog))
+    }
+
+    @Test
+    fun upgradeSelectedFormat_identicalModel_returnsSameState() {
+        val format = FormatUiModel(id = 1, displayName = "Reg G", isOpenTeamsheet = true)
+        val state = SearchStateReducer.setFormat(SearchStateReducer.initialState(), format)
+
+        val result = SearchStateReducer.upgradeSelectedFormat(state, listOf(format))
+
+        assertEquals(state, result)
+    }
+
     private fun baseParams() = SearchParams(
         filters = emptyList(),
         formatId = 1,
