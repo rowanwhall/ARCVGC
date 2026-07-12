@@ -60,7 +60,22 @@ interface AppConfigApi {
     suspend fun getConfig(): NetworkResult<AppConfig>
 }
 
-class ApiService : AppConfigApi {
+/**
+ * Narrow interface over the lookups [com.arcvgc.app.data.DeepLinkResolver] performs so it
+ * can be unit-tested without a real [ApiService] hitting the network. Mirrors the
+ * `AppConfigApi` testability pattern.
+ */
+interface DeepLinkApi {
+    suspend fun getPokemonById(
+        id: Int,
+        formatId: Int? = null,
+        lookback: LookbackWindow? = null
+    ): NetworkResult<PokemonProfile>
+
+    suspend fun getPlayersByName(name: String): NetworkResult<List<PlayerListItem>>
+}
+
+class ApiService : AppConfigApi, DeepLinkApi {
 
     private val client: HttpClient = createPlatformHttpClient().config {
         install(ContentNegotiation) {
@@ -294,10 +309,10 @@ class ApiService : AppConfigApi {
         }
     }
 
-    suspend fun getPokemonById(
+    override suspend fun getPokemonById(
         id: Int,
-        formatId: Int? = null,
-        lookback: LookbackWindow? = null
+        formatId: Int?,
+        lookback: LookbackWindow?
     ): NetworkResult<PokemonProfile> {
         return try {
             val response: PokemonDetailResponseDto = client
@@ -414,7 +429,7 @@ class ApiService : AppConfigApi {
         }
     }
 
-    suspend fun getPlayersByName(name: String): NetworkResult<List<PlayerListItem>> {
+    override suspend fun getPlayersByName(name: String): NetworkResult<List<PlayerListItem>> {
         return try {
             val response: PlayerListResponseDto = client
                 .get("${ApiConstants.BASE_URL}${ApiConstants.PLAYERS_ENDPOINT}") {

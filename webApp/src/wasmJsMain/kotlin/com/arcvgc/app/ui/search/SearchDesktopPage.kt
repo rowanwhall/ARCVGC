@@ -24,9 +24,12 @@ import androidx.compose.ui.unit.dp
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.LookbackWindow
 import com.arcvgc.app.domain.model.SearchParams
+import com.arcvgc.app.ui.LocalViewModelStore
 import com.arcvgc.app.ui.components.CollapsibleSidePane
 import com.arcvgc.app.ui.components.PaneDividerWidth
 import com.arcvgc.app.ui.contentlist.ContentListPage
+import com.arcvgc.app.ui.contentlist.ContentListViewModel
+import com.arcvgc.app.ui.contentlist.searchContentListKey
 import com.arcvgc.app.ui.model.ContentListMode
 import com.arcvgc.app.ui.rememberViewModel
 
@@ -69,9 +72,17 @@ internal fun SearchDesktopPage(
     val enableAnimations by DependencyContainer.settingsRepository.enableAnimations.collectAsState()
     // Whether the results page has a battle detail pane open. While open, the
     // filter pane slides offscreen-left so the battle detail has room to render.
-    // Seeded true for ?battle= deep links so the page composes with the pane
-    // already hidden instead of flashing an exit animation on load.
-    var battleDetailOpen by remember { mutableStateOf(initialBattleId != null) }
+    // Seeded true for ?battle= deep links, and from the cached results-page VM
+    // on tab re-entry (which restores savedBattleId), so the page composes with
+    // the pane already hidden instead of flashing an exit animation on load.
+    val viewModelStore = LocalViewModelStore.current
+    var battleDetailOpen by remember {
+        mutableStateOf(
+            initialBattleId != null || searchOverlayParams?.let { params ->
+                viewModelStore.peek<ContentListViewModel>(searchContentListKey(params))?.savedBattleId
+            } != null
+        )
+    }
     // The results page (the only thing that can report an open battle) is gone —
     // without this reset the pane would stay hidden beside the empty hint.
     LaunchedEffect(searchOverlayParams) {

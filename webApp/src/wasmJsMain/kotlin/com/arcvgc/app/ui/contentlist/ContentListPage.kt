@@ -81,14 +81,7 @@ fun ContentListPage(
     val hasToolbar = onBack != null || showToolbarWithoutBack || mode is ContentListMode.Home
     var showSubmitReplayDialog by remember { mutableStateOf(false) }
     var showTutorialDialog by remember { mutableStateOf(false) }
-    val viewModelKey = when (mode) {
-        is ContentListMode.Home -> "content_list_home"
-        is ContentListMode.Favorites -> "content_list_favorites_${mode.contentType.name}"
-        is ContentListMode.Search -> "content_list_search_${mode.params}"
-        is ContentListMode.Pokemon -> "content_list_pokemon_${mode.pokemonId}_${mode.formatId}_${mode.lookback?.value}"
-        is ContentListMode.Player -> "content_list_player_${mode.playerId}_${mode.formatId}"
-        is ContentListMode.TopPokemon -> "content_list_top_pokemon_${mode.formatId}"
-    }
+    val viewModelKey = contentListViewModelKey(mode)
     val viewModel = rememberViewModel(viewModelKey) {
         ContentListViewModel(
             repository = DependencyContainer.battleRepository,
@@ -258,7 +251,11 @@ fun ContentListPage(
     val hasFormats = (mode is ContentListMode.Pokemon || mode is ContentListMode.Player || mode is ContentListMode.Home || mode is ContentListMode.TopPokemon) && sortedFormats.isNotEmpty()
     val hasSearchQuery = mode is ContentListMode.TopPokemon
     var paneWasOpen by remember { mutableStateOf(false) }
-    val detailPaneState = remember { MutableTransitionState(initialBattleId != null) }
+    // Seeded from savedBattleId (like selectedBattleId above) so re-entering with
+    // a restored battle composes the pane already open instead of re-animating it in.
+    val detailPaneState = remember(viewModel) {
+        MutableTransitionState((initialBattleId ?: viewModel.savedBattleId) != null)
+    }
     val scrollOffsetPx = with(LocalDensity.current) { BATTLE_GRID_SPACING.roundToPx() }
     LaunchedEffect(selectedBattleId) {
         if (isCompact) return@LaunchedEffect

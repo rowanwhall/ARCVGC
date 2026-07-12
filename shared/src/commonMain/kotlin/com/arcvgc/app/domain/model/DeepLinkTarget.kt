@@ -94,8 +94,12 @@ fun parseDeepLink(path: String): DeepLink? {
 }
 
 private fun parseSearchQuery(params: Map<String, String>): DeepLinkTarget.Search? {
-    val pokemonIds = params["p"]?.split(",")?.mapNotNull { it.toIntOrNull() }
-    if (pokemonIds.isNullOrEmpty()) return null
+    // Empty p= is valid — the app emits pokemon-less search URLs (rating/player/date-only).
+    // But a non-empty p/p2 that parses to no IDs is malformed: resolving it would silently
+    // broaden the search by dropping the requested team, so reject the link instead.
+    val pParam = params["p"]
+    val pokemonIds = pParam?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+    if (!pParam.isNullOrEmpty() && pokemonIds.isEmpty()) return null
 
     val formatId = params["f"]?.toIntOrNull() ?: return null
 
@@ -103,7 +107,9 @@ private fun parseSearchQuery(params: Map<String, String>): DeepLinkTarget.Search
     val teraTypeIds = params["t"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
     val abilityIds = params["a"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
 
-    val team2PokemonIds = params["p2"]?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+    val p2Param = params["p2"]
+    val team2PokemonIds = p2Param?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+    if (!p2Param.isNullOrEmpty() && team2PokemonIds.isEmpty()) return null
     val team2ItemIds = params["i2"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
     val team2TeraTypeIds = params["t2"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()
     val team2AbilityIds = params["a2"]?.split(",")?.map { it.toIntOrNull() } ?: emptyList()

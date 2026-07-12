@@ -189,6 +189,39 @@ class DeepLinkTargetTest {
     }
 
     @Test
+    fun parseSearchEmptyPokemonParamParsesAsFilterlessSearch() {
+        // The app emits p= empty for pokemon-less searches (e.g. Unrated Only)
+        val result = parseDeepLink("/search?p=&f=10&unrated&order=time")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        val params = (result.target as DeepLinkTarget.Search).params
+        assertTrue(params.pokemonIds.isEmpty())
+        assertEquals(10, params.formatId)
+        assertTrue(params.unratedOnly)
+        assertEquals(OrderBy.Time, params.orderBy)
+    }
+
+    @Test
+    fun parseSearchEmptyPokemonWithTeam2Parses() {
+        val result = parseDeepLink("/search?p=&p2=25&f=1&order=rating")!!
+        assertIs<DeepLinkTarget.Search>(result.target)
+        val params = (result.target as DeepLinkTarget.Search).params
+        assertTrue(params.pokemonIds.isEmpty())
+        assertEquals(listOf(25), params.team2PokemonIds)
+    }
+
+    @Test
+    fun parseSearchMalformedPokemonParamReturnsNull() {
+        // Non-empty p that parses to no IDs must not broaden into a filter-less search
+        assertNull(parseDeepLink("/search?p=abc&f=1&order=rating"))
+        assertNull(parseDeepLink("/search?p=,,&f=1&order=rating"))
+    }
+
+    @Test
+    fun parseSearchMalformedTeam2ParamReturnsNull() {
+        assertNull(parseDeepLink("/search?p=150&p2=abc&f=1&order=rating"))
+    }
+
+    @Test
     fun parseSearchNoFormatReturnsNull() {
         assertNull(parseDeepLink("/search?p=150&order=rating"))
     }
@@ -578,7 +611,8 @@ class DeepLinkTargetTest {
 
     @Test
     fun parseSearchWithTeam2OnlyFallsToSearchTab() {
-        // team2 without team1 is invalid — p is required, so this falls through to SearchTab
+        // The p key (even empty) is required to enter search-query parsing; without it
+        // the URL falls through to SearchTab. Team2-only searches emit p= empty.
         val result = parseDeepLink("/search?p2=25&f=1&order=rating")!!
         assertIs<DeepLinkTarget.SearchTab>(result.target)
     }

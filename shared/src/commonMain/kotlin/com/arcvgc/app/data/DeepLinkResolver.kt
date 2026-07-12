@@ -9,7 +9,7 @@ import com.arcvgc.app.domain.model.PokemonListItem
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SearchParams
 import com.arcvgc.app.domain.model.SearchQueryParams
-import com.arcvgc.app.network.ApiService
+import com.arcvgc.app.network.DeepLinkApi
 import com.arcvgc.app.ui.model.FavoriteContentType
 import com.arcvgc.app.ui.model.AbilityUiModel
 import com.arcvgc.app.ui.model.FormatUiModel
@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
 class DeepLinkResolver(
-    private val apiService: ApiService,
+    private val apiService: DeepLinkApi,
     private val itemCatalogProvider: (() -> List<ItemUiModel>)? = null,
     private val teraTypeCatalogProvider: (() -> List<TeraTypeUiModel>)? = null,
     private val formatCatalogProvider: (() -> List<FormatUiModel>)? = null,
@@ -149,8 +149,6 @@ class DeepLinkResolver(
             )
         }
 
-        if (filters.isEmpty()) return null
-
         // Build team2 SearchFilterSlots
         val team2Filters = query.team2PokemonIds.mapIndexedNotNull { index, _ ->
             val pokemon = team2Pokemon[index] ?: return@mapIndexedNotNull null
@@ -175,6 +173,12 @@ class DeepLinkResolver(
                 abilityName = ability?.name
             )
         }
+
+        // A team that requested pokemon but resolved none must not silently broaden the
+        // search by being dropped; a genuinely pokemon-less search (rating/player/date-only)
+        // is valid. Guarded per team — losing either whole requested team broadens the search.
+        if (query.pokemonIds.isNotEmpty() && filters.isEmpty()) return null
+        if (query.team2PokemonIds.isNotEmpty() && team2Filters.isEmpty()) return null
 
         val formatName = formats.find { it.id == query.formatId }?.displayName
 

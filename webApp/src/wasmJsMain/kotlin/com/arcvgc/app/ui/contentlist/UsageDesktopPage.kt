@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.arcvgc.app.NavEntry
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.LookbackWindow
+import com.arcvgc.app.ui.LocalViewModelStore
 import com.arcvgc.app.ui.components.CollapsibleSidePane
 import com.arcvgc.app.ui.components.LoadingIndicator
 import com.arcvgc.app.ui.components.PaneDividerWidth
@@ -105,7 +106,25 @@ internal fun UsageDesktopPage(
     // Whether any ContentListPage in the right pane (base Pokemon page or a
     // nested drill-down) has a battle detail pane open. While open, the
     // rankings pane slides offscreen-left so the battle detail has room.
-    var battleDetailOpen by remember { mutableStateOf(false) }
+    // On re-entry, seeded from the cached VM of the page about to render
+    // (which restores savedBattleId) so the rankings pane composes already
+    // hidden instead of flashing an exit animation. A restored nested entry is
+    // seedable here; the base Pokemon page's key isn't known until selection
+    // resolves, so that case seeds in the selection LaunchedEffect below.
+    val viewModelStore = LocalViewModelStore.current
+    var battleDetailOpen by remember {
+        mutableStateOf(
+            when (val top = nestedStack.lastOrNull()) {
+                is NavEntry.Pokemon -> viewModelStore.peek<ContentListViewModel>(
+                    pokemonContentListKey(top.id, top.formatId, top.lookback)
+                )?.savedBattleId != null
+                is NavEntry.Player -> viewModelStore.peek<ContentListViewModel>(
+                    playerContentListKey(top.id, top.formatId)
+                )?.savedBattleId != null
+                else -> false
+            }
+        )
+    }
 
     var selectedPokemon by remember { mutableStateOf<ContentListItem.Pokemon?>(null) }
     // Usage format/lookback captured at the moment the pokemon was selected.
@@ -122,9 +141,18 @@ internal fun UsageDesktopPage(
         if (uiState.loadingSections.isNotEmpty()) return@LaunchedEffect
         if (selectedPokemon == null || allItems.none { it.id == selectedPokemon?.id }) {
             val initial = initialSelectedPokemonId?.let { id -> allItems.find { it.id == id } }
-            selectedPokemon = initial ?: allItems.first()
+            val selection = initial ?: allItems.first()
+            selectedPokemon = selection
             formatAtSelection = selectedFormatId
             lookbackAtSelection = selectedLookback
+            // Seed pane visibility from the cached VM of the page this selection
+            // renders (see battleDetailOpen above). Skipped while a nested entry
+            // is on top — the base page isn't the one being displayed.
+            if (nestedStack.isEmpty()) {
+                battleDetailOpen = viewModelStore.peek<ContentListViewModel>(
+                    pokemonContentListKey(selection.id, selectedFormatId, selectedLookback)
+                )?.savedBattleId != null
+            }
         }
     }
 

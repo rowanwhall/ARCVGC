@@ -130,7 +130,7 @@ The web `ContentListPage` is split across five files in `webApp/.../ui/contentli
 | `ContentListContent.kt` | Grid builder body, section emission, `emitPageHeader`/`emitFormatSelectorItem`/`emitSearchFieldItem` subscopes, layout helpers (`CenteredItem`, `SectionGroupLayout`, `SectionContentAlignedHeader`) | Adding new header types, new section rendering, new grid item types |
 | `ContentListContentParams.kt` | `ContentListCallbacks`, `ContentListFormatState`, `ContentListGridConfig` data classes | Adding new callbacks or format/grid state that `ContentListContent` needs |
 | `ContentListLayout.kt` | Pure layout math + dp constants — battle card sizing, top pokemon tiles, section group columns, animation specs | Tuning responsive breakpoints, card widths, column counts |
-| `ContentListNavigation.kt` | `derivedFormatId()` helper (mode → formatId mapping) | Adding new `ContentListMode` variants |
+| `ContentListNavigation.kt` | `derivedFormatId()`/`derivedLookback()` helpers (mode → formatId/lookback mapping), `contentListViewModelKey()` + granular VM-key helpers (`searchContentListKey`, `pokemonContentListKey`, `playerContentListKey`) used for `ViewModelStore.peek()` seeding | Adding new `ContentListMode` variants |
 
 **Key patterns:**
 - **Data class grouping for composable params**: When a composable has >12 parameters, group related params into data classes (callbacks, state, config). Use defaults that encode "disabled" so callers only pass what they need. See `ContentListContentParams.kt`.

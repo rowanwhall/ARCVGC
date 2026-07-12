@@ -14,6 +14,7 @@ import com.arcvgc.app.domain.model.PlayerPreview
 import com.arcvgc.app.domain.model.PokemonDetail
 import com.arcvgc.app.domain.model.PokemonListItem
 import com.arcvgc.app.domain.model.PokemonPreview
+import com.arcvgc.app.domain.model.PokemonProfile
 import com.arcvgc.app.domain.model.PokemonType
 import com.arcvgc.app.domain.model.SearchFilterSlot
 import com.arcvgc.app.domain.model.SetMatch
@@ -195,6 +196,23 @@ fun testPokemonListItem(
     tier = tier,
     types = types,
     imageUrl = imageUrl
+)
+
+fun testPokemonProfile(
+    id: Int = 1,
+    name: String = "Pikachu",
+    pokedexNumber: Int? = 25,
+    tier: String? = "OU",
+    types: List<PokemonType> = listOf(testPokemonType()),
+    imageUrl: String? = "https://arcvgc.com/img/pokemon/pikachu.png"
+) = PokemonProfile(
+    id = id,
+    name = name,
+    pokedexNumber = pokedexNumber,
+    tier = tier,
+    types = types,
+    imageUrl = imageUrl,
+    baseSpecies = null
 )
 
 fun testPlayerListItem(

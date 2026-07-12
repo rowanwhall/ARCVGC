@@ -13,6 +13,10 @@ class ViewModelStore {
         return viewModels.getOrPut(key) { factory() } as T
     }
 
+    /** Returns the cached ViewModel for [key] without creating one. */
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> peek(key: String): T? = viewModels[key] as? T
+
     fun remove(key: String) {
         viewModels.remove(key)
     }

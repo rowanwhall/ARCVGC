@@ -28,6 +28,8 @@
   - `"search"` for `SearchViewModel`
   - `"battle_detail_${battleId}"` for `BattleDetailViewModel`
   - `"favorites"` for `FavoritesViewModel` (persists selected sub-tab)
+- `ContentListPage` VM keys are derived by `contentListViewModelKey(mode)` in `webApp/.../ui/contentlist/ContentListNavigation.kt`; the granular helpers (`searchContentListKey`, `pokemonContentListKey`, `playerContentListKey`) let hosting pages compute a key without a full mode object
+- `peek(key)` returns a cached ViewModel without creating one — used by `SearchDesktopPage`/`UsageDesktopPage` to seed side-pane visibility from the cached VM's `savedBattleId` before the child page composes (see `docs/search.md` / `docs/content-list.md`)
 - Key files: `ViewModelStore.kt` (store + composable helpers), all web ViewModels use `rememberViewModel()` instead of bare `remember()`
 
 ### Web mobile navigation stack (`MobileLayout`)
@@ -144,7 +146,7 @@ All three platforms support deep links. Every page in the app is addressable via
 
 **Lookback as query param:** `/pokemon/{id}` and `/usage` accept `?lookback={value}` where value is one of `all`, `30days`, `week`, `day` (matching `LookbackWindow.value`). The param is omitted from generated URLs when the value is `All` (the default). On historic formats the lookback selector is hidden and forced to `All`, so the param is not emitted for those formats. An invalid `lookback=` value is silently ignored. Deep-link delivery into the Usage tab uses the **tick pattern** so a second `/usage?lookback=…` deep link applies even when the tab's VM is already cached — see "Tick pattern" in `.claude/rules/coding-conventions.md`.
 
-**Search query parameters:** Team 1: `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `a` (ability IDs per slot). Team 2: `p2`, `i2`, `t2`, `a2` (same format). General: `f` (format ID), `w` (winner filter: `1`=team1, `2`=team2), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping. Team 2 and winner params are additive — old clients ignore unknown params gracefully.
+**Search query parameters:** Team 1: `p` (Pokemon IDs, comma-separated), `i` (item IDs per slot, `_` for none), `t` (tera type IDs per slot), `a` (ability IDs per slot). Team 2: `p2`, `i2`, `t2`, `a2` (same format). General: `f` (format ID), `w` (winner filter: `1`=team1, `2`=team2), `min`/`max` (rating), `unrated` (flag), `order` (rating/date), `start`/`end` (epoch millis), `player` (URL-encoded name). `encodeSearchPath()` and `parseDeepLink()` handle round-tripping. Team 2 and winner params are additive — old clients ignore unknown params gracefully. An **empty `p=` is valid** — the app emits pokemon-less search URLs (e.g. an Unrated Only search → `/search?p=&f=10&unrated&order=time`), and both the parser and `DeepLinkResolver.resolveSearch` accept them so they round-trip. A link must not silently broaden into a less-filtered search: the parser rejects a non-empty `p`/`p2` that parses to no IDs (`p=abc`), and the resolver returns null when either team requested pokemon but none of that team's fetches resolved. `/search` with no query (or `p` absent entirely) still resolves to the Search tab, and `f` remains required.
 
 ### Shared module
 

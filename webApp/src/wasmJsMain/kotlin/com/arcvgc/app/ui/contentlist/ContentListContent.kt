@@ -47,6 +47,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.IntState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -190,27 +192,37 @@ internal fun ContentListContent(
         else -> 16.dp
     }
 
-    BoxWithConstraints(
-        modifier = modifier.then(
-            if (windowSizeClass == WindowSizeClass.Expanded && hasFinePointer()) {
-                Modifier.scrollable(
-                    state = rememberScrollableState { delta ->
-                        scope.launch { gridState.scrollBy(-delta) }
-                        delta
-                    },
-                    orientation = Orientation.Vertical
-                )
-            } else {
-                Modifier
+    // Box width in px, captured during measure (before children measure) and read
+    // only inside `escapeToGridWidth`'s measure block. Deliberately NOT
+    // BoxWithConstraints: that would re-subcompose the entire grid builder every
+    // frame while a side pane or the battle detail pane animates the pane width.
+    // A width change here invalidates only the escape item's measurement.
+    val gridBoxWidthPx = remember { mutableIntStateOf(0) }
+    Box(
+        modifier = modifier
+            .layout { measurable, constraints ->
+                if (gridBoxWidthPx.intValue != constraints.maxWidth) {
+                    gridBoxWidthPx.intValue = constraints.maxWidth
+                }
+                val placeable = measurable.measure(constraints)
+                layout(placeable.width, placeable.height) { placeable.place(0, 0) }
             }
-        )
+            .then(
+                if (windowSizeClass == WindowSizeClass.Expanded && hasFinePointer()) {
+                    Modifier.scrollable(
+                        state = rememberScrollableState { delta ->
+                            scope.launch { gridState.scrollBy(-delta) }
+                            delta
+                        },
+                        orientation = Orientation.Vertical
+                    )
+                } else {
+                    Modifier
+                }
+            )
     ) {
 
     val fullSpan: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
-    // Full grid content width (pane width minus the LazyVerticalGrid's 16dp*2
-    // horizontal padding). SearchFilterChips uses this to escape the narrower
-    // full-span slot the grid otherwise reports when few columns fit.
-    val gridInnerWidth = (maxWidth - 32.dp).coerceAtLeast(0.dp)
 
     CompositionLocalProvider(LocalContentListAnimateItems provides gridConfig.animateListItems) {
     LazyVerticalGrid(
@@ -222,9 +234,9 @@ internal fun ContentListContent(
         ),
         verticalArrangement = Arrangement.spacedBy(ContentListItemSpacing),
         horizontalArrangement = Arrangement.spacedBy(BATTLE_GRID_SPACING, Alignment.CenterHorizontally),
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)
+        modifier = Modifier.fillMaxSize().padding(horizontal = BATTLE_GRID_HORIZONTAL_PADDING / 2)
     ) {
-        emitPageHeader(header, windowSizeClass, searchParams, onSearchParamsChanged, fullSpan, gridInnerWidth)
+        emitPageHeader(header, windowSizeClass, searchParams, onSearchParamsChanged, fullSpan, gridBoxWidthPx)
 
         when {
             uiState.isLoading -> {
@@ -576,7 +588,7 @@ private fun LazyGridScope.emitPageHeader(
     searchParams: SearchParams?,
     onSearchParamsChanged: ((SearchParams) -> Unit)?,
     fullSpan: LazyGridItemSpanScope.() -> GridItemSpan,
-    gridInnerWidth: Dp
+    gridBoxWidthPx: IntState
 ) {
     when (val h = header) {
         is ContentListHeaderUiModel.None -> {}
@@ -622,7 +634,7 @@ private fun LazyGridScope.emitPageHeader(
         is ContentListHeaderUiModel.SearchFilters -> {
             animatedItem(key = "search_filters", span = fullSpan) {
                 if (windowSizeClass == WindowSizeClass.Expanded) {
-                    Box(modifier = Modifier.escapeToGridWidth(gridInnerWidth)) {
+                    Box(modifier = Modifier.escapeToGridWidth(gridBoxWidthPx)) {
                         SearchFilterChips(
                             filters = h,
                             searchParams = searchParams,
@@ -883,7 +895,8 @@ internal fun CenteredItem(
 
 /**
  * Overrides the width constraint the LazyVerticalGrid gives a full-span item and
- * re-measures the child at [targetWidth], placing it centered on the item's slot.
+ * re-measures the child at the full grid content width ([gridBoxWidthPx] minus
+ * the grid's horizontal content padding), placing it centered on the item's slot.
  *
  * With `GridCells.FixedSize`, a full-span item is only as wide as the packed
  * column area — when only 1 or 2 battle-card columns fit, that leaves the pane's
@@ -891,10 +904,15 @@ internal fun CenteredItem(
  * SearchFilters chips) reach into that space and span the full grid content
  * width. Requires the child to render outside its reported bounds without being
  * clipped (default for Compose layouts).
+ *
+ * [gridBoxWidthPx] is read here in the measure block — not in composition — so
+ * per-frame pane-width changes during animations invalidate only this item's
+ * measurement instead of recomposing the grid.
  */
-private fun Modifier.escapeToGridWidth(targetWidth: Dp): Modifier =
+private fun Modifier.escapeToGridWidth(gridBoxWidthPx: IntState): Modifier =
     this.layout { measurable, constraints ->
-        val targetPx = targetWidth.roundToPx().coerceAtLeast(0)
+        val targetPx = (gridBoxWidthPx.intValue - BATTLE_GRID_HORIZONTAL_PADDING.roundToPx())
+            .coerceAtLeast(0)
         val placeable = measurable.measure(
             constraints.copy(minWidth = targetPx, maxWidth = targetPx)
         )
