@@ -48,6 +48,20 @@ scp deploy/arcvgc.conf $DEPLOY_HOST:/etc/nginx/sites-available/arcvgc.conf
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
+## WebGL Context-Loss Recovery
+
+Browsers evict GPU contexts from long-backgrounded tabs, and Skiko (Compose-web's renderer) has no context-loss recovery — the wasm runtime keeps handling input (clicks still update the URL via `pushState`) but nothing repaints, leaving the app frozen until a manual refresh. An inline script in `webApp/src/wasmJsMain/resources/index.html` recovers automatically: it watches for the Compose canvas via `MutationObserver`, listens for `webglcontextlost`, reports to Sentry (flushed before navigating so the event isn't lost), and reloads the page — immediately when the tab is visible, otherwise deferred to the next `visibilitychange` (reloading a hidden tab risks immediate re-eviction). A 30s `sessionStorage` timestamp paces reloads: a repeat loss inside the window schedules a retry for when the window expires, so a pathological GPU reloads at most twice a minute instead of looping. The guard is best-effort — if storage access is blocked, recovery still reloads. Deep-link URL mirroring means the reload restores the user's location.
+
+Invariants:
+- The script must **never call `canvas.getContext()`** — creating the `webgl2` context before Skiko would fix the wrong context attributes; it relies on the `webglcontextlost` event only.
+- It must stay in `index.html` (plain JS, before `webApp.js`) so it works even when the render loop is dead.
+
+To test manually in DevTools on the running app:
+```js
+document.querySelector('canvas').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext()
+```
+The page should reload in place (once — repeating it within 30s schedules the next reload for when the guard window expires).
+
 ## CORS & Image URL Handling
 
 The API and web app are served from the same origin (`https://arcvgc.com`) via nginx reverse proxy, so CORS is not an issue in production. Two mechanisms handle dev and image URLs:

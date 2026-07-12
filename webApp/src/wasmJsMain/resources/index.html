@@ -63,6 +63,75 @@
     src="https://browser.sentry-cdn.com/9.15.0/bundle.min.js"
     crossorigin="anonymous"
 ></script>
+<script>
+    // Skiko (Compose for Web's renderer) has no WebGL context-loss recovery.
+    // Browsers evict GPU contexts from long-backgrounded tabs; after that the
+    // wasm runtime keeps handling input but nothing repaints, leaving the app
+    // frozen until a manual refresh. Recover by reloading — every page mirrors
+    // its state into the URL, so a reload restores the user's location.
+    // Note: never call canvas.getContext() here — doing so before Skiko would
+    // create the context with the wrong attributes. Rely on the event only.
+    (function () {
+        var RELOAD_GUARD_KEY = 'arc-webgl-reload-at';
+        var RELOAD_GUARD_MS = 30000;
+        var reloadPending = false;
+
+        function requestReload() {
+            // Reloading a hidden tab risks immediate re-eviction; wait for the
+            // user to come back so the fresh context sticks.
+            if (document.visibilityState !== 'visible') {
+                document.addEventListener('visibilitychange', function onVisible() {
+                    if (document.visibilityState !== 'visible') return;
+                    document.removeEventListener('visibilitychange', onVisible);
+                    requestReload();
+                });
+                return;
+            }
+            // Storage access can throw when cookies/storage are blocked; the
+            // guard is best-effort — fail open so recovery still happens.
+            var last = 0;
+            try { last = Number(sessionStorage.getItem(RELOAD_GUARD_KEY)) || 0; } catch (e) { }
+            var wait = last + RELOAD_GUARD_MS - Date.now();
+            if (wait > 0) {
+                // Reloaded for this reason moments ago and the context died
+                // again — pace retries to once per guard window, don't loop.
+                setTimeout(requestReload, wait);
+                return;
+            }
+            try { sessionStorage.setItem(RELOAD_GUARD_KEY, String(Date.now())); } catch (e) { }
+            if (typeof Sentry !== 'undefined' && Sentry.captureMessage) {
+                Sentry.captureMessage('WebGL context lost — auto-reloading', 'warning');
+                if (typeof Sentry.flush === 'function') {
+                    // Let the event reach the network before navigating away.
+                    var reload = function () { location.reload(); };
+                    Sentry.flush(2000).then(reload, reload);
+                    return;
+                }
+            }
+            location.reload();
+        }
+
+        function onContextLost() {
+            if (reloadPending) return;
+            reloadPending = true;
+            requestReload();
+        }
+
+        var watched = new WeakSet();
+        function watchCanvases() {
+            document.querySelectorAll('canvas').forEach(function (canvas) {
+                if (watched.has(canvas)) return;
+                watched.add(canvas);
+                canvas.addEventListener('webglcontextlost', onContextLost);
+            });
+        }
+
+        // The Compose canvas is created by the wasm app after load — watch for it.
+        new MutationObserver(watchCanvases)
+            .observe(document.body, { childList: true, subtree: true });
+        watchCanvases();
+    })();
+</script>
 <script src="webApp.js"></script>
 </body>
 </html>
