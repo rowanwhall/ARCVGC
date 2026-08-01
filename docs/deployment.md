@@ -48,19 +48,33 @@ scp deploy/arcvgc.conf $DEPLOY_HOST:/etc/nginx/sites-available/arcvgc.conf
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-## WebGL Context-Loss Recovery
+## Render-Death Recovery (WebGL context loss & frozen render loop)
 
-Browsers evict GPU contexts from long-backgrounded tabs, and Skiko (Compose-web's renderer) has no context-loss recovery — the wasm runtime keeps handling input (clicks still update the URL via `pushState`) but nothing repaints, leaving the app frozen until a manual refresh. An inline script in `webApp/src/wasmJsMain/resources/index.html` recovers automatically: it watches for the Compose canvas via `MutationObserver`, listens for `webglcontextlost`, reports to Sentry (flushed before navigating so the event isn't lost), and reloads the page — immediately when the tab is visible, otherwise deferred to the next `visibilitychange` (reloading a hidden tab risks immediate re-eviction). A 30s `sessionStorage` timestamp paces reloads: a repeat loss inside the window schedules a retry for when the window expires, so a pathological GPU reloads at most twice a minute instead of looping. The guard is best-effort — if storage access is blocked, recovery still reloads. Deep-link URL mirroring means the reload restores the user's location.
+Browsers evict GPU contexts from long-backgrounded tabs, and Skiko (Compose-web's renderer) has no context-loss recovery — the wasm runtime keeps handling input (clicks still update the URL via `pushState`) but nothing repaints, leaving the app frozen until a manual refresh. A related mode: an exception escaping a Compose frame callback kills the `requestAnimationFrame` chain with the same symptom.
+
+**Critical DOM fact:** `ComposeViewport` renders into a canvas inside an **open shadow root on `document.body`** — `document.querySelector('canvas')` finds nothing. Every canvas lookup must also check `document.body.shadowRoot`. (The first version of this fix missed that and never armed in production.)
+
+Recovery is two-part:
+
+1. **Watchdog script** in `webApp/src/wasmJsMain/resources/index.html` with three detectors sharing one reload path:
+   - `webglcontextlost` on the shadow-root canvas (fastest; browsers don't always fire it; ignored for detached canvases — Compose orphans the old canvas when recreating its context),
+   - Compose canvas removed from the DOM (incl. shadow root) and not replaced for 8s,
+   - frame heartbeat stale for 15s while the tab is visible and a canvas is present (canvas-gone-and-heartbeat-dead is detector 2's territory).
+2. **`FrameHeartbeat.kt`** (`webApp/.../com/arcvgc/app/FrameHeartbeat.kt`, called at the top of `WebApp()`): awaits `withFrameNanos` then stamps `globalThis.__arcFrameTs`, every ~3s. If Compose's frame clock dies, the stamp stops and detector 3 fires.
+
+Shared reload path: reports the detector-specific message to Sentry (flushed before navigating), then reloads — immediately when visible, deferred to the next `visibilitychange` otherwise (reloading a hidden tab risks immediate re-eviction). A 30s `sessionStorage` timestamp paces reloads (repeat failure schedules a retry at window expiry; at most ~2 reloads/min). Deep-link URL mirroring restores the user's location after reload.
 
 Invariants:
-- The script must **never call `canvas.getContext()`** — creating the `webgl2` context before Skiko would fix the wrong context attributes; it relies on the `webglcontextlost` event only.
-- It must stay in `index.html` (plain JS, before `webApp.js`) so it works even when the render loop is dead.
+- The script must **never call `canvas.getContext()`** — creating the `webgl2` context before Skiko would fix the wrong attributes.
+- It must stay in `index.html` (plain JS, before `webApp.js`) so it works even when the wasm render loop is dead.
+- Polled detectors only arm after the app demonstrably booted (canvas seen / heartbeat present) and only judge time the tab spent visible; a large inter-tick gap (system sleep/page freeze) resets the grace window. These gates are what design out false-positive reloads during normal operation — a stale `webApp.js` (no heartbeat) simply leaves detector 3 inert.
+- Sentry messages distinguish the detectors ("WebGL context lost" / "Compose canvas disappeared" / "Render loop stalled") — use them to attribute freezes in the wild.
 
-To test manually in DevTools on the running app:
+To test manually in DevTools on the running app (note the shadow root):
 ```js
-document.querySelector('canvas').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext()
+document.body.shadowRoot.querySelector('canvas').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext()
 ```
-The page should reload in place (once — repeating it within 30s schedules the next reload for when the guard window expires).
+The page should reload in place almost immediately — the event path is not tied to the 5s poll; the ~2s upper bound is the Sentry flush (repeating it within 30s schedules the next reload for when the guard window expires). To check the heartbeat: `globalThis.__arcFrameTs` should be at most ~3s old while the page renders.
 
 ## CORS & Image URL Handling
 

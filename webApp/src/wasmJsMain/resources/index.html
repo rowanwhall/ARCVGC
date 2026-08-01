@@ -64,26 +64,39 @@
     crossorigin="anonymous"
 ></script>
 <script>
-    // Skiko (Compose for Web's renderer) has no WebGL context-loss recovery.
-    // Browsers evict GPU contexts from long-backgrounded tabs; after that the
-    // wasm runtime keeps handling input but nothing repaints, leaving the app
-    // frozen until a manual refresh. Recover by reloading — every page mirrors
-    // its state into the URL, so a reload restores the user's location.
+    // Recovery for Compose-web render-death states. Skiko has no WebGL
+    // context-loss handling, and Compose recreates its canvas whenever it needs
+    // a new GL context (a canvas can only ever hold one) — if either path fails
+    // the wasm runtime keeps handling input but nothing repaints until a manual
+    // refresh. Three detectors share one reload path (deep-link URLs restore
+    // the user's location):
+    //   1. webglcontextlost event — fastest, but browsers don't always fire it
+    //   2. Compose canvas removed from the DOM and never replaced
+    //   3. frame heartbeat stamped from Kotlin (globalThis.__arcFrameTs, see
+    //      FrameHeartbeat.kt) going stale while the tab is visible — catches a
+    //      killed rAF chain with the canvas still present
     // Note: never call canvas.getContext() here — doing so before Skiko would
-    // create the context with the wrong attributes. Rely on the event only.
+    // create the context with the wrong attributes.
     (function () {
         var RELOAD_GUARD_KEY = 'arc-webgl-reload-at';
         var RELOAD_GUARD_MS = 30000;
+        var CHECK_INTERVAL_MS = 5000;
+        var CANVAS_MISSING_MS = 8000;
+        var HEARTBEAT_STALE_MS = 15000;
         var reloadPending = false;
+        var sawCanvas = false;
+        var canvasMissingSince = null;
+        var visibleSince = Date.now();
+        var lastTick = Date.now();
 
-        function requestReload() {
+        function requestReload(reason) {
             // Reloading a hidden tab risks immediate re-eviction; wait for the
             // user to come back so the fresh context sticks.
             if (document.visibilityState !== 'visible') {
                 document.addEventListener('visibilitychange', function onVisible() {
                     if (document.visibilityState !== 'visible') return;
                     document.removeEventListener('visibilitychange', onVisible);
-                    requestReload();
+                    requestReload(reason);
                 });
                 return;
             }
@@ -93,14 +106,14 @@
             try { last = Number(sessionStorage.getItem(RELOAD_GUARD_KEY)) || 0; } catch (e) { }
             var wait = last + RELOAD_GUARD_MS - Date.now();
             if (wait > 0) {
-                // Reloaded for this reason moments ago and the context died
-                // again — pace retries to once per guard window, don't loop.
-                setTimeout(requestReload, wait);
+                // Reloaded moments ago and rendering died again — pace retries
+                // to once per guard window, don't loop.
+                setTimeout(function () { requestReload(reason); }, wait);
                 return;
             }
             try { sessionStorage.setItem(RELOAD_GUARD_KEY, String(Date.now())); } catch (e) { }
             if (typeof Sentry !== 'undefined' && Sentry.captureMessage) {
-                Sentry.captureMessage('WebGL context lost — auto-reloading', 'warning');
+                Sentry.captureMessage(reason, 'warning');
                 if (typeof Sentry.flush === 'function') {
                     // Let the event reach the network before navigating away.
                     var reload = function () { location.reload(); };
@@ -111,25 +124,86 @@
             location.reload();
         }
 
-        function onContextLost() {
+        function trigger(reason) {
             if (reloadPending) return;
             reloadPending = true;
-            requestReload();
+            requestReload(reason);
         }
 
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') visibleSince = Date.now();
+        });
+
+        // ComposeViewport renders into a canvas inside an OPEN SHADOW ROOT on
+        // document.body — document.querySelector never sees it. Every canvas
+        // lookup must check the shadow root too.
+        function allCanvases() {
+            var list = [].slice.call(document.querySelectorAll('canvas'));
+            var sr = document.body && document.body.shadowRoot;
+            if (sr) list = list.concat([].slice.call(sr.querySelectorAll('canvas')));
+            return list;
+        }
+
+        // Detector 1: explicit context-loss event on the Compose canvas, which
+        // the wasm app creates after load — watch for it appearing.
         var watched = new WeakSet();
+        var observedShadowRoot = null;
+        var observer = new MutationObserver(watchCanvases);
         function watchCanvases() {
-            document.querySelectorAll('canvas').forEach(function (canvas) {
+            var sr = document.body && document.body.shadowRoot;
+            if (sr && sr !== observedShadowRoot) {
+                observedShadowRoot = sr;
+                observer.observe(sr, { childList: true, subtree: true });
+            }
+            allCanvases().forEach(function (canvas) {
                 if (watched.has(canvas)) return;
                 watched.add(canvas);
-                canvas.addEventListener('webglcontextlost', onContextLost);
+                sawCanvas = true;
+                canvas.addEventListener('webglcontextlost', function () {
+                    // Compose replaces its canvas when recreating the GL
+                    // context; an orphaned old canvas losing its context is
+                    // not a failure of the live app. (isConnected is true for
+                    // shadow-root descendants.)
+                    if (!canvas.isConnected) return;
+                    trigger('WebGL context lost — auto-reloading');
+                });
             });
         }
-
-        // The Compose canvas is created by the wasm app after load — watch for it.
-        new MutationObserver(watchCanvases)
-            .observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, { childList: true, subtree: true });
         watchCanvases();
+
+        // Detectors 2 + 3: polled. Both only judge after the app demonstrably
+        // booted (sawCanvas / heartbeat present) and only against time the tab
+        // has actually spent visible — hidden tabs legitimately stop rendering.
+        setInterval(function () {
+            // attachShadow emits no mutation record, so the observer alone can
+            // miss the canvas appearing inside the shadow root — re-scan here.
+            watchCanvases();
+            var now = Date.now();
+            // A large gap between ticks means timers were suspended (system
+            // sleep, page freeze). Grant a fresh grace window so the app gets
+            // time to resume rendering before staleness is judged.
+            if (now - lastTick > CHECK_INTERVAL_MS * 2) visibleSince = now;
+            lastTick = now;
+            if (reloadPending || document.visibilityState !== 'visible') return;
+            var visibleFor = now - visibleSince;
+            var hasCanvas = allCanvases().length > 0;
+            if (hasCanvas) {
+                canvasMissingSince = null;
+            } else if (sawCanvas) {
+                if (canvasMissingSince === null) {
+                    canvasMissingSince = now;
+                } else if (now - canvasMissingSince > CANVAS_MISSING_MS && visibleFor > CANVAS_MISSING_MS) {
+                    trigger('Compose canvas disappeared — auto-reloading');
+                    return;
+                }
+            }
+            var heartbeat = globalThis.__arcFrameTs;
+            if (hasCanvas && typeof heartbeat === 'number' &&
+                visibleFor > HEARTBEAT_STALE_MS && now - heartbeat > HEARTBEAT_STALE_MS) {
+                trigger('Render loop stalled — auto-reloading');
+            }
+        }, CHECK_INTERVAL_MS);
     })();
 </script>
 <script src="webApp.js"></script>

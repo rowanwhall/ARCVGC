@@ -229,6 +229,8 @@ private data class NavStackSnapshot(val size: Int, val topEntry: NavEntry?)
 
 @Composable
 fun WebApp() {
+    FrameHeartbeat()
+
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context)
             .memoryCache {
