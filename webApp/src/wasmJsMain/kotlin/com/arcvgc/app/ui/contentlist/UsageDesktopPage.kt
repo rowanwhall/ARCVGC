@@ -3,6 +3,7 @@ package com.arcvgc.app.ui.contentlist
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -223,189 +224,200 @@ internal fun UsageDesktopPage(
         }
     }
 
-    Row(modifier = modifier.fillMaxSize()) {
-        CollapsibleSidePane(
-            visible = !battleDetailOpen,
-            paneWidth = leftPaneWidth + PaneDividerWidth,
-            animate = enableAnimations
-        ) {
-            Row(modifier = Modifier.fillMaxHeight()) {
-                Column(
-                    modifier = Modifier
-                        .width(leftPaneWidth)
-                        .fillMaxHeight()
-                        .padding(top = leftPanePadding)
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = leftPanePadding)) {
-                        FormatDropdown(
-                            formats = sortedFormats,
-                            selectedFormatId = selectedFormatId,
-                            onFormatSelected = listViewModel::selectFormat,
-                            fillMaxWidth = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 4.dp)
-                        )
-
-                        if (!selectedFormatIsHistoric) {
-                            LookbackSegmentedSelector(
-                                selectedLookback = selectedLookback,
-                                onLookbackSelected = listViewModel::selectLookback,
+    // BoxWithConstraints measures the full content-area width (stable — it only
+    // changes on window resize). The right-side ContentListPages receive it as
+    // the settled width their master-detail layout will occupy once the rankings
+    // pane finishes collapsing, so opening a battle computes final grid geometry
+    // up front instead of chasing the pane's frame-by-frame animating width.
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val settledDetailWidth = maxWidth
+        Row(modifier = Modifier.fillMaxSize()) {
+            CollapsibleSidePane(
+                visible = !battleDetailOpen,
+                paneWidth = leftPaneWidth + PaneDividerWidth,
+                animate = enableAnimations
+            ) {
+                Row(modifier = Modifier.fillMaxHeight()) {
+                    Column(
+                        modifier = Modifier
+                            .width(leftPaneWidth)
+                            .fillMaxHeight()
+                            .padding(top = leftPanePadding)
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = leftPanePadding)) {
+                            FormatDropdown(
+                                formats = sortedFormats,
+                                selectedFormatId = selectedFormatId,
+                                onFormatSelected = listViewModel::selectFormat,
+                                fillMaxWidth = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 4.dp)
+                                    .padding(bottom = 4.dp)
+                            )
+
+                            if (!selectedFormatIsHistoric) {
+                                LookbackSegmentedSelector(
+                                    selectedLookback = selectedLookback,
+                                    onLookbackSelected = listViewModel::selectLookback,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp)
+                                )
+                            }
+
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = listViewModel::setSearchQuery,
+                                label = { Text("Search Pok\u00E9mon") },
+                                singleLine = true,
+                                trailingIcon = if (searchQuery.isNotEmpty()) {
+                                    {
+                                        IconButton(onClick = { listViewModel.setSearchQuery("") }) {
+                                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                        }
+                                    }
+                                } else null,
+                                shape = RoundedCornerShape(CardCornerRadius),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                ),
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
 
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = listViewModel::setSearchQuery,
-                            label = { Text("Search Pok\u00E9mon") },
-                            singleLine = true,
-                            trailingIcon = if (searchQuery.isNotEmpty()) {
-                                {
-                                    IconButton(onClick = { listViewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
-                                    }
-                                }
-                            } else null,
-                            shape = RoundedCornerShape(CardCornerRadius),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    HorizontalDivider(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                    )
-
-                    val visibleItems = if (searchQuery.isBlank()) {
-                        allItems
-                    } else {
-                        allItems.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    }
-                    val listState = rememberLazyListState()
-                    val isReloading = uiState.loadingSections.isNotEmpty()
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        LazyColumn(
-                            state = listState,
+                        HorizontalDivider(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .then(if (isReloading) Modifier.alpha(0.5f) else Modifier),
-                            contentPadding = PaddingValues(
-                                start = leftPanePadding,
-                                end = leftPanePadding,
-                                top = 8.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            items(visibleItems, key = { it.listKey }) { pokemon ->
-                                UsagePokemonRow(
-                                    name = pokemon.name,
-                                    imageUrl = pokemon.imageUrl,
-                                    usagePercent = pokemon.usagePercent ?: "",
-                                    rank = pokemon.rank,
-                                    avatarSize = rowAvatarSize,
-                                    spriteSize = rowSpriteSize,
-                                    horizontalPadding = rowInnerHorizontalPadding,
-                                    avatarToTextSpacing = avatarToTextSpacing,
-                                    rankToNameSpacing = rankToNameSpacing,
-                                    nameToPercentSpacing = nameToPercentSpacing,
-                                    isSelected = pokemon.id == selectedPokemon?.id,
-                                    onClick = {
-                                        val sameSelection = pokemon.id == selectedPokemon?.id &&
-                                            selectedFormatId == formatAtSelection &&
-                                            selectedLookback == lookbackAtSelection
-                                        if (!sameSelection) {
-                                            selectedPokemon = pokemon
-                                            formatAtSelection = selectedFormatId
-                                            lookbackAtSelection = selectedLookback
-                                            onClearNestedStack()
-                                        }
-                                    }
-                                )
-                            }
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                        )
+
+                        val visibleItems = if (searchQuery.isBlank()) {
+                            allItems
+                        } else {
+                            allItems.filter { it.name.contains(searchQuery, ignoreCase = true) }
                         }
-                        ThemedVerticalScrollbar(
-                            listState = listState,
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .fillMaxHeight()
+                        val listState = rememberLazyListState()
+                        val isReloading = uiState.loadingSections.isNotEmpty()
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .then(if (isReloading) Modifier.alpha(0.5f) else Modifier),
+                                contentPadding = PaddingValues(
+                                    start = leftPanePadding,
+                                    end = leftPanePadding,
+                                    top = 8.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                items(visibleItems, key = { it.listKey }) { pokemon ->
+                                    UsagePokemonRow(
+                                        name = pokemon.name,
+                                        imageUrl = pokemon.imageUrl,
+                                        usagePercent = pokemon.usagePercent ?: "",
+                                        rank = pokemon.rank,
+                                        avatarSize = rowAvatarSize,
+                                        spriteSize = rowSpriteSize,
+                                        horizontalPadding = rowInnerHorizontalPadding,
+                                        avatarToTextSpacing = avatarToTextSpacing,
+                                        rankToNameSpacing = rankToNameSpacing,
+                                        nameToPercentSpacing = nameToPercentSpacing,
+                                        isSelected = pokemon.id == selectedPokemon?.id,
+                                        onClick = {
+                                            val sameSelection = pokemon.id == selectedPokemon?.id &&
+                                                selectedFormatId == formatAtSelection &&
+                                                selectedLookback == lookbackAtSelection
+                                            if (!sameSelection) {
+                                                selectedPokemon = pokemon
+                                                formatAtSelection = selectedFormatId
+                                                lookbackAtSelection = selectedLookback
+                                                onClearNestedStack()
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                            ThemedVerticalScrollbar(
+                                listState = listState,
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .fillMaxHeight()
+                            )
+                        }
+                    }
+
+                    VerticalDivider()
+                }
+            }
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                val nestedTop = nestedStack.lastOrNull()
+                val nestedPokemonClick: (Int, String, String?, List<String>, Int?, LookbackWindow?) -> Unit =
+                    { id, name, imageUrl, typeImageUrls, fmt, lookback ->
+                        onPushNestedEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, fmt, lookback))
+                    }
+                val nestedPlayerClick: (Int, String, Int?) -> Unit = { id, name, fmt ->
+                    onPushNestedEntry(NavEntry.Player(id, name, fmt))
+                }
+
+                when (nestedTop) {
+                    null -> {
+                        val sel = selectedPokemon ?: return@Box
+                        ContentListPage(
+                            mode = ContentListMode.Pokemon(
+                                pokemonId = sel.id,
+                                name = sel.name,
+                                imageUrl = sel.imageUrl,
+                                typeImageUrl1 = sel.types.getOrNull(0)?.imageUrl,
+                                typeImageUrl2 = sel.types.getOrNull(1)?.imageUrl,
+                                formatId = formatAtSelection,
+                                lookback = lookbackAtSelection
+                            ),
+                            modifier = Modifier.fillMaxSize(),
+                            onPokemonClick = nestedPokemonClick,
+                            onPlayerClick = nestedPlayerClick,
+                            onBattleDetailOpenChanged = { battleDetailOpen = it },
+                            settledWidthWhenBattleOpen = settledDetailWidth,
+                            showToolbarWithoutBack = true,
+                            mirrorUrl = false
                         )
                     }
-                }
-
-                VerticalDivider()
-            }
-        }
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            val nestedTop = nestedStack.lastOrNull()
-            val nestedPokemonClick: (Int, String, String?, List<String>, Int?, LookbackWindow?) -> Unit =
-                { id, name, imageUrl, typeImageUrls, fmt, lookback ->
-                    onPushNestedEntry(NavEntry.Pokemon(id, name, imageUrl, typeImageUrls, fmt, lookback))
-                }
-            val nestedPlayerClick: (Int, String, Int?) -> Unit = { id, name, fmt ->
-                onPushNestedEntry(NavEntry.Player(id, name, fmt))
-            }
-
-            when (nestedTop) {
-                null -> {
-                    val sel = selectedPokemon ?: return@Box
-                    ContentListPage(
+                    is NavEntry.Pokemon -> ContentListPage(
                         mode = ContentListMode.Pokemon(
-                            pokemonId = sel.id,
-                            name = sel.name,
-                            imageUrl = sel.imageUrl,
-                            typeImageUrl1 = sel.types.getOrNull(0)?.imageUrl,
-                            typeImageUrl2 = sel.types.getOrNull(1)?.imageUrl,
-                            formatId = formatAtSelection,
-                            lookback = lookbackAtSelection
+                            pokemonId = nestedTop.id,
+                            name = nestedTop.name,
+                            imageUrl = nestedTop.imageUrl,
+                            typeImageUrl1 = nestedTop.typeImageUrls.getOrNull(0),
+                            typeImageUrl2 = nestedTop.typeImageUrls.getOrNull(1),
+                            formatId = nestedTop.formatId,
+                            lookback = nestedTop.lookback
                         ),
+                        onBack = onPopNestedEntry,
                         modifier = Modifier.fillMaxSize(),
                         onPokemonClick = nestedPokemonClick,
                         onPlayerClick = nestedPlayerClick,
                         onBattleDetailOpenChanged = { battleDetailOpen = it },
-                        showToolbarWithoutBack = true,
+                        settledWidthWhenBattleOpen = settledDetailWidth,
                         mirrorUrl = false
                     )
-                }
-                is NavEntry.Pokemon -> ContentListPage(
-                    mode = ContentListMode.Pokemon(
-                        pokemonId = nestedTop.id,
-                        name = nestedTop.name,
-                        imageUrl = nestedTop.imageUrl,
-                        typeImageUrl1 = nestedTop.typeImageUrls.getOrNull(0),
-                        typeImageUrl2 = nestedTop.typeImageUrls.getOrNull(1),
-                        formatId = nestedTop.formatId,
-                        lookback = nestedTop.lookback
-                    ),
-                    onBack = onPopNestedEntry,
-                    modifier = Modifier.fillMaxSize(),
-                    onPokemonClick = nestedPokemonClick,
-                    onPlayerClick = nestedPlayerClick,
-                    onBattleDetailOpenChanged = { battleDetailOpen = it },
-                    mirrorUrl = false
-                )
-                is NavEntry.Player -> ContentListPage(
-                    mode = ContentListMode.Player(
-                        playerId = nestedTop.id,
-                        playerName = nestedTop.name,
-                        formatId = nestedTop.formatId
-                    ),
-                    onBack = onPopNestedEntry,
-                    modifier = Modifier.fillMaxSize(),
-                    onPokemonClick = nestedPokemonClick,
-                    onPlayerClick = nestedPlayerClick,
-                    onBattleDetailOpenChanged = { battleDetailOpen = it },
-                    mirrorUrl = false
-                )
-                is NavEntry.BattleDetail -> {
-                    // Not used in the usage nested stack
+                    is NavEntry.Player -> ContentListPage(
+                        mode = ContentListMode.Player(
+                            playerId = nestedTop.id,
+                            playerName = nestedTop.name,
+                            formatId = nestedTop.formatId
+                        ),
+                        onBack = onPopNestedEntry,
+                        modifier = Modifier.fillMaxSize(),
+                        onPokemonClick = nestedPokemonClick,
+                        onPlayerClick = nestedPlayerClick,
+                        onBattleDetailOpenChanged = { battleDetailOpen = it },
+                        settledWidthWhenBattleOpen = settledDetailWidth,
+                        mirrorUrl = false
+                    )
+                    is NavEntry.BattleDetail -> {
+                        // Not used in the usage nested stack
+                    }
                 }
             }
         }

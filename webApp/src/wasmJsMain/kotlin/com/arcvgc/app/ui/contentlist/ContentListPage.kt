@@ -3,7 +3,10 @@ package com.arcvgc.app.ui.contentlist
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -14,9 +17,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,6 +42,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.arcvgc.app.di.DependencyContainer
 import com.arcvgc.app.domain.model.LookbackWindow
@@ -73,6 +77,14 @@ fun ContentListPage(
     onPokemonClick: ((id: Int, name: String, imageUrl: String?, typeImageUrls: List<String>, formatId: Int?, lookback: LookbackWindow?) -> Unit)? = null,
     onPlayerClick: ((id: Int, name: String, formatId: Int?) -> Unit)? = null,
     onBattleDetailOpenChanged: ((Boolean) -> Unit)? = null,
+    // Settled width for the expanded master-detail layout while a battle is
+    // open: the width this page will occupy once a host-side CollapsibleSidePane
+    // (Usage rankings / Search filters) finishes collapsing. Hosts with such a
+    // pane must pass their full content width so the detail-pane math resolves
+    // its final geometry up front instead of chasing the pane's animating
+    // width. Standalone hosts leave this null and the page's own measured
+    // width is used (it's already stable for them).
+    settledWidthWhenBattleOpen: Dp? = null,
     initialBattleId: Int? = null,
     initialLookback: LookbackWindow = LookbackWindow.All,
     showToolbarWithoutBack: Boolean = false,
@@ -129,7 +141,18 @@ fun ContentListPage(
         )
     }
 
-    // Persist selectedBattleId and scroll position in ViewModel for restoration on back navigation
+    // Single write-path for user-driven battle selection: updates the state and
+    // notifies the host synchronously, so a host-side CollapsibleSidePane starts
+    // collapsing on the same frame the grid snaps and the detail pane starts
+    // sliding — not one frame later via the LaunchedEffect below.
+    val setSelectedBattleId: (Int?) -> Unit = { id ->
+        selectedBattleId = id
+        onBattleDetailOpenChanged?.invoke(id != null)
+    }
+
+    // Persist selectedBattleId and scroll position in ViewModel for restoration on back
+    // navigation. Also re-notifies the host (idempotently) to cover non-click paths
+    // that change selection, e.g. the initial restored/deep-linked battle.
     LaunchedEffect(selectedBattleId) {
         viewModel.savedBattleId = selectedBattleId
         onBattleDetailOpenChanged?.invoke(selectedBattleId != null)
@@ -216,7 +239,9 @@ fun ContentListPage(
                 currentPokemonNav.lookback
             ),
             onBack = { pokemonNavTarget = null },
-            modifier = modifier
+            modifier = modifier,
+            onBattleDetailOpenChanged = onBattleDetailOpenChanged,
+            settledWidthWhenBattleOpen = settledWidthWhenBattleOpen
         )
         return
     }
@@ -226,7 +251,9 @@ fun ContentListPage(
         ContentListPage(
             mode = ContentListMode.Player(currentPlayerNav.id, currentPlayerNav.name, currentPlayerNav.formatId),
             onBack = { playerNavTarget = null },
-            modifier = modifier
+            modifier = modifier,
+            onBattleDetailOpenChanged = onBattleDetailOpenChanged,
+            settledWidthWhenBattleOpen = settledWidthWhenBattleOpen
         )
         return
     }
@@ -365,14 +392,14 @@ fun ContentListPage(
                         if (battleOverlay != null) {
                             battleOverlay(BattleOverlayRequest(battleId = battle.uiModel.id))
                         } else {
-                            selectedBattleId = battle.uiModel.id
+                            setSelectedBattleId(battle.uiModel.id)
                         }
                     },
                     onHighlightBattleClick = { battleId ->
                         if (battleOverlay != null) {
                             battleOverlay(BattleOverlayRequest(battleId = battleId))
                         } else {
-                            selectedBattleId = battleId
+                            setSelectedBattleId(battleId)
                         }
                     }
                 ),
@@ -471,25 +498,72 @@ fun ContentListPage(
             // that's already in its final column count. The pane's AnimatedVisibility slides
             // in independently, filling the empty space beside the narrowed grid.
             detailPaneState.targetState = selectedBattleId != null
+            // True from the frame a battle is selected until the pane's exit animation
+            // finishes. The grid holds its pane-open geometry for this whole window: on
+            // open it snaps immediately (scrollToItem, above); on close it stays frozen
+            // until the pane has fully slid out, then reflows once into the reclaimed
+            // space instead of chasing intermediate widths.
+            val paneOpenOrAnimating = detailPaneState.targetState || detailPaneState.currentState
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                // Derive the battle-card cell width from the **full** window width, not
-                // the grid-box width. The value is stable across pane-open/close so only
-                // the column count changes during the transition, not the card size.
-                val battleCardCellWidth = computeBattleCardCellWidth(maxWidth)
-                // Dynamically size the pane so grid + 1dp divider + pane == maxWidth exactly.
-                // The pane is snapped down to a column-fitting threshold (see
+                // The width all master-detail math is computed against. This must be a
+                // *settled* width — never one mid-animation. When this page sits beside
+                // a host CollapsibleSidePane (Usage/Search), maxWidth itself animates
+                // frame-by-frame while that pane collapses, and computing against it
+                // reflows the grid twice (e.g. 3 cols -> 1 col -> 2 cols). So while the
+                // battle pane is open or exiting, use the host-provided post-collapse
+                // width; otherwise maxWidth, which is stable in the settled closed state.
+                val layoutBasisWidth =
+                    if (paneOpenOrAnimating && settledWidthWhenBattleOpen != null) {
+                        settledWidthWhenBattleOpen
+                    } else {
+                        maxWidth
+                    }
+                // Battle-card cell width, derived from the settled basis width, not the
+                // grid-box width. The *target* only changes at a pane open/close
+                // boundary — never mid-animation. The rendered value eases toward it so
+                // cards scale smoothly between their pane-open and pane-closed sizes
+                // instead of resizing in a single frame — most visible on close, where
+                // the basis flips back only after the pane's exit animation finishes,
+                // so an instant resize would land in isolation with nothing else moving.
+                // Everything else (pane width, grid width, tile sizing) stays keyed on
+                // the target so panes and the grid box still snap to settled geometry.
+                val targetBattleCardCellWidth = computeBattleCardCellWidth(layoutBasisWidth)
+                // Animatable rather than animateDpAsState so the easing applies *only*
+                // to pane open/close flips — a target change with no pane-state change
+                // is a window resize, and cards must track a drag-resize instantly
+                // (a 300ms lag against the instantly-tracking grid box would bounce
+                // the derived column count around mid-drag).
+                val battleCardCellAnim = remember {
+                    Animatable(targetBattleCardCellWidth, Dp.VectorConverter)
+                }
+                var lastCellAnimPaneState by remember { mutableStateOf(paneOpenOrAnimating) }
+                LaunchedEffect(targetBattleCardCellWidth, paneOpenOrAnimating) {
+                    val paneStateFlipped = paneOpenOrAnimating != lastCellAnimPaneState
+                    lastCellAnimPaneState = paneOpenOrAnimating
+                    if (paneStateFlipped && enableAnimations) {
+                        battleCardCellAnim.animateTo(
+                            targetBattleCardCellWidth,
+                            tween(DETAIL_PANE_ANIM_DURATION_MS, easing = FastOutSlowInEasing)
+                        )
+                    } else {
+                        battleCardCellAnim.snapTo(targetBattleCardCellWidth)
+                    }
+                }
+                val battleCardCellWidth = battleCardCellAnim.value
+                // Dynamically size the pane so grid + 1dp divider + pane == basis width
+                // exactly. The pane is snapped down to a column-fitting threshold (see
                 // `snapDetailPaneWidth`) so it never has empty horizontal gutters beside
                 // the team-section cards; the leftover width returns to the grid.
-                val naturalPaneWidth = (maxWidth - battleCardCellWidth - 1.dp)
+                val naturalPaneWidth = (layoutBasisWidth - targetBattleCardCellWidth - 1.dp)
                     .coerceAtLeast(0.dp)
                 val panePostWidth = snapDetailPaneWidth(naturalPaneWidth)
-                val gridWidthWhenPaneOpen = (maxWidth - panePostWidth - 1.dp)
-                    .coerceAtLeast(battleCardCellWidth)
+                val gridWidthWhenPaneOpen = (layoutBasisWidth - panePostWidth - 1.dp)
+                    .coerceAtLeast(targetBattleCardCellWidth)
 
                 // Pokémon grid row (Player "Favorite Pokémon") — sized to match the battle
                 // grid's rendered width so both sections align visually.
                 val currentGridBoxWidth =
-                    if (selectedBattleId != null) gridWidthWhenPaneOpen else maxWidth
+                    if (paneOpenOrAnimating) gridWidthWhenPaneOpen else layoutBasisWidth
                 val topPokemonDisplayMaxWidth =
                     (currentGridBoxWidth - BATTLE_GRID_HORIZONTAL_PADDING).coerceAtLeast(0.dp)
                 // Cap to the grid content area so the pokemon grid doesn't overflow
@@ -497,7 +571,7 @@ fun ContentListPage(
                 // content area (battle cards are centered by the grid arrangement,
                 // but fullSpan items like the pokemon grid are not).
                 val currentGridRendered =
-                    computeBattleGridRenderedWidth(currentGridBoxWidth, battleCardCellWidth)
+                    computeBattleGridRenderedWidth(currentGridBoxWidth, targetBattleCardCellWidth)
                         .coerceAtMost(topPokemonDisplayMaxWidth)
                 val currentInner =
                     (currentGridRendered - TOP_POKEMON_CARD_INNER_PADDING_TOTAL)
@@ -506,7 +580,7 @@ fun ContentListPage(
                 val currentTileWidth = computeTopPokemonTileWidth(currentInner, currentTileCount)
                 Row(modifier = Modifier.fillMaxSize()) {
                     Box(
-                        modifier = if (selectedBattleId != null) {
+                        modifier = if (paneOpenOrAnimating) {
                             Modifier.width(gridWidthWhenPaneOpen).fillMaxHeight()
                         } else {
                             Modifier.weight(1f).fillMaxHeight()
@@ -515,8 +589,8 @@ fun ContentListPage(
                         ContentListContent(
                             uiState = uiState,
                             callbacks = buildCallbacks(
-                                onBattleItemClick = { battle -> selectedBattleId = battle.uiModel.id },
-                                onHighlightBattleClick = { battleId -> selectedBattleId = battleId }
+                                onBattleItemClick = { battle -> setSelectedBattleId(battle.uiModel.id) },
+                                onHighlightBattleClick = { battleId -> setSelectedBattleId(battleId) }
                             ),
                             header = mode.toHeaderUiModel(),
                             hasToolbar = hasToolbar,
@@ -612,13 +686,26 @@ fun ContentListPage(
                         } else ExitTransition.None
                     ) {
                         lastBattleId?.let { battleId ->
-                            Row(modifier = Modifier.fillMaxHeight()) {
+                            // While a host-side CollapsibleSidePane is still collapsing
+                            // (or re-expanding on close), the Row offers this slot less
+                            // than divider + panePostWidth — the grid is already at its
+                            // final width. Plain `width()` would clamp the panel to that
+                            // deficit and its team grid would compose at a narrower
+                            // column count, then visibly reflow (2x2 -> 3x3) once the
+                            // side pane settles. Unbounded start-aligned measurement lets
+                            // the panel lay out at its full settled width immediately,
+                            // overflowing offscreen-right into the space being reclaimed.
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .wrapContentWidth(align = Alignment.Start, unbounded = true)
+                            ) {
                                 VerticalDivider(modifier = Modifier.fillMaxHeight())
                                 BattleDetailPanel(
                                     battleId = battleId,
                                     isFavorited = battleId in favoriteBattleIds,
                                     onToggleFavorite = { viewModel.favoritesRepository.toggleBattleFavorite(battleId) },
-                                    onClose = { selectedBattleId = null },
+                                    onClose = { setSelectedBattleId(null) },
                                     showWinnerHighlight = showWinnerHighlight,
                                     onPokemonClick = { id, name, imageUrl, typeImageUrls, formatId, lookback ->
                                         navigateToPokemon(id, name, imageUrl, typeImageUrls, formatId, lookback)
@@ -660,7 +747,7 @@ fun ContentListPage(
                     if (isCompact && battleOverlay != null) {
                         battleOverlay(BattleOverlayRequest(battleId = battleId))
                     } else {
-                        selectedBattleId = battleId
+                        setSelectedBattleId(battleId)
                     }
                 }
             )

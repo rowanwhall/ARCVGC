@@ -2,6 +2,7 @@ package com.arcvgc.app.ui.search
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -89,44 +90,53 @@ internal fun SearchDesktopPage(
         if (searchOverlayParams == null) battleDetailOpen = false
     }
 
-    Row(
+    // BoxWithConstraints measures the full content-area width (stable — it only
+    // changes on window resize). The results page receives it as the settled
+    // width its master-detail layout will occupy once the filter pane finishes
+    // collapsing, so opening a battle computes final grid geometry up front
+    // instead of chasing the pane's frame-by-frame animating width.
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        CollapsibleSidePane(
-            visible = !battleDetailOpen,
-            paneWidth = LeftPaneWidth + PaneDividerWidth,
-            animate = enableAnimations
-        ) {
-            Row(modifier = Modifier.fillMaxHeight()) {
-                Box(
-                    modifier = Modifier
-                        .width(LeftPaneWidth)
-                        .fillMaxHeight()
-                ) {
-                    SearchFiltersPane(
-                        onSearch = onSearch,
-                        modifier = Modifier.fillMaxSize()
+        val settledDetailWidth = maxWidth
+        Row(modifier = Modifier.fillMaxSize()) {
+            CollapsibleSidePane(
+                visible = !battleDetailOpen,
+                paneWidth = LeftPaneWidth + PaneDividerWidth,
+                animate = enableAnimations
+            ) {
+                Row(modifier = Modifier.fillMaxHeight()) {
+                    Box(
+                        modifier = Modifier
+                            .width(LeftPaneWidth)
+                            .fillMaxHeight()
+                    ) {
+                        SearchFiltersPane(
+                            onSearch = onSearch,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    VerticalDivider(modifier = Modifier.fillMaxHeight())
+                }
+            }
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (searchOverlayParams == null) {
+                    SearchEmptyHint(modifier = Modifier.fillMaxSize())
+                } else {
+                    ContentListPage(
+                        mode = ContentListMode.Search(searchOverlayParams),
+                        onBack = onSearchBack,
+                        onSearchParamsChanged = onSearch,
+                        modifier = Modifier.fillMaxSize(),
+                        onPokemonClick = onPokemonClick,
+                        onPlayerClick = onPlayerClick,
+                        onBattleDetailOpenChanged = { battleDetailOpen = it },
+                        settledWidthWhenBattleOpen = settledDetailWidth,
+                        initialBattleId = initialBattleId
                     )
                 }
-                VerticalDivider(modifier = Modifier.fillMaxHeight())
-            }
-        }
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (searchOverlayParams == null) {
-                SearchEmptyHint(modifier = Modifier.fillMaxSize())
-            } else {
-                ContentListPage(
-                    mode = ContentListMode.Search(searchOverlayParams),
-                    onBack = onSearchBack,
-                    onSearchParamsChanged = onSearch,
-                    modifier = Modifier.fillMaxSize(),
-                    onPokemonClick = onPokemonClick,
-                    onPlayerClick = onPlayerClick,
-                    onBattleDetailOpenChanged = { battleDetailOpen = it },
-                    initialBattleId = initialBattleId
-                )
             }
         }
     }
